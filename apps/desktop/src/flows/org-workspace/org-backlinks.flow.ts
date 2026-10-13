@@ -7,7 +7,18 @@ import {
 	type OrgLinkTargetKind,
 	parseOrgLinkIndex,
 } from "@/pipes/org"
-import type { OrgDocumentEntryInterface, OrgFileError, OrgWorkspaceInterface } from "@/types/org"
+import type {
+	OrgDocumentEntryInterface,
+	OrgDocumentInterface,
+	OrgFileError,
+	OrgWorkspaceInterface,
+} from "@/types/org"
+import {
+	orgQueryDocumentCacheKey as cacheKey,
+	orgQueryWorkspaceCachePrefix as workspacePrefix,
+	snapshotOrgQuerySources,
+	type OrgQueryLiveOverlay,
+} from "./org-query-source.flow"
 
 export interface OrgBacklink {
 	readonly sourceRelativePath: string
@@ -38,10 +49,6 @@ export const ORG_BACKLINKS_CACHE_MAX_ENTRIES = 500
 
 const defaultOrgBacklinksCache: OrgBacklinksCache = new Map()
 
-const workspacePrefix = (rootPath: string): string => `${rootPath.length}:${rootPath}:`
-const cacheKey = (rootPath: string, relativePath: string): string =>
-	`${workspacePrefix(rootPath)}${relativePath}`
-
 const touch = (cache: OrgBacklinksCache, key: string, entry: OrgBacklinksCacheEntry): void => {
 	cache.delete(key)
 	cache.set(key, entry)
@@ -55,9 +62,9 @@ const touch = (cache: OrgBacklinksCache, key: string, entry: OrgBacklinksCacheEn
 }
 
 const pruneDeleted = (cache: OrgBacklinksCache, workspace: OrgWorkspaceInterface): void => {
-	const prefix = workspacePrefix(workspace.rootPath)
+	const prefix = workspacePrefix(workspace)
 	const paths = new Set(
-		workspace.documents.map(({ relativePath }) => cacheKey(workspace.rootPath, relativePath)),
+		workspace.documents.map(({ relativePath }) => cacheKey(workspace, relativePath)),
 	)
 	for (const key of cache.keys()) {
 		if (key.startsWith(prefix) && !paths.has(key)) {
@@ -111,22 +118,106 @@ export const sortOrgBacklinks = (backlinks: readonly OrgBacklink[]): readonly Or
 			compareText(left.label, right.label),
 	)
 
-/**
- * Finds links to the active target. The active document is always parsed from the
- * supplied editor content; only unchanged, non-active documents use the revision cache.
- */
+const invalidBacklinksInput = (relativePath: string, message: string): OrgBacklinksFlowError => ({
+	cause: {
+		cause: message,
+		command: "read_org_document",
+		message,
+		operation: "read",
+		type: "ORG_FILE_ERROR",
+	},
+	message,
+	relativePath,
+	type: "ORG_BACKLINKS_ERROR",
+})
+
+/** Canonical working snapshots precede disk; only unopened sources enter the revision cache. */
 export const loadOrgBacklinksFlow =
 	(
-		workspace: OrgWorkspaceInterface,
+		inputWorkspace: OrgWorkspaceInterface,
 		targetDocument: string | OrgDocumentEntryInterface,
-		currentTargetContent: string,
+		overlays: readonly OrgQueryLiveOverlay[] = [],
 		repository: OrgFileRepository = orgFileRepository,
 		cache: OrgBacklinksCache = defaultOrgBacklinksCache,
+		metadata: { readonly workspaceSessionId?: string } = {},
+		signal?: AbortSignal,
 	): TE.TaskEither<OrgBacklinksFlowError, readonly OrgBacklink[]> =>
-	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: cache, IO, and matching form one ordered read transaction.
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: live precedence, disk IO and matching form one read transaction.
 	async () => {
+		const snapshot = snapshotOrgQuerySources(inputWorkspace, overlays, metadata.workspaceSessionId)
+		if (E.isLeft(snapshot)) {
+			return E.left(invalidBacklinksInput(snapshot.left.relativePath, snapshot.left.message))
+		}
+		const { workspace, liveByPath } = snapshot.right
 		const targetPath = targetPathFrom(targetDocument)
-		const targetIndex = parseOrgLinkIndex(targetPath, currentTargetContent)
+		if (signal?.aborted) return E.left(invalidBacklinksInput("", "Org query cancelled."))
+		pruneDeleted(cache, workspace)
+		const indexes = new Map<string, OrgLinkIndex>()
+		for (const document of workspace.documents) {
+			if (signal?.aborted) return E.left(invalidBacklinksInput("", "Org query cancelled."))
+			const key = cacheKey(workspace, document.relativePath)
+			const live = liveByPath.get(document.relativePath)
+			if (live) {
+				cache.delete(key)
+				indexes.set(document.relativePath, parseOrgLinkIndex(document.relativePath, live.content))
+				continue
+			}
+			const cached = cache.get(key)
+			if (cached?.revision === document.revision) {
+				touch(cache, key, cached)
+				indexes.set(document.relativePath, cached.index)
+				continue
+			}
+			let opened: E.Either<OrgFileError, OrgDocumentInterface>
+			try {
+				opened = await repository.readDocument({
+					relativePath: document.relativePath,
+					workspaceRoot: workspace.rootPath,
+					...(workspace.capabilityToken === undefined
+						? {}
+						: { capabilityToken: workspace.capabilityToken }),
+				})()
+			} catch (cause) {
+				return E.left(invalidBacklinksInput(
+					document.relativePath,
+					`Cannot read backlink document: ${String(cause)}`,
+				))
+			}
+			if (signal?.aborted) return E.left(invalidBacklinksInput("", "Org query cancelled."))
+			if (!opened || (opened._tag !== "Left" && opened._tag !== "Right")) {
+				return E.left(invalidBacklinksInput(document.relativePath, "Malformed backlink read response"))
+			}
+			if (E.isLeft(opened)) {
+				if (!opened.left || typeof opened.left.message !== "string") {
+					return E.left(invalidBacklinksInput(document.relativePath, "Malformed backlink read error"))
+				}
+				return E.left({
+					cause: opened.left,
+					message: `Cannot build backlinks from ${document.relativePath}: ${opened.left.message}`,
+					relativePath: document.relativePath,
+					type: "ORG_BACKLINKS_ERROR",
+				})
+			}
+			if (
+				!opened.right ||
+				opened.right.relativePath !== document.relativePath ||
+				typeof opened.right.content !== "string" ||
+				typeof opened.right.revision !== "string" ||
+				opened.right.revision.length === 0
+			) {
+				return E.left(invalidBacklinksInput(
+					document.relativePath,
+					"Invalid backlink document response path, content or revision",
+				))
+			}
+			const index = parseOrgLinkIndex(document.relativePath, opened.right.content)
+			touch(cache, key, { index, revision: opened.right.revision })
+			indexes.set(document.relativePath, index)
+		}
+		const targetIndex = indexes.get(targetPath)
+		if (!targetIndex) {
+			return E.left(invalidBacklinksInput(targetPath, "Backlink target is no longer available."))
+		}
 		const ids = new Set(
 			targetIndex.identifiers.filter(({ kind }) => kind === "id").map(({ value }) => value),
 		)
@@ -134,48 +225,10 @@ export const loadOrgBacklinksFlow =
 			targetIndex.identifiers.filter(({ kind }) => kind === "custom-id").map(({ value }) => value),
 		)
 		const backlinks: OrgBacklink[] = []
-		pruneDeleted(cache, workspace)
-		cache.delete(cacheKey(workspace.rootPath, targetPath))
-
-		const documents = [...workspace.documents].sort((left, right) =>
-			compareText(left.relativePath, right.relativePath),
-		)
-		for (const document of documents) {
-			let index: OrgLinkIndex
-			if (document.relativePath === targetPath) {
-				index = targetIndex
-			} else {
-				const key = cacheKey(workspace.rootPath, document.relativePath)
-				const cached = cache.get(key)
-				if (cached?.revision === document.revision) {
-					touch(cache, key, cached)
-					index = cached.index
-				} else {
-					const opened = await repository.readDocument({
-						relativePath: document.relativePath,
-						workspaceRoot: workspace.rootPath,
-						...(workspace.capabilityToken === undefined
-							? {}
-							: { capabilityToken: workspace.capabilityToken }),
-					})()
-					if (E.isLeft(opened)) {
-						return E.left({
-							cause: opened.left,
-							message: `Cannot build backlinks from ${document.relativePath}: ${opened.left.message}`,
-							relativePath: document.relativePath,
-							type: "ORG_BACKLINKS_ERROR" as const,
-						})
-					}
-					index = parseOrgLinkIndex(document.relativePath, opened.right.content)
-					touch(cache, key, { index, revision: opened.right.revision })
-				}
-			}
+		for (const index of indexes.values()) {
 			for (const link of index.links) {
-				if (matchesTarget(link, targetPath, ids, customIds)) {
-					backlinks.push(backlinkFrom(link))
-				}
+				if (matchesTarget(link, targetPath, ids, customIds)) backlinks.push(backlinkFrom(link))
 			}
 		}
-
 		return E.right(sortOrgBacklinks(backlinks))
 	}

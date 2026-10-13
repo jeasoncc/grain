@@ -1,3 +1,4 @@
+import { DEFAULT_ORG_BEHAVIOR_CONFIGURATION, orgInheritsName, type OrgInheritanceConfiguration, type OrgLoggingPreferences } from "./org-behavior-configuration.pipe"
 import { type OrgLoggingDeclaration, snapshotOrgLoggingScopes } from "./org-logging-scope.pipe"
 import { eligibleOrgSourceLines, parseOrgTodoKeywords } from "./org-text.pipe"
 
@@ -6,10 +7,21 @@ export interface OrgStateLogging {
 	readonly incoming: string
 	readonly outgoing: string
 }
+export type OrgLogMode = "none" | "time" | "note"
 export interface OrgLoggingPolicy {
 	readonly states: readonly OrgStateLogging[]
-	readonly done: "none" | "time" | "note"
+	readonly done: OrgLogMode
+	readonly repeat: OrgLogMode
+	readonly reschedule: OrgLogMode
+	readonly redeadline: OrgLogMode
+	readonly refile: OrgLogMode
+	readonly reversed: boolean
+	readonly repeatToState: string | null
 	readonly drawer: string | null
+}
+export interface OrgLoggingPolicyOptions {
+	readonly inheritance?: OrgInheritanceConfiguration
+	readonly logging?: Partial<OrgLoggingPreferences>
 }
 export interface OrgLoggingProvenance {
 	readonly from: number
@@ -37,32 +49,57 @@ export const parseOrgLogDrawerName = (value: string): string | null | undefined 
 }
 
 /**
- * Precedence: state defaults + ordered STARTUP -> file drawer compatibility ->
- * file properties -> root-to-target properties. Within each property scope,
- * LOGGING is applied before explicit LOG_INTO_DRAWER, independent of line order.
- * Empty means inherit. Plus accumulates ordered tokens (including an inherited
- * policy when no base is present); duplicate bases are ambiguous. nil must be
- * standalone: clears every state flag and done policy, resets drawer to none.
- * A later nonnil overlay never resurrects flags cleared by nil.
- * This intentionally supports neither repeat logging nor arbitrary Org Lisp.
+ * Org's nonempty LOGGING property replaces only state/done/repeat preferences.
+ * Operation logging remains a global/file STARTUP preference. Empty local
+ * properties inherit; LOG_INTO_DRAWER inherits independently of LOGGING.
+ * See https://orgmode.org/manual/Tracking-TODO-state-changes.html and
+ * https://orgmode.org/manual/Repeated-tasks.html.
  */
 export const resolveOrgLoggingPolicy = (
 	source: string,
 	target: { readonly from: number },
+	options: OrgLoggingPolicyOptions = {},
 ): OrgLoggingPolicyResult => {
 	const keywords = parseOrgTodoKeywords(source)
 	const configured = [...keywords.todo, ...keywords.done]
 	const eligible = eligibleOrgSourceLines(source, new Set(configured))
-	let policy: OrgLoggingPolicy = {
+	const clearLogging = (current: OrgLoggingPolicy): OrgLoggingPolicy => ({
+		...current,
 		done: "none",
+		repeat: "none",
+		states: current.states.map((state) => ({ ...state, incoming: "", outgoing: "" })),
+	})
+	const applyOption = (current: OrgLoggingPolicy, token: string): OrgLoggingPolicy | null => {
+		const option = token.toLowerCase()
+		for (const key of ["done", "repeat", "reschedule", "redeadline", "refile"] as const) {
+			if (option === `log${key}`) return { ...current, [key]: "time" }
+			if (option === `lognote${key}`) return { ...current, [key]: "note" }
+			if (option === `nolog${key}`) return { ...current, [key]: "none" }
+		}
+		if (option === "logdrawer") return { ...current, drawer: "LOGBOOK" }
+		if (option === "nologdrawer") return { ...current, drawer: null }
+		if (option === "logstatesreversed") return { ...current, reversed: true }
+		if (option === "nologstatesreversed") return { ...current, reversed: false }
+		return null
+	}
+	let policy: OrgLoggingPolicy = {
+		done: options.logging?.done ?? "none",
+		repeat: options.logging?.repeat ?? "time",
+		reschedule: options.logging?.reschedule ?? "none",
+		redeadline: options.logging?.redeadline ?? "none",
+		refile: options.logging?.refile ?? "none",
+		reversed: true,
+		repeatToState: null,
 		drawer: null,
 		states: configured.map((state) => ({ incoming: "", outgoing: "", state })),
 	}
+	let explicitDrawer: string | null | undefined
+	let inheritedLogging: string[] = []
 	const provenance: OrgLoggingProvenance[] = []
 	const declared: string[] = []
 	for (const line of eligible) {
-		if (/^#\+(?:TODO|SEQ_TODO):/i.test(line.text)) {
-			const value = line.text.replace(/^#\+(?:TODO|SEQ_TODO):[ \t]*/i, "").trim()
+		if (/^#\+(?:TODO|SEQ_TODO|TYP_TODO):/i.test(line.text)) {
+			const value = line.text.replace(/^#\+(?:TODO|SEQ_TODO|TYP_TODO):[ \t]*/i, "").trim()
 			const tokens = value.split(/[ \t]+/)
 			if (
 				!value ||
@@ -97,11 +134,7 @@ export const resolveOrgLoggingPolicy = (
 				.trim()
 				.toLowerCase()
 				.split(/[ \t]+/)) {
-				if (token === "logdone") policy = { ...policy, done: "time" }
-				if (token === "nologdone") policy = { ...policy, done: "none" }
-				if (token === "lognotedone") policy = { ...policy, done: "note" }
-				if (token === "logdrawer") policy = { ...policy, drawer: "LOGBOOK" }
-				if (token === "nologdrawer") policy = { ...policy, drawer: null }
+				policy = applyOption(policy, token) ?? policy
 			}
 			provenance.push({
 				from: line.from,
@@ -128,57 +161,59 @@ export const resolveOrgLoggingPolicy = (
 	const snapshot = snapshotOrgLoggingScopes(source, target.from, new Set(configured))
 	if (snapshot.kind === "rejected") return snapshot
 	for (const scope of snapshot.scopes) {
-		for (const key of ["LOGGING", "LOG_INTO_DRAWER"] as const) {
+		for (const key of ["LOGGING", "LOG_INTO_DRAWER", "REPEAT_TO_STATE"] as const) {
 			const declarations = scope.declarations.filter((declaration) => declaration.key === key)
 			if (declarations.filter((declaration) => !declaration.append).length > 1)
 				return reject(
-					key === "LOGGING" ? "ambiguous-logging-property" : "ambiguous-log-drawer-property",
+					key === "LOGGING" ? "ambiguous-logging-property" : key === "REPEAT_TO_STATE" ? "ambiguous-repeat-state" : "ambiguous-log-drawer-property",
 				)
-			if (key === "LOG_INTO_DRAWER") {
+			if (key === "REPEAT_TO_STATE") {
+				if (declarations.some((declaration) => declaration.append))
+					return reject("unsupported-repeat-state-append")
+				const inheritance = options.inheritance ?? DEFAULT_ORG_BEHAVIOR_CONFIGURATION.inheritance
+				if (scope.headingFrom === null || scope.headingFrom === target.from ||
+					orgInheritsName(inheritance.properties, inheritance.propertyExclusions, "REPEAT_TO_STATE", "property")) {
+					const state = declarations[0]?.value.trim()
+					if (state) policy = { ...policy, repeatToState: state === "nil" ? null : state }
+				}
+			} else if (key === "LOG_INTO_DRAWER") {
 				if (declarations.some((declaration) => declaration.append))
 					return reject("unsupported-log-drawer-append")
 				const declaration = declarations[0]
 				if (declaration?.value.trim()) {
 					const drawer = parseOrgLogDrawerName(declaration.value)
 					if (drawer === undefined) return reject("unsafe-log-drawer")
-					policy = { ...policy, drawer }
+					explicitDrawer = drawer
 				}
 			} else {
-				const tokens = declarations.flatMap((declaration) =>
+				const localTokens = declarations.flatMap((declaration) =>
 					declaration.value
 						.trim()
 						.split(/[ \t]+/)
 						.filter(Boolean),
 				)
-				if (tokens.some((token) => /^nil$/i.test(token))) {
-					if (tokens.length !== 1) return reject("ambiguous-logging-nil")
-					policy = {
-						done: "none",
-						drawer: null,
-						states: policy.states.map((state) => ({ ...state, incoming: "", outgoing: "" })),
-					}
-				} else
-					for (const token of tokens) {
-						const option = token.toLowerCase()
-						if (option === "logdone") policy = { ...policy, done: "time" }
-						else if (option === "nologdone") policy = { ...policy, done: "none" }
-						else if (option === "lognotedone") policy = { ...policy, done: "note" }
-						else if (option === "logdrawer") policy = { ...policy, drawer: "LOGBOOK" }
-						else if (option === "nologdrawer") policy = { ...policy, drawer: null }
-						else {
-							const match = stateToken.exec(token)
-							if (!match || !token.includes("(") || !configured.includes(match[1]) || match[2])
-								return reject("unsupported-logging-policy")
-							policy = {
-								...policy,
-								states: policy.states.map((state) =>
-									state.state === match[1]
-										? { incoming: match[3] ?? "", outgoing: match[4] ?? "", state: state.state }
-										: state,
-								),
-							}
+				const replaces = declarations.some((declaration) => !declaration.append && declaration.value.trim())
+				const tokens = replaces ? localTokens : [...inheritedLogging, ...localTokens]
+				if (localTokens.length) inheritedLogging = tokens
+				if (localTokens.length) policy = clearLogging(policy)
+				for (const token of localTokens.length ? tokens : []) {
+					// GNU ignores unknown words, nil and operation/drawer STARTUP words.
+					const option = /^(?:nolog|lognote|log)(?:done|repeat)$/i.test(token)
+						? applyOption(policy, token) : null
+					if (option) policy = option
+					else {
+						const match = stateToken.exec(token)
+						if (!match || !token.includes("(") || !configured.includes(match[1]) || match[2]) continue
+						policy = {
+							...policy,
+							states: policy.states.map((state) =>
+								state.state === match[1]
+									? { incoming: match[3] ?? "", outgoing: match[4] ?? "", state: state.state }
+									: state,
+							),
 						}
 					}
+				}
 			}
 			provenance.push(
 				...declarations.map((declaration: OrgLoggingDeclaration) => ({
@@ -193,5 +228,6 @@ export const resolveOrgLoggingPolicy = (
 			)
 		}
 	}
+	if (explicitDrawer !== undefined) policy = { ...policy, drawer: explicitDrawer }
 	return { kind: "policy", policy, provenance }
 }

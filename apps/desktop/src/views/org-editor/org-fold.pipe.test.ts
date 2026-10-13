@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest"
-import { orgHeadingFoldRange } from "./org-fold.pipe"
+import { createOrgHeadingFoldLookup } from "./org-fold.pipe"
 
-describe("orgHeadingFoldRange", () => {
+describe("immutable Org heading fold lookup", () => {
 	it("includes nested headings and their body in a parent subtree", () => {
 		const source = "* Parent\nintro\n** Child\nchild body\n*** Grandchild\ndeep\n* Next\ntop"
 		const nextTopLevel = source.indexOf("* Next")
 
-		expect(orgHeadingFoldRange(source, 0)).toEqual({
+		expect(createOrgHeadingFoldLookup(source)(0)).toEqual({
 			from: source.indexOf("\n"),
 			to: nextTopLevel - 1,
 		})
@@ -17,7 +17,7 @@ describe("orgHeadingFoldRange", () => {
 		const first = source.indexOf("** First")
 		const second = source.indexOf("** Second")
 
-		expect(orgHeadingFoldRange(source, first)).toEqual({
+		expect(createOrgHeadingFoldLookup(source)(first)).toEqual({
 			from: source.indexOf("\n", first),
 			to: second - 1,
 		})
@@ -25,23 +25,24 @@ describe("orgHeadingFoldRange", () => {
 
 	it("ignores heading-like lines inside Org blocks", () => {
 		const source = "* Outer\n#+begin_src text\n* literal\n#+end_src\nbody\n* Next"
-		expect(orgHeadingFoldRange(source, source.indexOf("* literal"))).toBeNull()
-		expect(orgHeadingFoldRange(source, 0)).toEqual({ from: 7, to: source.indexOf("* Next") - 1 })
+		const fold = createOrgHeadingFoldLookup(source)
+		expect(fold(source.indexOf("* literal"))).toBeNull()
+		expect(fold(0)).toEqual({ from: 7, to: source.indexOf("* Next") - 1 })
 	})
 
 	it("folds a top-level heading through the end of the document", () => {
 		const source = "* Top\nbody\n** Child\nchild body"
 
-		expect(orgHeadingFoldRange(source, 0)).toEqual({
+		expect(createOrgHeadingFoldLookup(source)(0)).toEqual({
 			from: source.indexOf("\n"),
 			to: source.length,
 		})
 	})
 
 	it("does not return ranges for non-headings or headings without a subtree", () => {
-		expect(orgHeadingFoldRange("plain text\n* Heading", 0)).toBeNull()
-		expect(orgHeadingFoldRange("* Heading", 0)).toBeNull()
-		expect(orgHeadingFoldRange("* First\n* Second", 0)).toBeNull()
-		expect(orgHeadingFoldRange("prefix * not a heading\nbody", 7)).toBeNull()
+		expect(createOrgHeadingFoldLookup("plain text\n* Heading")(0)).toBeNull()
+		expect(createOrgHeadingFoldLookup("* Heading")(0)).toBeNull()
+		expect(createOrgHeadingFoldLookup("* First\n* Second")(0)).toBeNull()
+		expect(createOrgHeadingFoldLookup("prefix * not a heading\nbody")(7)).toBeNull()
 	})
 })

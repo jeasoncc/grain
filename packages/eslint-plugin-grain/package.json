@@ -24,18 +24,19 @@
   "author": "Grain Team",
   "license": "MIT",
   "peerDependencies": {
-    "@typescript-eslint/parser": "^8.0.0",
-    "eslint": "^8.0.0 || ^9.0.0"
+    "@typescript-eslint/parser": "^8.71.1",
+    "eslint": "^10.12.0"
   },
   "dependencies": {
-    "@typescript-eslint/utils": "^8.52.0"
+    "@typescript-eslint/utils": "^8.71.1"
   },
   "devDependencies": {
-    "@types/node": "^22.10.2",
-    "@typescript-eslint/parser": "^8.52.0",
-    "eslint": "^9.39.2",
-    "fast-check": "^4.4.0",
-    "typescript": "~5.8.3",
-    "vitest": "^4.0.16"
+    "@types/node": "^26.6.4",
+    "@typescript-eslint/parser": "^8.71.1",
+    "eslint": "^10.12.0",
+    "fast-check": "^4.10.2",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.3",
+    "vitest": "^5.0.3"
   }
 }

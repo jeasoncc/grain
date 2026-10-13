@@ -1,6 +1,7 @@
 "use client";
 
-import { Github, Shield, Code } from "lucide-react";
+import { Shield, Code } from "lucide-react";
+import { GitHubIcon } from "@/components/ui/github-icon";
 import Link from "next/link";
 
 interface OpenSourceBadgesProps {
@@ -18,7 +19,7 @@ export function OpenSourceBadges({ className }: OpenSourceBadgesProps) {
     },
     {
       name: "GitHub",
-      icon: <Github className="w-4 h-4" />,
+      icon: <GitHubIcon className="w-4 h-4" />,
       href: "https://github.com/jeasoncc/grain",
       text: "View on GitHub",
       description: "View source code",

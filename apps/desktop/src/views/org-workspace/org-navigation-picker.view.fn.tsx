@@ -1,11 +1,14 @@
 import { FileText, Search } from "lucide-react"
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { scoreOrgCompletionTerms } from "@/pipes/org-completion.pipe"
 export interface OrgNavigationCandidate<T> {
 	readonly id: string
 	readonly relativePath: string
 	readonly value: T
 	readonly markers?: string
 	readonly optionLabel?: string
+	readonly disabled?: boolean
+	readonly disabledReason?: string
 }
 
 export interface OrgNavigationPickerProps<T> {
@@ -22,40 +25,6 @@ export interface OrgNavigationPickerProps<T> {
 	readonly placeholder: string
 	readonly emptyMessage: string
 	readonly errorMessage: string
-}
-
-const fuzzyScore = (value: string, query: string): number | null => {
-	const lower = value.toLocaleLowerCase()
-	const basename =
-		lower
-			.split("/")
-			.at(-1)
-			?.replace(/\.org$/i, "") ?? lower
-	if (basename === query) {
-		return 0
-	}
-	if (basename.startsWith(query)) {
-		return 10 + basename.length - query.length
-	}
-	const basenameIndex = basename.indexOf(query)
-	if (basenameIndex >= 0) {
-		return 100 + basenameIndex
-	}
-	const pathIndex = lower.indexOf(query)
-	if (pathIndex >= 0) {
-		return 200 + pathIndex
-	}
-	let cursor = 0
-	let gap = 0
-	for (const character of query) {
-		const match = lower.indexOf(character, cursor)
-		if (match < 0) {
-			return null
-		}
-		gap += match - cursor
-		cursor = match + 1
-	}
-	return 300 + gap
 }
 
 export const OrgNavigationPicker = <T,>({
@@ -85,12 +54,22 @@ export const OrgNavigationPicker = <T,>({
 	candidatesRef.current = documents
 	const optionRefs = useRef<Array<HTMLButtonElement | null>>([])
 	const results = useMemo(() => {
-		const normalized = query.trim().toLocaleLowerCase()
+		const normalized = query.trim()
 		if (!normalized) {
 			return documents.slice(0, 30)
 		}
 		return documents
-			.map((document) => ({ document, score: fuzzyScore(document.relativePath, normalized) }))
+			.map((document) => {
+				const pathScore = scoreOrgCompletionTerms(normalized, document.relativePath)
+				const displayScore = scoreOrgCompletionTerms(
+					normalized,
+					[document.relativePath, document.optionLabel, document.markers].filter(Boolean).join(" "),
+				)
+				return {
+					document,
+					score: pathScore ?? (displayScore === null ? null : 1000 + displayScore),
+				}
+			})
 			.filter(
 				(result): result is { document: OrgNavigationCandidate<T>; score: number } =>
 					result.score !== null,
@@ -154,6 +133,17 @@ export const OrgNavigationPicker = <T,>({
 		}
 	}, [selectedIndex])
 
+	const restoreFocus = () => {
+		const target = previousFocus.current
+		const host = inputRef.current?.closest("[data-org-workspace-host]")
+		if (
+			target?.isConnected &&
+			target.ownerDocument === document &&
+			(!host || target.closest("[data-org-workspace-host]") === host)
+		)
+			target.focus()
+	}
+
 	const cancel = () => {
 		if (!session.current) return
 		abortRef.current?.abort()
@@ -161,7 +151,7 @@ export const OrgNavigationPicker = <T,>({
 		session.current = null
 		inFlight.current = null
 		setBusy(false)
-		previousFocus.current?.focus()
+		restoreFocus()
 		onOpenChange(false)
 	}
 
@@ -169,7 +159,7 @@ export const OrgNavigationPicker = <T,>({
 		const currentSession = session.current
 		if (!document || !currentSession || inFlight.current) return
 		const candidate = candidatesRef.current.find((entry) => entry.id === document.id)
-		if (!candidate) return
+		if (!candidate || candidate.disabled) return
 		const request = {}
 		const abort = new AbortController()
 		abortRef.current = abort
@@ -179,9 +169,10 @@ export const OrgNavigationPicker = <T,>({
 		try {
 			const opened = await onSelect(candidate.value, abort.signal)
 			if (session.current !== currentSession || inFlight.current !== request) return
-			if (opened === false || !candidatesRef.current.some((entry) => entry.id === candidate.id)) {
+			const freshCandidate = candidatesRef.current.find((entry) => entry.id === candidate.id)
+			if (opened === false || !freshCandidate || freshCandidate.disabled) {
 				setError(errorMessage)
-				previousFocus.current?.focus()
+				restoreFocus()
 			} else {
 				session.current = null
 				onOpenChange(false)
@@ -189,7 +180,7 @@ export const OrgNavigationPicker = <T,>({
 		} catch {
 			if (session.current === currentSession && inFlight.current === request) {
 				setError(errorMessage)
-				previousFocus.current?.focus()
+				restoreFocus()
 			}
 		} finally {
 			if (inFlight.current === request) {
@@ -221,9 +212,11 @@ export const OrgNavigationPicker = <T,>({
 									role="option"
 									aria-label={document.optionLabel}
 									aria-selected={index === selectedIndex}
+									aria-disabled={document.disabled || busy}
+									aria-describedby={document.disabledReason ? `${id}-reason-${index}` : undefined}
 									type="button"
 									tabIndex={-1}
-									disabled={busy}
+									disabled={busy || document.disabled}
 									onMouseDown={(event) => event.preventDefault()}
 									className={`flex h-10 w-full items-center gap-2 rounded-md px-2 text-left transition-colors duration-150 ${index === selectedIndex ? "bg-accent text-accent-foreground" : "hover:bg-accent/60"}`}
 									onMouseEnter={() => {
@@ -234,10 +227,11 @@ export const OrgNavigationPicker = <T,>({
 									<FileText className="size-4 shrink-0 text-muted-foreground" />
 									<span className="min-w-0 flex-1">
 										<span className="block truncate text-sm">
-											{document.relativePath
-												.split("/")
-												.at(-1)
-												?.replace(/\.org$/i, "")}
+											{document.optionLabel ??
+												document.relativePath
+													.split("/")
+													.at(-1)
+													?.replace(/\.org$/i, "")}
 										</span>
 										{document.relativePath.includes("/") && (
 											<span className="block truncate text-[11px] text-muted-foreground">
@@ -247,6 +241,14 @@ export const OrgNavigationPicker = <T,>({
 										{document.markers && (
 											<span className="block text-[11px] text-muted-foreground">
 												{document.markers}
+											</span>
+										)}
+										{document.disabledReason && (
+											<span
+												id={`${id}-reason-${index}`}
+												className="block text-[11px] text-muted-foreground"
+											>
+												{document.disabledReason}
 											</span>
 										)}
 									</span>
@@ -280,6 +282,7 @@ export const OrgNavigationPicker = <T,>({
 						results[selectedIndex] ? `${id}-option-${selectedIndex}` : undefined
 					}
 					value={query}
+					readOnly={busy}
 					onChange={(event) => changeQuery(event.target.value)}
 					onKeyDown={(event) => {
 						if (
@@ -300,19 +303,19 @@ export const OrgNavigationPicker = <T,>({
 							if (results[selectedIndex]) changeQuery(results[selectedIndex].relativePath)
 						} else if (
 							event.key === "ArrowDown" ||
-							(event.ctrlKey && event.key.toLowerCase() === "n")
+							(event.ctrlKey && ["n", "j"].includes(event.key.toLowerCase()))
 						) {
 							event.preventDefault()
 							setSelectedIndex(Math.min(selectedIndex + 1, Math.max(0, results.length - 1)))
 						} else if (
 							event.key === "ArrowUp" ||
-							(event.ctrlKey && event.key.toLowerCase() === "p")
+							(event.ctrlKey && ["p", "k"].includes(event.key.toLowerCase()))
 						) {
 							event.preventDefault()
 							setSelectedIndex(Math.max(selectedIndex - 1, 0))
 						} else if (event.key === "Enter") {
 							event.preventDefault()
-							void select(results[selectedIndex])
+							if (!event.repeat) void select(results[selectedIndex])
 						}
 					}}
 					placeholder={placeholder}

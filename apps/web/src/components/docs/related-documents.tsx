@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useDocPathname } from "./hooks/use-doc-pathname";
 import { useMemo } from "react";
 import Link from "next/link";
 import { FileText, ArrowRight, BookOpen } from "lucide-react";
@@ -60,7 +60,7 @@ function findRelatedDocuments(
 }
 
 export function RelatedDocuments() {
-  const pathname = usePathname();
+  const pathname = useDocPathname();
 
   const related = useMemo(() => {
     if (pathname === "/docs") return [];

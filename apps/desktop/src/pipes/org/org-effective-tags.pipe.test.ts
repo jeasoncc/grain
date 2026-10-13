@@ -14,18 +14,19 @@ const matches = (source: string, input: string) => {
 describe("explicit effective tags", () => {
 	it("unions eligible file lines and the full ancestor stack without merging duplicate titles", () => {
 		const source =
-			"#+FILETAGS: :file:共_:file:\r\n#+filetags: :second:\n#+FILETAGS: malformed\r* Parent :parent:\n*** Middle :middle:\r\n***** Same :own:\n* Peer :peer:\n** Same :own:"
+			"#+FILETAGS: :file:共_:file:\r\n#+filetags: :second:\n#+FILETAGS: bare\r* Parent :parent:\n*** Middle :middle:\r\n***** Same :own:\n* Peer :peer:\n** Same :own:"
 		const snapshot = orgEffectiveTagSnapshot(source)
-		expect(snapshot.fileTags).toEqual(["file", "共_", "second"])
+		expect(snapshot.fileTags).toEqual(["file", "共_", "second", "bare"])
 		expect(snapshot.headings[2].effectiveTags).toEqual([
 			"file",
 			"共_",
 			"second",
+			"bare",
 			"parent",
 			"middle",
 			"own",
 		])
-		expect(snapshot.headings[4].effectiveTags).toEqual(["file", "共_", "second", "peer", "own"])
+		expect(snapshot.headings[4].effectiveTags).toEqual(["file", "共_", "second", "bare", "peer", "own"])
 		expect(matches(source, "itag:parent")).toEqual(
 			snapshot.headings.slice(0, 3).map(({ from }) => from),
 		)
@@ -70,9 +71,9 @@ describe("explicit effective tags", () => {
 
 	it("preserves legacy text tails, raw NUL/surrogates, exact offsets, and leaves AST/source unchanged", () => {
 		const source =
-			"intro\0\ud800\r\n* Root :work:\r** TODO a AND b OR c\nbody\0\udfff\r\n* Skip\nuntouched"
+			"#+TODO: TODO | DONE\r\nintro\0\ud800\r\n* Root :work:\r** TODO a AND b OR c\nbody\0\udfff\r\n* Skip\nuntouched"
 		expect(matches(source, "text:a AND b OR c")).toEqual([source.indexOf("** TODO")])
-		const query = parseOrgSparseTreeQuery('match: todo AND itag:work AND text:"a AND b OR c"')
+		const query = parseOrgSparseTreeQuery('match: todo:TODO AND itag:work AND text:"a AND b OR c"')
 		if (!query) throw new Error("parse")
 		const before = JSON.stringify(query)
 		const plan = buildOrgSparseTreePlan(source, query)
@@ -82,5 +83,18 @@ describe("explicit effective tags", () => {
 		;(snapshot.headings[1].effectiveTags as string[]).push("forged")
 		expect(matches(source, "itag:forged")).toEqual([])
 		expect(source).toContain("body\0\udfff\r\n")
+	})
+
+	it("captures configured tag inheritance before any lazy heading union is read", () => {
+		const source = "#+FILETAGS: :file:\r\n* Parent :work:excluded:\r\n** Child :local:\r\n* Peer"
+		const policy = { tags: ["file", "work", "excluded"], tagExclusions: ["excluded"], properties: false, propertyExclusions: [] }
+		const snapshot = orgEffectiveTagSnapshot(source, policy)
+		policy.tags.splice(0, policy.tags.length, "excluded")
+		policy.tagExclusions.splice(0)
+		expect(snapshot.headings[1].effectiveTags).toEqual(["file", "work", "excluded", "local"])
+		expect(snapshot.headings[2].effectiveTags).toEqual(["file"])
+		const next = orgEffectiveTagSnapshot(source, policy)
+		expect(next.headings[1].effectiveTags).toEqual(["excluded", "local"])
+		expect(next.headings[2].effectiveTags).toEqual([])
 	})
 })

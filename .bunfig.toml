@@ -1,6 +1,8 @@
 # Bun 配置文件
 
 [install]
+# 按 workspace 隔离依赖与 peer 版本，避免隐式依赖
+linker = "isolated"
 # 使用国内镜像
 registry = "https://registry.npmmirror.com"
 

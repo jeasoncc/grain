@@ -7,6 +7,7 @@ import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { smoothScrollTo } from "@/lib/smooth-scroll";
+import { useHydrated } from "@/hooks/use-hydrated";
 
 const navLinks = [
   { name: "Download", href: "/download" },
@@ -18,30 +19,27 @@ const navLinks = [
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const { theme, setTheme, resolvedTheme } = useTheme();
 
   // 优化滚动事件处理，使用节流
   useEffect(() => {
-    let ticking = false;
-    
+    let frame: number | null = null;
+
     const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
+      if (frame === null) {
+        frame = window.requestAnimationFrame(() => {
           setIsScrolled(window.scrollY > 20);
-          ticking = false;
+          frame = null;
         });
-        ticking = true;
       }
     };
     
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  // 防止水合不匹配
-  useEffect(() => {
-    setMounted(true);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
   }, []);
 
   const toggleTheme = () => {

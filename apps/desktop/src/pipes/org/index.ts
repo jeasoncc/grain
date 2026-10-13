@@ -67,7 +67,12 @@ export {
 export {
 	formatOrgLocalTimestamp,
 	type OrgTodoTransitionPlan,
+	type OrgLoggingOperation,
+	type OrgLoggingNoteRequest,
+	type OrgOperationLoggingPlan,
+	type OrgTodoRepeatOptions,
 	planOrgTodoTransition,
+	planOrgOperationLogging,
 	validOrgLocalTimestamp,
 } from "./org-todo-logging.pipe"
 export { buildOrgWorkspaceTree } from "./org-workspace-tree.pipe"

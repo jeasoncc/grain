@@ -31,7 +31,7 @@ apps/desktop/src-tauri/Cargo.toml              # Rust 配置
 aur/PKGBUILD                                   # Arch Linux
 aur/PKGBUILD-binary                            # Arch Linux 二进制
 snap/snapcraft.yaml                            # Snap 包
-flatpak/com.lotus.NovelEditor.yml              # Flatpak 包
+flatpak/com.lotus.Grain.yml                    # Flatpak 包
 winget-manifests/*.yaml                        # Windows 包管理器
 ```
 

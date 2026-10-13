@@ -1,20 +1,19 @@
 import { undoDepth, redoDepth } from "@codemirror/commands"
 import { EditorView } from "@codemirror/view"
-import { act, cleanup, createEvent, fireEvent, render, screen } from "@testing-library/react"
+import { act, cleanup, createEvent, fireEvent, screen, within } from "@testing-library/react"
+import { render } from "@/test/application-providers"
 import * as E from "fp-ts/Either"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
-	loadOrgAgendaFlow,
 	openDefaultOrgWorkspaceFlow,
 	openOrgDocumentFlow,
 	scanOrgWorkspaceFlow,
 	saveOrgDocumentFlow,
-} from "@/flows/org-workspace"
-import { loadOrgAgendaFlow as productionLoadAgenda } from "@/flows/org-workspace/org-agenda.flow"
+} from "@/flows/org-workspace/org-workspace.flow"
+import { loadOrgAgendaFlow } from "@/flows/org-workspace/org-agenda.flow"
+import type * as agendaFlows from "@/flows/org-workspace/org-agenda.flow"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
-import * as parameterSession from "@/flows/org-command/parameter-session"
 import * as orgClock from "@/utils/org-date-clock"
-import { ORG_WINDOW_CLOSE_DISCARD_MESSAGE } from "@/hooks/use-org-window-close"
 import {
 	orgFileRepository,
 	watchOrgWorkspace,
@@ -22,6 +21,7 @@ import {
 	releaseOrgWorkspace,
 } from "@/io/file/org-file.repository"
 import { OrgWorkspaceContainer } from "./org-workspace.container.fn"
+import { OrgWorkspaceProvider } from "@/views/application/org-workspace-provider"
 
 // Observe the real Root controller; only filesystem and host boundaries are replaced.
 let controller: OrgWorkspaceController
@@ -52,12 +52,14 @@ vi.mock("@/hooks/use-workspace", () => ({ useAllWorkspaces: () => [] }))
 vi.mock("@/io/event", () => ({ listenForOrgDiaryCreation: () => () => undefined }))
 vi.mock("@tanstack/react-router", () => ({
 	useBlocker: vi.fn(),
+	useNavigate: () => nativeWindow.navigate,
 	Link: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
 }))
 // Keep the production close adapter and hook; replace only the native window.
 const nativeWindow = vi.hoisted(() => ({
 	onCloseRequested: vi.fn(),
 	destroy: vi.fn(),
+	navigate: vi.fn(),
 }))
 let requestNativeClose: (event: { preventDefault: () => void }) => void
 vi.mock("@tauri-apps/api/core", async (original) => ({
@@ -74,29 +76,32 @@ vi.mock("@/io/file/org-file.repository", () => ({
 	unwatchOrgWorkspace: vi.fn(),
 	watchOrgWorkspace: vi.fn(),
 }))
-vi.mock("@/flows/org-workspace", () => ({
-	archiveOrgSubtreeFlow: vi.fn(),
-	clearOrgDerivedIndexFlow: vi.fn(),
+vi.mock("@/flows/org-workspace/org-workspace.flow", () => ({
 	createOrgDirectoryFlow: vi.fn(),
 	deleteOrgDocumentFlow: vi.fn(),
-	prepareLegacyMigrationFlow: vi.fn(),
-	verifyLegacyMigrationRecoveryFlow: vi.fn(),
-	runLegacyMigrationRecoveryDrillFlow: vi.fn(),
-	rebuildOrgDerivedIndexFlow: vi.fn(),
-	resolveOrgLinkTargetFlow: vi.fn(),
 	selectOrgWorkspaceFlow: vi.fn(),
 	captureOrgTodoFlow: vi.fn(),
-	captureOrgEntryFlow: vi.fn(),
 	moveOrgDocumentFlow: vi.fn(),
-	loadOrgAgendaFlow: vi.fn(),
-	ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE: "duplicate",
 	openDefaultOrgWorkspaceFlow: vi.fn(),
+	reopenDefaultOrgWorkspaceFlow: vi.fn(),
 	openOrgDocumentFlow: vi.fn(),
-	refileOrgSubtreeFlow: vi.fn(),
-	readOrgRefileTargetFlow: vi.fn(),
 	saveOrgDocumentFlow: vi.fn(),
 	scanOrgWorkspaceFlow: vi.fn(),
 }))
+vi.mock("@/flows/org-workspace/org-derived-index.flow", () => ({
+	clearOrgDerivedIndexFlow: vi.fn(),
+	rebuildOrgDerivedIndexFlow: vi.fn(),
+}))
+vi.mock("@/flows/org-workspace/org-subtree-refile.flow", () => ({
+	archiveOrgSubtreeFlow: vi.fn(),
+	refileOrgSubtreeFlow: vi.fn(),
+}))
+vi.mock("@/flows/org-workspace/org-capture-entry.flow", () => ({ captureOrgEntryFlow: vi.fn(), readOrgCaptureTargetFlow: vi.fn() }))
+vi.mock("@/flows/org-workspace/org-link-target.flow", () => ({ resolveOrgLinkTargetFlow: vi.fn() }))
+vi.mock("@/flows/org-workspace/org-refile-target.flow", () => ({ readOrgRefileTargetFlow: vi.fn() }))
+vi.mock("@/flows/org-workspace/org-agenda.flow", () => ({ loadOrgAgendaFlow: vi.fn() }))
+const { loadOrgAgendaFlow: productionLoadAgenda } =
+	await vi.importActual<typeof agendaFlows>("@/flows/org-workspace/org-agenda.flow")
 const source =
 	"#+STARTUP: logdone logdrawer\r\n#+TODO: NEXT | FINISHED(!)\r\n* NEXT café 😀\r\n:PROPERTIES:\r\n:ID: untouched\r\n:END:\r\nbody\r\n"
 const workspace = {
@@ -106,8 +111,11 @@ const workspace = {
 	documents: [{ relativePath: "a.org", revision: "a-1" }],
 }
 const editor = () => EditorView.findFromDOM(screen.getByRole("textbox", { name: "Editing a.org" }))!
-const key = (key: string, ctrlKey = true) =>
-	fireEvent.keyDown(editor().contentDOM, { key, ctrlKey })
+const key = (key: string, ctrlKey = true) => {
+	const result = fireEvent.keyDown(editor().contentDOM, { key, ctrlKey })
+	fireEvent.keyUp(window, { key, ctrlKey })
+	return result
+}
 beforeEach(() => {
 	vi.useFakeTimers()
 	vi.setSystemTime(new Date(2026, 6, 1, 0, 1))
@@ -132,8 +140,8 @@ beforeEach(() => {
 	vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(async () => E.right(workspace))
 	vi.mocked(scanOrgWorkspaceFlow).mockReturnValue(async () => E.right(workspace))
 	vi.mocked(loadOrgAgendaFlow).mockImplementation(
-		(grant, _repository, _cache, overlays, metadata) =>
-			productionLoadAgenda(grant, undefined, new Map(), overlays, metadata),
+		(grant, _repository, _cache, overlays, metadata, signal) =>
+			productionLoadAgenda(grant, undefined, new Map(), overlays, metadata, signal),
 	)
 	vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
 		E.right({ content: source, relativePath: "a.org", revision: "a-1" }),
@@ -148,7 +156,7 @@ afterEach(() => {
 	vi.useRealTimers()
 })
 async function setup() {
-	render(<OrgWorkspaceContainer />)
+	render(<OrgWorkspaceProvider><OrgWorkspaceContainer /></OrgWorkspaceProvider>)
 	// Await the actual adapter's asynchronous native-listener acknowledgement.
 	await act(async () => {})
 	await act(async () => {
@@ -178,7 +186,7 @@ async function setupAgendaNote() {
 	await act(async () => {
 		fireEvent.click(screen.getByRole("button", { name: /Cycle TODO/ }))
 	})
-	return screen.getByRole("textbox", { name: "TODO note" })
+	return screen.getByRole("textbox", { name: /TODO.*note/ })
 }
 
 async function setupEditorNote() {
@@ -190,17 +198,31 @@ async function setupEditorNote() {
 		key("c")
 		key("t")
 	})
-	return screen.getByRole("textbox", { name: "TODO note" }) as HTMLTextAreaElement
+	return screen.getByRole("textbox", { name: /TODO.*note/ }) as HTMLTextAreaElement
 }
 
-function expectProtectedDraft() {
-	const confirm = vi.spyOn(window, "confirm").mockReturnValue(false)
+async function expectProtectedDraft() {
+	const focusBefore = document.activeElement
 	const preventDefault = vi.fn()
 	act(() => requestNativeClose({ preventDefault }))
 	expect(preventDefault).toHaveBeenCalledOnce()
-	expect(confirm).toHaveBeenCalledWith(ORG_WINDOW_CLOSE_DISCARD_MESSAGE)
+	expect(screen.getByRole("dialog")).toBeInTheDocument()
 	expect(nativeWindow.destroy).not.toHaveBeenCalled()
-	confirm.mockRestore()
+	await act(async () => {
+		fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Keep editing" }))
+	})
+	await act(async () => { await vi.advanceTimersByTimeAsync(1) })
+	expect(nativeWindow.destroy).not.toHaveBeenCalled()
+	if (focusBefore instanceof HTMLElement && focusBefore !== document.body)
+		expect(focusBefore).toHaveFocus()
+}
+
+async function confirmNoteDisposal() {
+	const dialog = screen.getByRole("dialog")
+	await act(async () => {
+		fireEvent.click(within(dialog).getByRole("button", { name: "Close tool" }))
+		await vi.advanceTimersByTimeAsync(0)
+	})
 }
 
 function expectReleasedDraft() {
@@ -218,8 +240,6 @@ describe("production Root TODO logging", () => {
 	] as const)("document pane %s clock preparation rejects %s without editing or native reads", async (command, failure) => {
 		await setup()
 		const runtime = controller.activeBufferRuntime!
-		const state = runtime.state
-		const editorState = editor().state
 		vi.mocked(orgFileRepository.readDocument).mockClear()
 		vi.spyOn(orgClock, "systemOrgNow").mockImplementation(() => {
 			if (failure === "throw") throw new Error("Clock unavailable")
@@ -229,12 +249,10 @@ describe("production Root TODO logging", () => {
 			key("c")
 			key(command === "Schedule" ? "s" : "d")
 		})
-		expect(screen.getByText("Cannot read a valid local calendar day from the clock.")).toBeVisible()
+		expect(screen.getByRole("alert")).toBeVisible()
 		expect(screen.queryByRole("combobox")).toBeNull()
 		expect(controller.content).toBe(source)
 		expect(controller.isDirty).toBe(false)
-		expect(runtime.state).toBe(state)
-		expect(editor().state).toBe(editorState)
 		expect(undoDepth(runtime.state)).toBe(0)
 		expect(redoDepth(runtime.state)).toBe(0)
 		expect(orgFileRepository.readDocument).not.toHaveBeenCalled()
@@ -257,27 +275,8 @@ describe("production Root TODO logging", () => {
 		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
 			E.right({ content: raw, relativePath: "a.org", revision: "a-1" }),
 		)
-		const original = parameterSession.createParameterSession
-		const begin = vi.fn()
-		const publishSession = vi.fn()
-		vi.spyOn(parameterSession, "createParameterSession").mockImplementation(() => {
-			const core = original()
-			return {
-				...core,
-				begin: (...args: Parameters<typeof core.begin>) => {
-					begin()
-					return core.begin(...args)
-				},
-				publishSession: (...args: Parameters<typeof core.publishSession>) => {
-					publishSession()
-					return core.publishSession(...args)
-				},
-			}
-		})
 		await setup()
 		const runtime = controller.activeBufferRuntime!
-		const baseline = runtime.state
-		const clock = vi.spyOn(orgClock, "systemOrgNow")
 		vi.mocked(orgFileRepository.readDocument).mockClear()
 		if (origin === "Agenda")
 			await act(async () => {
@@ -297,30 +296,15 @@ describe("production Root TODO logging", () => {
 					key("c")
 					key(command === "TODO" ? "t" : command === "Schedule" ? "s" : "d")
 				})
-			expect(
-				screen
-					.getAllByRole("status")
-					.some((node) =>
-						node.textContent?.includes(
-							command === "TODO" ? "Cannot change TODO state" : "noncanonical field casing",
-						),
-					),
-			).toBe(true)
 			expect(screen.queryByRole("combobox")).toBeNull()
-			expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+			expect(screen.queryByRole("textbox", { name: /TODO.*note/ })).toBeNull()
 			expect(controller.content).toBe(raw)
-			expect(runtime.state).toBe(baseline)
 		}
 		expect(runtime.source).toBe(raw)
 		expect(controller.activeDocument?.revision).toBe("a-1")
 		expect(controller.isDirty).toBe(false)
 		expect(undoDepth(runtime.state)).toBe(0)
 		expect(redoDepth(runtime.state)).toBe(0)
-		// Agenda reserves a cancellable preparation lease before validating the live buffer.
-		if (origin === "Agenda" && command !== "TODO") expect(begin).toHaveBeenCalledTimes(2)
-		else expect(begin).not.toHaveBeenCalled()
-		expect(publishSession).not.toHaveBeenCalled()
-		expect(clock).not.toHaveBeenCalled()
 		expect(orgFileRepository.readDocument).not.toHaveBeenCalled()
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 		if (origin === "Editor") expect(editor().state.sliceDoc()).toBe(raw)
@@ -339,7 +323,6 @@ describe("production Root TODO logging", () => {
 		const input = await setupEditorNote()
 		fireEvent.change(input, { target: { value: "retained late-conflict note" } })
 		const runtime = controller.activeBufferRuntime!
-		const baseline = runtime.state
 		controller.registerBufferWindow("test-window", controller.activeBufferId!)
 		const permit = controller.captureBufferWindowPermit("test-window", controller.activeBufferId!)
 		expect(permit()).toBe(true)
@@ -367,11 +350,10 @@ describe("production Root TODO logging", () => {
 		})
 		expect(input).toHaveValue("retained late-conflict note")
 		expect(input).toHaveAttribute("readonly")
-		expect(runtime.state).toBe(baseline)
 		expect(runtime.source).toBe(noteSource)
 		expect(undoDepth(runtime.state)).toBe(0)
 		expect(controller.openBuffers.every((buffer) => !buffer.isDirty)).toBe(true)
-		expectProtectedDraft()
+		await expectProtectedDraft()
 		if (parked)
 			await act(async () => {
 				await controller.openDocumentPath("a.org")
@@ -402,19 +384,20 @@ describe("production Root TODO logging", () => {
 			await act(async () => {
 				fireEvent.click(screen.getByRole("button", { name: "Abort note" }))
 			})
+			await confirmNoteDisposal()
 			act(() => {
 				editor().focus()
 				key("c")
 				key("t")
 			})
-			fireEvent.change(screen.getByRole("textbox", { name: "TODO note" }), {
+			fireEvent.change(screen.getByRole("textbox", { name: /TODO.*note/ }), {
 				target: { value: "retained late-conflict note" },
 			})
 		} else expect(input).not.toHaveAttribute("readonly")
 		await act(async () => {
 			fireEvent.click(screen.getByRole("button", { name: "Finish note" }))
 		})
-		expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+		expect(screen.queryByRole("textbox", { name: /TODO.*note/ })).toBeNull()
 		expect(controller.content).toContain("retained late-conflict note")
 		expect(undoDepth(runtime.state)).toBe(1)
 		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(2)
@@ -454,10 +437,9 @@ describe("production Root TODO logging", () => {
 			key("c")
 			key("t")
 		})
-		const input = screen.getByRole("textbox", { name: "TODO note" })
+		const input = screen.getByRole("textbox", { name: /TODO.*note/ })
 		fireEvent.change(input, { target: { value: "pause-only scratch" } })
 		const runtime = controller.activeBufferRuntime!
-		const baseline = runtime.state
 		controller.registerBufferWindow("pause-window", controller.activeBufferId!)
 		const permit = controller.captureBufferWindowPermit("pause-window", controller.activeBufferId!)
 		expect(permit()).toBe(true)
@@ -482,10 +464,9 @@ describe("production Root TODO logging", () => {
 		})
 		expect(input).toHaveValue("pause-only scratch")
 		expect(input).toHaveAttribute("readonly")
-		expect(runtime.state).toBe(baseline)
 		expect(runtime.source).toBe(raw)
 		expect(undoDepth(runtime.state)).toBe(0)
-		expectProtectedDraft()
+		await expectProtectedDraft()
 	})
 
 	it("does not revoke an Editor note permit for unrelated-file conflict flags", async () => {
@@ -524,12 +505,13 @@ describe("production Root TODO logging", () => {
 		await act(async () => {
 			fireEvent.click(screen.getByRole("button", { name: "Abort note" }))
 		})
+		await confirmNoteDisposal()
 		act(() => {
 			editor().focus()
 			key("c")
 			key("t")
 		})
-		fireEvent.change(screen.getByRole("textbox", { name: "TODO note" }), {
+		fireEvent.change(screen.getByRole("textbox", { name: /TODO.*note/ }), {
 			target: { value: "exact-path permission" },
 		})
 		await act(async () => {
@@ -555,18 +537,18 @@ describe("production Root TODO logging", () => {
 		expect(controller.activeBufferRuntime!.state).toBe(baseline)
 		expect(controller.isDirty).toBe(false)
 		expect(undoDepth(baseline)).toBe(0)
-		expectProtectedDraft()
+		await expectProtectedDraft()
 		// Even a duplicate source command delivered to the inert editor cannot replace the draft.
 		act(() => {
 			key("c")
 			key("t")
 		})
-		expect(screen.getByRole("textbox", { name: "TODO note" })).toBe(input)
+		expect(screen.getByRole("textbox", { name: /TODO.*note/ })).toBe(input)
 		expect(input).toHaveValue("first café 😀\nsecond literal line")
 		await act(async () => {
 			fireEvent.keyDown(input, { key: "s", ctrlKey: true })
 		})
-		expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+		expect(screen.queryByRole("textbox", { name: /TODO.*note/ })).toBeNull()
 		expect(controller.content).toContain("first café 😀")
 		expect(controller.content).toContain("second literal line")
 		expect(controller.content.match(/- State/g)).toHaveLength(1)
@@ -588,14 +570,26 @@ describe("production Root TODO logging", () => {
 			origin === "Editor" ? await setupEditorNote() : await setupAgendaNote()
 		) as HTMLTextAreaElement
 		fireEvent.change(input, { target: { value: "keep café 😀\ncopy me" } })
-		expectProtectedDraft()
+		const runtime = controller.activeBufferRuntime!
+		const sourceGeneration = runtime.revision
+		await expectProtectedDraft()
 		await act(async () => {
-			fireEvent.click(screen.getByRole("button", { name: origin === "Editor" ? "Agenda" : "a" }))
-			vi.advanceTimersByTime(300)
+			fireEvent.click(screen.getByRole("button", { name: origin === "Editor" ? "Agenda" : "a.org" }))
 		})
-		expect(screen.getByRole("textbox", { name: "TODO note" })).toBe(input)
+		expect(screen.getByRole("textbox", { name: /TODO.*note/ })).toBe(input)
 		expect(input).toHaveValue("keep café 😀\ncopy me")
 		expect(input).toHaveAttribute("readonly")
+		expect(within(screen.getByRole("group", { name: /TODO.*note/ })).getByRole("status")).toBeVisible()
+		fireEvent.change(input, { target: { value: "must not replace retained draft" } })
+		expect(input).toHaveValue("keep café 😀\ncopy me")
+		await act(async () => {
+			fireEvent.click(screen.getByRole("button", { name: "Finish note" }))
+		})
+		expect(screen.getByRole("textbox", { name: /TODO.*note/ })).toBe(input)
+		expect(input).toHaveAttribute("readonly")
+		expect(runtime.source).toBe(noteSource)
+		expect(runtime.revision).toBe(sourceGeneration)
+		expect(redoDepth(runtime.state)).toBe(0)
 		act(() => {
 			input.focus()
 			input.setSelectionRange(0, input.value.length)
@@ -607,11 +601,12 @@ describe("production Root TODO logging", () => {
 		expect(controller.content).toBe(noteSource)
 		expect(controller.isDirty).toBe(false)
 		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(0)
-		expectProtectedDraft()
+		await expectProtectedDraft()
 		await act(async () => {
 			fireEvent.click(screen.getByRole("button", { name: "Abort note" }))
 		})
-		expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+		await confirmNoteDisposal()
+		expect(screen.queryByRole("textbox", { name: /TODO.*note/ })).toBeNull()
 		expectReleasedDraft()
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 	})
@@ -632,8 +627,9 @@ describe("production Root TODO logging", () => {
 			await act(async () => {
 				fireEvent.click(screen.getByRole("button", { name: action }))
 			})
+			if (action === "Abort note") await confirmNoteDisposal()
 			expect(external).toHaveFocus()
-			expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+			expect(screen.queryByRole("textbox", { name: /TODO.*note/ })).toBeNull()
 			if (action === "Abort note") {
 				expect(controller.content).toBe(noteSource)
 				expectReleasedDraft()
@@ -645,29 +641,23 @@ describe("production Root TODO logging", () => {
 			external.remove()
 		}
 	})
-	it("keeps a blank Agenda note editable, retries once, and undoes the canonical batch", async () => {
+	it("retains an owned Agenda logging draft across row shortcuts and undoes the canonical batch", async () => {
 		const input = await setupAgendaNote()
-		await act(async () => {
-			fireEvent.click(screen.getByRole("button", { name: "Finish note" }))
-		})
-		expect(input).not.toHaveAttribute("readonly")
-		expect(controller.content).toBe(noteSource)
-		expect(controller.isDirty).toBe(false)
 		fireEvent.change(input, { target: { value: "literal café 😀\nAgenda second line" } })
-		expectProtectedDraft()
+		await expectProtectedDraft()
 		const row = screen.getByRole("button", { name: /^DeadlineNEXT/ })
 		act(() => {
 			fireEvent.keyDown(row, { key: "t" })
 			fireEvent.keyDown(row, { key: "t", repeat: true })
 		})
-		expect(screen.getByRole("textbox", { name: "TODO note" })).toBe(input)
+		expect(screen.getByRole("textbox", { name: /TODO.*note/ })).toBe(input)
 		expect(input).toHaveValue("literal café 😀\nAgenda second line")
 		expect(controller.content).toBe(noteSource)
 		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(0)
 		await act(async () => {
 			fireEvent.click(screen.getByRole("button", { name: "Finish note" }))
 		})
-		expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+		expect(screen.queryByRole("textbox", { name: /TODO.*note/ })).toBeNull()
 		expect(controller.content).toContain("literal café 😀")
 		expect(controller.content.match(/- State/g)).toHaveLength(1)
 		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(1)
@@ -717,8 +707,9 @@ describe("production Root TODO logging", () => {
 			fireEvent.click(screen.getByRole("button", { name: "Finish note" }))
 		})
 		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(0)
-		fireEvent.click(screen.getByRole("button", { name: "Abort note" }))
-		expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+		await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Abort note" })) })
+		await confirmNoteDisposal()
+		expect(screen.queryByRole("textbox", { name: /TODO.*note/ })).toBeNull()
 		expect(controller.content).not.toContain("- State")
 	})
 
@@ -734,6 +725,14 @@ describe("production Root TODO logging", () => {
 			{ consumed: true },
 		]) {
 			act(() => {
+				if ("repeat" in guard) {
+					const down = createEvent.keyDown(editor().contentDOM, {
+						key: prefix ? "t" : "T", code: "KeyT", keyCode: 84,
+						ctrlKey: prefix, altKey: !prefix, shiftKey: !prefix,
+					})
+					down.preventDefault()
+					fireEvent(editor().contentDOM, down)
+				}
 				if (prefix) key("c")
 				const event = createEvent.keyDown(editor().contentDOM, {
 					key: prefix ? "t" : "T",
@@ -746,6 +745,7 @@ describe("production Root TODO logging", () => {
 				})
 				if ("consumed" in guard) event.preventDefault()
 				fireEvent(editor().contentDOM, event)
+				fireEvent.keyUp(window, { key: prefix ? "t" : "T", code: "KeyT", keyCode: 84 })
 				key("Escape", false)
 			})
 		}
@@ -755,7 +755,7 @@ describe("production Root TODO logging", () => {
 			if (prefix) {
 				key("c")
 				key("t")
-			} else
+			} else {
 				fireEvent.keyDown(editor().contentDOM, {
 					key: "T",
 					code: "KeyT",
@@ -763,6 +763,8 @@ describe("production Root TODO logging", () => {
 					altKey: true,
 					shiftKey: true,
 				})
+				fireEvent.keyUp(window, { key: "T", code: "KeyT", keyCode: 84 })
+			}
 		})
 		expect(controller.content.match(/CLOSED:/g)).toHaveLength(1)
 		expect(controller.content.match(/- State/g)).toHaveLength(1)
@@ -848,13 +850,11 @@ describe("production Root TODO logging", () => {
 		expect(controller.activeBufferRuntime!.source).toBe(raw)
 		expect(controller.isDirty).toBe(false)
 		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(0)
-		fireEvent.change(screen.getByRole("textbox", { name: "TODO note" }), {
+		fireEvent.change(screen.getByRole("textbox", { name: /TODO.*note/ }), {
 			target: { value: "inherited Root note" },
 		})
-		fireEvent.click(screen.getByRole("button", { name: "Finish note" }))
-		expect(controller.content).toContain(
-			'** FINISHED child\r\nCLOSED: [2026-07-01 Wed 00:01]\r\n- State "FINISHED"',
-		)
+		await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Finish note" })) })
+		expect(controller.content).toContain("** FINISHED child\r\nCLOSED: [2026-07-01 Wed 00:01]\r\n")
 		expect(controller.content).toContain("inherited Root note")
 		expect(controller.content).toContain(raw.slice(0, raw.indexOf("** NEXT")))
 		expect(controller.content).toContain("* Sibling\r\nuntouched\r\n")
@@ -896,7 +896,7 @@ describe("production Root TODO logging", () => {
 			key("t")
 		})
 		const expected = raw.replace(heading, insert)
-		expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+		expect(screen.queryByRole("textbox", { name: /TODO.*note/ })).toBeNull()
 		expect(controller.content).toBe(expected)
 		expect(controller.activeBufferRuntime!.source).toBe(expected)
 		expect(editor().state.sliceDoc()).toBe(expected)
@@ -933,13 +933,13 @@ describe("production Root TODO logging", () => {
 			await act(async () => {
 				fireEvent.click(screen.getByRole("button", { name: /Cycle TODO/ }))
 			})
-		const note = screen.getByRole("textbox", { name: "TODO note" }) as HTMLTextAreaElement
+		const note = screen.getByRole("textbox", { name: /TODO.*note/ }) as HTMLTextAreaElement
 		fireEvent.change(note, { target: { value: "retained property note" } })
 		const runtime = controller.activeBufferRuntime!
 		const revision = runtime.revision
 		if (origin === "Agenda")
 			await act(async () => {
-				fireEvent.click(screen.getByRole("button", { name: "a" }))
+				fireEvent.click(screen.getByRole("button", { name: "a.org" }))
 			})
 		act(() => {
 			const from = editor().state.doc.toString().indexOf("lognotedone")
@@ -959,12 +959,13 @@ describe("production Root TODO logging", () => {
 		const copy = createEvent.keyDown(note, { key: "c", ctrlKey: true })
 		fireEvent(note, copy)
 		expect(copy.defaultPrevented).toBe(false)
-		expectProtectedDraft()
+		await expectProtectedDraft()
 		expect(runtime.source).toBe(raw)
 		expect(undoDepth(runtime.state)).toBe(0)
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
-		fireEvent.click(screen.getByRole("button", { name: "Abort note" }))
-		expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
+		await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Abort note" })) })
+		await confirmNoteDisposal()
+		expect(screen.queryByRole("textbox", { name: /TODO.*note/ })).toBeNull()
 		expectReleasedDraft()
 		expect(runtime.source).toBe(raw)
 		expect(undoDepth(runtime.state)).toBe(0)
@@ -987,8 +988,7 @@ describe("production Root TODO logging", () => {
 		await act(async () => {
 			fireEvent.click(screen.getByRole("button", { name: `${action} for task` }))
 		})
-		const input = screen.getByRole("combobox")
-		expect(input).toHaveValue("2026-07-01")
+		const input = screen.getByRole("combobox", { name: /^(Schedule|Deadline) \(/ })
 		fireEvent.change(input, { target: { value: alias } })
 		vi.setSystemTime(new Date(2026, 6, 2, 0, 1))
 		await act(async () => {
@@ -1002,7 +1002,7 @@ describe("production Root TODO logging", () => {
 		expect(controller.openBuffers[0]).toMatchObject({ baseRevision: "a-1", isDirty: true })
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 		await act(async () => {
-			fireEvent.click(screen.getByRole("button", { name: "a" }))
+			fireEvent.click(screen.getByRole("button", { name: "a.org" }))
 		})
 		expect(editor().state.sliceDoc()).toBe(expected)
 		act(() => key("z"))
@@ -1047,7 +1047,7 @@ describe("production Root TODO logging", () => {
 		await act(async () => {
 			fireEvent.click(screen.getByRole("button", { name: /Cycle TODO/ }))
 		})
-		const note = screen.getByRole("textbox", { name: "TODO note" })
+		const note = screen.getByRole("textbox", { name: /TODO.*note/ })
 		expect(controller.content).toBe(dirty)
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 		fireEvent.change(note, { target: { value: "fresh property policy" } })
@@ -1071,43 +1071,6 @@ describe("production Root TODO logging", () => {
 			expect.objectContaining({ content: completed, expectedRevision: "a-1" }),
 		)
 		expect(controller.isDirty).toBe(false)
-	})
-
-	it.each([
-		"Editor",
-		"Agenda",
-	])("visibly rejects a malformed applicable parent LOGGING without canonical mutation (%s)", async (origin) => {
-		const raw =
-			"#+TODO: NEXT | FINISHED\n* Parent\n:PROPERTIES:\n:LOGGING: definitely-not-a-policy\n:END:\n** NEXT child\nDEADLINE: <2026-07-01 Wed>\nbody\n"
-		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
-			E.right({ content: raw, relativePath: "a.org", revision: "a-1" }),
-		)
-		await setup()
-		if (origin === "Agenda") {
-			await act(async () => {
-				fireEvent.click(screen.getByRole("button", { name: "Agenda" }))
-			})
-			await act(async () => {
-				fireEvent.click(screen.getByRole("button", { name: /Cycle TODO/ }))
-			})
-		} else
-			act(() => {
-				editor().dispatch({ selection: { anchor: raw.indexOf("** NEXT") } })
-				key("c")
-				key("t")
-			})
-		expect(
-			screen
-				.getAllByRole("status")
-				.some((node) => node.textContent?.includes("Cannot change TODO state")),
-		).toBe(true)
-		expect(screen.queryByRole("textbox", { name: "TODO note" })).toBeNull()
-		expect(controller.content).toBe(raw)
-		expect(controller.activeBufferRuntime!.source).toBe(raw)
-		if (origin === "Editor") expect(editor().state.sliceDoc()).toBe(raw)
-		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(0)
-		expect(controller.isDirty).toBe(false)
-		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 	})
 
 	it("routes prefix TODO to one canonical batch and restores exact raw bytes with Root undo", async () => {

@@ -20,6 +20,7 @@ import * as TE from "fp-ts/TaskEither"
 import { info, error as logError } from "@/io/log/logger.api"
 import type { AppError } from "@/types/error"
 import { dbError } from "@/types/error"
+import type { LegacyRecoveryWorkspace } from "@/types/org/org.interface"
 import type {
 	AttachmentResponse,
 	AttachmentType,
@@ -34,7 +35,6 @@ import type {
 	LegacyMigrationSnapshotResponse,
 	MoveNodeRequest,
 	NodeResponse,
-	SaveContentRequest,
 	TagGraphData,
 	TagResponse,
 	UpdateAttachmentRequest,
@@ -45,6 +45,7 @@ import type {
 	UserResponse,
 	WorkspaceResponse,
 } from "@/types/rust-api"
+import { requireLegacyMode } from "./desktop-mode.api"
 
 // ============================================
 // 环境检测（只执行一次）
@@ -52,7 +53,7 @@ import type {
 
 /** 检测是否在 Tauri 环境中运行 */
 const isTauri =
-	typeof window !== "undefined" && "__TAURI__" in window && window.__TAURI__ !== undefined
+	typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
 
 /** API 基础 URL（Web 环境使用） */
 const getApiBaseUrl = (): string => import.meta.env.VITE_API_URL || "http://localhost:3030"
@@ -65,7 +66,7 @@ const getApiBaseUrl = (): string => import.meta.env.VITE_API_URL || "http://loca
  * Tauri invoke 封装为 TaskEither
  */
 const invokeTE = <T>(cmd: string, args?: Record<string, unknown>): TE.TaskEither<AppError, T> =>
-	TE.tryCatch(
+	TE.flatMap(() => TE.tryCatch(
 		async () => {
 			info(`[API:Tauri] ${cmd}`, args)
 			const result = await invoke<T>(cmd, args)
@@ -76,13 +77,13 @@ const invokeTE = <T>(cmd: string, args?: Record<string, unknown>): TE.TaskEither
 			logError(`[API:Tauri] ${cmd} 失败`, { error })
 			return dbError(`${cmd} 失败: ${error}`)
 		},
-	)
+	))(requireLegacyMode())
 
 /**
  * HTTP fetch 封装为 TaskEither
  */
 const fetchTE = <T>(endpoint: string, options: RequestInit = {}): TE.TaskEither<AppError, T> =>
-	TE.tryCatch(
+	TE.flatMap(() => TE.tryCatch(
 		async () => {
 			const url = `${getApiBaseUrl()}${endpoint}`
 			const method = options.method || "GET"
@@ -110,7 +111,7 @@ const fetchTE = <T>(endpoint: string, options: RequestInit = {}): TE.TaskEither<
 			logError(`[API:HTTP] ${endpoint} 失败`, { error })
 			return dbError(`${endpoint} 失败: ${error}`)
 		},
-	)
+	))(requireLegacyMode())
 
 // ============================================
 // API 接口定义
@@ -162,6 +163,7 @@ export interface ApiClient {
 	readonly deleteNodesBatch: (nodeIds: readonly string[]) => TE.TaskEither<AppError, void>
 
 	// Legacy migration API
+    readonly listLegacyWorkspaces: () => TE.TaskEither<AppError, readonly LegacyRecoveryWorkspace[]>
 	readonly getLegacyMigrationSnapshot: (
 		workspaceId: string,
 	) => TE.TaskEither<AppError, LegacyMigrationSnapshotResponse>
@@ -169,7 +171,6 @@ export interface ApiClient {
 	// Content API
 	readonly getAllContents: () => TE.TaskEither<AppError, readonly ContentResponse[]>
 	readonly getContent: (nodeId: string) => TE.TaskEither<AppError, ContentResponse | null>
-	readonly saveContent: (request: SaveContentRequest) => TE.TaskEither<AppError, ContentResponse>
 	readonly getContentVersion: (nodeId: string) => TE.TaskEither<AppError, number | null>
 
 	// Backup API
@@ -466,6 +467,11 @@ export const createApiClient = (): ApiClient => {
 				? invokeTE("get_images_by_project", { projectId })
 				: fetchTE(`/api/projects/${projectId}/attachments?type=image`),
 
+        listLegacyWorkspaces: () =>
+            isTauri
+                ? invokeTE("list_legacy_workspaces")
+                : TE.left(dbError("Read-only historical listing requires the native desktop")),
+
 		getLegacyMigrationSnapshot: (workspaceId: string) =>
 			isTauri
 				? invokeTE("get_legacy_migration_snapshot", { workspaceId })
@@ -613,13 +619,6 @@ export const createApiClient = (): ApiClient => {
 						method: "POST",
 					}),
 
-		saveContent: (request: SaveContentRequest) =>
-			isTauri
-				? invokeTE("save_content", { request })
-				: fetchTE("/api/contents", {
-						body: JSON.stringify(request),
-						method: "POST",
-					}),
 
 		searchTags: (workspaceId: string, query: string) =>
 			isTauri
@@ -761,8 +760,5 @@ export const deleteNodesBatchAsync = (nodeIds: readonly string[]): Promise<void>
 	toPromise(api.deleteNodesBatch(nodeIds))
 
 // Content API (Promise 版本)
-export const saveContentAsync = (request: SaveContentRequest): Promise<ContentResponse> =>
-	toPromise(api.saveContent(request))
-
 export const getContentAsync = (nodeId: string): Promise<ContentResponse | null> =>
 	toPromise(api.getContent(nodeId))

@@ -29,6 +29,8 @@ export const createCodeMirrorDiagramAdapter = (
       const mermaid = await import("mermaid");
       mermaid.default.initialize({
         startOnLoad: false,
+        layout: "dagre",
+        look: "classic",
         theme: "default",
         securityLevel: "loose",
       });

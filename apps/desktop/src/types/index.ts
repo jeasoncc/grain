@@ -39,12 +39,6 @@ export * from "./workspace"
 
 // Diagram 类型模块
 export * from "./diagram"
-// Editor History 类型模块
-export * from "./editor-history"
-// Editor Settings 类型模块
-export * from "./editor-settings"
-// Editor Tab 类型模块
-export * from "./editor-tab"
 // Export 类型模块
 export * from "./export"
 // Font 类型模块
@@ -55,8 +49,6 @@ export * from "./global-ui"
 export * from "./icon-theme"
 // Layout 类型模块
 export * from "./layout"
-// Save 类型模块
-export * from "./save"
 // Selection 类型模块
 export * from "./selection"
 // Sidebar 类型模块

@@ -6,6 +6,7 @@ import {
 	ownsParameter,
 	type ParameterPhase,
 	type ParameterSnapshot,
+	type ParameterSession,
 } from "./parameter-session"
 
 const phases: ParameterPhase[] = ["prepare", "collect", "read", "commit", "settle", "retired"]
@@ -27,7 +28,7 @@ const candidateSession = (overrides: Partial<OrgMinibufferSession> = {}): OrgMin
 	onCancel: () => {},
 	...overrides,
 })
-const start = (controller: ReturnType<typeof createParameterSession>) => {
+const start = (controller: ParameterSession) => {
 	const lease = controller.begin()
 	expect(lease).not.toBeNull()
 	return lease!

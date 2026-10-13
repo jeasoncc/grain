@@ -2,7 +2,7 @@ import { parseOrgPlanningLine } from "./org-planning-line.pipe"
 import { eligibleOrgSourceLines, eligibleOrgDrawerRanges } from "./org-text.pipe"
 
 export interface OrgLoggingDeclaration {
-	readonly key: "LOGGING" | "LOG_INTO_DRAWER"
+	readonly key: "LOGGING" | "LOG_INTO_DRAWER" | "REPEAT_TO_STATE"
 	readonly append: boolean
 	readonly value: string
 	readonly from: number
@@ -74,7 +74,7 @@ export const snapshotOrgLoggingScopes = (
 				if (!match || /^(PROPERTIES|LOGBOOK)$/i.test(match[1]))
 					return { kind: "rejected", reason: "malformed-properties" }
 				const key = match[1].replace(/\+$/, "").toUpperCase()
-				if (key === "LOGGING" || key === "LOG_INTO_DRAWER")
+				if (key === "LOGGING" || key === "LOG_INTO_DRAWER" || key === "REPEAT_TO_STATE")
 					declarations.push({
 						append: match[1].endsWith("+"),
 						from: line.from,
@@ -87,7 +87,7 @@ export const snapshotOrgLoggingScopes = (
 		if (!owner) {
 			// File PROPERTY declarations are eligible anywhere; inert body/drawer text is excluded.
 			const directives = eligible.flatMap((line): OrgLoggingDeclaration[] => {
-				const match = /^#\+PROPERTY:[ \t]+(LOGGING|LOG_INTO_DRAWER)(\+)?(?:[ \t]+(.*))?$/i.exec(
+				const match = /^#\+PROPERTY:[ \t]+(LOGGING|LOG_INTO_DRAWER|REPEAT_TO_STATE)(\+)?(?:[ \t]+(.*))?$/i.exec(
 					line.text,
 				)
 				return match

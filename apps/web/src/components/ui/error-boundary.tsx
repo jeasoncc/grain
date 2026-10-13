@@ -1,6 +1,7 @@
 "use client";
 
 import { Component, ReactNode } from "react";
+import Link from "next/link";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "./button";
 
@@ -62,11 +63,16 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 <RefreshCw className="w-4 h-4" />
                 重试
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => (window.location.href = "/")}
-              >
-                返回首页
+              <Button variant="outline" asChild>
+                <Link
+                  href="/"
+                  onNavigate={(event) => {
+                    event.preventDefault();
+                    window.location.assign(new URL("/", window.location.href));
+                  }}
+                >
+                  返回首页
+                </Link>
               </Button>
             </div>
           </div>

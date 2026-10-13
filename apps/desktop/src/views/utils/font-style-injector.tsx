@@ -110,39 +110,12 @@ export function FontStyleInjector() {
         font-size: calc(var(--ui-font-size) * var(--ui-scale) * 0.85);
       }
 
-      /* Editor Font Settings */
-      .editor-container,
-      .editor-container p,
-      .editor-container div[contenteditable="true"],
-      .ProseMirror,
-      .lexical-editor {
-        font-family: ${fontFamily} !important;
-        font-size: ${fontSize}px !important;
-        line-height: ${lineHeight} !important;
-        letter-spacing: ${letterSpacing}em !important;
+
+      /* Org source lines share typography, not legacy HTML paragraph semantics. */
+      .cm-editor .cm-content {
+        letter-spacing: ${letterSpacing}em;
       }
 
-      /* Paragraph Styles */
-      .editor-container p,
-      .ProseMirror p,
-      .lexical-editor p {
-        text-indent: ${firstLineIndent}em !important;
-        margin-bottom: ${paragraphSpacing}em !important;
-      }
-
-      /* Cursor Optimization */
-      .editor-container [contenteditable="true"],
-      .ProseMirror,
-      .lexical-editor {
-        caret-color: hsl(var(--primary));
-      }
-
-      /* Text Selection Highlight */
-      .editor-container ::selection,
-      .ProseMirror ::selection,
-      .lexical-editor ::selection {
-        background-color: var(--editor-selection);
-      }
     `
 		})
 

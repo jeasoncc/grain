@@ -1,88 +1,40 @@
 import { pipe } from "fp-ts/function"
 import * as TE from "fp-ts/TaskEither"
 import { type OrgFileRepository, orgFileRepository } from "@/io/file/org-file.repository"
-import { appendOrgTodoCapture } from "@/pipes/org/org-text.pipe"
 import type {
-	CaptureOrgTodoInput,
 	CreateOrgDirectoryInput,
 	DeleteOrgDocumentInput,
 	MoveOrgDocumentInput,
 	OpenOrgDocumentInput,
-	OrgCaptureValidationError,
 	OrgDocumentInterface,
 	OrgDocumentWriteResultInterface,
 	OrgFileError,
-	OrgTodoCaptureResultInterface,
+	OrgOriginalRecoveryEntryInterface,
 	OrgWorkspaceInterface,
 	WriteOrgDocumentInput,
 } from "@/types/org"
+import type { CaptureOrgEntryInput, OrgCaptureEntryFlowError } from "@/types/editor/org-capture.interface"
+import { captureOrgEntryFlow, type OrgCaptureFlowOptions } from "./org-capture-entry.flow"
 
 export type OrgWorkspaceFlowError = OrgFileError
-export type OrgTodoCaptureFlowError = OrgFileError | OrgCaptureValidationError
-
-const captureValidationError = (message: string): OrgCaptureValidationError => ({
-	message,
-	type: "ORG_CAPTURE_VALIDATION_ERROR",
-})
-
-const isRelativeOrgPath = (relativePath: string): boolean => {
-	const segments = relativePath.split("/")
-	return (
-		relativePath === relativePath.trim() &&
-		!relativePath.startsWith("/") &&
-		!relativePath.includes("\\") &&
-		/\.org$/.test(relativePath) &&
-		segments.every((segment) => segment.length > 0 && segment !== "." && segment !== "..")
-	)
+export type OrgTodoCaptureFlowError = OrgCaptureEntryFlowError
+export interface CaptureOrgTodoFlowInput extends Omit<CaptureOrgEntryInput, "entryType" | "entrySource"> {
+	readonly title: string
 }
 
-const newOrgDocumentSource = (relativePath: string): string => {
-	const filename = relativePath.split("/").at(-1) ?? relativePath
-	return `#+title: ${filename.replace(/\.org$/i, "")}\n\n`
-}
-
-/** Capture a TODO through revision-checked repository reads and writes only. */
+/** The title convenience shares the configured Capture owner fence and single native CAS. */
 export const captureOrgTodoFlow = (
-	input: CaptureOrgTodoInput,
-	repository: OrgFileRepository = orgFileRepository,
-): TE.TaskEither<OrgTodoCaptureFlowError, OrgTodoCaptureResultInterface> => {
-	if (!input.title.trim()) {
-		return TE.left(captureValidationError("Org capture title must not be blank."))
-	}
-	if (!isRelativeOrgPath(input.relativePath)) {
-		return TE.left(captureValidationError("Org capture target must be a relative .org path."))
-	}
-	return pipe(
-		repository.scanWorkspace(input.workspaceRoot, input.capabilityToken),
-		TE.chain((snapshot) => {
-			const exists = snapshot.documents.some(
-				(document) => document.relativePath === input.relativePath,
-			)
-			return exists
-				? repository.readDocument(input)
-				: TE.right<OrgFileError, OrgDocumentInterface>({
-						content: newOrgDocumentSource(input.relativePath),
-						relativePath: input.relativePath,
-						revision: "<missing>",
-					})
-		}),
-		TE.chain((document) => {
-			const content = appendOrgTodoCapture(document.content, input.title)
-			return pipe(
-				repository.writeDocument({
-					...(input.capabilityToken === undefined
-						? {}
-						: { capabilityToken: input.capabilityToken }),
-					content,
-					expectedRevision: document.revision,
-					relativePath: input.relativePath,
-					workspaceRoot: input.workspaceRoot,
-				}),
-				TE.map((written) => ({ ...written, content })),
-			)
-		}),
-	)
-}
+	input: CaptureOrgTodoFlowInput,
+	options: OrgCaptureFlowOptions,
+): TE.TaskEither<OrgTodoCaptureFlowError, OrgDocumentInterface> =>
+	captureOrgEntryFlow({
+		workspaceRoot: input.workspaceRoot,
+		capabilityToken: input.capabilityToken,
+		target: input.target,
+		expectedRevision: input.expectedRevision,
+		entryType: "entry",
+		entrySource: `* TODO ${input.title.trim().replace(/\s*[\r\n]+\s*/g, " ")}\n`,
+	}, options)
 
 /** Scan a known filesystem path without reading or changing application state. */
 export const scanOrgWorkspaceFlow = (
@@ -133,11 +85,11 @@ export const moveOrgDocumentFlow = (
 	repository: OrgFileRepository = orgFileRepository,
 ): TE.TaskEither<OrgFileError, OrgDocumentWriteResultInterface> => repository.moveDocument(input)
 
-/** Delete an Org document with revision conflict protection. */
+/** Remove an Org pathname with revision checks while retaining its original inode for recovery. */
 export const deleteOrgDocumentFlow = (
 	input: DeleteOrgDocumentInput,
 	repository: OrgFileRepository = orgFileRepository,
-): TE.TaskEither<OrgFileError, void> => repository.deleteDocument(input)
+): TE.TaskEither<OrgFileError, OrgOriginalRecoveryEntryInterface> => repository.deleteDocument(input)
 
 /** Open an Org document through the injected filesystem repository. */
 export const openOrgDocumentFlow = (

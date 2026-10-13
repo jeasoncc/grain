@@ -1,13 +1,19 @@
 import { history, historyField, redo, redoDepth, undo, undoDepth } from "@codemirror/commands"
 import { foldCode, foldedRanges } from "@codemirror/language"
-import { EditorState, StateEffect } from "@codemirror/state"
+import { EditorSelection, EditorState, StateEffect } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { act, cleanup, fireEvent, screen, waitFor } from "@testing-library/react"
+import { render } from "@/test/application-providers"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { createOrgBufferRuntime } from "@/flows/org-editor-runtime"
 import type { OrgEditorCommandTarget, OrgEditorSessionSnapshot } from "./org-editor.types"
 import { OrgEditor } from "./org-editor.view.fn"
 import { orgSparseTreeField } from "./org-sparse-tree.extension"
+import { createApplicationCommandRegistry } from "@/flows/application-command-registry"
+import { createTrustedCompiledExtension } from "@/flows/application/trusted-compiled-extension"
+import { createOrgNativeChildProjection } from "@/flows/org-native-window/org-native-editor-projection"
+import { encodeOrgNativeSelection, type OrgNativeProjection } from "@/flows/org-native-window/org-native-window-protocol"
+import { useSettings } from "@/hooks/use-settings"
 
 const viewFor = (name = "primary") => {
 	const view = EditorView.findFromDOM(screen.getByRole("textbox", { name }))
@@ -49,7 +55,197 @@ const foldCount = (view: EditorView) => {
 describe("OrgEditor runtime projection", () => {
 	afterEach(() => {
 		cleanup()
+		useSettings.setState({ orgKeymapConfigurationJson: "" })
 		vi.restoreAllMocks()
+	})
+
+	it("routes repeated modal keys through the production resolver without losing canonical operator history", async () => {
+		useSettings.setState({ orgKeymapConfigurationJson: '{"version":1,"modalEngine":"vim"}' })
+		const source = "alpha beta gamma\n* TODO 中文 😀\n"
+		const { runtime } = makeRuntime(source)
+		render(<OrgEditor runtime={runtime} value={source} windowId="primary" ariaLabel="primary" onSave={() => {}} />)
+		const view = viewFor()
+		const modalKey = (key: string) => fireEvent.keyDown(view.contentDOM, {
+			key, keyCode: key.toUpperCase().charCodeAt(0), repeat: true,
+		})
+		act(() => { modalKey("d"); modalKey("w") })
+		expect(runtime.source).toBe("beta gamma\n* TODO 中文 😀\n")
+		expect(undoDepth(runtime.state)).toBe(1)
+		act(() => { modalKey("l"); modalKey("l") })
+		expect(view.state.selection.main.head).toBe(2)
+		act(() => modalKey("u"))
+		await waitFor(() => expect(runtime.source).toBe(source))
+		expect(undoDepth(runtime.state)).toBe(0)
+	})
+
+	it("preserves a visual region across a temporary readonly lock and deletes that region after unlock in one undo", async () => {
+		useSettings.setState({ orgKeymapConfigurationJson: '{"version":1,"modalEngine":"vim"}' })
+		const source = "alpha beta\n"
+		const { runtime } = makeRuntime(source)
+		const editor = (readOnly: boolean) => <OrgEditor runtime={runtime} value={source} windowId="primary" ariaLabel="primary" readOnly={readOnly} onSave={() => {}} />
+		const mounted = render(editor(false))
+		const view = viewFor()
+		const modalKey = (key: string) => fireEvent.keyDown(view.contentDOM, { key, keyCode: key.toUpperCase().charCodeAt(0) })
+		act(() => { modalKey("v"); modalKey("e") })
+		const selection = view.state.selection
+		expect(view.state.sliceDoc(selection.main.from, selection.main.to)).toBe("alpha")
+		mounted.rerender(editor(true))
+		expect(view.state.readOnly).toBe(true)
+		expect(view.contentDOM).toHaveAttribute("data-modal-mode", "visual")
+		expect(view.state.selection.eq(selection, true)).toBe(true)
+		mounted.rerender(editor(false))
+		expect(view.state.selection.eq(selection, true)).toBe(true)
+		expect(runtime.source).toBe(source)
+		act(() => modalKey("d"))
+		expect(runtime.source).toBe(" beta\n")
+		expect(undoDepth(runtime.state)).toBe(1)
+		act(() => modalKey("u"))
+		await waitFor(() => expect(runtime.source).toBe(source))
+	})
+
+	it("keeps the shared mode display owned by the real current Vim Source after incarnation retirement", async () => {
+		useSettings.setState({ orgKeymapConfigurationJson: '{"version":1,"modalEngine":"vim"}' })
+		const first = makeRuntime("first Source\n").runtime
+		const second = makeRuntime("second Source\n").runtime
+		const mounted = render(<OrgEditor key="first" runtime={first} value={first.source} windowId="primary" ariaLabel="primary" getTodoNotePermit={() => () => true} onSave={() => {}} />)
+		const modeKey = (view: EditorView, key: string) => fireEvent.keyDown(view.contentDOM, { key, keyCode: key === "Escape" ? 27 : key.toUpperCase().charCodeAt(0) })
+		act(() => { modeKey(viewFor(), "i"); modeKey(viewFor(), "Escape") })
+		await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/NORMAL/))
+		mounted.rerender(<OrgEditor key="second" runtime={second} value={second.source} windowId="primary" ariaLabel="primary" getTodoNotePermit={() => () => true} onSave={() => {}} />)
+		const current = viewFor()
+		act(() => modeKey(current, "i"))
+		expect(current.contentDOM.getAttribute("data-modal-mode")).toBe("insert")
+		await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/INSERT/))
+		act(() => modeKey(current, "Escape"))
+		expect(current.contentDOM.getAttribute("data-modal-mode")).toBe("normal")
+		await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/NORMAL/))
+		expect([first.source, second.source]).toEqual(["first Source\n", "second Source\n"])
+		expect([undoDepth(first.state), undoDepth(second.state)]).toEqual([0, 0])
+	})
+
+	it("captures immutable full raw selections, maps every range and preserves unknown mixed-EOL Source in one canonical undo", async () => {
+		const source = "* 😀\r\n#+UNKNOWN: x\nlone\rbody\r\nTail 🧪\r\n"
+		const { runtime } = makeRuntime(source)
+		let target: OrgEditorCommandTarget | null = null
+		render(<OrgEditor runtime={runtime} value={source} windowId="primary" documentPath="a.org" ariaLabel="primary" onSave={() => {}} onCommandTarget={(value) => { target = value }} />)
+		const view = viewFor()
+		const selection = EditorSelection.create([
+			EditorSelection.cursor(4, 1, 2, 9),
+			EditorSelection.range(16, 8, 11, 1, -1),
+			EditorSelection.undirectionalRange(22, 27),
+		], 1)
+		act(() => view.dispatch({ selection }))
+		const owner = createTrustedCompiledExtension({ commands: createApplicationCommandRegistry(), captureSource: () => target!.captureSourceTransform!() })
+		const captured = owner.captureSource()!
+		expect(captured.snapshot.content).toBe(source)
+		expect(captured.snapshot.selection).toEqual({ mainIndex: 1, ranges: [
+			{ anchor: 4, head: 4, assoc: 1, bidiLevel: 2, goalColumn: 9, undirectional: false },
+			{ anchor: 17, head: 9, assoc: -1, bidiLevel: 1, goalColumn: 11, undirectional: false },
+			{ anchor: 23, head: 28, assoc: 0, bidiLevel: 0, goalColumn: undefined, undirectional: true },
+		] })
+		expect(Object.isFrozen(captured.snapshot.selection.ranges[1])).toBe(true)
+		const insert = "#+UNKNOWN_TWO: 🦉\r\n"
+		const expectedSelection = selection.map(view.state.changes({ from: 0, insert }))
+		await act(async () => {
+			expect(await captured.apply({ changes: [{ from: 0, to: 0, insert }], cursor: 0 })).toBe(true)
+		})
+		expect(runtime.source).toBe(insert + source)
+		expect(view.state.selection.eq(expectedSelection, true)).toBe(true)
+		expect(view.state.selection.ranges.map((range) => ({ bidi: range.bidiLevel, goal: range.goalColumn, undirectional: range.undirectional })))
+			.toEqual(expectedSelection.ranges.map((range) => ({ bidi: range.bidiLevel, goal: range.goalColumn, undirectional: range.undirectional })))
+		expect(view.state.selection.ranges).toHaveLength(3)
+		expect(undoDepth(runtime.state)).toBe(1)
+		act(() => key(view, "z"))
+		expect(runtime.source).toBe(source)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(captured.isCurrent()).toBe(false)
+		await act(async () => { expect(await captured.apply({ changes: [{ from: 0, to: 0, insert: "stale" }], cursor: 0 })).toBe(false) })
+		const retired = owner.captureSource()!
+		await owner.unload()
+		await act(async () => { expect(await retired.apply({ changes: [{ from: 0, to: 0, insert: "retired" }], cursor: 0 })).toBe(false) })
+		expect(runtime.source).toBe(source)
+		expect(runtime.closed).toBe(false)
+	})
+
+	it("rejects an unused asynchronous capture after edit/undo ABA even though Source bytes match again", async () => {
+		const { runtime } = makeRuntime("same 😀\r\n")
+		let target: OrgEditorCommandTarget | null = null
+		render(<OrgEditor runtime={runtime} value={runtime.source} ariaLabel="primary" onSave={() => {}} onCommandTarget={(value) => { target = value }} />)
+		const captured = target!.captureSourceTransform!()!
+		act(() => { viewFor().dispatch({ changes: { from: 0, insert: "temporary" } }); key(viewFor(), "z") })
+		expect(runtime.source).toBe(captured.snapshot.content)
+		expect(captured.isCurrent()).toBe(false)
+		await act(async () => { expect(await captured.apply({ changes: [{ from: 0, to: 0, insert: "must not apply" }], cursor: 0 })).toBe(false) })
+		expect(runtime.source).toBe("same 😀\r\n")
+	})
+
+	it("does not call a native optimistic dispatch canonical transform success before its ACK", async () => {
+		const source = "native 😀\r\n"
+		const state = EditorState.create({ doc: source, extensions: EditorState.lineSeparator.of("\r\n") })
+		const bootstrap = { windowId: "capture-native", binding: "capture-native-binding" }
+		const initial: Extract<OrgNativeProjection, { kind: "initial" }> = { kind: "initial", binding: bootstrap.binding, generation: 1,
+			nextRequestId: 2, bufferId: "capture", path: "a.org", filename: "/approved/a.org", source, separator: "\r\n", revision: 0, sequence: 0,
+			selection: encodeOrgNativeSelection(state.selection), folds: [], scrollTop: 0, scrollLeft: 0, readOnly: false }
+		const sent = Promise.withResolvers<number>()
+		const projection = createOrgNativeChildProjection(bootstrap, initial, async (requestId) => { sent.resolve(requestId) })
+		let target: OrgEditorCommandTarget | null = null
+		render(<OrgEditor nativeProjection={projection} value={source} ariaLabel="primary" onSave={() => {}} onCommandTarget={(value) => { target = value }} />)
+		const captured = target!.captureSourceTransform!()!
+		let settled = false
+		let outcome: Promise<boolean>
+		await act(async () => {
+			outcome = captured.apply({ changes: [{ from: 0, to: 0, insert: "optimistic " }], cursor: 0 }).then((value) => { settled = true; return value })
+			await sent.promise
+		})
+		expect(viewFor().state.sliceDoc()).toBe("optimistic " + source)
+		expect(settled).toBe(false)
+		await act(async () => {
+			projection.receive({ kind: "rejected", binding: bootstrap.binding, generation: 1, requestId: await sent.promise, message: "Canonical owner refused", accepted: false })
+			expect(await outcome!).toBe(false)
+		})
+		expect(projection.retainDraft()).toBe("optimistic " + source)
+		projection.retire()
+	})
+	it("drains an accepted transform on contributor unload without reporting canonical acceptance as rejection", async () => {
+		const source = "* TODO Accepted 中文 😀\r\n"
+		const { runtime } = makeRuntime(source)
+		let target: OrgEditorCommandTarget | null = null
+		render(<OrgEditor runtime={runtime} value={source} ariaLabel="primary" onSave={() => {}} onCommandTarget={(value) => { target = value }} />)
+		const transform = target!.captureSourceTransform!()!
+		const committed = Promise.withResolvers<void>()
+		const acknowledgement = Promise.withResolvers<void>()
+		const owner = createTrustedCompiledExtension({
+			commands: createApplicationCommandRegistry(),
+			captureSource: () => ({
+				snapshot: transform.snapshot,
+				isCurrent: transform.isCurrent,
+				apply: async (batch, selection) => {
+					const accepted = await transform.apply(batch, selection)
+					committed.resolve()
+					await acknowledgement.promise
+					return accepted
+				},
+			}),
+		})
+		const captured = owner.captureSource()!
+		let applying: Promise<boolean>
+		await act(async () => {
+			applying = captured.apply({ changes: [{ from: source.length, to: source.length, insert: "accepted\r\n" }], cursor: 0 })
+			await committed.promise
+		})
+		expect(runtime.source).toBe(source + "accepted\r\n")
+		let drained = false
+		const unloading = owner.unload().then((result) => { drained = result; return result })
+		await Promise.resolve()
+		expect(drained).toBe(false)
+		expect(owner.captureSource()).toBeNull()
+		acknowledgement.resolve()
+		expect(await applying!).toBe(true)
+		expect(await unloading).toBe(true)
+		expect(runtime.source).toBe(source + "accepted\r\n")
+		expect(runtime.closed).toBe(false)
+		act(() => key(viewFor(), "z"))
+		expect(runtime.source).toBe(source)
 	})
 
 	it("routes two-window typing/paste/history once and retains independent folds, selection, and fresh UI callbacks", () => {
@@ -297,11 +493,11 @@ describe("OrgEditor runtime projection", () => {
 			expect(
 				target!.applyView!(source, {
 					kind: "sparse-tree",
-					query: "match: (itag:work AND todo) OR tag:other",
+					query: "match: (itag:work AND todo:TODO) OR tag:other",
 				}),
 			).toBe(true)
 		})
-		expect(a.state.field(orgSparseTreeField)!.plan.matchedHeadingStarts).toEqual([
+		expect(a.state.field(orgSparseTreeField)!.plan?.matchedHeadingStarts).toEqual([
 			source.indexOf("** TODO Child"),
 			source.indexOf("* TODO Other"),
 		])
@@ -310,7 +506,7 @@ describe("OrgEditor runtime projection", () => {
 				changes: { from: source.indexOf("work"), insert: "away", to: source.indexOf("work") + 4 },
 			}),
 		)
-		expect(a.state.field(orgSparseTreeField)!.plan.matchedHeadingStarts).toEqual([
+		expect(a.state.field(orgSparseTreeField)!.plan?.matchedHeadingStarts).toEqual([
 			source.indexOf("* TODO Other"),
 		])
 		await waitFor(() => expect(a.contentDOM.textContent).not.toContain("child BODY"))
@@ -323,7 +519,7 @@ describe("OrgEditor runtime projection", () => {
 		act(() => key(b, "z"))
 		expect(runtime.source).toBe(source)
 		await waitFor(() => expect(a.contentDOM.textContent).toContain("child BODY"))
-		expect(a.state.field(orgSparseTreeField)!.plan.allVisible).toBe(true)
+		expect(a.state.field(orgSparseTreeField)!.plan?.allVisible).toBe(true)
 		expect(redoDepth(runtime.state)).toBe(1)
 	})
 

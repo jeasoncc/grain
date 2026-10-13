@@ -25,9 +25,12 @@ pub async fn list_backups(config: State<'_, AppConfig>) -> Result<Vec<BackupInfo
 }
 
 #[tauri::command]
-pub async fn delete_backup(backup_path: String) -> Result<(), String> {
+pub async fn delete_backup(
+    config: State<'_, AppConfig>,
+    backup_path: String,
+) -> Result<(), String> {
     let path = PathBuf::from(backup_path);
-    backup_fn::delete_backup(&path).map_err(|e| e.to_string())
+    backup_fn::delete_backup(&config, &path).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

@@ -73,7 +73,7 @@ package.json                           # 主版本源 (version: "0.1.47")
 ├── aur/PKGBUILD                       # Arch Linux 包配置
 ├── aur/PKGBUILD-binary                # Arch Linux 二进制包配置
 ├── snap/snapcraft.yaml               # Snap 包配置
-├── flatpak/com.lotus.NovelEditor.yml  # Flatpak 包配置
+├── flatpak/com.lotus.Grain.yml        # Flatpak 包配置
 
 # Windows 包管理器配置
 ├── winget-manifests/Jeason.NovelEditor.yaml

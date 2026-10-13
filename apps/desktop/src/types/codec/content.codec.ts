@@ -7,11 +7,11 @@
 
 import dayjs from "dayjs"
 
-import type { ContentCreateInput, ContentInterface, ContentType } from "@/types/content"
+import type { ContentInterface, ContentType } from "@/types/content"
+import type { LegacyMigrationContent } from "@/pipes/migration"
 import type {
 	ContentResponse,
 	LegacyMigrationContentResponse,
-	SaveContentRequest,
 } from "@/types/rust-api"
 
 // ============================================
@@ -73,58 +73,9 @@ export const decodeContents = (
 /** Decode migration-only rows while retaining SQLite integer metadata as exact decimal strings. */
 export const decodeLegacyMigrationContents = (
 	responses: readonly LegacyMigrationContentResponse[],
-): readonly ContentInterface[] =>
-	responses.map((response) => {
-		const updatedAt = Number(response.updatedAt)
-		const parsedDate = dayjs(updatedAt)
-		return {
-			content: response.content,
-			contentType: inferContentType(response.content),
-			id: response.id,
-			lastEdit:
-				Number.isSafeInteger(updatedAt) && parsedDate.isValid()
-					? parsedDate.toISOString()
-					: new Date(0).toISOString(),
-			legacyCreatedAt: response.createdAt,
-			legacyUpdatedAt: response.updatedAt,
-			legacyVersion: response.version,
-			nodeId: response.nodeId,
-		}
-	})
+): readonly LegacyMigrationContent[] =>
+	responses.map((response) => ({
+		...response,
+		contentType: inferContentType(response.content),
+	}))
 
-// ============================================
-// 编码：前端类型 → Rust 请求类型
-// ============================================
-
-/**
- * 编码保存内容请求：ContentCreateInput → SaveContentRequest
- */
-export const encodeCreateContent = (input: ContentCreateInput): SaveContentRequest => ({
-	content: input.content ?? "",
-	nodeId: input.nodeId,
-})
-
-/**
- * 编码更新内容请求
- */
-export const encodeUpdateContent = (
-	nodeId: string,
-	content: string,
-	expectedVersion?: number,
-): SaveContentRequest => ({
-	content,
-	expectedVersion,
-	nodeId,
-})
-
-/**
- * 从 ContentInterface 编码保存请求
- */
-export const encodeContentToSaveRequest = (
-	content: Partial<ContentInterface>,
-	expectedVersion?: number,
-): SaveContentRequest => ({
-	content: content.content ?? "",
-	expectedVersion,
-	nodeId: content.nodeId!,
-})

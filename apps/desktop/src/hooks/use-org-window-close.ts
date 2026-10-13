@@ -4,6 +4,7 @@ import {
 	type OrgWindowCloseState,
 	registerOrgWindowClose,
 } from "@/io/event/org-window-close.adapter"
+import { useConfirm } from "@/views/ui/confirm"
 
 export const ORG_WINDOW_CLOSE_DISCARD_MESSAGE =
 	"Discard all unsaved Org changes, including changes in inactive documents, and close this window?"
@@ -14,15 +15,27 @@ export const ORG_WINDOW_CLOSE_BUSY_MESSAGE =
 export const useOrgWindowClose = (
 	state: OrgWindowCloseState,
 	onMessage: (message: string) => void,
+	captureDiscard: () => () => boolean,
+	closeViewOnly: (signal: AbortSignal) => Promise<boolean>,
 ): boolean => {
+	const confirm = useConfirm()
 	const [ready, setReady] = useState(() => !isTauri())
-	const latest = useRef({ onMessage, state })
-	latest.current = { onMessage, state }
+	const latest = useRef({ captureDiscard, closeViewOnly, onMessage, state })
+	latest.current = { captureDiscard, closeViewOnly, onMessage, state }
 	useEffect(() => {
 		let active = true
 		setReady(!isTauri())
 		const stop = registerOrgWindowClose({
-			confirmDiscard: () => window.confirm(ORG_WINDOW_CLOSE_DISCARD_MESSAGE),
+			captureDiscard: () => latest.current.captureDiscard(),
+			closeViewOnly: (signal) => latest.current.closeViewOnly(signal),
+			confirmDiscard: (signal) =>
+				confirm({
+					cancelText: "Keep editing",
+					confirmText: "Discard and close",
+					description: ORG_WINDOW_CLOSE_DISCARD_MESSAGE,
+					signal,
+					title: "Discard unsaved Org changes?",
+				}),
 			getState: () => latest.current.state,
 			onBlocked: () => latest.current.onMessage(ORG_WINDOW_CLOSE_BUSY_MESSAGE),
 			onError: (error) =>
@@ -39,6 +52,6 @@ export const useOrgWindowClose = (
 			active = false
 			stop()
 		}
-	}, [])
+	}, [confirm])
 	return ready
 }

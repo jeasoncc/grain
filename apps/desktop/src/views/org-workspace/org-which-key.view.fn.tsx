@@ -2,29 +2,35 @@ import { useEffect, useState } from "react"
 
 import { MAX_ORG_PREFIX_TIMEOUT_MS } from "@/flows/org-command/org-prefix-keymap"
 import type { OrgPrefixSession } from "@/types/editor/org-keymap.interface"
+import { getOrgCommandDisabledReason, isOrgCommandId, type OrgCommandContext } from "@/flows/org-command/org-workspace-command"
+import { useOrgInputConfiguration } from "@/hooks/use-org-input-configuration"
 
 /** Passive prefix help; the parent places it above the modeline in normal flow. */
 export const OrgWhichKey = ({
 	prefix,
 	delayMs = 350,
+	commandContext,
+	getInputCommandDisabledReason,
 }: {
 	readonly prefix: OrgPrefixSession | null
 	readonly delayMs?: number
+	readonly commandContext?: OrgCommandContext
+	readonly getInputCommandDisabledReason?: (id: string) => string | null
 }) => {
-	const [visibleSessionId, setVisibleSessionId] = useState<number | null>(null)
-	const sessionId = prefix?.id
+	const configuration = useOrgInputConfiguration()
+	const [visibleSession, setVisibleSession] = useState<OrgPrefixSession | null>(null)
 	const expiresAt = prefix?.expiresAt
 
 	useEffect(() => {
-		setVisibleSessionId(null)
-		if (sessionId === undefined || expiresAt === undefined) return
+		setVisibleSession(null)
+		if (!prefix || expiresAt === undefined || (prefix.generation !== undefined && prefix.generation !== configuration.generation)) return
 		const remainingMs = expiresAt === null ? null : expiresAt - Date.now()
 		if (remainingMs !== null && remainingMs <= 0) return
 
 		let active = true
 		const revealTimer = setTimeout(
 			() => {
-				if (active && (expiresAt === null || Date.now() < expiresAt)) setVisibleSessionId(sessionId)
+				if (active && (expiresAt === null || Date.now() < expiresAt)) setVisibleSession(prefix)
 			},
 			Math.min(MAX_ORG_PREFIX_TIMEOUT_MS, Math.max(0, Number.isFinite(delayMs) ? delayMs : 350)),
 		)
@@ -32,7 +38,7 @@ export const OrgWhichKey = ({
 		const expire = () => {
 			if (!active || expiresAt === null) return
 			const remaining = expiresAt - Date.now()
-			if (remaining <= 0) setVisibleSessionId(null)
+			if (remaining <= 0) setVisibleSession(null)
 			else expiryTimer = setTimeout(expire, Math.min(MAX_ORG_PREFIX_TIMEOUT_MS, remaining))
 		}
 		if (remainingMs !== null) expiryTimer = setTimeout(expire, Math.min(MAX_ORG_PREFIX_TIMEOUT_MS, remainingMs))
@@ -41,13 +47,14 @@ export const OrgWhichKey = ({
 			clearTimeout(revealTimer)
 			if (expiryTimer !== null) clearTimeout(expiryTimer)
 		}
-	}, [sessionId, expiresAt, delayMs])
+	}, [prefix, expiresAt, delayMs, configuration.generation])
 
 	// A replacement is hidden on its very first render, before effect cleanup.
 	const now = Date.now()
 	if (
 		!prefix ||
-		visibleSessionId !== prefix.id ||
+		(prefix.generation !== undefined && prefix.generation !== configuration.generation) ||
+		visibleSession !== prefix ||
 		(prefix.expiresAt !== null && now >= prefix.expiresAt)
 	)
 		return null
@@ -59,14 +66,22 @@ export const OrgWhichKey = ({
 		>
 			<p className="mb-1 font-medium text-primary">{prefix.label}</p>
 			<dl className="grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-x-4 gap-y-1">
-				{prefix.bindings.map((binding) => (
-					<div key={binding.keyLabel} className="flex min-w-0 items-baseline gap-2">
-						<dt className="shrink-0 text-foreground">
-							<kbd>{binding.keyLabel}</kbd>
-						</dt>
-						<dd className="text-muted-foreground">{binding.label}</dd>
-					</div>
-				))}
+				{prefix.bindings.map((binding) => {
+					const reason = binding.commandId
+						? getInputCommandDisabledReason?.(binding.commandId) ??
+							(commandContext && isOrgCommandId(binding.commandId) ? getOrgCommandDisabledReason(binding.commandId, commandContext) : null)
+						: null
+					return (
+						<div key={binding.keyLabel} aria-disabled={reason !== null} title={reason ?? undefined}
+							className="flex min-w-0 items-baseline gap-2">
+							<dt className="shrink-0 text-foreground"><kbd>{binding.keyLabel}</kbd></dt>
+							<dd className="text-muted-foreground">
+								{binding.label}
+								{reason && <span className="ml-1 text-muted-foreground/70">({reason})</span>}
+							</dd>
+						</div>
+					)
+				})}
 			</dl>
 		</section>
 	)

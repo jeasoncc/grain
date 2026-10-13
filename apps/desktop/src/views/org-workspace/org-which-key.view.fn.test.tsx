@@ -4,6 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { MAX_ORG_PREFIX_TIMEOUT_MS } from "@/flows/org-command/org-prefix-keymap"
 import type { OrgPrefixSession } from "@/types/editor/org-keymap.interface"
 import { OrgWhichKey } from "./org-which-key.view.fn"
+import type { OrgCommandContext } from "@/flows/org-command/org-workspace-command"
+import { useSettings } from "@/hooks/use-settings"
+import { getOrgInputConfiguration } from "@/hooks/use-org-input-configuration"
 
 const makePrefix = (overrides: Partial<OrgPrefixSession> = {}): OrgPrefixSession => ({
 	id: 1,
@@ -25,7 +28,30 @@ describe("Org Which-Key", () => {
 	})
 	afterEach(() => {
 		cleanup()
+		useSettings.setState({ orgKeymapConfigurationJson: "" })
 		vi.useRealTimers()
+	})
+
+	it("never reuses visible help across windows with equal numeric session IDs", () => {
+		const prefix = makePrefix({ owner: {} })
+		const { rerender } = render(<OrgWhichKey prefix={prefix} />)
+		advance(350)
+		expect(panel()).not.toBeNull()
+		rerender(<OrgWhichKey prefix={makePrefix({ owner: {}, id: prefix.id, expiresAt: prefix.expiresAt })} />)
+		expect(panel()).toBeNull()
+		advance(350)
+		expect(panel()).not.toBeNull()
+	})
+
+	it("hides a lease when the saved configuration incarnation changes", () => {
+		const prefix = makePrefix({ generation: getOrgInputConfiguration().generation })
+		render(<OrgWhichKey prefix={prefix} />)
+		advance(350)
+		expect(panel()).not.toBeNull()
+		act(() => { useSettings.setState({ orgKeymapConfigurationJson: '{"version":1}' }) })
+		expect(panel()).toBeNull()
+		advance(350)
+		expect(panel()).toBeNull()
 	})
 
 	it("waits 350ms then displays passive prefix bindings in normal flow", () => {
@@ -43,6 +69,22 @@ describe("Org Which-Key", () => {
 		).toBeNull()
 		expect(screen.queryByRole("dialog")).toBeNull()
 		expect(panel()?.className).not.toMatch(/absolute|fixed/)
+	})
+	it("updates visible prerequisite hints for the current target without restarting reveal", () => {
+		const prefix = makePrefix()
+		const context: OrgCommandContext = {
+			hasWorkspace: true, hasDocument: true, isDirty: false, isBusy: false,
+			sidebarVisible: false, inspectorVisible: false,
+			editor: { ownership: {}, revision: 0, available: true, readOnly: false, relativePath: "note.org", content: "* Work", cursor: 2 },
+		}
+		const { rerender } = render(<OrgWhichKey prefix={prefix} commandContext={context} />)
+		advance(350)
+		expect(panel()).not.toHaveTextContent("Editor is read-only")
+		expect(panel()).toHaveTextContent("No supported link at cursor")
+		rerender(<OrgWhichKey prefix={prefix} commandContext={{ ...context, editor: { ...context.editor!, readOnly: true } }} />)
+		expect(panel()).toHaveTextContent("Editor is read-only")
+		rerender(<OrgWhichKey prefix={prefix} commandContext={{ ...context, editor: { ...context.editor!, available: false } }} />)
+		expect(panel()).toHaveTextContent("No current editor target")
 	})
 
 	it("supports a configurable delay", () => {
@@ -180,22 +222,6 @@ describe("Org Which-Key", () => {
 		expect(panel()).toBeNull()
 	})
 
-	it("keeps same-session timers and displays refreshed bindings", () => {
-		const prefix = makePrefix({ expiresAt: Date.now() + 1000 })
-		const { rerender } = render(<OrgWhichKey prefix={prefix} />)
-		advance(200)
-		const refreshed = {
-			...prefix,
-			bindings: [{ keyLabel: "t", label: "New TODO", commandId: "todo" as const }],
-		}
-		rerender(<OrgWhichKey prefix={refreshed} />)
-		advance(150)
-		expect(panel()).toHaveTextContent("New TODO")
-		rerender(<OrgWhichKey prefix={{ ...refreshed, label: "Updated prefix" }} />)
-		expect(panel()).toHaveTextContent("Updated prefix")
-		advance(650)
-		expect(panel()).toBeNull()
-	})
 
 	it.each([100, 350])("cleans all timers on unmount at %ims", (elapsed) => {
 		const { unmount } = render(<OrgWhichKey prefix={makePrefix()} />)

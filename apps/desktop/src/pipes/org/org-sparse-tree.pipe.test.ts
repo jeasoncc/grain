@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest"
 import { buildOrgSparseTreePlan, parseOrgSparseTreeQuery } from "./org-sparse-tree.pipe"
 
 describe("parseOrgSparseTreeQuery", () => {
-	it("parses only the supported literal predicates", () => {
+	it("preserves legacy literal predicates beside standard tag/property expressions", () => {
 		expect(parseOrgSparseTreeQuery(" todo ")).toEqual({ kind: "todo" })
 		expect(parseOrgSparseTreeQuery("todo:WAIT")).toEqual({ kind: "todo", state: "WAIT" })
 		expect(parseOrgSparseTreeQuery("tag:work")).toEqual({ kind: "tag", name: "work" })
 		expect(parseOrgSparseTreeQuery("text:a.*:b")).toEqual({ kind: "text", literal: "a.*:b" })
-		for (const input of ["", "foo", "todo:", "todo:A B", "tag:", "tag:a:b", "text: "]) {
+		for (const input of ["", "todo:", "todo:A B", "tag:", "tag:a:b", "text: "]) {
 			expect(parseOrgSparseTreeQuery(input)).toBeNull()
 		}
 	})
@@ -127,14 +127,26 @@ describe("buildOrgSparseTreePlan", () => {
 
 	it("preserves UTF-16 offsets, mixed endings, Unicode, and EOF without newline", () => {
 		const source = "😀 intro\r\n* Parent\r** TODO café 😀\n** Skip\r\nbody 😀"
-		const original = source
 		const plan = buildOrgSparseTreePlan(source, { kind: "todo" })
 		expect(plan.matchedHeadingStarts).toEqual([source.indexOf("** TODO")])
 		expect(plan.hiddenRanges).toEqual([{ from: source.indexOf("** Skip"), to: source.length }])
 		expect(source.slice(plan.hiddenRanges[0].from, plan.hiddenRanges[0].to)).toBe(
 			"** Skip\r\nbody 😀",
 		)
-		expect(source).toBe(original)
+	})
+
+	it("keeps explicit local tag conveniences separate from GNU tag-token syntax", () => {
+		const source = "* Parent :work-project:\n** Child"
+		expect(buildOrgSparseTreePlan(source, parseOrgSparseTreeQuery("tag:work-project")!).matchedHeadingStarts).toEqual([0])
+		expect(buildOrgSparseTreePlan(source, parseOrgSparseTreeQuery("match:{work}")!).matchedHeadingStarts).toEqual([])
+		expect(buildOrgSparseTreePlan(source, parseOrgSparseTreeQuery('match:ITEM=\"Parent :work-project:\"')!).matchedHeadingStarts).toEqual([0])
+	})
+
+	it("compares now with second precision, instead of rounding a live clock down to the source minute", () => {
+		const source = "* Due\nDEADLINE: <2026-10-09 Fri 13:00>"
+		const query = parseOrgSparseTreeQuery('DEADLINE<\"<now>\"')!
+		expect(buildOrgSparseTreePlan(source, query, undefined, { today: "2026-10-09", now: "13:00:01" }).matchedHeadingStarts).toEqual([0])
+		expect(buildOrgSparseTreePlan(source, query, undefined, { today: "2026-10-09", now: "13:00:00" }).matchedHeadingStarts).toEqual([])
 	})
 
 	it("explicitly keeps all source visible on no matches, empty source, or no headings", () => {

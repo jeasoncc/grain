@@ -88,7 +88,7 @@ export default createRule<Options, MessageIds>({
 		 * 检查节点是否在 CSS 文件或样式相关上下文中
 		 */
 		function isInStyleContext(node: TSESTree.Node): boolean {
-			const filename = context.getFilename()
+			const filename = context.filename
 
 			// CSS/SCSS/LESS 文件
 			if (/\.(css|scss|less|sass)$/.test(filename)) {
@@ -112,7 +112,7 @@ export default createRule<Options, MessageIds>({
 		 * 检查节点是否在配置文件中
 		 */
 		function isInConfigFile(): boolean {
-			const filename = context.getFilename()
+			const filename = context.filename
 			return /\.config\.(ts|js)$/.test(filename) || /config\//.test(filename)
 		}
 

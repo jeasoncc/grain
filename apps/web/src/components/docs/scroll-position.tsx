@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { useDocPathname } from "./hooks/use-doc-pathname";
 import { useSafeSessionStorage } from "./hooks/use-safe-session-storage";
 
 /**
  * 记住阅读位置，页面加载时自动恢复
  */
 export function ScrollPosition() {
-  const pathname = usePathname();
+  const pathname = useDocPathname();
   const hasRestoredRef = useRef(false);
   const { get, set } = useSafeSessionStorage();
 

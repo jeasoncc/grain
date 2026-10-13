@@ -14,7 +14,7 @@ import {
 	createTagsLine,
 	createTextNode,
 	type LexicalTextNode,
-} from "../content/content.generate.fn"
+} from "../content/legacy-content.pipe"
 import {
 	applyOrgTextFormat,
 	convertDocumentToOrgmode,

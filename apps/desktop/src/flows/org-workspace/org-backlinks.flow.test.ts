@@ -8,7 +8,12 @@ import type {
 	OrgFileError,
 	OrgWorkspaceInterface,
 } from "@/types/org"
-import { loadOrgBacklinksFlow, type OrgBacklinksCache } from "./org-backlinks.flow"
+import {
+	loadOrgBacklinksFlow,
+	ORG_BACKLINKS_CACHE_MAX_ENTRIES,
+	type OrgBacklinksCache,
+} from "./org-backlinks.flow"
+import type { OrgQueryLiveOverlay } from "./org-query-source.flow"
 
 const unused = () => {
 	throw new Error("Unexpected repository operation")
@@ -50,6 +55,14 @@ const workspace = (rootPath = "/notes", sourceRevision = "1"): OrgWorkspaceInter
 })
 
 const targetContent = "* Target\n:PROPERTIES:\n:ID: unsaved-id\n:CUSTOM_ID: unsaved-anchor\n:END:"
+const targetOverlays = (workspaceRoot = "/notes", capabilityToken?: string): readonly OrgQueryLiveOverlay[] => [{
+	workspaceRoot,
+	capabilityToken,
+	relativePath: "target.org",
+	content: targetContent,
+	sourceRevision: "target-buffer",
+	diskRevision: "persisted-target",
+}]
 
 const sourceContent = [
 	"#+title: References",
@@ -74,7 +87,7 @@ describe("loadOrgBacklinksFlow", () => {
 		const result = await loadOrgBacklinksFlow(
 			workspace(),
 			"target.org",
-			targetContent,
+			targetOverlays(),
 			repositoryWithRead(readDocument),
 			new Map(),
 		)()
@@ -106,20 +119,20 @@ describe("loadOrgBacklinksFlow", () => {
 		const readDocument = successfulReader(sourceContent, () => sourceRevision)
 		const repository = repositoryWithRead(readDocument)
 
-		await loadOrgBacklinksFlow(workspace(), "target.org", targetContent, repository, cache)()
-		await loadOrgBacklinksFlow(workspace(), "target.org", targetContent, repository, cache)()
+		await loadOrgBacklinksFlow(workspace(), "target.org", targetOverlays(), repository, cache)()
+		await loadOrgBacklinksFlow(workspace(), "target.org", targetOverlays(), repository, cache)()
 		sourceRevision = "2"
 		await loadOrgBacklinksFlow(
 			workspace("/notes", "2"),
 			"target.org",
-			targetContent,
+			targetOverlays(),
 			repository,
 			cache,
 		)()
 		await loadOrgBacklinksFlow(
 			workspace("/other", "2"),
 			"target.org",
-			targetContent,
+			targetOverlays("/other"),
 			repository,
 			cache,
 		)()
@@ -136,8 +149,8 @@ describe("loadOrgBacklinksFlow", () => {
 		const cache: OrgBacklinksCache = new Map()
 		const readDocument = successfulReader(sourceContent, () => "newer-than-scan")
 		const repository = repositoryWithRead(readDocument)
-		await loadOrgBacklinksFlow(workspace(), "target.org", targetContent, repository, cache)()
-		await loadOrgBacklinksFlow(workspace(), "target.org", targetContent, repository, cache)()
+		await loadOrgBacklinksFlow(workspace(), "target.org", targetOverlays(), repository, cache)()
+		await loadOrgBacklinksFlow(workspace(), "target.org", targetOverlays(), repository, cache)()
 		expect(readDocument).toHaveBeenCalledTimes(2)
 	})
 
@@ -153,7 +166,7 @@ describe("loadOrgBacklinksFlow", () => {
 		const result = await loadOrgBacklinksFlow(
 			workspace(),
 			"target.org",
-			targetContent,
+			targetOverlays(),
 			repository,
 			new Map(),
 		)()
@@ -168,5 +181,88 @@ describe("loadOrgBacklinksFlow", () => {
 				type: "ORG_BACKLINKS_ERROR",
 			},
 		})
+	})
+
+	it("uses parked dirty/conflicted source through changes and removal without poisoning the disk cache", async () => {
+		const cache: OrgBacklinksCache = new Map()
+		const read = successfulReader("No persisted links")
+		const repository = repositoryWithRead(read)
+		const live: OrgQueryLiveOverlay = {
+			workspaceRoot: "/notes",
+			relativePath: "refs/source.org",
+			content: "* Parked source\n[[../target.org][Working link]]",
+			sourceRevision: "parked-buffer",
+			diskRevision: "1",
+			runtimeIncarnation: "runtime-A",
+			sourceGeneration: 1,
+		}
+		await loadOrgBacklinksFlow(workspace(), "target.org", targetOverlays(), repository, cache)()
+		const linked = await loadOrgBacklinksFlow(workspace("/notes", "external-change"), "target.org", [
+			...targetOverlays(), live,
+		], repository, cache)()
+		expect(E.isRight(linked) && linked.right.map(({ label }) => label)).toEqual(["Working link"])
+		expect(cache.size).toBe(0)
+		const removed = await loadOrgBacklinksFlow(workspace(), "target.org", [
+			...targetOverlays(), { ...live, content: "* Link removed", sourceGeneration: 2 },
+		], repository, cache)()
+		expect(removed).toEqual(E.right([]))
+		const disk = await loadOrgBacklinksFlow(workspace(), "target.org", targetOverlays(), repository, cache)()
+		expect(disk).toEqual(E.right([]))
+		expect(read).toHaveBeenCalledTimes(2)
+		const deleted = { ...workspace(), documents: workspace().documents.filter(({ relativePath }) => relativePath !== live.relativePath) }
+		const protectedResult = await loadOrgBacklinksFlow(deleted, "target.org", [...targetOverlays(), live], repository, cache)()
+		expect(E.isRight(protectedResult) && protectedResult.right).toHaveLength(1)
+		expect(await loadOrgBacklinksFlow(deleted, "target.org", targetOverlays(), repository, cache)()).toEqual(E.right([]))
+		expect(cache.size).toBe(0)
+	})
+
+	it("isolates same-root replacement grants and rejects foreign session/runtime overlays", async () => {
+		const cache: OrgBacklinksCache = new Map()
+		const read = vi.fn(({ relativePath, capabilityToken }) => TE.right<OrgFileError, OrgDocumentInterface>({
+			relativePath, revision: "1",
+			content: capabilityToken === "old" ? "[[../target.org][Old grant]]" : "No links",
+		}))
+		const repository = repositoryWithRead(read)
+		const oldWorkspace = { ...workspace(), capabilityToken: "old" }
+		const newWorkspace = { ...workspace(), capabilityToken: "new" }
+		expect(E.isRight(await loadOrgBacklinksFlow(oldWorkspace, "target.org", targetOverlays("/notes", "old"), repository, cache)())).toBe(true)
+		const result = await loadOrgBacklinksFlow(newWorkspace, "target.org", [
+			...targetOverlays("/notes", "new"),
+			{ workspaceRoot: "/notes", capabilityToken: "old", relativePath: "refs/source.org", content: "[[../target.org][Foreign grant]]", sourceRevision: "buffer", diskRevision: "1" },
+			{ workspaceRoot: "/notes", capabilityToken: "new", workspaceSessionId: "retired", relativePath: "refs/source.org", content: "[[../target.org][Foreign session]]", sourceRevision: "buffer", diskRevision: "1" },
+		], repository, cache, { workspaceSessionId: "current" })()
+		expect(result).toEqual(E.right([]))
+		expect(read).toHaveBeenCalledTimes(2)
+	})
+
+	it("cancels a superseded disk read before caching or starting another source", async () => {
+		const cache: OrgBacklinksCache = new Map()
+		const abort = new AbortController()
+		let resolve!: (value: E.Either<OrgFileError, OrgDocumentInterface>) => void
+		const read = vi.fn(() => () => new Promise<E.Either<OrgFileError, OrgDocumentInterface>>((settle) => { resolve = settle }))
+		const pending = loadOrgBacklinksFlow(workspace(), "target.org", [], repositoryWithRead(read), cache, {}, abort.signal)()
+		abort.abort()
+		resolve(E.right({ relativePath: "refs/source.org", revision: "1", content: sourceContent }))
+		const result = await pending
+		expect(E.isLeft(result) && result.left.message).toBe("Org query cancelled.")
+		expect(cache.size).toBe(0)
+		expect(read).toHaveBeenCalledTimes(1)
+	})
+
+	it("preserves disk-only target parsing and bounds injected caches across grants", async () => {
+		const cache: OrgBacklinksCache = new Map()
+		const read = vi.fn(({ relativePath }) => TE.right<OrgFileError, OrgDocumentInterface>({
+			relativePath, revision: relativePath === "target.org" ? "persisted-target" : "1",
+			content: relativePath === "target.org" ? targetContent : sourceContent,
+		}))
+		const repository = repositoryWithRead(read)
+		const first = await loadOrgBacklinksFlow(workspace(), "target.org", [], repository, cache)()
+		expect(E.isRight(first) && first.right).toHaveLength(3)
+		expect(await loadOrgBacklinksFlow(workspace(), "target.org", [], repository, cache)()).toEqual(first)
+		expect(read).toHaveBeenCalledTimes(2)
+		for (let index = 0; index < ORG_BACKLINKS_CACHE_MAX_ENTRIES; index += 1) {
+			await loadOrgBacklinksFlow({ ...workspace(), capabilityToken: `grant-${index}` }, "target.org", [], repository, cache)()
+		}
+		expect(cache.size).toBe(ORG_BACKLINKS_CACHE_MAX_ENTRIES)
 	})
 })

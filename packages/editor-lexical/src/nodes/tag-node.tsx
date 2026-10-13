@@ -48,16 +48,10 @@ export class TagNode extends TextNode {
   }
 
   static importJSON(serializedNode: SerializedTagNode): TagNode {
-    const node = $createTagNode(serializedNode.tagName);
-    node.setTextContent(serializedNode.text);
-    node.setFormat(serializedNode.format);
-    node.setDetail(serializedNode.detail);
-    node.setMode(serializedNode.mode);
-    node.setStyle(serializedNode.style);
-    return node;
+    return $createTagNode(serializedNode.tagName).updateFromJSON(serializedNode);
   }
 
-  constructor(tagName: string, key?: NodeKey) {
+  constructor(tagName = "", key?: NodeKey) {
     super(`#[${tagName}]`, key);
     this.__tagName = tagName;
   }

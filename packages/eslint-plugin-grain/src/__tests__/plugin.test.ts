@@ -1,32 +1,64 @@
-/**
- * Basic plugin infrastructure tests
- */
-
+import * as parser from "@typescript-eslint/parser"
+import { Linter } from "eslint"
 import { describe, expect, it } from "vitest"
 import plugin from "../index.js"
+import { legacyConfig, strictConfig } from "../configs/index.js"
+import { runLint } from "./test-utils.js"
 
-describe("ESLint Plugin Grain", () => {
-	it("should export plugin with correct structure", () => {
-		expect(plugin).toBeDefined()
-		expect(plugin.meta).toBeDefined()
-		expect(plugin.meta.name).toBe("eslint-plugin-grain")
-		expect(plugin.meta.version).toBe("2.0.0")
-	})
+describe("ESLint flat-config consumers", () => {
+	it.each(["strict", "recommended", "legacy"] as const)(
+		"runs the %s preset and keeps dynamic-code execution forbidden",
+		(preset) => {
+			const config = {
+				...plugin.configs[preset],
+				files: ["**/*.ts"],
+				languageOptions: { parser },
+			} as unknown as Linter.Config
+			const messages = new Linter().verify("eval('execute');", config, {
+				filename: "src/pipes/consumer.pipe.ts",
+			})
 
-	it("should have rules object", () => {
-		expect(plugin.rules).toBeDefined()
-		expect(typeof plugin.rules).toBe("object")
-	})
+			expect(messages.filter((message) => message.fatal)).toEqual([])
+			expect(messages).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({ ruleId: "grain/no-eval", messageId: "noEval", severity: 2 }),
+				]),
+			)
+		},
+	)
 
-	it("should have configs object", () => {
-		expect(plugin.configs).toBeDefined()
-		expect(plugin.configs.recommended).toBeDefined()
-		expect(plugin.configs.strict).toBeDefined()
-	})
+	it.each([strictConfig, legacyConfig])(
+		"accepts a directly imported rule preset with explicit plugin registration",
+		(preset) => {
+			const config = {
+				plugins: { grain: plugin },
+				...preset,
+				files: ["**/*.ts"],
+				languageOptions: { parser },
+			} as unknown as Linter.Config
+			const messages = new Linter().verify("new Function('execute');", config, {
+				filename: "src/pipes/consumer.pipe.ts",
+			})
 
-	it("should export createRule utility", async () => {
-		const { createRule } = await import("../index.js")
-		expect(createRule).toBeDefined()
-		expect(typeof createRule).toBe("function")
+			expect(messages.filter((message) => message.fatal)).toEqual([])
+			expect(messages).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						ruleId: "grain/no-eval",
+						messageId: "noFunctionConstructor",
+						severity: 2,
+					}),
+				]),
+			)
+		},
+	)
+
+	it.each([
+		{ rule: "grain/file-naming", options: "error" },
+		{ rule: "grain/file-location", options: "error" },
+		{ rule: "grain/max-file-lines", options: ["error", { max: 1 }] as [string, unknown] },
+	])("honors a leading disable directive for $rule", ({ rule, options }) => {
+		const code = `/* eslint-disable ${rule} */\nexport const value = 1;\n`
+		expect(runLint(code, { [rule]: options }, "src/pipes/invalid.ts")).toEqual([])
 	})
 })

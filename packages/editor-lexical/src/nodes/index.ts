@@ -13,7 +13,7 @@ import { HashtagNode } from "@lexical/hashtag";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { ListItemNode, ListNode } from "@lexical/list";
 import { OverflowNode } from "@lexical/overflow";
-import { HorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
+import { HorizontalRuleNode } from "@lexical/extension";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
 
@@ -28,7 +28,7 @@ import {
 
 /**
  * 编辑器节点配置
- * 包含所有需要注册到 LexicalComposer 的节点类型
+ * 包含所有需要注册到 LexicalExtensionComposer 的节点类型
  */
 export const EditorNodes: Array<Klass<LexicalNode>> = [
   // 富文本节点

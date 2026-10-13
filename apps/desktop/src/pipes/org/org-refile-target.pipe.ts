@@ -15,6 +15,8 @@ export interface OrgRefileTargetSnapshot {
 	readonly relativePath: string
 	readonly revision: string
 	readonly headings: readonly OrgRefileHeadingTarget[]
+	/** Exact immutable read provenance; used only for planning/preview, never a second body authority. */
+	readonly source: string
 }
 
 export const RootCandidateLabel = "(file root)"
@@ -77,7 +79,7 @@ export const createOrgRefileTargetSnapshot = (
 	revision: string,
 	source: string,
 ): OrgRefileTargetSnapshot =>
-	Object.freeze({ relativePath, revision, headings: enumerateOrgRefileHeadings(source) })
+	Object.freeze({ relativePath, revision, source, headings: enumerateOrgRefileHeadings(source) })
 
 export const orgRefileTargetCandidates = (
 	snapshot: OrgRefileTargetSnapshot,

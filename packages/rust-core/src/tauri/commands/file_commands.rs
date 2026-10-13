@@ -1,6 +1,5 @@
 //! File Tauri Commands
 
-use std::fs;
 use std::path::PathBuf;
 use tauri_plugin_dialog::DialogExt;
 
@@ -27,19 +26,6 @@ pub async fn select_directory(
 }
 
 #[tauri::command]
-pub async fn save_file(path: String, filename: String, content: Vec<u8>) -> Result<(), String> {
-    let full_path = PathBuf::from(&path).join(&filename);
-
-    if let Some(parent) = full_path.parent() {
-        fs::create_dir_all(parent).map_err(|e| format!("创建目录失败: {}", e))?;
-    }
-
-    fs::write(&full_path, content).map_err(|e| format!("写入文件失败: {}", e))?;
-
-    Ok(())
-}
-
-#[tauri::command]
 pub fn get_downloads_dir() -> Result<String, String> {
     dirs::download_dir()
         .map(|p| p.to_string_lossy().to_string())
@@ -53,26 +39,3 @@ pub fn get_home_dir() -> Result<String, String> {
         .ok_or_else(|| "无法获取主目录".to_string())
 }
 
-#[tauri::command]
-pub async fn ensure_directory_and_save(
-    directory: String,
-    filename: String,
-    content: String,
-    expand_home: bool,
-) -> Result<String, String> {
-    let dir_path = if expand_home && directory.starts_with('~') {
-        let home = dirs::home_dir().ok_or_else(|| "无法获取主目录".to_string())?;
-        let rest = directory.strip_prefix("~/").unwrap_or(&directory[1..]);
-        home.join(rest)
-    } else {
-        PathBuf::from(&directory)
-    };
-
-    fs::create_dir_all(&dir_path)
-        .map_err(|e| format!("创建目录失败 {}: {}", dir_path.display(), e))?;
-
-    let full_path = dir_path.join(&filename);
-    fs::write(&full_path, content.as_bytes()).map_err(|e| format!("写入文件失败: {}", e))?;
-
-    Ok(full_path.to_string_lossy().to_string())
-}

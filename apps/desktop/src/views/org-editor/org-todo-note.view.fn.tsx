@@ -1,27 +1,74 @@
-import { useEffect, useId, useRef, useState } from "react"
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react"
 import type { OrgTodoNoteRequest, OrgTodoNoteResult } from "@/flows/org-command/org-todo-note"
+import { ApplicationToolSurface, useApplicationToolRegistration, useApplicationTools } from "@/views/application/application-tool-provider"
+import type { ApplicationToolOrigin } from "@/flows/application/application-tool-registry"
+import { useApplicationResultPublisher } from "@/views/application/application-command-provider"
+import { useOrgScopedInput } from "@/hooks/use-org-scoped-input"
+import { OrgWhichKey } from "@/views/org-workspace/org-which-key.view.fn"
 
 /** Plain-text scratch buffer; native textarea undo never enters Org history. */
 export function OrgTodoNote({
 	request,
 	onClose,
 	isProtected = true,
+	origin,
+	closeFence,
 }: {
 	readonly request: OrgTodoNoteRequest
 	readonly onClose: (host?: HTMLElement) => void
 	readonly isProtected?: boolean
+	readonly origin?: ApplicationToolOrigin
+	readonly closeFence?: string
 }) {
 	const id = useId()
+	const label = request.label ?? "TODO note"
 	const root = useRef<HTMLDivElement>(null)
-	const prefix = useRef(false)
+	const closed = useRef(false)
+	const closeNote = (host?: HTMLElement) => {
+		if (closed.current) return
+		closed.current = true
+		onClose(host)
+	}
 	const composing = useRef(false)
+	const aborted = useRef(false)
+	const abortRequest = () => {
+		if (aborted.current) return
+		aborted.current = true
+		request.abort()
+	}
 	const locked = useRef(false)
+	const resultOwner = useMemo(() => ({}), [request, closeFence])
+	const beginResult = useApplicationResultPublisher(resultOwner)
+	const liveCloseFence = useRef(closeFence)
+	liveCloseFence.current = closeFence
+	const retiredScope = useRef(false)
+	const settlement = useRef<Promise<void> | null>(null)
+	const tools = useApplicationTools()
 	const [busy, setBusy] = useState(false)
 	const [note, setNote] = useState("")
 	const [error, setError] = useState<string | null>(null)
 	const [stale, setStale] = useState<string | null>(null)
 	const validation = busy ? undefined : request.validate?.()
-	const staleReason = validation?.kind === "rejected" ? validation.reason : stale
+	const staleReason = validation?.kind === "rejected" ? validation.reason : stale ?? (retiredScope.current ? "The originating scope changed; this logging note remains read-only and copyable." : null)
+	const fence = useRef({ note, staleReason, isProtected, closeFence, version: 0 })
+	if (fence.current.note !== note || fence.current.staleReason !== staleReason || fence.current.isProtected !== isProtected || fence.current.closeFence !== closeFence)
+		fence.current = { note, staleReason, isProtected, closeFence, version: fence.current.version + 1 }
+	// Origin windows can disappear during this commit, after render-time validation.
+	useLayoutEffect(() => {
+		if (locked.current) return
+		const result = request.validate?.()
+		setStale(result?.kind === "rejected" ? result.reason : null)
+	})
+	useLayoutEffect(() => {
+		const revalidate = () => {
+			if (locked.current) return
+			const result = request.validate?.()
+			setStale(result?.kind === "rejected" ? result.reason : null)
+		}
+		const unsubscribe = request.subscribeValidation?.(revalidate)
+		revalidate()
+		return unsubscribe
+	}, [request])
 	useEffect(() => {
 		const timer = setInterval(() => {
 			if (!root.current?.isConnected || locked.current) return
@@ -31,8 +78,10 @@ export function OrgTodoNote({
 		return () => clearInterval(timer)
 	}, [request])
 	const finish = () => {
-		if (locked.current || !isProtected) return
-		prefix.current = false
+		if (locked.current || retiredScope.current || !isProtected || !editable()) return
+		const originFence = closeFence
+		const report = beginResult()
+		input.cancel()
 		locked.current = true
 		setBusy(true)
 		setError(null)
@@ -42,39 +91,82 @@ export function OrgTodoNote({
 			locked.current = false
 			if (!root.current?.isConnected) return
 			setBusy(false)
-			if (result.kind === "applied" || result.kind === "aborted") onClose(root.current ?? undefined)
+			if (liveCloseFence.current !== originFence) {
+				retiredScope.current = true
+				setStale("The originating scope changed; this logging note remains read-only and copyable.")
+				return
+			}
+			report?.(result.kind === "applied"
+				? { kind: "success", message: request.successMessage ?? "Org change applied." }
+				: result.kind === "aborted"
+					? { kind: "cancelled", message: `${label} cancelled.` }
+					: { kind: "rejected", message: `${label} rejected: ${result.kind === "rejected" ? result.reason : "change was not applied"}` })
+			if (result.kind === "applied" || result.kind === "aborted") closeNote(root.current ?? undefined)
 			else if (result.kind === "rejected") setError(result.reason)
 		}
 		try {
 			const result = request.execute(note)
 			if ("then" in result) {
-				void result.then(settle, () =>
-					settle({ kind: "rejected", reason: "TODO state change failed; no automatic retry" }),
-				)
+				settlement.current = result.then(settle, () =>
+					settle({ kind: "rejected", reason: "Org change failed; no automatic retry" }),
+				).finally(() => { settlement.current = null })
 			} else settle(result)
 		} catch {
-			settle({ kind: "rejected", reason: "TODO state change failed; no automatic retry" })
+			settle({ kind: "rejected", reason: "Org change failed; no automatic retry" })
 		}
 	}
 	const abort = () => {
-		prefix.current = false
+		input.cancel()
 		// The request guards the commit boundary. Never hide a pending outcome.
 		try {
-			request.abort()
+			abortRequest()
 		} catch {
 			// A source callback failure must not trap the scratch after cancellation.
 		} finally {
-			if (!locked.current) onClose(root.current ?? undefined)
+			if (!locked.current) closeNote(root.current ?? undefined)
 		}
 	}
+	const lease = useApplicationToolRegistration(request, {
+		id: "todo-note", label, layout: "bottom", active: true,
+		state: { dirty: note.length > 0, pending: busy, readOnly: !!staleReason || !isProtected, fence: fence.current.version },
+		captureOrigin: () => origin ?? null,
+		requestClose: () => { abort(); return !locked.current },
+		dispose: async () => {
+			try { abortRequest() } catch { /* The accepted effect still drains. */ }
+			if (settlement.current) await Promise.allSettled([settlement.current])
+			if (root.current?.isConnected) closeNote(root.current)
+		},
+	})
+	const windowId = tools.tools.find((tool) => tool.lease === lease)?.windowId
+	const editable = () => tools.registry.getSnapshot().some((tool) => tool.lease === lease && tool.open && !tool.closing && tool.windowId === windowId)
+	const closeTool = () => {
+		if (locked.current) {
+			// Revoke candidate authority, but keep the scratch mounted until the accepted effect settles.
+			try { abortRequest() } catch { /* The accepted outcome still owns the scratch. */ }
+			return
+		}
+		void tools.close(lease)
+	}
+	const input = useOrgScopedInput({
+		scope: "org-todo-note", owner: request,
+		execute: (command) => {
+			if (command === "org-todo-note.cancel") { closeTool(); return true }
+			if (command !== "org-todo-note.finish") return false
+			if (!editable() || locked.current || retiredScope.current || !isProtected || staleReason) return false
+			finish()
+			return true
+		},
+		onUnavailable: (command) => setError(`Command ${command} is unavailable for this note request.`),
+	})
 	return (
-		<div ref={root} role="group" aria-label="TODO note" aria-busy={busy} className="shrink-0 p-3">
+		<ApplicationToolSurface lease={lease}>
+		<div ref={root} role="group" aria-label={label} aria-busy={busy} className="shrink-0 p-3">
 			<label htmlFor={id}>
-				TODO note (Ctrl-C Ctrl-C or Mod-S to finish; Ctrl-C Ctrl-K or Ctrl-G to abort)
+				{label} (finish/abort use the configured logging-note keymap)
 			</label>
 			<textarea
 				id={id}
-				aria-label="TODO note"
+				aria-label={label}
 				// biome-ignore lint/a11y/noAutofocus: explicit keyboard command opens this scratch input.
 				autoFocus
 				className="block w-full"
@@ -82,50 +174,19 @@ export function OrgTodoNote({
 				value={note}
 				readOnly={busy || !!staleReason || !isProtected}
 				onChange={(event) => {
-					if (!locked.current && !staleReason && isProtected) setNote(event.currentTarget.value)
+					if (!locked.current && !retiredScope.current && !staleReason && isProtected && editable()) setNote(event.currentTarget.value)
 				}}
 				onKeyDown={(event) => {
 					event.stopPropagation()
-					const consumed = event.defaultPrevented
-					const command = event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey
-					const key = event.key.toLowerCase()
-					const save =
-						key === "s" && (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey
-					// Selection copy wins over prefixes, locks, repeat and IME guards.
-					if (
-						command &&
-						key === "c" &&
-						event.currentTarget.selectionStart !== event.currentTarget.selectionEnd
-					) {
-						prefix.current = false
-						return
-					}
-					if (!save && (!command || !["c", "g", "k"].includes(key))) {
-						prefix.current = false
-						return
-					}
-					const prefixed = prefix.current
-					prefix.current = false
-					if (key === "k" && !prefixed) return
-					event.preventDefault()
-					if (
-						consumed ||
-						event.repeat ||
-						composing.current ||
-						event.nativeEvent.isComposing ||
-						event.keyCode === 229
-					)
-						return
-					if (key === "g" || key === "k") abort()
-					else if (save || prefixed) finish()
-					else prefix.current = true
+					if (input.handleKeyDown(event.nativeEvent, {
+						selectionEmpty: event.currentTarget.selectionStart === event.currentTarget.selectionEnd,
+						isComposing: composing.current, isParameterInput: false,
+					})) event.preventDefault()
 				}}
 				onKeyUp={(event) => event.stopPropagation()}
-				onBlur={() => {
-					prefix.current = false
-				}}
+				onBlur={input.cancel}
 				onCompositionStart={() => {
-					prefix.current = false
+					input.cancel()
 					composing.current = true
 				}}
 				onCompositionEnd={() => {
@@ -134,15 +195,20 @@ export function OrgTodoNote({
 			/>
 			{(error || staleReason) && (
 				<output>
-					Cannot finish TODO note: {error || staleReason}. Copy your note before aborting.
+					Cannot finish logging note: {error || staleReason}. Copy your note before aborting.
 				</output>
 			)}
 			<button type="button" disabled={busy || !isProtected} onClick={finish}>
 				Finish note
 			</button>
-			<button type="button" onClick={abort}>
+			<button type="button" onClick={closeTool}>
 				Abort note
 			</button>
+			<OrgWhichKey prefix={input.prefix} getInputCommandDisabledReason={(command) =>
+				command === "org-todo-note.cancel" ? null
+					: command === "org-todo-note.finish" ? staleReason ?? (busy || !isProtected ? "Note request is unavailable" : null)
+						: "Unavailable in this note request"} />
 		</div>
+		</ApplicationToolSurface>
 	)
 }

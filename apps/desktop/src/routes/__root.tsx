@@ -1,29 +1,10 @@
-/**
- * @file __root.tsx
- * @description 应用根路由组件
- *
- * 职责：
- * - 提供应用布局结构
- * - 初始化全局状态（布局、主题）
- * - 渲染全局组件（命令面板、搜索、通知等）
- * - 设置全局键盘快捷键
- *
- * 依赖规则：routes/ 只能依赖 views/, hooks/, types/
- */
-
-import { createRootRoute, Outlet, useLocation } from "@tanstack/react-router"
-import { useWorkspaces } from "@/hooks/queries"
-import { useEditorTabs } from "@/hooks/use-editor-tabs"
-import { useGlobalKeyboard } from "@/hooks/use-global-keyboard"
-import { useGlobalUI } from "@/hooks/use-global-ui"
-import { useLayout, useLayoutInit } from "@/hooks/use-layout"
+import { createRootRoute, Outlet } from "@tanstack/react-router"
+import { OrgWorkspaceProvider } from "@/views/application/org-workspace-provider"
 import { useThemeInitialization } from "@/hooks/use-theme"
-import { useSelectedWorkspaceId } from "@/state/selection.state"
 import { AppLayout } from "@/views/app-layout"
-import { BufferSwitcherContainer } from "@/views/buffer-switcher"
-import { CommandPaletteContainer } from "@/views/command-palette"
-import { ExportDialogManagerContainer } from "@/views/export-dialog-manager"
-import { GlobalSearchContainer } from "@/views/global-search"
+import { ApplicationActions } from "@/views/application/application-actions"
+import { ApplicationCommandProvider } from "@/views/application/application-command-provider"
+import { ApplicationToolProvider } from "@/views/application/application-tool-provider"
 import { ConfirmProvider } from "@/views/ui/confirm"
 import { Toaster } from "@/views/ui/sonner"
 import { DevtoolsWrapper } from "@/views/utils/devtools-wrapper.container.fn"
@@ -33,65 +14,24 @@ export const Route = createRootRoute({
 	component: RootComponent,
 })
 
-// ============================================================================
-// 根组件
-// ============================================================================
-
-const LegacyGlobalSurfaces = () => {
-	const { data: workspaces = [] } = useWorkspaces()
-	const selectedWorkspaceId = useSelectedWorkspaceId()
-	const { tabs, activeTabId, setActiveTab } = useEditorTabs()
-	const { commandPalette, globalSearch, bufferSwitcher } = useGlobalUI()
-	const { toggleSidebar } = useLayout()
-
-	useGlobalKeyboard({
-		bufferSwitcher,
-		commandPalette,
-		globalSearch,
-		toggleSidebar,
-	})
-
-	return (
-		<>
-			<CommandPaletteContainer
-				open={commandPalette.isOpen}
-				onOpenChange={commandPalette.setOpen}
-				workspaces={workspaces}
-				selectedWorkspaceId={selectedWorkspaceId}
-			/>
-			<GlobalSearchContainer open={globalSearch.isOpen} onOpenChange={globalSearch.setOpen} />
-			<BufferSwitcherContainer
-				open={bufferSwitcher.isOpen}
-				onOpenChange={bufferSwitcher.setOpen}
-				tabs={tabs}
-				activeTabId={activeTabId}
-				onSelectTab={setActiveTab}
-				initialDirection={bufferSwitcher.direction}
-			/>
-			<ExportDialogManagerContainer
-				selectedWorkspaceId={selectedWorkspaceId}
-				workspaces={workspaces}
-			/>
-		</>
-	)
-}
-
 function RootComponent() {
-	const location = useLocation()
-	const isLegacyRoute = location.pathname === "/legacy"
-
-	useLayoutInit()
 	useThemeInitialization()
 
 	return (
 		<ConfirmProvider>
-			<FontStyleInjector />
-			<AppLayout>
-				<Outlet />
-			</AppLayout>
-			<Toaster />
-			{isLegacyRoute && <LegacyGlobalSurfaces />}
-			<DevtoolsWrapper />
+			<ApplicationCommandProvider>
+				<ApplicationToolProvider>
+					<OrgWorkspaceProvider>
+					<ApplicationActions />
+					<FontStyleInjector />
+					<AppLayout>
+						<Outlet />
+					</AppLayout>
+					<Toaster />
+					<DevtoolsWrapper />
+					</OrgWorkspaceProvider>
+				</ApplicationToolProvider>
+			</ApplicationCommandProvider>
 		</ConfirmProvider>
 	)
 }

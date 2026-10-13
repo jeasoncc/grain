@@ -3,7 +3,7 @@
 use crate::org_filesystem::{
     self, OrgDocument, OrgDocumentEntry, OrgMigrationArtifact, OrgMigrationArtifactSummary,
     OrgMigrationRecoveryBundle, OrgMigrationVerificationResult, OrgMigrationWriteResult,
-    OrgWorkspaceSnapshot, OrgWriteResult,
+    OrgOriginalRecoveryEntry, OrgWorkspaceSnapshot, OrgWriteResult,
 };
 use cap_std::ambient_authority;
 use cap_std::fs::Dir;
@@ -16,7 +16,7 @@ use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::{Duration, Instant};
-use tauri::{Emitter, State};
+use tauri::{Emitter, Manager, State};
 use tauri_plugin_dialog::DialogExt;
 
 const WATCH_DEBOUNCE: Duration = Duration::from_millis(150);
@@ -102,6 +102,7 @@ pub struct OrgWorkspaceSelection {
     capability_token: String,
     documents: Vec<OrgDocumentEntry>,
     directories: Vec<String>,
+    original_recoveries: Vec<OrgOriginalRecoveryEntry>,
 }
 
 impl OrgWorkspaceRegistry {
@@ -149,20 +150,26 @@ impl OrgWorkspaceRegistry {
         root: &Path,
         capability_token: &str,
     ) -> Result<Dir, String> {
-        // Validate the exact live lease and clone its retained descriptor under the same lock.
-        // Never reopen or canonicalize the ambient display path during authorization.
-        let roots = self
-            .approved_roots
-            .lock()
+        self.with_approved(root, capability_token, |directory| {
+            directory.try_clone()
+                .map_err(|error| format!("Cannot clone Org workspace capability: {error}"))
+        })
+    }
+
+    /// The exact live lease remains locked through a process-start boundary. Revocation
+    /// cannot slip between the final authorization and spawn; already-started work drains.
+    pub(crate) fn with_approved<T>(
+        &self,
+        root: &Path,
+        capability_token: &str,
+        operation: impl FnOnce(&Dir) -> Result<T, String>,
+    ) -> Result<T, String> {
+        let roots = self.approved_roots.lock()
             .map_err(|_| "Org workspace registry lock is poisoned".to_owned())?;
-        let approved = roots
-            .get(root)
+        let approved = roots.get(root)
             .filter(|approved| approved.leases.contains(capability_token))
             .ok_or_else(|| "Invalid or released Org workspace capability token".to_owned())?;
-        approved
-            .directory
-            .try_clone()
-            .map_err(|error| format!("Cannot clone Org workspace capability: {error}"))
+        operation(&approved.directory)
     }
 
     fn approved_display_path(
@@ -476,14 +483,19 @@ pub fn release_org_workspace(
     registry.revoke(Path::new(&workspace_root), &capability_token)
 }
 
+fn recover_and_scan_workspace(root: &Dir) -> Result<OrgWorkspaceSnapshot, String> {
+    org_filesystem::recover_org_document_writes_with_capability(root)
+        .map_err(|error| error.to_string())?;
+    org_filesystem::scan_org_workspace_with_capability(root).map_err(|error| error.to_string())
+}
+
 fn select_approved_workspace(
     registry: &OrgWorkspaceRegistry,
     root: &Path,
 ) -> Result<OrgWorkspaceSelection, String> {
     let (root, capability, capability_token) = registry.approve(root)?;
     let selection = (|| {
-        let snapshot = org_filesystem::scan_org_workspace_with_capability(&capability)
-            .map_err(|error| error.to_string())?;
+        let snapshot = recover_and_scan_workspace(&capability)?;
         let root_path = root
             .to_str()
             .ok_or_else(|| "Org workspace path is not valid UTF-8".to_owned())?
@@ -493,6 +505,7 @@ fn select_approved_workspace(
             capability_token: capability_token.clone(),
             documents: snapshot.documents,
             directories: snapshot.directories,
+            original_recoveries: snapshot.original_recoveries,
         })
     })();
     if selection.is_err() {
@@ -562,20 +575,25 @@ pub fn reopen_default_org_workspace(
 /// Opens a native directory picker and records the selected canonical root as an approved
 /// capability for subsequent Org commands in this application process.
 #[tauri::command]
-pub fn select_org_workspace(
+pub async fn select_org_workspace(
     app: tauri::AppHandle,
-    registry: State<'_, OrgWorkspaceRegistry>,
 ) -> Result<Option<OrgWorkspaceSelection>, String> {
-    let selected = app
-        .dialog()
-        .file()
-        .set_title("选择 Org 工作区")
-        .blocking_pick_folder();
-    let Some(selected) = selected else {
-        return Ok(None);
-    };
+    // The picker queues its UI on GTK's main thread. Waiting there deadlocks before
+    // the dialog can open; keep both the blocking picker and workspace scan off it.
+    tauri::async_runtime::spawn_blocking(move || {
+        let selected = app
+            .dialog()
+            .file()
+            .set_title("选择 Org 工作区")
+            .blocking_pick_folder();
+        let Some(selected) = selected else {
+            return Ok(None);
+        };
 
-    select_approved_workspace(&registry, Path::new(&selected.to_string())).map(Some)
+        select_approved_workspace(&app.state::<OrgWorkspaceRegistry>(), Path::new(&selected.to_string())).map(Some)
+    })
+    .await
+    .map_err(|error| format!("Native Org workspace picker worker failed: {error}"))?
 }
 
 #[tauri::command]
@@ -585,7 +603,7 @@ pub fn scan_org_workspace(
     capability_token: String,
 ) -> Result<OrgWorkspaceSnapshot, String> {
     let root = registry.require_approved(Path::new(&workspace_root), &capability_token)?;
-    org_filesystem::scan_org_workspace_with_capability(&root).map_err(|error| error.to_string())
+    recover_and_scan_workspace(&root)
 }
 
 #[tauri::command]
@@ -594,10 +612,19 @@ pub fn read_org_document(
     workspace_root: String,
     capability_token: String,
     relative_path: String,
-) -> Result<OrgDocument, String> {
-    let root = registry.require_approved(Path::new(&workspace_root), &capability_token)?;
+) -> Result<OrgDocument, serde_json::Value> {
+    let root = registry.require_approved(Path::new(&workspace_root), &capability_token)
+        .map_err(serde_json::Value::String)?;
     org_filesystem::read_org_document_with_capability(&root, relative_path)
-        .map_err(|error| error.to_string())
+        .map_err(|error| match error {
+            org_filesystem::OrgFilesystemError::ProvenAbsent(path) => serde_json::json!({
+                "kind": "document-path-absent",
+                "relativePath": path,
+                "authorizedObservation": true,
+                "message": format!("Org document path is absent: {path}"),
+            }),
+            other => serde_json::Value::String(other.to_string()),
+        })
 }
 
 #[tauri::command]
@@ -615,6 +642,21 @@ pub fn read_org_migration_recovery_bundle(
     .map_err(|error| error.to_string())
 }
 
+fn document_write_command_error(error: org_filesystem::OrgFilesystemError) -> serde_json::Value {
+    let message = error.to_string();
+    match error {
+        org_filesystem::OrgFilesystemError::CreationCollision(path) => {
+            serde_json::json!({
+                "kind": "creation-collision",
+                "relativePath": path,
+                "noWrite": true,
+                "message": message,
+            })
+        }
+        _ => serde_json::Value::String(message),
+    }
+}
+
 #[tauri::command]
 pub fn write_org_document(
     registry: State<'_, OrgWorkspaceRegistry>,
@@ -623,15 +665,17 @@ pub fn write_org_document(
     relative_path: String,
     content: String,
     expected_revision: String,
-) -> Result<OrgWriteResult, String> {
-    let root = registry.require_approved(Path::new(&workspace_root), &capability_token)?;
+) -> Result<OrgWriteResult, serde_json::Value> {
+    let root = registry
+        .require_approved(Path::new(&workspace_root), &capability_token)
+        .map_err(serde_json::Value::String)?;
     org_filesystem::write_org_document_with_capability(
         &root,
         relative_path,
         &content,
         Some(&expected_revision),
     )
-    .map_err(|error| error.to_string())
+    .map_err(document_write_command_error)
 }
 
 #[tauri::command]
@@ -702,7 +746,7 @@ pub fn delete_org_document(
     capability_token: String,
     relative_path: String,
     expected_revision: String,
-) -> Result<(), String> {
+) -> Result<OrgOriginalRecoveryEntry, String> {
     let root = registry.require_approved(Path::new(&workspace_root), &capability_token)?;
     org_filesystem::delete_org_document_with_capability(&root, relative_path, &expected_revision)
         .map_err(|error| error.to_string())
@@ -713,6 +757,74 @@ mod tests {
     use super::*;
     use std::fs;
     use tempfile::tempdir;
+
+    #[test]
+    fn write_errors_expose_only_preflight_creation_collisions_as_no_write() {
+        let collision = document_write_command_error(org_filesystem::OrgFilesystemError::CreationCollision(
+            "diary.org".to_owned(),
+        ));
+        assert_eq!(collision["kind"], "creation-collision");
+        assert_eq!(collision["relativePath"], "diary.org");
+        assert_eq!(collision["noWrite"], true);
+        for error in [
+            org_filesystem::OrgFilesystemError::RevisionConflict {
+                path: "notes.org".to_owned(), expected: "old".to_owned(), actual: "new".to_owned(),
+            },
+            org_filesystem::OrgFilesystemError::RevisionConflict {
+                path: "notes.org".to_owned(), expected: "<missing>".to_owned(), actual: "<missing>".to_owned(),
+            },
+            org_filesystem::OrgFilesystemError::RevisionConflict {
+                path: "notes.org".to_owned(), expected: "<missing>".to_owned(), actual: "foreign".to_owned(),
+            },
+            org_filesystem::OrgFilesystemError::WriteRecoveryConflict("retained".to_owned()),
+            org_filesystem::OrgFilesystemError::Io(std::io::Error::other("lost confirmation")),
+        ] {
+            assert!(document_write_command_error(error).is_string());
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn approved_reopen_recovers_captured_body_before_returning_documents() {
+        let workspace = tempdir().unwrap();
+        fs::write(workspace.path().join("interrupted.org"), "* Original\r\n").unwrap();
+        let directory = Dir::open_ambient_dir(workspace.path(), ambient_authority()).unwrap();
+        org_filesystem::prepare_interrupted_org_write(
+            &directory, "interrupted.org", "* Pending\n", false,
+        ).unwrap();
+        assert!(!workspace.path().join("interrupted.org").exists());
+
+        let registry = OrgWorkspaceRegistry::default();
+        let selection = select_approved_workspace(&registry, workspace.path()).unwrap();
+        assert_eq!(selection.documents.len(), 1);
+        assert_eq!(selection.documents[0].relative_path, "interrupted.org");
+        assert_eq!(fs::read_to_string(workspace.path().join("interrupted.org")).unwrap(), "* Original\r\n");
+        let capability = registry.require_approved(
+            Path::new(&selection.root_path), &selection.capability_token,
+        ).unwrap();
+        assert_eq!(recover_and_scan_workspace(&capability).unwrap().documents.len(), 1);
+        registry.revoke(Path::new(&selection.root_path), &selection.capability_token).unwrap();
+        assert!(registry.require_approved(
+            Path::new(&selection.root_path), &selection.capability_token,
+        ).is_err());
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn approved_refresh_finishes_published_recovery_before_scan() {
+        let workspace = tempdir().unwrap();
+        fs::write(workspace.path().join("interrupted.org"), "* Original\n").unwrap();
+        let registry = OrgWorkspaceRegistry::default();
+        let (root, capability, token) = registry.approve(workspace.path()).unwrap();
+        org_filesystem::prepare_interrupted_org_write(
+            &capability, "interrupted.org", "* Published\r\n", true,
+        ).unwrap();
+        let approved = registry.require_approved(&root, &token).unwrap();
+        let snapshot = recover_and_scan_workspace(&approved).unwrap();
+        assert_eq!(snapshot.documents.len(), 1);
+        assert_eq!(approved.read_to_string("interrupted.org").unwrap(), "* Published\r\n");
+        assert_eq!(recover_and_scan_workspace(&approved).unwrap().documents.len(), 1);
+    }
 
     fn test_watch(root: PathBuf, capability_token: &str) -> (OrgWorkspaceWatch, Arc<AtomicBool>) {
         let cancelled = Arc::new(AtomicBool::new(false));
@@ -1150,6 +1262,27 @@ mod tests {
             .remove_watch(&second_root, &second_token, "second")
             .unwrap();
         assert!(second_cancelled.load(Ordering::Acquire));
+    }
+
+    #[test]
+    fn execution_start_boundary_rejects_retired_grant_even_after_same_root_reapproval() {
+        let root = tempdir().unwrap();
+        let registry = OrgWorkspaceRegistry::default();
+        let (display, _directory, g1) = registry.approve(root.path()).unwrap();
+        registry.revoke(&display, &g1).unwrap();
+        let (_, _directory, g2) = registry.approve(root.path()).unwrap();
+        let started = std::cell::Cell::new(false);
+        assert!(registry.with_approved(&display, &g1, |_| {
+            started.set(true);
+            Ok(())
+        }).is_err());
+        assert!(!started.get());
+        registry.with_approved(&display, &g2, |_| {
+            assert!(registry.approved_roots.try_lock().is_err(), "lease lock must cover the start callback");
+            started.set(true);
+            Ok(())
+        }).unwrap();
+        assert!(started.get());
     }
 
     #[test]

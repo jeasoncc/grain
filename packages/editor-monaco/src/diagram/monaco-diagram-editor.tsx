@@ -4,7 +4,7 @@
  */
 
 import { forwardRef, memo, useImperativeHandle, useRef } from "react";
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { Group, Panel, Separator, useDefaultLayout } from "react-resizable-panels";
 
 import { MonacoCodeEditor } from "../code/monaco-code-editor";
 import { DiagramPreview } from "./diagram-preview";
@@ -136,6 +136,9 @@ const MonacoDiagramEditorInner = forwardRef<MonacoDiagramEditorHandle, MonacoDia
   ) {
     const previewRef = useRef<HTMLDivElement>(null);
     const diagramTypeRef = useRef<DiagramType>(diagramType);
+    const { defaultLayout, onLayoutChanged } = useDefaultLayout({
+      id: "diagram-editor-layout",
+    });
 
     useImperativeHandle(
       ref,
@@ -163,19 +166,19 @@ const MonacoDiagramEditorInner = forwardRef<MonacoDiagramEditorHandle, MonacoDia
     }
 
     return (
-      <PanelGroup
-        direction="horizontal"
-        autoSaveId="diagram-editor-layout"
+      <Group
+        id="diagram-editor"
+        orientation="horizontal"
+        defaultLayout={defaultLayout}
+        onLayoutChanged={onLayoutChanged}
         className="h-full w-full"
-        data-testid="diagram-editor"
       >
         {/* Code Editor Panel */}
         <Panel
           id="code-editor"
-          order={1}
-          defaultSize={50}
-          minSize={20}
-          maxSize={80}
+          defaultSize="50%"
+          minSize="20%"
+          maxSize="80%"
           className="overflow-hidden"
         >
           <MonacoCodeEditor
@@ -189,18 +192,18 @@ const MonacoDiagramEditorInner = forwardRef<MonacoDiagramEditorHandle, MonacoDia
         </Panel>
 
         {/* Resize Handle */}
-        <PanelResizeHandle
-          className="w-1 bg-border/50 transition-all cursor-col-resize hover:w-1.5 hover:bg-primary/50 data-[resize-handle-active]:w-1.5 data-[resize-handle-active]:bg-primary/70"
-          data-testid="diagram-editor-resize-handle"
+        <Separator
+          id="diagram-editor-resize-handle"
+          disableDoubleClick
+          className="w-1 bg-border/50 transition-all cursor-col-resize hover:w-1.5 hover:bg-primary/50 data-[separator=active]:w-1.5 data-[separator=active]:bg-primary/70"
         />
 
         {/* Preview Panel */}
         <Panel
           id="preview"
-          order={2}
-          defaultSize={50}
-          minSize={20}
-          maxSize={80}
+          defaultSize="50%"
+          minSize="20%"
+          maxSize="80%"
           className="overflow-hidden bg-background"
         >
           <div ref={previewRef} className="h-full">
@@ -213,7 +216,7 @@ const MonacoDiagramEditorInner = forwardRef<MonacoDiagramEditorHandle, MonacoDia
             />
           </div>
         </Panel>
-      </PanelGroup>
+      </Group>
     );
   }
 );

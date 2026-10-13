@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -66,16 +67,20 @@ const screenshots = [
 ];
 
 export function ScreenshotsSection() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  const [selection, setSelection] = useState<{
+    index: number;
+    status: "loading" | "loaded" | "error";
+  }>({ index: 0, status: "loading" });
+  const currentIndex = selection.index;
+  const isImageLoaded = selection.status !== "loading";
+  const imageError = selection.status === "error";
 
   const currentScreenshot = screenshots[currentIndex];
 
   const changeScreenshot = useCallback((newIndex: number) => {
-    setIsImageLoaded(false);
-    setImageError(false);
-    setCurrentIndex(newIndex);
+    setSelection((current) =>
+      current.index === newIndex ? current : { index: newIndex, status: "loading" }
+    );
   }, []);
 
   const nextScreenshot = () => {
@@ -87,19 +92,17 @@ export function ScreenshotsSection() {
   };
 
   const handleImageLoad = () => {
-    setIsImageLoaded(true);
+    setSelection((current) =>
+      current.index === currentIndex ? { ...current, status: "loaded" } : current
+    );
   };
 
   const handleImageError = () => {
-    setImageError(true);
-    setIsImageLoaded(true);
+    setSelection((current) =>
+      current.index === currentIndex ? { ...current, status: "error" } : current
+    );
   };
 
-  // Reset loading state when screenshot changes
-  useEffect(() => {
-    setIsImageLoaded(false);
-    setImageError(false);
-  }, [currentIndex]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -162,9 +165,12 @@ export function ScreenshotsSection() {
                 )}
 
                 {/* Actual screenshot image */}
-                <img
+                <Image
+                  key={currentScreenshot.id}
                   src={currentScreenshot.image}
                   alt={currentScreenshot.title}
+                  fill
+                  sizes="(max-width: 1280px) 100vw, 1152px"
                   onLoad={handleImageLoad}
                   onError={handleImageError}
                   className={cn(
@@ -235,9 +241,11 @@ export function ScreenshotsSection() {
                 )}
                 aria-label={`查看 ${screenshot.title}`}
               >
-                <img
+                <Image
                   src={screenshot.image}
                   alt={screenshot.title}
+                  fill
+                  sizes="128px"
                   className={cn(
                     "w-full h-full object-cover transition-all duration-300",
                     currentIndex === index

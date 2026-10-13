@@ -1,0 +1,53 @@
+{
+  "files": {
+    "chain.org": "#+TITLE: Continuous workflow source\r\n#+TODO: TODO | DONE\r\n\r\n* Diary context\r\nKeep literal café 😀\u0000 source bytes.\r\n",
+    "other.org": "#+TITLE: Other buffer\r\n* Independent source\r\nPersisted bytes.\r\n"
+  },
+  "agendaConfiguration": {
+    "version": 1,
+    "views": [{ "id": "chain-tasks", "name": "Chain tasks", "files": ["chain.org"], "mode": "todo", "todo": ["TODO"], "match": null, "window": null, "overdue": false, "deadlineWarningDays": null }]
+  },
+  "steps": [
+    "Materialize files verbatim from this JSON into an isolated native workspace. Disable autosave for this scenario so dirty overlays remain observable. Use the configured application command launcher; commandIds gives the exact IDs and labels, not substitutes or direct hook calls.",
+    "Open other.org, append the literal string 'Unsaved other café 😀\u0000\r\n', and record its native window ID, raw bytes, cursor and Undo depth. Leave it dirty and parked; do not save it.",
+    "Open chain.org in a source native window. Invoke 'New diary entry' (diary) from that native child, not from the main workspace. Record the generated diary relative path, UUID, root/capability/session, canonical runtime incarnation, source native window ID, original diary raw bytes and Undo depth. Assert the fresh chronological diary has its own generated ID, its EOF is revealed, and chain.org remains byte-identical to files['chain.org'].",
+    "Set orgAgendaConfigurationJson to JSON.stringify(agendaConfiguration) with its single view's files replaced by exactly [recorded diary relative path]. Append '* TODO Read linked research\nResearch note\n' to the diary at EOF as one canonical source edit. Undo once and assert exact original diary raw bytes, then Redo. Select only 'Research note' and record the raw selection and source Undo depth.",
+    "Use the application command 'Org-roam: insert node link'; select 'Create new node…'; answer 'Chain research' to 'New Org-roam node title:'.",
+    "In the full Org-roam capture draft, retain the generated ID, add ':ROAM_ALIASES: \"Research alias\"' inside the file property drawer, and append 'Reading excerpt α😀.\n' under '* 内容'. Record the generated UUID and chronological relative path. Place one empty cursor at EOF, then C-c C-c / Finish Org-roam capture. Do not select text when sending the finish prefix.",
+    "Assert return to the exact recorded diary source native window, capability/session and canonical runtime incarnation. Its selected range is replaced by exactly '[[id:<generated UUID>][Research note]]', with the cursor at the link end. The surrounding source bytes remain unchanged and insertion increases canonical source Undo depth by one; Undo once restores the exact pre-link diary source, then Redo restores the ID link. The created node on disk retains the same generated UUID and alias. No other.org save or edit occurred.",
+    "Place the source cursor inside the new ID link; invoke 'Open link' / C-c C-o. Assert the generated chronological node opens. Expand 'Backlinks'; the dirty diary TODO source must be present even though the diary task/link edits have not been saved. Open that backlink and assert the exact diary canonical source and heading; then follow the same ID link back to the node.",
+    "In the node source select 'Reading excerpt α😀.' and invoke 'Org-remark: quote'. Then invoke 'Org-remark: open notes'. Assert the canonical sidecar is the chronological node filename with '-notes.org'; it contains the selected excerpt and matching source-relative file link. The annotation is one canonical sidecar history event and changes no node source bytes/history. Undo once in the notes editor restores its exact pre-annotation sidecar raw bytes, then Redo restores the annotation.",
+    "In the notes editor append 'Literal marginal note 😀\u0000\n' as one canonical sidecar edit. Undo once and assert exact pre-note sidecar bytes with unchanged source history, then Redo. Edit the visible org-remark-label property from 'quote' to 'important' as one sidecar edit; source highlight styling must change immediately without save. Undo that label edit and assert immediate quote styling. Invoke 'Save notes', then 'Source'. Assert return to the exact native node window with the excerpt selection restored, not to other.org. The sidecar note remains literal; sidecar Undo belongs only to the sidecar.",
+    "Invoke 'Org-roam: find node', search 'Research alias', and verify it resolves the same generated UUID/path rather than a fabricated alias node. Cancel this picker explicitly.",
+    "Invoke 'Open agenda' (agenda), explicitly choose configured 'Chain tasks', and focus 'Read linked research'. It must appear from the dirty diary source. Invoke 'Return to agenda source' (org-agenda.return-source) and assert the same canonical diary source is displayed without losing its ID link or replacing other.org. Invoke 'Cycle agenda TODO' (org-agenda.cycle-todo) once from the selected Agenda entry; assert one canonical diary history event and no sidecar/node/other.org history edit. Undo once from the returned native diary Source restores the exact pre-Agenda diary raw bytes; then Redo.",
+    "Return to other.org: recorded raw dirty bytes, cursor, native window identity and independent Undo history must remain intact. Neither node creation, annotation, Agenda query nor source return may save or clobber it."
+  ],
+  "commandIds": {
+    "diary": "New diary entry",
+    "link": "Open link / C-c C-o",
+    "roam-insert": "Org-roam: insert node link",
+    "roam-find": "Org-roam: find node",
+    "roam-new": "Org-roam: capture new node",
+    "remark-quote": "Org-remark: quote",
+    "remark-open": "Org-remark: open notes",
+    "remark-change": "Org-remark: change pen",
+    "org-roam.finish": "Finish Org-roam capture / C-c C-c",
+    "org-roam.cancel": "Cancel Org-roam capture / C-c C-k",
+    "org-remark.save": "Save notes",
+    "org-remark.return-source": "Source",
+    "agenda": "Open agenda",
+    "org-agenda.return-source": "Return to agenda source",
+    "org-agenda.cycle-todo": "Cycle agenda TODO",
+    "org-agenda.schedule": "Schedule agenda heading",
+    "org-agenda.cancel": "Cancel agenda command"
+  },
+  "cancelScenario": [
+    "At the diary selection open roam-insert, choose Create new node, enter Cancelled chain node, and record the complete generated capture source. Invoke org-roam.cancel / C-c C-k. In the unsaved-close confirmation choose the exact 'Close tool' button, not 'Keep draft'. Assert exact diary raw bytes, selection, source Undo depth and native source window, no new node on disk, and unchanged dirty other.org.",
+    "At the node excerpt invoke remark-change, retain the pen picker callback, then invoke its Cancel / C-g. Invoke the old acceptance callback only in the deterministic consumer regression. Assert no canonical source/sidecar edit or native write, no focus theft, and no pending command.",
+    "Open the configured Agenda task, invoke org-agenda.schedule ('Schedule agenda heading'), enter a date but Cancel the parameter owner with C-g before accepting. Assert exact diary raw bytes, canonical history depth, node/sidecar/other.org histories and native disk bytes are unchanged."
+  ],
+  "retirementScenario": [
+    "While Roam publication is accepted, navigate away or replace its originating native window. Let the accepted native write settle once. The confirmed node remains on disk, but the retained producer is read-only/copyable, with no late link edit, retry, rollback or focus steal.",
+    "While Remark notes are open, retain old Save/Source/Close callbacks. Retire the originating source window or close/reopen the sidecar at the same path with a fresh runtime incarnation. The retained old sidecar remains read-only/copyable, its raw bytes remain frozen, and it has no canonical runtime/window grant. Reopen the same path or revive an available window with equal text; the retired panel must not recover authority/focus. Open a fresh Remark producer, invoke the old callbacks, and assert no replacement save/edit/close/focus. Only the fresh producer can return to its exact native source."
+  ]
+}

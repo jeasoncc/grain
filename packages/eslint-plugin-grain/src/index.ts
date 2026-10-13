@@ -15,18 +15,13 @@
  * 使用方法：
  * ```js
  * // eslint.config.js
- * import grainPlugin from 'eslint-plugin-grain';
+ * import grainPlugin from '@grain/eslint-plugin';
  *
- * export default [
- *   {
- *     plugins: { grain: grainPlugin },
- *     rules: grainPlugin.configs.strict.rules, // 推荐使用 strict
- *   }
- * ];
+ * export default [grainPlugin.configs.strict];
  * ```
  */
 
-import { ESLintUtils } from "@typescript-eslint/utils"
+import { ESLintUtils, type TSESLint } from "@typescript-eslint/utils"
 import { legacyConfig } from "./configs/legacy.js"
 // Import configuration presets
 import { strictConfig } from "./configs/strict.js"
@@ -114,7 +109,10 @@ const plugin = {
 		 * - 正在迁移的旧项目
 		 * - 需要渐进式采用新规则的项目
 		 */
-		legacy: legacyConfig,
+		legacy: {
+			...legacyConfig,
+			plugins: {} as TSESLint.FlatConfig.Plugins,
+		},
 
 		/**
 		 * Recommended Configuration (平衡配置)
@@ -127,7 +125,7 @@ const plugin = {
 		 * - 需要一定灵活性的项目
 		 */
 		recommended: {
-			plugins: ["grain"],
+			plugins: {} as TSESLint.FlatConfig.Plugins,
 			rules: {
 				"grain/boolean-naming": "error",
 				"grain/chinese-comments": "warn",
@@ -188,7 +186,7 @@ const plugin = {
 				"grain/variable-naming": "error",
 				// Zustand Rules
 				"grain/zustand-patterns": "error",
-			},
+			} as const,
 		},
 		/**
 		 * Strict Configuration (推荐)
@@ -201,7 +199,10 @@ const plugin = {
 		 * - 已完成迁移的项目
 		 * - 追求最高代码质量的项目
 		 */
-		strict: strictConfig,
+		strict: {
+			...strictConfig,
+			plugins: {} as TSESLint.FlatConfig.Plugins,
+		},
 	},
 	meta: {
 		description: "最严格的代码审查系统 - Grain 函数式编程架构",
@@ -316,6 +317,10 @@ const plugin = {
 		// ============================================
 		"zustand-patterns": zustandRules["zustand-patterns"],
 	},
+}
+
+for (const config of Object.values(plugin.configs)) {
+	config.plugins.grain = plugin
 }
 
 export default plugin

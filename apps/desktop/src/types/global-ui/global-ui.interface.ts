@@ -2,7 +2,7 @@
  * Global UI Domain - Interface Definitions
  *
  * Type definitions for global UI component state management.
- * Handles command palette, global search, buffer switcher, export dialog, and other global overlays.
+ * Handles global search, buffer switcher, export dialog, and other legacy overlays.
  */
 
 // ==============================
@@ -25,9 +25,6 @@ export type BufferSwitcherDirection = "forward" | "backward"
  * All properties are readonly to enforce immutability.
  */
 export interface GlobalUIState {
-	/** Whether the command palette is open */
-	readonly commandPaletteOpen: boolean
-
 	/** Whether the global search panel is open */
 	readonly globalSearchOpen: boolean
 
@@ -49,22 +46,6 @@ export interface GlobalUIState {
  * Actions available for mutating global UI state.
  */
 export interface GlobalUIActions {
-	// Command Palette
-	/**
-	 * Open the command palette.
-	 */
-	readonly openCommandPalette: () => void
-
-	/**
-	 * Close the command palette.
-	 */
-	readonly closeCommandPalette: () => void
-
-	/**
-	 * Toggle the command palette open/closed.
-	 */
-	readonly toggleCommandPalette: () => void
-
 	// Global Search
 	/**
 	 * Open the global search panel.
@@ -138,7 +119,6 @@ export const DEFAULT_GLOBAL_UI_CONFIG: GlobalUIConfig = {
 export const DEFAULT_GLOBAL_UI_STATE: GlobalUIState = {
 	bufferSwitcherDirection: "forward",
 	bufferSwitcherOpen: false,
-	commandPaletteOpen: false,
 	exportDialogOpen: false,
 	globalSearchOpen: false,
 } as const

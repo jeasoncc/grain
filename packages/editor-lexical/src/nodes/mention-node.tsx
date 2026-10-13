@@ -51,19 +51,13 @@ export class MentionNode extends TextNode {
   }
 
   static importJSON(serializedNode: SerializedMentionNode): MentionNode {
-    const node = $createMentionNode(
+    return $createMentionNode(
       serializedNode.mentionName,
       serializedNode.roleId,
-    );
-    node.setTextContent(serializedNode.text);
-    node.setFormat(serializedNode.format);
-    node.setDetail(serializedNode.detail);
-    node.setMode(serializedNode.mode);
-    node.setStyle(serializedNode.style);
-    return node;
+    ).updateFromJSON(serializedNode);
   }
 
-  constructor(mentionName: string, roleId: string, key?: NodeKey) {
+  constructor(mentionName = "", roleId = "", key?: NodeKey) {
     super("@" + mentionName, key);
     this.__mention = mentionName;
     this.__roleId = roleId;

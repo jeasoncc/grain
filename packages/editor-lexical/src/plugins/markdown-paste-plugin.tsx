@@ -6,9 +6,9 @@
  */
 
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { $convertFromMarkdownString, TRANSFORMERS, CHECK_LIST } from "@lexical/markdown";
+import { $generateNodesFromMarkdownString, TRANSFORMERS, CHECK_LIST } from "@lexical/markdown";
 import { useEffect } from "react";
-import { COMMAND_PRIORITY_LOW, PASTE_COMMAND } from "lexical";
+import { $getSelection, $isRangeSelection, COMMAND_PRIORITY_BEFORE_LOW, PASTE_COMMAND } from "lexical";
 
 /**
  * MarkdownPastePlugin component
@@ -24,13 +24,14 @@ export default function MarkdownPastePlugin(): null {
   useEffect(() => {
     return editor.registerCommand(
       PASTE_COMMAND,
-      (event: ClipboardEvent) => {
+      (event) => {
+        if (!("clipboardData" in event)) return false;
         const clipboardData = event.clipboardData;
         if (!clipboardData) return false;
 
-        // Check if there's HTML content - if so, let default handler deal with it
+        // Preserve rich HTML and same-namespace Lexical clipboard payloads.
         const htmlData = clipboardData.getData("text/html");
-        if (htmlData) return false;
+        if (htmlData || clipboardData.getData("application/x-lexical-editor")) return false;
 
         // Get plain text content
         const textData = clipboardData.getData("text/plain");
@@ -42,20 +43,17 @@ export default function MarkdownPastePlugin(): null {
         
         if (!hasMarkdownSyntax) return false;
 
-        // Prevent default paste behavior
-        event.preventDefault();
+        const selection = $getSelection();
+        if (!$isRangeSelection(selection)) return false;
 
-        // Convert Markdown to Lexical nodes
-        editor.update(() => {
-          $convertFromMarkdownString(
-            textData,
-            [...TRANSFORMERS, CHECK_LIST]
-          );
-        });
+        event.preventDefault();
+        selection.insertNodes(
+          $generateNodesFromMarkdownString(textData, [...TRANSFORMERS, CHECK_LIST])
+        );
 
         return true;
       },
-      COMMAND_PRIORITY_LOW
+      COMMAND_PRIORITY_BEFORE_LOW
     );
   }, [editor]);
 

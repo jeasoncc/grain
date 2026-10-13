@@ -2,16 +2,11 @@
  * PrismLanguagesPlugin - 注册自定义 Prism 语言
  *
  * 为 Lexical 代码块添加 Mermaid 和 PlantUML 语法高亮支持
- * 在编辑器初始化时注册语言定义到全局 Prism 实例
+ * 在编辑器初始化前注册语言定义到共享 Prism 实例
  */
 
-import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
+import Prism from "prismjs";
 import { useEffect } from "react";
-
-// 获取全局 Prism 实例（由 @lexical/code 注入）
-declare const Prism: {
-	languages: Record<string, unknown>;
-};
 
 /**
  * Mermaid 语言定义
@@ -63,10 +58,7 @@ const plantumlLanguage = {
  * 注册自定义语言到 Prism
  */
 const registerLanguages = (): void => {
-	if (typeof Prism === "undefined") {
-		return;
-	}
-
+	// Both this plugin and @lexical/code-prism import the same Prism module.
 	// 注册 Mermaid
 	if (!Prism.languages.mermaid) {
 		Prism.languages.mermaid = mermaidLanguage;
@@ -79,17 +71,18 @@ const registerLanguages = (): void => {
 	}
 };
 
+// Extension registration highlights initial content before React effects run.
+registerLanguages();
+
 /**
  * Prism 语言注册插件
  *
  * 在编辑器挂载时注册 Mermaid 和 PlantUML 语言
  */
 export default function PrismLanguagesPlugin(): null {
-	const [editor] = useLexicalComposerContext();
-
 	useEffect(() => {
 		registerLanguages();
-	}, [editor]);
+	}, []);
 
 	return null;
 }

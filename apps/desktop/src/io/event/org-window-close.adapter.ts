@@ -4,14 +4,17 @@ import { getCurrentWindow } from "@tauri-apps/api/window"
 export interface OrgWindowCloseState {
 	readonly hasDirtyBuffers: boolean
 	readonly isBusy: boolean
+	readonly hasOtherWindows: boolean
 }
 
 export interface OrgWindowCloseOptions {
 	/** Called only after active native registration succeeds, or immediately in a browser. */
 	readonly onReady: () => void
 	readonly getState: () => OrgWindowCloseState
-	/** Must be synchronous: an asynchronous decision must never authorize a close. */
-	readonly confirmDiscard: () => boolean
+	readonly captureDiscard: () => () => boolean
+	/** Close/hide only this view while another native window retains the canonical owner. */
+	readonly closeViewOnly: (signal: AbortSignal) => Promise<boolean>
+	readonly confirmDiscard: (signal: AbortSignal) => Promise<boolean>
 	readonly onBlocked: () => void
 	readonly onError: (error: unknown) => void
 }
@@ -22,10 +25,13 @@ let retireCurrent: (() => void) | undefined
 export const registerOrgWindowClose = (options: OrgWindowCloseOptions): (() => void) => {
 	retireCurrent?.()
 	let active = true
-	let decidingOrDestroying = false
+	let pending: AbortController | undefined
 	let unlisten: (() => void) | undefined
 	const stop = () => {
 		active = false
+		const confirmation = pending
+		pending = undefined
+		confirmation?.abort()
 		unlisten?.()
 		unlisten = undefined
 		if (retireCurrent === stop) {
@@ -44,33 +50,41 @@ export const registerOrgWindowClose = (options: OrgWindowCloseOptions): (() => v
 			return stop
 		}
 		const nativeWindow = getCurrentWindow()
-		const attemptDiscard = (state: OrgWindowCloseState) => {
-			decidingOrDestroying = true
+		const attemptClose = async () => {
+			const confirmation = new AbortController()
+			pending = confirmation
+			const current = () => active && pending === confirmation && !confirmation.signal.aborted
 			try {
-				const confirmed = options.confirmDiscard()
-				if (!active) {
-					return
-				}
-				const latest = options.getState()
-				if (latest.isBusy) {
+				const initial = { ...options.getState() }
+				if (initial.hasOtherWindows) {
+					if (await options.closeViewOnly(confirmation.signal)) return
+					if (!current()) return
 					options.onBlocked()
-					decidingOrDestroying = false
 					return
 				}
-				if (confirmed !== true || latest.hasDirtyBuffers !== state.hasDirtyBuffers) {
-					decidingOrDestroying = false
+				if (initial.isBusy) {
+					options.onBlocked()
 					return
 				}
-				// destroy bypasses another close-request event (and a second discard prompt).
-				void nativeWindow
-					.destroy()
-					.catch(reportError)
-					.finally(() => {
-						decidingOrDestroying = false
-					})
+				if (initial.hasDirtyBuffers) {
+					const mayDiscard = options.captureDiscard()
+					if (!current()) return
+					const confirmed = await options.confirmDiscard(confirmation.signal)
+					if (!current() || confirmed !== true) return
+					const latest = options.getState()
+					if (latest.isBusy || latest.hasOtherWindows) {
+						options.onBlocked()
+						return
+					}
+					if (latest.hasDirtyBuffers !== initial.hasDirtyBuffers || !mayDiscard()) return
+				}
+				if (!current()) return
+				// Bypass another close-request event only after exit/discard authority is settled.
+				await nativeWindow.destroy()
 			} catch (error) {
-				decidingOrDestroying = false
 				reportError(error)
+			} finally {
+				if (pending === confirmation) pending = undefined
 			}
 		}
 		void nativeWindow
@@ -78,19 +92,11 @@ export const registerOrgWindowClose = (options: OrgWindowCloseOptions): (() => v
 				if (!active) {
 					return
 				}
-				const state = options.getState()
-				if (!state.isBusy && !state.hasDirtyBuffers && !decidingOrDestroying) {
-					return
-				}
-				// Tauri inspects this synchronously; do not await before preventing close.
+				const { hasDirtyBuffers, isBusy, hasOtherWindows } = options.getState()
+				if (!isBusy && !hasDirtyBuffers && !hasOtherWindows && !pending) return
+				// Tauri inspects this synchronously; view-only handling happens afterward.
 				event.preventDefault()
-				if (state.isBusy) {
-					options.onBlocked()
-					return
-				}
-				if (!decidingOrDestroying) {
-					attemptDiscard(state)
-				}
+				if (!pending) void attemptClose()
 			})
 			.then((removeListener) => {
 				if (active) {

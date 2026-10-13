@@ -1,0 +1,2644 @@
+{
+  "today": "2026-10-09",
+  "now": "13:00",
+  "sources": {
+    "captures": "* 😀 Prefix\r\nbody\u0000\r\n* Same\r\n:PROPERTIES:\r\n:NAME: aa\r\n:END:\r\n* Folded\r\n:PROPERTIES:\r\n:NAME: aA\r\n:END:\r\n* Different\r\n:PROPERTIES:\r\n:NAME: ab\r\n:END:\r\n* Symbol\r\n:PROPERTIES:\r\n:NAME: foo_bar\r\n:END:\r\n* Greek\r\n:PROPERTIES:\r\n:NAME: Σ\r\n:END:\r\n",
+    "captureInheritance": "* Parent :aa:ab:Σ:\r\n:PROPERTIES:\r\n:AA: parent\r\n:AB: other\r\n:END:\r\n** 😀 Child\r\n** Barrier\r\n:PROPERTIES:\r\n:AA: nil\r\n:END:\r\n*** Below\r\n",
+    "lexer": "#+TODO: TODO NEXT WAIT | DONE\n* TODO Literal :todo:work:\n:PROPERTIES:\n:OWNER: a|b\n:PATH: a/b\n:END:\n* NEXT Names :AND:NOT:home:\n:PROPERTIES:\n:OWNER: a\\|b\n:END:\n* WAIT Both :work:home:OWNER:\n* DONE Choice :OR:b:",
+    "priority": "#+PRIORITIES: A C C\n* one two [#A] later\n* [#B] Initial\n* [#a] Lower\n* [#99] Invalid\n* [#10] Numeric\n* Default\n* [#A]Joined\n* [#B]\tTabbed\n* TODO\tNot a state",
+    "itemTabs": "#+TODO: TODO | DONE\n* [#B]\tTabbed\n* TODO Hello\tthere\n* 😀\tx\n* 研究\tx\n* A\tB\tC\n* TODO [#A] Plain",
+    "priorityNumeric": "#+PRIORITIES: 1 64 32\n* Default\n* [#64] Last\n* [#65] Invalid",
+    "fileTagsForms": "#+FILETAGS: root :two::work-project: @desk\n#+FILETAGS: :root:three:\n* Root\n** Child :local:\n* Peer",
+    "calendarOverflow": "* Normal\n:PROPERTIES:\n:DATE: <2026-03-02 Mon>\n:END:\n* Overflow\n:PROPERTIES:\n:DATE: <2026-02-30>\n:END:\n* Seconds\n:PROPERTIES:\n:DATE: <2026-10-09 Fri 13:00:59>\n:END:\n* NoSpace\n:PROPERTIES:\n:DATE: <2026-10-09Fri13:00>\n:END:",
+    "unicodeTags": "* Combining :é:\n* Number :²:\n* Ordinal :ª:\n* Deseret :𐐀:\n*\tNotHeading :work:\n* TODO\tNotState :work:",
+    "wordDefaults": "* Private\n:PROPERTIES:\n:OWNER: \n:END:\n* Unassigned\n:PROPERTIES:\n:OWNER: ͸\n:END:\n* Apostrophe\n:PROPERTIES:\n:OWNER: '\n:END:\n* NBSP\n:PROPERTIES:\n:OWNER:  \n:END:\n* Joiner\n:PROPERTIES:\n:OWNER: ‍\n:END:\n* Separator\n:PROPERTIES:\n:OWNER:  \n:END:",
+    "groupsQuoted": "#+TAGS: [ Team : work Squad ]\n#+TAGS: [ Squad : urgent ]\n#+TAGS: [ FILE : work ]\n#+TAGS: [ today : work ]\n* Team :Team:\n:PROPERTIES:\n:OWNER: Team\n:DATE: <2026-10-09 Fri>\n:END:\n* Member :work:\n:PROPERTIES:\n:OWNER: Tango\n:DATE: <2026-10-10 Sat>\n:END:\n* Peer :urgent:",
+    "main": "#+TODO: TODO NEXT WAIT | DONE\r\n#+CATEGORY: Work\r#+FILETAGS: :file:exclude:\n#+PROPERTY: OWNER Global\r\n#+PROPERTY: NUM 8\r#+TAGS: [ Team : work Squad ]\n#+TAGS: [ Squad : urgent {P@.+} ]\r\n* TODO [#A] Parent :work:exclude:café:\r:PROPERTIES:\n:OWNER: Parent\r\n:NUM: 3.5\r:ZERO:\n:PATH: a\\nb\r\n:boss-prio: C\r:boss:prio: C\n:boss\\prio: C\r\n:END:\rbody <2026-10-08 Thu> [2026-10-07 Wed]\n** NEXT 😀 Child :urgent:CAFÉ:@Home:_local:\r\nDEADLINE: <2026-10-09 Fri 12:30> SCHEDULED: <2026-10-10 Sat>\r:PROPERTIES:\n:OWNER+: Extra\r\n:OWNER+: Again\r:NUM: 12tail\n:END:\r\n** DONE Sibling :boss:\rCLOSED: [2026-10-09 Fri 10:00]\n:PROPERTIES:\r\n:OWNER: nil\r:NUM: text\n:END:\r\n*** WAIT Descendant :P@project:\r:PROPERTIES:\n:OWNER+: Child\r\n:END:\r* WAIT Peer :home:\n:PROPERTIES:\r\n:OWNER: Ada\r:NUM: -2e1\n:END:\r\n* Missing\r* Empty\n:PROPERTIES:\r\n:NUM:\r:OWNER:\n:END:\r\n* Zero\r:PROPERTIES:\n:NUM: 0\r\n:END:\r* Literal (a)\n:PROPERTIES:\r\n:OWNER: (a)\r:END:\n* Unicode \r\n:PROPERTIES:\r:OWNER: \n:END:\r\n* Unicode 😀\r:PROPERTIES:\n:OWNER: 😀\r\n:END:\r* Month boundary\nDEADLINE: <2026-11-09 Mon>\r\n* Year boundary\rDEADLINE: <2027-10-09 Sat 06:00>\n* Epoch\r\nDEADLINE: <1970-01-01 Thu>\r* Before epoch\nDEADLINE: <1969-12-31 Wed>",
+    "document": ":PROPERTIES:\n:OWNER: Document\n:OWNER+: Plus\n:END:\n#+PROPERTY: OWNER Global\n* Root\n** Child",
+    "category": "* Root\n:PROPERTIES:\n:CATEGORY: RootCat\n:END:\n** Child\n* Peer",
+    "supplementary": "* First\n:PROPERTIES:\n:𐐀: value\n:OWNER: \n:END:\n* Second 😀\n:PROPERTIES:\n:OWNER: 😀\n:END:",
+    "timestampLiterals": "* Root\n~<2026-01-01 Thu>~ =<2026-01-02 Fri>=\n~[2026-01-01 Thu]~ =[2026-01-02 Fri]=\nReal <2026-01-09 Fri> [2026-01-09 Fri]",
+    "timestampLinkTarget": "* Root\n[[<2026-01-01 Thu>][label]] [[file:[2026-01-02 Fri]][label]]\nReal <2026-01-09 Fri> [2026-01-09 Fri]",
+    "timestampLinkDescription": "* Root\n[[file:owned.org][<2026-01-01 Thu>]] [[file:owned.org][[2026-01-02 Fri]]]\nReal <2026-01-09 Fri> [2026-01-09 Fri]",
+    "timestampInlineSource": "* Root\nsrc_org{<2026-01-01 Thu> [2026-01-02 Fri]}\nReal <2026-01-09 Fri> [2026-01-09 Fri]",
+    "timestampComment": "* Root\n# comment <2026-01-01 Thu> [2026-01-02 Fri]\nReal <2026-01-09 Fri> [2026-01-09 Fri]",
+    "words": "* Letter\n:PROPERTIES:\n:OWNER: a\n:END:\n* Number\n:PROPERTIES:\n:OWNER: 2\n:END:\n* ArabicDigit\n:PROPERTIES:\n:OWNER: ٢\n:END:\n* OtherNumber\n:PROPERTIES:\n:OWNER: ²\n:END:\n* Combining\n:PROPERTIES:\n:OWNER: ́\n:END:\n* Ordinal\n:PROPERTIES:\n:OWNER: ª\n:END:\n* RestoredJapanese\n:PROPERTIES:\n:OWNER: ゛\n:END:\n* EmacsScriptOverride\n:PROPERTIES:\n:OWNER: ॱ\n:END:\n* At\n:PROPERTIES:\n:OWNER: @\n:END:\n* Underscore\n:PROPERTIES:\n:OWNER: _\n:END:\n* Deseret\n:PROPERTIES:\n:OWNER: 𐐀\n:END:",
+    "collation": "* Lower\n:PROPERTIES:\n:OWNER: a\n:END:\n* Upper\n:PROPERTIES:\n:OWNER: A\n:END:\n* Umlaut\n:PROPERTIES:\n:OWNER: ä\n:END:\n* Zed\n:PROPERTIES:\n:OWNER: z\n:END:\n* Acute\n:PROPERTIES:\n:OWNER: é\n:END:\n* Decomposed\n:PROPERTIES:\n:OWNER: é\n:END:\n* Emoji\n:PROPERTIES:\n:OWNER: 😀\n:END:\n* Private\n:PROPERTIES:\n:OWNER: \n:END:\n* Deseret\n:PROPERTIES:\n:OWNER: 𐐀\n:END:\n* Angstrom\n:PROPERTIES:\n:OWNER: Å\n:END:\n* A-ring\n:PROPERTIES:\n:OWNER: Å\n:END:\n* Hyphen\n:PROPERTIES:\n:OWNER: a-b\n:END:\n* Joined\n:PROPERTIES:\n:OWNER: ab\n:END:\n* Underscore\n:PROPERTIES:\n:OWNER: a_b\n:END:\n* Space\n:PROPERTIES:\n:OWNER: a b\n:END:\n* Two\n:PROPERTIES:\n:OWNER: a2\n:END:\n* Ten\n:PROPERTIES:\n:OWNER: a10\n:END:"
+  },
+  "wordSources": {
+    "mixedJapanese": "(a〃゛゜文)",
+    "orderedKanaCategories": "(文あア文゛゜a)",
+    "mixedScripts": "(LatinΣЖאالعربية𐐀)",
+    "combiningAcrossScripts": "(áΣ́文́a)",
+    "sourceSymbols": "(foo_bar@baz~end)",
+    "nativeWordCharacters": "(ªΣ²$'%文😀)",
+    "wordEdges": "a  b",
+    "punctuationOnly": "!!!",
+    "paddedPunctuation": "  !!!  ",
+    "whitespaceOnly": " \t\n",
+    "empty": "",
+    "dosCoordinates": "α\r\n文😀\r\n",
+    "asciiDelimiters": "(alpha) second.",
+    "unicodeWhitespace": "a b　文",
+    "rawNul": "a\u0000b",
+    "supplementaryScripts": "(𐐀𐐨😀文)"
+  },
+  "configurations": {
+    "captureRegexp": {
+      "tags": "^\\(\\sw\\)\\1$",
+      "tagExclusions": [],
+      "properties": "^\\(?1:A\\)\\1$",
+      "propertyExclusions": []
+    },
+    "syntaxRegexp": {
+      "tags": "^\\cl+$",
+      "tagExclusions": [],
+      "properties": "^\\_<AA\\_>$",
+      "propertyExclusions": []
+    },
+    "categoryRegexp": {
+      "tags": "^\\cg+$",
+      "tagExclusions": [],
+      "properties": false,
+      "propertyExclusions": []
+    },
+    "default": {
+      "tags": true,
+      "tagExclusions": [],
+      "properties": false,
+      "propertyExclusions": []
+    },
+    "off": {
+      "tags": false,
+      "tagExclusions": [],
+      "properties": false,
+      "propertyExclusions": []
+    },
+    "all": {
+      "tags": true,
+      "tagExclusions": [],
+      "properties": true,
+      "propertyExclusions": []
+    },
+    "selective": {
+      "tags": [
+        "work",
+        "file"
+      ],
+      "tagExclusions": [],
+      "properties": [
+        "OWNER",
+        "NUM"
+      ],
+      "propertyExclusions": []
+    },
+    "listExclusions": {
+      "tags": [
+        "work",
+        "exclude"
+      ],
+      "tagExclusions": [
+        "exclude"
+      ],
+      "properties": false,
+      "propertyExclusions": []
+    },
+    "booleanExclusions": {
+      "tags": true,
+      "tagExclusions": [
+        "exclude"
+      ],
+      "properties": false,
+      "propertyExclusions": []
+    },
+    "regexp": {
+      "tags": "^\\(?:work\\|exclude\\|file\\)$",
+      "tagExclusions": [
+        "exclude"
+      ],
+      "properties": "^\\(?:OWNER\\|NUM\\)$",
+      "propertyExclusions": []
+    }
+  },
+  "syntaxProbes": [
+    { "id": "capture-exact", "mode": "property", "pattern": "^\\(a\\)\\1$", "value": "aa" },
+    { "id": "capture-folded", "mode": "property", "pattern": "^\\(a\\)\\1$", "value": "aA" },
+    { "id": "capture-different", "mode": "property", "pattern": "^\\(a\\)\\1$", "value": "ab" },
+    { "id": "capture-native-sigma", "mode": "property", "pattern": "^\\(Σ\\)\\1$", "value": "Σς" },
+    { "id": "capture-native-kelvin-width", "mode": "property", "pattern": "^\\(k\\)\\1$", "value": "kK" },
+    { "id": "capture-native-supplementary", "mode": "property", "pattern": "^\\(𐐀\\)\\1$", "value": "𐐀𐐨" },
+    { "id": "capture-unmatched-branch", "mode": "property", "pattern": "^\\(foo\\(b*\\)\\|lose\\)\\2$", "value": "lose" },
+    { "id": "capture-backtracking", "mode": "property", "pattern": "^\\(foo\\(b*\\)\\|lose\\)\\2$", "value": "foobb" },
+    { "id": "capture-empty", "mode": "property", "pattern": "^\\(a*\\)\\1$", "value": "" },
+    { "id": "capture-last-iteration", "mode": "property", "pattern": "^\\(a\\|b\\)+\\1$", "value": "abb" },
+    { "id": "capture-nested-retained", "mode": "property", "pattern": "^\\(a\\(b\\)?\\)+\\2$", "value": "abab" },
+    { "id": "capture-lazy", "mode": "property", "pattern": "\\(a+?\\)\\1", "value": "aaaa" },
+    { "id": "capture-no-reference-retained", "mode": "property", "pattern": "^\\(a\\(b\\)?\\)+$", "value": "aba" },
+    { "id": "capture-empty-repetition", "mode": "property", "pattern": "^\\(a*\\)*\\1$", "value": "" },
+    { "id": "capture-interval", "mode": "property", "pattern": "^\\(a\\)\\{2,3\\}\\1$", "value": "aaaa" },
+    { "id": "capture-interval-lazy", "mode": "property", "pattern": "\\(a\\{1,3\\}?\\)\\1", "value": "aaaa" },
+    { "id": "interval-optional-greedy", "mode": "property", "pattern": "a\\{1,3\\}?", "value": "aaaa" },
+    { "id": "interval-optional-empty", "mode": "property", "pattern": "a\\{2\\}?", "value": "b" },
+    { "id": "interval-optional-lazy", "mode": "property", "pattern": "a\\{1,3\\}??", "value": "aaaa" },
+    { "id": "interval-star-even", "mode": "property", "pattern": "^a\\{2\\}*$", "value": "aaaa" },
+    { "id": "interval-star-odd", "mode": "property", "pattern": "^a\\{2\\}*$", "value": "aaa" },
+    { "id": "interval-plus-empty", "mode": "property", "pattern": "^a\\{2\\}+$", "value": "" },
+    { "id": "numbered-over-byte-register", "mode": "property", "pattern": "^\\(?256:a\\)$", "value": "a" },
+    { "id": "capture-nul-astral-offset", "mode": "property", "pattern": "\\(a\\)\\1", "value": "😀\u0000aa\u0000AA", "from": 5 },
+    { "id": "numbered-explicit", "mode": "property", "pattern": "^\\(?3:a\\)\\(b\\)\\3\\4$", "value": "aBab" },
+    { "id": "numbered-reused", "mode": "property", "pattern": "^\\(?1:a\\)\\(?1:b\\)\\1$", "value": "abb" },
+    { "id": "numbered-alternatives", "mode": "property", "pattern": "^\\(?:\\(?1:a\\)\\|\\(?1:b\\)\\)\\1$", "value": "bb" },
+    { "id": "numbered-gap-unmatched", "mode": "property", "pattern": "^\\(?3:a\\)\\1$", "value": "a" },
+    { "id": "syntax-space", "mode": "property", "pattern": "^\\s-+$", "value": " \t" },
+    { "id": "syntax-space-alias", "mode": "property", "pattern": "^\\s +$", "value": " \t" },
+    { "id": "syntax-word", "mode": "property", "pattern": "^\\sw$", "value": "ª" },
+    { "id": "syntax-symbol", "mode": "property", "pattern": "^\\s_$", "value": "_" },
+    { "id": "syntax-tag-override", "mode": "tag", "pattern": "^\\s_$", "value": "_" },
+    { "id": "syntax-not-word", "mode": "property", "pattern": "^\\Sw$", "value": "_" },
+    { "id": "syntax-open-parenthesis", "mode": "property", "pattern": "^\\s($", "value": "[" },
+    { "id": "syntax-unknown-never", "mode": "property", "pattern": "^\\sz$", "value": " " },
+    { "id": "syntax-unknown-negated", "mode": "property", "pattern": "^\\Sz$", "value": "a" },
+    { "id": "category-greek", "mode": "property", "pattern": "^\\cg$", "value": "Σ" },
+    { "id": "category-not-greek", "mode": "property", "pattern": "^\\Cg$", "value": "a" },
+    { "id": "category-latin", "mode": "property", "pattern": "^\\cl+$", "value": "Latin" },
+    { "id": "category-chinese", "mode": "property", "pattern": "^\\cc$", "value": "文" },
+    { "id": "category-undefined", "mode": "property", "pattern": "^\\c~$", "value": "a" },
+    { "id": "category-capture-no-folding", "mode": "property", "pattern": "^\\(\\cg\\)\\1$", "value": "Σς" },
+    { "id": "symbol-underscore", "mode": "property", "pattern": "\\_<foo_bar\\_>", "value": " foo_bar " },
+    { "id": "symbol-not-word-edge", "mode": "property", "pattern": "\\_<foo\\_>", "value": "foo_bar" },
+    { "id": "symbol-tag-word", "mode": "tag", "pattern": "\\_<@foo_bar\\_>", "value": "@foo_bar" },
+    { "id": "word-boundary-nonword-edge", "mode": "property", "pattern": "\\b", "value": "!" },
+    { "id": "word-nonboundary-empty", "mode": "property", "pattern": "\\B", "value": "" },
+    { "id": "property-private-word", "mode": "property", "pattern": "^\\w$", "value": "", "wordProbe": true },
+    { "id": "property-unassigned-word", "mode": "property", "pattern": "^\\w$", "value": "͸", "wordProbe": true },
+    { "id": "property-apostrophe-word", "mode": "property", "pattern": "^\\w$", "value": "'", "wordProbe": true },
+    { "id": "property-ordinal-nonword", "mode": "property", "pattern": "^\\w$", "value": "ª", "wordProbe": true },
+    { "id": "property-other-number-word", "mode": "property", "pattern": "^\\w$", "value": "²", "wordProbe": true },
+    { "id": "property-at-nonword", "mode": "property", "pattern": "^\\w$", "value": "@", "wordProbe": true },
+    { "id": "property-japanese-repeat-nonword", "mode": "property", "pattern": "^\\w$", "value": "〃", "wordProbe": true },
+    { "id": "property-japanese-voiced-word", "mode": "property", "pattern": "^\\w$", "value": "゛", "wordProbe": true },
+    { "id": "property-japanese-semivoiced-word", "mode": "property", "pattern": "^\\w$", "value": "゜", "wordProbe": true },
+    { "id": "property-japanese-ideograph-word", "mode": "property", "pattern": "^\\w$", "value": "文", "wordProbe": true },
+    { "id": "tag-japanese-repeat-nonword", "mode": "tag", "pattern": "^\\w$", "value": "〃" },
+    { "id": "tag-japanese-voiced-word", "mode": "tag", "pattern": "^\\w$", "value": "゛" },
+    { "id": "tag-at-word", "mode": "tag", "pattern": "^\\w$", "value": "@" },
+    { "id": "tag-underscore-word", "mode": "tag", "pattern": "^[[:word:]]$", "value": "_" },
+    { "id": "alpha-combining", "mode": "property", "pattern": "^[[:alpha:]]$", "value": "́" },
+    { "id": "alnum-other-number", "mode": "property", "pattern": "^[[:alnum:]]$", "value": "²" },
+    { "id": "graph-private", "mode": "property", "pattern": "^[[:graph:]]$", "value": "" },
+    { "id": "print-separator", "mode": "property", "pattern": "^[[:print:]]$", "value": " " },
+    { "id": "punct-nbsp", "mode": "property", "pattern": "^[[:punct:]]$", "value": " " },
+    { "id": "punct-joiner", "mode": "property", "pattern": "^[[:punct:]]$", "value": "‍" },
+    { "id": "fold-literal-sigma", "mode": "property", "pattern": "^Σ$", "value": "ς" },
+    { "id": "fold-range-kelvin", "mode": "property", "pattern": "^[a-z]$", "value": "K" },
+    { "id": "fold-supplementary", "mode": "property", "pattern": "^𐐀$", "value": "𐐨" },
+    { "id": "dot-unicode-separator", "mode": "property", "pattern": "^.$", "value": " " },
+    { "id": "line-anchors-not-unicode-break", "mode": "property", "pattern": "^b$", "value": "a b" }
+  ],
+  "cases": [
+    { "id": "captured-property-acceptance", "source": "captures", "configuration": "default", "match": "NAME={^\\(a\\)\\1$}" },
+    { "id": "numbered-property", "source": "captures", "configuration": "default", "match": "NAME={^\\(?1:a\\)\\1$}" },
+    { "id": "syntax-property", "source": "captures", "configuration": "default", "match": "NAME={^\\s_+$}" },
+    { "id": "symbol-property", "source": "captures", "configuration": "default", "match": "NAME={\\_<foo_bar\\_>}" },
+    { "id": "category-property", "source": "captures", "configuration": "default", "match": "NAME={^\\cg+$}" },
+    { "id": "captured-tag-inheritance", "source": "captureInheritance", "configuration": "captureRegexp", "match": "aa" },
+    { "id": "captured-property-inheritance-nil", "source": "captureInheritance", "configuration": "captureRegexp", "match": "AA=\"parent\"" },
+    { "id": "syntax-inheritance", "source": "captureInheritance", "configuration": "syntaxRegexp", "match": "aa" },
+    { "id": "category-inheritance", "source": "captureInheritance", "configuration": "categoryRegexp", "match": "Σ" },
+    { "id": "native-literal-todo", "source": "lexer", "configuration": "default", "match": "todo" },
+    { "id": "native-literal-AND", "source": "lexer", "configuration": "default", "match": "AND" },
+    { "id": "native-literal-OR", "source": "lexer", "configuration": "default", "match": "OR" },
+    { "id": "native-literal-NOT", "source": "lexer", "configuration": "default", "match": "NOT" },
+    { "id": "native-colon-inclusion", "source": "lexer", "configuration": "default", "match": "work:home" },
+    { "id": "native-space-stops-terms", "source": "lexer", "configuration": "default", "match": "work &home" },
+    { "id": "native-space-after-and", "source": "lexer", "configuration": "default", "match": "work& home" },
+    { "id": "native-nonreserved-word-tail", "source": "lexer", "configuration": "default", "match": "work AND home" },
+    { "id": "native-quoted-global-pipe", "source": "lexer", "configuration": "default", "match": "OWNER=\"a|b\"" },
+    { "id": "native-quoted-repaired-pipe", "source": "lexer", "configuration": "default", "match": "OWNER=\"a\\|b\"" },
+    { "id": "native-quoted-slash", "source": "lexer", "configuration": "default", "match": "PATH=\"a/b\"" },
+    { "id": "native-regexp-last-slash", "source": "lexer", "configuration": "default", "match": "PATH={a/b}" },
+    { "id": "native-bare-regexp-pipe", "source": "lexer", "configuration": "default", "match": "{a|b}" },
+    { "id": "native-todo-unrepaired-pipe", "source": "lexer", "configuration": "default", "match": "/!{^\\(NEXT\\|WAIT\\)$}" },
+    { "id": "priority-any-position", "source": "priority", "configuration": "default", "match": "PRIORITY=\"A\"" },
+    { "id": "priority-lowercase-cookie", "source": "priority", "configuration": "default", "match": "PRIORITY=\"a\"" },
+    { "id": "priority-configured-default", "source": "priority", "configuration": "default", "match": "PRIORITY=\"C\"" },
+    { "id": "priority-numeric-cookie", "source": "priority", "configuration": "default", "match": "PRIORITY=10" },
+    { "id": "priority-default-numeric", "source": "priorityNumeric", "configuration": "default", "match": "PRIORITY=32" },
+    { "id": "priority-upper-numeric", "source": "priorityNumeric", "configuration": "default", "match": "PRIORITY=64" },
+    { "id": "item-priority-uppercase", "source": "priority", "configuration": "default", "match": "ITEM=\"Initial\"" },
+    { "id": "item-priority-lowercase", "source": "priority", "configuration": "default", "match": "ITEM=\"[#a] Lower\"" },
+    { "id": "item-priority-joined", "source": "priority", "configuration": "default", "match": "ITEM=\"[#A]Joined\"" },
+    { "id": "item-priority-tabbed", "source": "priority", "configuration": "default", "match": "ITEM=\"[#B] Tabbed\"" },
+    { "id": "item-tab-stop-priority", "source": "itemTabs", "configuration": "default", "match": "ITEM=\"[#B]    Tabbed\"" },
+    { "id": "item-tab-stop-todo-removed", "source": "itemTabs", "configuration": "default", "match": "ITEM=\"Hello   there\"" },
+    { "id": "item-tab-stop-supplementary-character", "source": "itemTabs", "configuration": "default", "match": "ITEM=\"😀       x\"" },
+    { "id": "item-tab-stop-wide-characters", "source": "itemTabs", "configuration": "default", "match": "ITEM=\"研究      x\"" },
+    { "id": "item-tab-stop-multiple", "source": "itemTabs", "configuration": "default", "match": "ITEM=\"A       B       C\"" },
+    { "id": "item-space-separated-priority-removed", "source": "itemTabs", "configuration": "default", "match": "ITEM=\"Plain\"" },
+    { "id": "state-tab-not-separator", "source": "priority", "configuration": "default", "match": "/TODO" },
+    { "id": "file-tags-bare-token", "source": "fileTagsForms", "configuration": "default", "match": "root" },
+    { "id": "file-tags-repeated-separators", "source": "fileTagsForms", "configuration": "default", "match": "two" },
+    { "id": "file-tags-invalid-heading-token", "source": "fileTagsForms", "configuration": "default", "match": "{^work-project$}" },
+    { "id": "file-tags-off", "source": "fileTagsForms", "configuration": "off", "match": "root" },
+    { "id": "calendar-overflow-operand", "source": "calendarOverflow", "configuration": "default", "match": "DATE=\"<2026-02-30>\"" },
+    { "id": "calendar-overflow-property", "source": "calendarOverflow", "configuration": "default", "match": "DATE=\"<2026-03-02>\"" },
+    { "id": "calendar-seconds-ignored", "source": "calendarOverflow", "configuration": "default", "match": "DATE=\"<2026-10-09 Fri 13:00>\"" },
+    { "id": "calendar-time-space-required", "source": "calendarOverflow", "configuration": "default", "match": "DATE=\"<today>\"" },
+    { "id": "tag-combining-alnum", "source": "unicodeTags", "configuration": "default", "match": "é" },
+    { "id": "tag-other-number-not-alnum", "source": "unicodeTags", "configuration": "default", "match": "{^²$}" },
+    { "id": "tag-ordinal-alnum", "source": "unicodeTags", "configuration": "default", "match": "ª" },
+    { "id": "tag-supplementary-alnum", "source": "unicodeTags", "configuration": "default", "match": "𐐀" },
+    { "id": "heading-tab-not-space", "source": "unicodeTags", "configuration": "default", "match": "work" },
+    { "id": "word-default-private-unassigned-apostrophe", "source": "wordDefaults", "configuration": "default", "match": "OWNER={^\\w$}" },
+    { "id": "posix-native-graph", "source": "wordDefaults", "configuration": "default", "match": "OWNER={^[[:graph:]]$}" },
+    { "id": "posix-native-print", "source": "wordDefaults", "configuration": "default", "match": "OWNER={^[[:print:]]$}" },
+    { "id": "posix-native-punct", "source": "wordDefaults", "configuration": "default", "match": "OWNER={^[[:punct:]]$}" },
+    { "id": "group-key-case-discovery-exact-expansion", "source": "groupsQuoted", "configuration": "default", "match": "team" },
+    { "id": "group-quoted-operand-expanded", "source": "groupsQuoted", "configuration": "default", "match": "OWNER=\"Team\"" },
+    { "id": "group-quoted-operand-ordering", "source": "groupsQuoted", "configuration": "default", "match": "OWNER<\"Team\"" },
+    { "id": "group-special-PN-shadow", "source": "groupsQuoted", "configuration": "default", "match": "FILE=\"\"" },
+    { "id": "group-date-classification-changes", "source": "groupsQuoted", "configuration": "default", "match": "DATE>\"<today>\"" },
+    {
+      "id": "grammar-000",
+      "source": "main",
+      "configuration": "default",
+      "match": "+work-boss"
+    },
+    {
+      "id": "grammar-001",
+      "source": "main",
+      "configuration": "default",
+      "match": "work|home+urgent"
+    },
+    {
+      "id": "grammar-002",
+      "source": "main",
+      "configuration": "default",
+      "match": "work&urgent|home"
+    },
+    {
+      "id": "grammar-003",
+      "source": "main",
+      "configuration": "default",
+      "match": "-work"
+    },
+    {
+      "id": "grammar-004",
+      "source": "main",
+      "configuration": "default",
+      "match": "-absent"
+    },
+    {
+      "id": "grammar-005",
+      "source": "main",
+      "configuration": "default",
+      "match": "café"
+    },
+    {
+      "id": "grammar-006",
+      "source": "main",
+      "configuration": "default",
+      "match": "CAFÉ"
+    },
+    {
+      "id": "grammar-007",
+      "source": "main",
+      "configuration": "default",
+      "match": "file"
+    },
+    {
+      "id": "grammar-008",
+      "source": "main",
+      "configuration": "default",
+      "match": "exclude"
+    },
+    {
+      "id": "grammar-009",
+      "source": "main",
+      "configuration": "default",
+      "match": "Team"
+    },
+    {
+      "id": "grammar-010",
+      "source": "main",
+      "configuration": "default",
+      "match": "Squad"
+    },
+    {
+      "id": "grammar-011",
+      "source": "main",
+      "configuration": "default",
+      "match": "-Team"
+    },
+    {
+      "id": "grammar-012",
+      "source": "main",
+      "configuration": "default",
+      "match": "{^\\(urgent\\|home\\)$}"
+    },
+    {
+      "id": "grammar-013",
+      "source": "main",
+      "configuration": "default",
+      "match": "{\\<café\\>}"
+    },
+    {
+      "id": "grammar-014",
+      "source": "main",
+      "configuration": "default",
+      "match": "{\\`CAFÉ\\'}"
+    },
+    {
+      "id": "grammar-015",
+      "source": "main",
+      "configuration": "default",
+      "match": "{[[:alpha:]]+}"
+    },
+    {
+      "id": "grammar-016",
+      "source": "main",
+      "configuration": "default",
+      "match": "{\\w+}"
+    },
+    {
+      "id": "grammar-017",
+      "source": "main",
+      "configuration": "default",
+      "match": "{^@Home$}"
+    },
+    {
+      "id": "grammar-018",
+      "source": "main",
+      "configuration": "default",
+      "match": "{^_local$}"
+    },
+    {
+      "id": "grammar-019",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER={parent}"
+    },
+    {
+      "id": "grammar-020",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER={(a)}"
+    },
+    {
+      "id": "grammar-021",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER={\\(Parent\\|Ada\\)}"
+    },
+    {
+      "id": "grammar-022",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER={\\(?:Parent\\|Ada\\)}"
+    },
+    {
+      "id": "grammar-023",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER<>{^parent$}"
+    },
+    {
+      "id": "grammar-024",
+      "source": "main",
+      "configuration": "default",
+      "match": "PATH=\"a\\nb\""
+    },
+    {
+      "id": "grammar-025",
+      "source": "main",
+      "configuration": "default",
+      "match": "boss\\-prio=\"C\""
+    },
+    {
+      "id": "grammar-026",
+      "source": "main",
+      "configuration": "default",
+      "match": "boss\\:prio=\"C\""
+    },
+    {
+      "id": "grammar-027",
+      "source": "main",
+      "configuration": "default",
+      "match": "boss\\\\prio=\"C\""
+    },
+    {
+      "id": "grammar-028",
+      "source": "main",
+      "configuration": "default",
+      "match": "TODO=\"\""
+    },
+    {
+      "id": "grammar-029",
+      "source": "main",
+      "configuration": "default",
+      "match": "TODO<>*\"DONE\""
+    },
+    {
+      "id": "grammar-030",
+      "source": "main",
+      "configuration": "default",
+      "match": "TODO=*\"\""
+    },
+    {
+      "id": "grammar-031",
+      "source": "main",
+      "configuration": "default",
+      "match": "TODO={^\\(NEXT\\|DONE\\)$}"
+    },
+    {
+      "id": "grammar-032",
+      "source": "main",
+      "configuration": "default",
+      "match": "PRIORITY=\"A\""
+    },
+    {
+      "id": "grammar-033",
+      "source": "main",
+      "configuration": "default",
+      "match": "PRIORITY=0"
+    },
+    {
+      "id": "grammar-034",
+      "source": "main",
+      "configuration": "default",
+      "match": "PRIORITY=65"
+    },
+    {
+      "id": "grammar-035",
+      "source": "main",
+      "configuration": "default",
+      "match": "ITEM=\"Parent\""
+    },
+    {
+      "id": "grammar-036",
+      "source": "main",
+      "configuration": "default",
+      "match": "ITEM={😀}"
+    },
+    {
+      "id": "grammar-037",
+      "source": "main",
+      "configuration": "default",
+      "match": "TAGS={work}"
+    },
+    {
+      "id": "grammar-038",
+      "source": "main",
+      "configuration": "default",
+      "match": "ALLTAGS={work}"
+    },
+    {
+      "id": "grammar-039",
+      "source": "main",
+      "configuration": "default",
+      "match": "CATEGORY=\"Work\""
+    },
+    {
+      "id": "grammar-040",
+      "source": "main",
+      "configuration": "default",
+      "match": "LEVEL>=2"
+    },
+    {
+      "id": "grammar-041",
+      "source": "main",
+      "configuration": "default",
+      "match": "work/!"
+    },
+    {
+      "id": "grammar-042",
+      "source": "main",
+      "configuration": "default",
+      "match": "work/!-WAIT-NEXT"
+    },
+    {
+      "id": "grammar-043",
+      "source": "main",
+      "configuration": "default",
+      "match": "work/!+NEXT|+WAIT"
+    },
+    {
+      "id": "grammar-044",
+      "source": "main",
+      "configuration": "default",
+      "match": "/DONE"
+    },
+    {
+      "id": "grammar-045",
+      "source": "main",
+      "configuration": "default",
+      "match": "/-DONE"
+    },
+    {
+      "id": "grammar-046",
+      "source": "main",
+      "configuration": "default",
+      "match": "/!{^\\(NEXT\\|WAIT\\)$}"
+    },
+    {
+      "id": "grammar-047",
+      "source": "main",
+      "configuration": "default",
+      "match": "work/"
+    },
+    {
+      "id": "grammar-048",
+      "source": "main",
+      "configuration": "default",
+      "match": "/"
+    },
+    {
+      "id": "grammar-049",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM=0"
+    },
+    {
+      "id": "grammar-050",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM=*0"
+    },
+    {
+      "id": "grammar-051",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM==0"
+    },
+    {
+      "id": "grammar-052",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM==*0"
+    },
+    {
+      "id": "grammar-053",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM<>0"
+    },
+    {
+      "id": "grammar-054",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM<>*0"
+    },
+    {
+      "id": "grammar-055",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM!=0"
+    },
+    {
+      "id": "grammar-056",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM!=*0"
+    },
+    {
+      "id": "grammar-057",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM/=0"
+    },
+    {
+      "id": "grammar-058",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM/=*0"
+    },
+    {
+      "id": "grammar-059",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM<0"
+    },
+    {
+      "id": "grammar-060",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM<*0"
+    },
+    {
+      "id": "grammar-061",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM<=0"
+    },
+    {
+      "id": "grammar-062",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM<=*0"
+    },
+    {
+      "id": "grammar-063",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM>0"
+    },
+    {
+      "id": "grammar-064",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM>*0"
+    },
+    {
+      "id": "grammar-065",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM>=0"
+    },
+    {
+      "id": "grammar-066",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM>=*0"
+    },
+    {
+      "id": "grammar-067",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM=2"
+    },
+    {
+      "id": "grammar-068",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM=*2"
+    },
+    {
+      "id": "grammar-069",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM==2"
+    },
+    {
+      "id": "grammar-070",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM==*2"
+    },
+    {
+      "id": "grammar-071",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM<>2"
+    },
+    {
+      "id": "grammar-072",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM<>*2"
+    },
+    {
+      "id": "grammar-073",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM!=2"
+    },
+    {
+      "id": "grammar-074",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM!=*2"
+    },
+    {
+      "id": "grammar-075",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM/=2"
+    },
+    {
+      "id": "grammar-076",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM/=*2"
+    },
+    {
+      "id": "grammar-077",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM<2"
+    },
+    {
+      "id": "grammar-078",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM<*2"
+    },
+    {
+      "id": "grammar-079",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM<=2"
+    },
+    {
+      "id": "grammar-080",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM<=*2"
+    },
+    {
+      "id": "grammar-081",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM>2"
+    },
+    {
+      "id": "grammar-082",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM>*2"
+    },
+    {
+      "id": "grammar-083",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM>=2"
+    },
+    {
+      "id": "grammar-084",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM>=*2"
+    },
+    {
+      "id": "grammar-085",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM=3.5"
+    },
+    {
+      "id": "grammar-086",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM=*3.5"
+    },
+    {
+      "id": "grammar-087",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM==3.5"
+    },
+    {
+      "id": "grammar-088",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM==*3.5"
+    },
+    {
+      "id": "grammar-089",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM<>3.5"
+    },
+    {
+      "id": "grammar-090",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM<>*3.5"
+    },
+    {
+      "id": "grammar-091",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM!=3.5"
+    },
+    {
+      "id": "grammar-092",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM!=*3.5"
+    },
+    {
+      "id": "grammar-093",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM/=3.5"
+    },
+    {
+      "id": "grammar-094",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM/=*3.5"
+    },
+    {
+      "id": "grammar-095",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM<3.5"
+    },
+    {
+      "id": "grammar-096",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM<*3.5"
+    },
+    {
+      "id": "grammar-097",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM<=3.5"
+    },
+    {
+      "id": "grammar-098",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM<=*3.5"
+    },
+    {
+      "id": "grammar-099",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM>3.5"
+    },
+    {
+      "id": "grammar-100",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM>*3.5"
+    },
+    {
+      "id": "grammar-101",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM>=3.5"
+    },
+    {
+      "id": "grammar-102",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM>=*3.5"
+    },
+    {
+      "id": "grammar-103",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER=\"\""
+    },
+    {
+      "id": "grammar-104",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER=*\"\""
+    },
+    {
+      "id": "grammar-105",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER==\"\""
+    },
+    {
+      "id": "grammar-106",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER==*\"\""
+    },
+    {
+      "id": "grammar-107",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER<>\"\""
+    },
+    {
+      "id": "grammar-108",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER<>*\"\""
+    },
+    {
+      "id": "grammar-109",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER!=\"\""
+    },
+    {
+      "id": "grammar-110",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER!=*\"\""
+    },
+    {
+      "id": "grammar-111",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER/=\"\""
+    },
+    {
+      "id": "grammar-112",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER/=*\"\""
+    },
+    {
+      "id": "grammar-113",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER<\"\""
+    },
+    {
+      "id": "grammar-114",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER<*\"\""
+    },
+    {
+      "id": "grammar-115",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER<=\"\""
+    },
+    {
+      "id": "grammar-116",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER<=*\"\""
+    },
+    {
+      "id": "grammar-117",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER>\"\""
+    },
+    {
+      "id": "grammar-118",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER>*\"\""
+    },
+    {
+      "id": "grammar-119",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER>=\"\""
+    },
+    {
+      "id": "grammar-120",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER>=*\"\""
+    },
+    {
+      "id": "grammar-121",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER=\"Parent\""
+    },
+    {
+      "id": "grammar-122",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER=*\"Parent\""
+    },
+    {
+      "id": "grammar-123",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER==\"Parent\""
+    },
+    {
+      "id": "grammar-124",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER==*\"Parent\""
+    },
+    {
+      "id": "grammar-125",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER<>\"Parent\""
+    },
+    {
+      "id": "grammar-126",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER<>*\"Parent\""
+    },
+    {
+      "id": "grammar-127",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER!=\"Parent\""
+    },
+    {
+      "id": "grammar-128",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER!=*\"Parent\""
+    },
+    {
+      "id": "grammar-129",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER/=\"Parent\""
+    },
+    {
+      "id": "grammar-130",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER/=*\"Parent\""
+    },
+    {
+      "id": "grammar-131",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER<\"Parent\""
+    },
+    {
+      "id": "grammar-132",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER<*\"Parent\""
+    },
+    {
+      "id": "grammar-133",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER<=\"Parent\""
+    },
+    {
+      "id": "grammar-134",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER<=*\"Parent\""
+    },
+    {
+      "id": "grammar-135",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER>\"Parent\""
+    },
+    {
+      "id": "grammar-136",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER>*\"Parent\""
+    },
+    {
+      "id": "grammar-137",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER>=\"Parent\""
+    },
+    {
+      "id": "grammar-138",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER>=*\"Parent\""
+    },
+    {
+      "id": "grammar-139",
+      "source": "main",
+      "configuration": "default",
+      "match": "ABSENT=0"
+    },
+    {
+      "id": "grammar-140",
+      "source": "main",
+      "configuration": "default",
+      "match": "ABSENT=*0"
+    },
+    {
+      "id": "grammar-141",
+      "source": "main",
+      "configuration": "default",
+      "match": "ABSENT==0"
+    },
+    {
+      "id": "grammar-142",
+      "source": "main",
+      "configuration": "default",
+      "match": "ABSENT==*0"
+    },
+    {
+      "id": "grammar-143",
+      "source": "main",
+      "configuration": "default",
+      "match": "ABSENT<>0"
+    },
+    {
+      "id": "grammar-144",
+      "source": "main",
+      "configuration": "default",
+      "match": "ABSENT<>*0"
+    },
+    {
+      "id": "grammar-145",
+      "source": "main",
+      "configuration": "default",
+      "match": "ABSENT!=0"
+    },
+    {
+      "id": "grammar-146",
+      "source": "main",
+      "configuration": "default",
+      "match": "ABSENT!=*0"
+    },
+    {
+      "id": "grammar-147",
+      "source": "main",
+      "configuration": "default",
+      "match": "ABSENT/=0"
+    },
+    {
+      "id": "grammar-148",
+      "source": "main",
+      "configuration": "default",
+      "match": "ABSENT/=*0"
+    },
+    {
+      "id": "grammar-149",
+      "source": "main",
+      "configuration": "default",
+      "match": "ABSENT<0"
+    },
+    {
+      "id": "grammar-150",
+      "source": "main",
+      "configuration": "default",
+      "match": "ABSENT<*0"
+    },
+    {
+      "id": "grammar-151",
+      "source": "main",
+      "configuration": "default",
+      "match": "ABSENT<=0"
+    },
+    {
+      "id": "grammar-152",
+      "source": "main",
+      "configuration": "default",
+      "match": "ABSENT<=*0"
+    },
+    {
+      "id": "grammar-153",
+      "source": "main",
+      "configuration": "default",
+      "match": "ABSENT>0"
+    },
+    {
+      "id": "grammar-154",
+      "source": "main",
+      "configuration": "default",
+      "match": "ABSENT>*0"
+    },
+    {
+      "id": "grammar-155",
+      "source": "main",
+      "configuration": "default",
+      "match": "ABSENT>=0"
+    },
+    {
+      "id": "grammar-156",
+      "source": "main",
+      "configuration": "default",
+      "match": "ABSENT>=*0"
+    },
+    {
+      "id": "grammar-157",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE<>\"<2026-10-09 Fri 12:30>\""
+    },
+    {
+      "id": "grammar-158",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE=\"<2026-10-09 Fri 12:30>\""
+    },
+    {
+      "id": "grammar-159",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE<>\"<today>\""
+    },
+    {
+      "id": "grammar-160",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE=\"<today>\""
+    },
+    {
+      "id": "grammar-161",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE<>\"<now>\""
+    },
+    {
+      "id": "grammar-162",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE=\"<now>\""
+    },
+    {
+      "id": "grammar-163",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE<>\"<tomorrow>\""
+    },
+    {
+      "id": "grammar-164",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE=\"<tomorrow>\""
+    },
+    {
+      "id": "grammar-165",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE<>\"<+1d>\""
+    },
+    {
+      "id": "grammar-166",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE=\"<+1d>\""
+    },
+    {
+      "id": "grammar-167",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE<>\"<-1w>\""
+    },
+    {
+      "id": "grammar-168",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE=\"<-1w>\""
+    },
+    {
+      "id": "grammar-169",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE<>\"<+1m>\""
+    },
+    {
+      "id": "grammar-170",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE=\"<+1m>\""
+    },
+    {
+      "id": "grammar-171",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE<>\"<+1y>\""
+    },
+    {
+      "id": "grammar-172",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE=\"<+1y>\""
+    },
+    {
+      "id": "grammar-173",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE<>\"[today]\""
+    },
+    {
+      "id": "grammar-174",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE=\"[today]\""
+    },
+    {
+      "id": "grammar-175",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE<>\"<today+1d>\""
+    },
+    {
+      "id": "grammar-176",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE=\"<today+1d>\""
+    },
+    {
+      "id": "grammar-177",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE<>\"<yesterday>\""
+    },
+    {
+      "id": "grammar-178",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE=\"<yesterday>\""
+    },
+    {
+      "id": "grammar-179",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE<>\"<+2h>\""
+    },
+    {
+      "id": "grammar-180",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE=\"<+2h>\""
+    },
+    {
+      "id": "grammar-181",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE<\"<now>\""
+    },
+    {
+      "id": "grammar-182",
+      "source": "main",
+      "configuration": "default",
+      "match": "DEADLINE>=*\"<today>\""
+    },
+    {
+      "id": "grammar-183",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED<>\"<2026-10-09 Fri 12:30>\""
+    },
+    {
+      "id": "grammar-184",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED=\"<2026-10-09 Fri 12:30>\""
+    },
+    {
+      "id": "grammar-185",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED<>\"<today>\""
+    },
+    {
+      "id": "grammar-186",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED=\"<today>\""
+    },
+    {
+      "id": "grammar-187",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED<>\"<now>\""
+    },
+    {
+      "id": "grammar-188",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED=\"<now>\""
+    },
+    {
+      "id": "grammar-189",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED<>\"<tomorrow>\""
+    },
+    {
+      "id": "grammar-190",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED=\"<tomorrow>\""
+    },
+    {
+      "id": "grammar-191",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED<>\"<+1d>\""
+    },
+    {
+      "id": "grammar-192",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED=\"<+1d>\""
+    },
+    {
+      "id": "grammar-193",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED<>\"<-1w>\""
+    },
+    {
+      "id": "grammar-194",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED=\"<-1w>\""
+    },
+    {
+      "id": "grammar-195",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED<>\"<+1m>\""
+    },
+    {
+      "id": "grammar-196",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED=\"<+1m>\""
+    },
+    {
+      "id": "grammar-197",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED<>\"<+1y>\""
+    },
+    {
+      "id": "grammar-198",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED=\"<+1y>\""
+    },
+    {
+      "id": "grammar-199",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED<>\"[today]\""
+    },
+    {
+      "id": "grammar-200",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED=\"[today]\""
+    },
+    {
+      "id": "grammar-201",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED<>\"<today+1d>\""
+    },
+    {
+      "id": "grammar-202",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED=\"<today+1d>\""
+    },
+    {
+      "id": "grammar-203",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED<>\"<yesterday>\""
+    },
+    {
+      "id": "grammar-204",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED=\"<yesterday>\""
+    },
+    {
+      "id": "grammar-205",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED<>\"<+2h>\""
+    },
+    {
+      "id": "grammar-206",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED=\"<+2h>\""
+    },
+    {
+      "id": "grammar-207",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED<\"<now>\""
+    },
+    {
+      "id": "grammar-208",
+      "source": "main",
+      "configuration": "default",
+      "match": "SCHEDULED>=*\"<today>\""
+    },
+    {
+      "id": "grammar-209",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED<>\"<2026-10-09 Fri 12:30>\""
+    },
+    {
+      "id": "grammar-210",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED=\"<2026-10-09 Fri 12:30>\""
+    },
+    {
+      "id": "grammar-211",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED<>\"<today>\""
+    },
+    {
+      "id": "grammar-212",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED=\"<today>\""
+    },
+    {
+      "id": "grammar-213",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED<>\"<now>\""
+    },
+    {
+      "id": "grammar-214",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED=\"<now>\""
+    },
+    {
+      "id": "grammar-215",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED<>\"<tomorrow>\""
+    },
+    {
+      "id": "grammar-216",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED=\"<tomorrow>\""
+    },
+    {
+      "id": "grammar-217",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED<>\"<+1d>\""
+    },
+    {
+      "id": "grammar-218",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED=\"<+1d>\""
+    },
+    {
+      "id": "grammar-219",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED<>\"<-1w>\""
+    },
+    {
+      "id": "grammar-220",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED=\"<-1w>\""
+    },
+    {
+      "id": "grammar-221",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED<>\"<+1m>\""
+    },
+    {
+      "id": "grammar-222",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED=\"<+1m>\""
+    },
+    {
+      "id": "grammar-223",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED<>\"<+1y>\""
+    },
+    {
+      "id": "grammar-224",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED=\"<+1y>\""
+    },
+    {
+      "id": "grammar-225",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED<>\"[today]\""
+    },
+    {
+      "id": "grammar-226",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED=\"[today]\""
+    },
+    {
+      "id": "grammar-227",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED<>\"<today+1d>\""
+    },
+    {
+      "id": "grammar-228",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED=\"<today+1d>\""
+    },
+    {
+      "id": "grammar-229",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED<>\"<yesterday>\""
+    },
+    {
+      "id": "grammar-230",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED=\"<yesterday>\""
+    },
+    {
+      "id": "grammar-231",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED<>\"<+2h>\""
+    },
+    {
+      "id": "grammar-232",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED=\"<+2h>\""
+    },
+    {
+      "id": "grammar-233",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED<\"<now>\""
+    },
+    {
+      "id": "grammar-234",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOSED>=*\"<today>\""
+    },
+    {
+      "id": "grammar-235",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP<>\"<2026-10-09 Fri 12:30>\""
+    },
+    {
+      "id": "grammar-236",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP=\"<2026-10-09 Fri 12:30>\""
+    },
+    {
+      "id": "grammar-237",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP<>\"<today>\""
+    },
+    {
+      "id": "grammar-238",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP=\"<today>\""
+    },
+    {
+      "id": "grammar-239",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP<>\"<now>\""
+    },
+    {
+      "id": "grammar-240",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP=\"<now>\""
+    },
+    {
+      "id": "grammar-241",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP<>\"<tomorrow>\""
+    },
+    {
+      "id": "grammar-242",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP=\"<tomorrow>\""
+    },
+    {
+      "id": "grammar-243",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP<>\"<+1d>\""
+    },
+    {
+      "id": "grammar-244",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP=\"<+1d>\""
+    },
+    {
+      "id": "grammar-245",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP<>\"<-1w>\""
+    },
+    {
+      "id": "grammar-246",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP=\"<-1w>\""
+    },
+    {
+      "id": "grammar-247",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP<>\"<+1m>\""
+    },
+    {
+      "id": "grammar-248",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP=\"<+1m>\""
+    },
+    {
+      "id": "grammar-249",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP<>\"<+1y>\""
+    },
+    {
+      "id": "grammar-250",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP=\"<+1y>\""
+    },
+    {
+      "id": "grammar-251",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP<>\"[today]\""
+    },
+    {
+      "id": "grammar-252",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP=\"[today]\""
+    },
+    {
+      "id": "grammar-253",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP<>\"<today+1d>\""
+    },
+    {
+      "id": "grammar-254",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP=\"<today+1d>\""
+    },
+    {
+      "id": "grammar-255",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP<>\"<yesterday>\""
+    },
+    {
+      "id": "grammar-256",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP=\"<yesterday>\""
+    },
+    {
+      "id": "grammar-257",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP<>\"<+2h>\""
+    },
+    {
+      "id": "grammar-258",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP=\"<+2h>\""
+    },
+    {
+      "id": "grammar-259",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP<\"<now>\""
+    },
+    {
+      "id": "grammar-260",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP>=*\"<today>\""
+    },
+    {
+      "id": "grammar-261",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA<>\"<2026-10-09 Fri 12:30>\""
+    },
+    {
+      "id": "grammar-262",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA=\"<2026-10-09 Fri 12:30>\""
+    },
+    {
+      "id": "grammar-263",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA<>\"<today>\""
+    },
+    {
+      "id": "grammar-264",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA=\"<today>\""
+    },
+    {
+      "id": "grammar-265",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA<>\"<now>\""
+    },
+    {
+      "id": "grammar-266",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA=\"<now>\""
+    },
+    {
+      "id": "grammar-267",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA<>\"<tomorrow>\""
+    },
+    {
+      "id": "grammar-268",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA=\"<tomorrow>\""
+    },
+    {
+      "id": "grammar-269",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA<>\"<+1d>\""
+    },
+    {
+      "id": "grammar-270",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA=\"<+1d>\""
+    },
+    {
+      "id": "grammar-271",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA<>\"<-1w>\""
+    },
+    {
+      "id": "grammar-272",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA=\"<-1w>\""
+    },
+    {
+      "id": "grammar-273",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA<>\"<+1m>\""
+    },
+    {
+      "id": "grammar-274",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA=\"<+1m>\""
+    },
+    {
+      "id": "grammar-275",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA<>\"<+1y>\""
+    },
+    {
+      "id": "grammar-276",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA=\"<+1y>\""
+    },
+    {
+      "id": "grammar-277",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA<>\"[today]\""
+    },
+    {
+      "id": "grammar-278",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA=\"[today]\""
+    },
+    {
+      "id": "grammar-279",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA<>\"<today+1d>\""
+    },
+    {
+      "id": "grammar-280",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA=\"<today+1d>\""
+    },
+    {
+      "id": "grammar-281",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA<>\"<yesterday>\""
+    },
+    {
+      "id": "grammar-282",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA=\"<yesterday>\""
+    },
+    {
+      "id": "grammar-283",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA<>\"<+2h>\""
+    },
+    {
+      "id": "grammar-284",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA=\"<+2h>\""
+    },
+    {
+      "id": "grammar-285",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA<\"<now>\""
+    },
+    {
+      "id": "grammar-286",
+      "source": "main",
+      "configuration": "default",
+      "match": "TIMESTAMP_IA>=*\"<today>\""
+    },
+    {
+      "id": "inheritance-default-287",
+      "source": "main",
+      "configuration": "default",
+      "match": "work"
+    },
+    {
+      "id": "inheritance-default-288",
+      "source": "main",
+      "configuration": "default",
+      "match": "exclude"
+    },
+    {
+      "id": "inheritance-default-289",
+      "source": "main",
+      "configuration": "default",
+      "match": "file"
+    },
+    {
+      "id": "inheritance-default-290",
+      "source": "main",
+      "configuration": "default",
+      "match": "{work\\|exclude}"
+    },
+    {
+      "id": "inheritance-default-291",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER=\"Parent Extra Again\""
+    },
+    {
+      "id": "inheritance-default-292",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER=\"Child\""
+    },
+    {
+      "id": "inheritance-default-293",
+      "source": "main",
+      "configuration": "default",
+      "match": "OWNER<>*\"\""
+    },
+    {
+      "id": "inheritance-default-294",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM=0"
+    },
+    {
+      "id": "inheritance-default-295",
+      "source": "main",
+      "configuration": "default",
+      "match": "NUM=8"
+    },
+    {
+      "id": "inheritance-default-296",
+      "source": "main",
+      "configuration": "default",
+      "match": "ALLTAGS={work}"
+    },
+    {
+      "id": "inheritance-default-297",
+      "source": "main",
+      "configuration": "default",
+      "match": "CATEGORY=\"Work\""
+    },
+    {
+      "id": "inheritance-off-298",
+      "source": "main",
+      "configuration": "off",
+      "match": "work"
+    },
+    {
+      "id": "inheritance-off-299",
+      "source": "main",
+      "configuration": "off",
+      "match": "exclude"
+    },
+    {
+      "id": "inheritance-off-300",
+      "source": "main",
+      "configuration": "off",
+      "match": "file"
+    },
+    {
+      "id": "inheritance-off-301",
+      "source": "main",
+      "configuration": "off",
+      "match": "{work\\|exclude}"
+    },
+    {
+      "id": "inheritance-off-302",
+      "source": "main",
+      "configuration": "off",
+      "match": "OWNER=\"Parent Extra Again\""
+    },
+    {
+      "id": "inheritance-off-303",
+      "source": "main",
+      "configuration": "off",
+      "match": "OWNER=\"Child\""
+    },
+    {
+      "id": "inheritance-off-304",
+      "source": "main",
+      "configuration": "off",
+      "match": "OWNER<>*\"\""
+    },
+    {
+      "id": "inheritance-off-305",
+      "source": "main",
+      "configuration": "off",
+      "match": "NUM=0"
+    },
+    {
+      "id": "inheritance-off-306",
+      "source": "main",
+      "configuration": "off",
+      "match": "NUM=8"
+    },
+    {
+      "id": "inheritance-off-307",
+      "source": "main",
+      "configuration": "off",
+      "match": "ALLTAGS={work}"
+    },
+    {
+      "id": "inheritance-off-308",
+      "source": "main",
+      "configuration": "off",
+      "match": "CATEGORY=\"Work\""
+    },
+    {
+      "id": "inheritance-all-309",
+      "source": "main",
+      "configuration": "all",
+      "match": "work"
+    },
+    {
+      "id": "inheritance-all-310",
+      "source": "main",
+      "configuration": "all",
+      "match": "exclude"
+    },
+    {
+      "id": "inheritance-all-311",
+      "source": "main",
+      "configuration": "all",
+      "match": "file"
+    },
+    {
+      "id": "inheritance-all-312",
+      "source": "main",
+      "configuration": "all",
+      "match": "{work\\|exclude}"
+    },
+    {
+      "id": "inheritance-all-313",
+      "source": "main",
+      "configuration": "all",
+      "match": "OWNER=\"Parent Extra Again\""
+    },
+    {
+      "id": "inheritance-all-314",
+      "source": "main",
+      "configuration": "all",
+      "match": "OWNER=\"Child\""
+    },
+    {
+      "id": "inheritance-all-315",
+      "source": "main",
+      "configuration": "all",
+      "match": "OWNER<>*\"\""
+    },
+    {
+      "id": "inheritance-all-316",
+      "source": "main",
+      "configuration": "all",
+      "match": "NUM=0"
+    },
+    {
+      "id": "inheritance-all-317",
+      "source": "main",
+      "configuration": "all",
+      "match": "NUM=8"
+    },
+    {
+      "id": "inheritance-all-318",
+      "source": "main",
+      "configuration": "all",
+      "match": "ALLTAGS={work}"
+    },
+    {
+      "id": "inheritance-all-319",
+      "source": "main",
+      "configuration": "all",
+      "match": "CATEGORY=\"Work\""
+    },
+    {
+      "id": "inheritance-selective-320",
+      "source": "main",
+      "configuration": "selective",
+      "match": "work"
+    },
+    {
+      "id": "inheritance-selective-321",
+      "source": "main",
+      "configuration": "selective",
+      "match": "exclude"
+    },
+    {
+      "id": "inheritance-selective-322",
+      "source": "main",
+      "configuration": "selective",
+      "match": "file"
+    },
+    {
+      "id": "inheritance-selective-323",
+      "source": "main",
+      "configuration": "selective",
+      "match": "{work\\|exclude}"
+    },
+    {
+      "id": "inheritance-selective-324",
+      "source": "main",
+      "configuration": "selective",
+      "match": "OWNER=\"Parent Extra Again\""
+    },
+    {
+      "id": "inheritance-selective-325",
+      "source": "main",
+      "configuration": "selective",
+      "match": "OWNER=\"Child\""
+    },
+    {
+      "id": "inheritance-selective-326",
+      "source": "main",
+      "configuration": "selective",
+      "match": "OWNER<>*\"\""
+    },
+    {
+      "id": "inheritance-selective-327",
+      "source": "main",
+      "configuration": "selective",
+      "match": "NUM=0"
+    },
+    {
+      "id": "inheritance-selective-328",
+      "source": "main",
+      "configuration": "selective",
+      "match": "NUM=8"
+    },
+    {
+      "id": "inheritance-selective-329",
+      "source": "main",
+      "configuration": "selective",
+      "match": "ALLTAGS={work}"
+    },
+    {
+      "id": "inheritance-selective-330",
+      "source": "main",
+      "configuration": "selective",
+      "match": "CATEGORY=\"Work\""
+    },
+    {
+      "id": "inheritance-listExclusions-331",
+      "source": "main",
+      "configuration": "listExclusions",
+      "match": "work"
+    },
+    {
+      "id": "inheritance-listExclusions-332",
+      "source": "main",
+      "configuration": "listExclusions",
+      "match": "exclude"
+    },
+    {
+      "id": "inheritance-listExclusions-333",
+      "source": "main",
+      "configuration": "listExclusions",
+      "match": "file"
+    },
+    {
+      "id": "inheritance-listExclusions-334",
+      "source": "main",
+      "configuration": "listExclusions",
+      "match": "{work\\|exclude}"
+    },
+    {
+      "id": "inheritance-listExclusions-335",
+      "source": "main",
+      "configuration": "listExclusions",
+      "match": "OWNER=\"Parent Extra Again\""
+    },
+    {
+      "id": "inheritance-listExclusions-336",
+      "source": "main",
+      "configuration": "listExclusions",
+      "match": "OWNER=\"Child\""
+    },
+    {
+      "id": "inheritance-listExclusions-337",
+      "source": "main",
+      "configuration": "listExclusions",
+      "match": "OWNER<>*\"\""
+    },
+    {
+      "id": "inheritance-listExclusions-338",
+      "source": "main",
+      "configuration": "listExclusions",
+      "match": "NUM=0"
+    },
+    {
+      "id": "inheritance-listExclusions-339",
+      "source": "main",
+      "configuration": "listExclusions",
+      "match": "NUM=8"
+    },
+    {
+      "id": "inheritance-listExclusions-340",
+      "source": "main",
+      "configuration": "listExclusions",
+      "match": "ALLTAGS={work}"
+    },
+    {
+      "id": "inheritance-listExclusions-341",
+      "source": "main",
+      "configuration": "listExclusions",
+      "match": "CATEGORY=\"Work\""
+    },
+    {
+      "id": "inheritance-booleanExclusions-342",
+      "source": "main",
+      "configuration": "booleanExclusions",
+      "match": "work"
+    },
+    {
+      "id": "inheritance-booleanExclusions-343",
+      "source": "main",
+      "configuration": "booleanExclusions",
+      "match": "exclude"
+    },
+    {
+      "id": "inheritance-booleanExclusions-344",
+      "source": "main",
+      "configuration": "booleanExclusions",
+      "match": "file"
+    },
+    {
+      "id": "inheritance-booleanExclusions-345",
+      "source": "main",
+      "configuration": "booleanExclusions",
+      "match": "{work\\|exclude}"
+    },
+    {
+      "id": "inheritance-booleanExclusions-346",
+      "source": "main",
+      "configuration": "booleanExclusions",
+      "match": "OWNER=\"Parent Extra Again\""
+    },
+    {
+      "id": "inheritance-booleanExclusions-347",
+      "source": "main",
+      "configuration": "booleanExclusions",
+      "match": "OWNER=\"Child\""
+    },
+    {
+      "id": "inheritance-booleanExclusions-348",
+      "source": "main",
+      "configuration": "booleanExclusions",
+      "match": "OWNER<>*\"\""
+    },
+    {
+      "id": "inheritance-booleanExclusions-349",
+      "source": "main",
+      "configuration": "booleanExclusions",
+      "match": "NUM=0"
+    },
+    {
+      "id": "inheritance-booleanExclusions-350",
+      "source": "main",
+      "configuration": "booleanExclusions",
+      "match": "NUM=8"
+    },
+    {
+      "id": "inheritance-booleanExclusions-351",
+      "source": "main",
+      "configuration": "booleanExclusions",
+      "match": "ALLTAGS={work}"
+    },
+    {
+      "id": "inheritance-booleanExclusions-352",
+      "source": "main",
+      "configuration": "booleanExclusions",
+      "match": "CATEGORY=\"Work\""
+    },
+    {
+      "id": "inheritance-regexp-353",
+      "source": "main",
+      "configuration": "regexp",
+      "match": "work"
+    },
+    {
+      "id": "inheritance-regexp-354",
+      "source": "main",
+      "configuration": "regexp",
+      "match": "exclude"
+    },
+    {
+      "id": "inheritance-regexp-355",
+      "source": "main",
+      "configuration": "regexp",
+      "match": "file"
+    },
+    {
+      "id": "inheritance-regexp-356",
+      "source": "main",
+      "configuration": "regexp",
+      "match": "{work\\|exclude}"
+    },
+    {
+      "id": "inheritance-regexp-357",
+      "source": "main",
+      "configuration": "regexp",
+      "match": "OWNER=\"Parent Extra Again\""
+    },
+    {
+      "id": "inheritance-regexp-358",
+      "source": "main",
+      "configuration": "regexp",
+      "match": "OWNER=\"Child\""
+    },
+    {
+      "id": "inheritance-regexp-359",
+      "source": "main",
+      "configuration": "regexp",
+      "match": "OWNER<>*\"\""
+    },
+    {
+      "id": "inheritance-regexp-360",
+      "source": "main",
+      "configuration": "regexp",
+      "match": "NUM=0"
+    },
+    {
+      "id": "inheritance-regexp-361",
+      "source": "main",
+      "configuration": "regexp",
+      "match": "NUM=8"
+    },
+    {
+      "id": "inheritance-regexp-362",
+      "source": "main",
+      "configuration": "regexp",
+      "match": "ALLTAGS={work}"
+    },
+    {
+      "id": "inheritance-regexp-363",
+      "source": "main",
+      "configuration": "regexp",
+      "match": "CATEGORY=\"Work\""
+    },
+    {
+      "id": "document-default-364",
+      "source": "document",
+      "configuration": "default",
+      "match": "OWNER=\"Document Plus\""
+    },
+    {
+      "id": "document-default-365",
+      "source": "document",
+      "configuration": "default",
+      "match": "OWNER=\"Global\""
+    },
+    {
+      "id": "document-default-366",
+      "source": "document",
+      "configuration": "default",
+      "match": "CATEGORY=\"RootCat\""
+    },
+    {
+      "id": "document-default-367",
+      "source": "document",
+      "configuration": "default",
+      "match": "CATEGORY=\"???\""
+    },
+    {
+      "id": "document-all-368",
+      "source": "document",
+      "configuration": "all",
+      "match": "OWNER=\"Document Plus\""
+    },
+    {
+      "id": "document-all-369",
+      "source": "document",
+      "configuration": "all",
+      "match": "OWNER=\"Global\""
+    },
+    {
+      "id": "document-all-370",
+      "source": "document",
+      "configuration": "all",
+      "match": "CATEGORY=\"RootCat\""
+    },
+    {
+      "id": "document-all-371",
+      "source": "document",
+      "configuration": "all",
+      "match": "CATEGORY=\"???\""
+    },
+    {
+      "id": "category-default-372",
+      "source": "category",
+      "configuration": "default",
+      "match": "OWNER=\"Document Plus\""
+    },
+    {
+      "id": "category-default-373",
+      "source": "category",
+      "configuration": "default",
+      "match": "OWNER=\"Global\""
+    },
+    {
+      "id": "category-default-374",
+      "source": "category",
+      "configuration": "default",
+      "match": "CATEGORY=\"RootCat\""
+    },
+    {
+      "id": "category-default-375",
+      "source": "category",
+      "configuration": "default",
+      "match": "CATEGORY=\"???\""
+    },
+    {
+      "id": "category-all-376",
+      "source": "category",
+      "configuration": "all",
+      "match": "OWNER=\"Document Plus\""
+    },
+    {
+      "id": "category-all-377",
+      "source": "category",
+      "configuration": "all",
+      "match": "OWNER=\"Global\""
+    },
+    {
+      "id": "category-all-378",
+      "source": "category",
+      "configuration": "all",
+      "match": "CATEGORY=\"RootCat\""
+    },
+    {
+      "id": "category-all-379",
+      "source": "category",
+      "configuration": "all",
+      "match": "CATEGORY=\"???\""
+    },
+    { "id": "fixed-visibility-default", "source": "main", "configuration": "default", "match": "VISIBILITY_ALL=\"folded children content all\"" },
+    { "id": "fixed-visibility-inherited", "source": "main", "configuration": "all", "match": "VISIBILITY_ALL=\"folded children content all\"" },
+    { "id": "fixed-clock-default", "source": "main", "configuration": "default", "match": "CLOCK_MODELINE_TOTAL_ALL=\"current today repeat all auto\"" },
+    { "id": "fixed-clock-inherited", "source": "main", "configuration": "all", "match": "CLOCK_MODELINE_TOTAL_ALL=\"current today repeat all auto\"" },
+    { "id": "timestamp-literal-active", "source": "timestampLiterals", "configuration": "default", "match": "TIMESTAMP=\"<2026-01-09 Fri>\"" },
+    { "id": "timestamp-literal-inactive", "source": "timestampLiterals", "configuration": "default", "match": "TIMESTAMP_IA=\"[2026-01-09 Fri]\"" },
+    { "id": "timestamp-link-target-active", "source": "timestampLinkTarget", "configuration": "default", "match": "TIMESTAMP=\"<2026-01-09 Fri>\"" },
+    { "id": "timestamp-link-target-inactive", "source": "timestampLinkTarget", "configuration": "default", "match": "TIMESTAMP_IA=\"[2026-01-09 Fri]\"" },
+    { "id": "timestamp-link-description-active", "source": "timestampLinkDescription", "configuration": "default", "match": "TIMESTAMP=\"<2026-01-01 Thu>\"" },
+    { "id": "timestamp-link-description-inactive", "source": "timestampLinkDescription", "configuration": "default", "match": "TIMESTAMP_IA=\"[2026-01-02 Fri]\"" },
+    { "id": "timestamp-link-description-real-active", "source": "timestampLinkDescription", "configuration": "default", "match": "TIMESTAMP=\"<2026-01-09 Fri>\"" },
+    { "id": "timestamp-link-description-real-inactive", "source": "timestampLinkDescription", "configuration": "default", "match": "TIMESTAMP_IA=\"[2026-01-09 Fri]\"" },
+    { "id": "timestamp-inline-source-active", "source": "timestampInlineSource", "configuration": "default", "match": "TIMESTAMP=\"<2026-01-09 Fri>\"" },
+    { "id": "timestamp-inline-source-inactive", "source": "timestampInlineSource", "configuration": "default", "match": "TIMESTAMP_IA=\"[2026-01-09 Fri]\"" },
+    { "id": "timestamp-comment-active", "source": "timestampComment", "configuration": "default", "match": "TIMESTAMP=\"<2026-01-09 Fri>\"" },
+    { "id": "timestamp-comment-inactive", "source": "timestampComment", "configuration": "default", "match": "TIMESTAMP_IA=\"[2026-01-09 Fri]\"" },
+    { "id": "unicode-word", "source": "words", "configuration": "default", "match": "OWNER={^\\w$}" },
+    { "id": "unicode-nonword", "source": "words", "configuration": "default", "match": "OWNER={^\\W$}" },
+    { "id": "unicode-posix-word", "source": "words", "configuration": "default", "match": "OWNER={^[[:word:]]$}" },
+    { "id": "unicode-posix-nonword", "source": "words", "configuration": "default", "match": "OWNER={^[^[:word:]]$}" },
+    { "id": "unicode-word-start-end", "source": "words", "configuration": "default", "match": "OWNER={\\<.\\>}" },
+    { "id": "collation-less-a", "source": "collation", "configuration": "default", "match": "OWNER<\"a\"" },
+    { "id": "collation-greater-a", "source": "collation", "configuration": "default", "match": "OWNER>\"a\"" },
+    { "id": "collation-less-acute", "source": "collation", "configuration": "default", "match": "OWNER<\"é\"" },
+    { "id": "collation-equal-acute", "source": "collation", "configuration": "default", "match": "OWNER=\"é\"" },
+    { "id": "collation-less-equal-decomposed", "source": "collation", "configuration": "default", "match": "OWNER<=\"é\"" },
+    { "id": "collation-greater-equal-decomposed", "source": "collation", "configuration": "default", "match": "OWNER>=\"é\"" },
+    { "id": "collation-less-joined", "source": "collation", "configuration": "default", "match": "OWNER<\"ab\"" },
+    { "id": "collation-greater-hyphen", "source": "collation", "configuration": "default", "match": "OWNER>\"a-b\"" },
+    {
+      "id": "unicode-codepoint-less",
+      "source": "supplementary",
+      "configuration": "default",
+      "match": "OWNER<\"😀\""
+    },
+    {
+      "id": "unicode-codepoint-greater",
+      "source": "supplementary",
+      "configuration": "default",
+      "match": "OWNER>\"\""
+    },
+    {
+      "id": "unicode-supplementary-property",
+      "source": "supplementary",
+      "configuration": "default",
+      "match": "𐐀=\"value\""
+    },
+    {
+      "id": "unicode-escaped-supplementary-property",
+      "source": "supplementary",
+      "configuration": "default",
+      "match": "\\𐐀=\"value\""
+    },
+    {
+      "id": "nil-barrier-append",
+      "source": "main",
+      "configuration": "all",
+      "match": "OWNER=\"nil Child\""
+    },
+    {
+      "id": "contextual-FILE",
+      "source": "main",
+      "configuration": "default",
+      "match": "FILE=\"\"",
+      "contextual": true
+    },
+    {
+      "id": "contextual-BLOCKED",
+      "source": "main",
+      "configuration": "default",
+      "match": "BLOCKED=\"\"",
+      "contextual": true
+    },
+    {
+      "id": "contextual-CLOCKSUM",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOCKSUM=\"\"",
+      "contextual": true
+    },
+    {
+      "id": "contextual-CLOCKSUM_T",
+      "source": "main",
+      "configuration": "default",
+      "match": "CLOCKSUM_T=\"\"",
+      "contextual": true
+    }
+  ],
+  "regexpErrors": [
+    "\\1", "\\(a\\1\\)", "\\(?0:a\\)", "\\(?01:a\\)", "\\(?1:\\(?1:a\\)\\)",
+    "\\(?2147483648:a\\)", "\\(?=a\\)", "\\s", "\\c", "\\_", "\\_x", "\\(", "\\)", "["
+  ],
+  "dateProbes": [
+    { "id": "whole-hour-default", "input": "11:00+2", "defaultDate": "2026-10-20", "defaultTime": "10:30" },
+    { "id": "whole-hour-today", "input": "11:00+2", "defaultDate": "2026-10-09", "defaultTime": "13:00" },
+    { "id": "whole-hour-minutes", "input": "11:45+2", "defaultDate": "2026-10-20", "defaultTime": "10:30" },
+    { "id": "whole-hour-zero", "input": "11:00+0", "defaultDate": "2026-10-20", "defaultTime": "10:30" },
+    { "id": "whole-hour-ampm", "input": "11am+2", "defaultDate": "2026-10-20", "defaultTime": "10:30" },
+    { "id": "colon-duration", "input": "11:45+2:15", "defaultDate": "2026-10-20", "defaultTime": "10:30" },
+    { "id": "clock-only-default", "input": "11:00", "defaultDate": "2026-10-20", "defaultTime": "10:30" },
+    { "id": "literal-time-range", "input": "11:00-13:00", "defaultDate": "2026-10-20", "defaultTime": "10:30" },
+    { "id": "date-only-no-default-clock", "input": "2026-10-20", "defaultDate": "2026-10-20", "defaultTime": "10:30" }
+  ]
+}

@@ -4,16 +4,26 @@ import * as O from "fp-ts/Option"
 import * as TE from "fp-ts/TaskEither"
 import { StrictMode } from "react"
 import ReactDOM from "react-dom/client"
-import { routeTree } from "./routeTree.gen"
+import type { routeTree } from "./routeTree.gen"
+import { DetachedOrgWindow, readDetachedOrgWindowBootstrap } from "./views/org-native-window/detached-org-window"
 import "./styles.css"
-import "@grain/editor-lexical/styles"
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { error, info } from "@/io/log/logger.api"
 
+type AppRouter = Router<typeof routeTree>
+
+const createAppRouter = (tree: typeof routeTree): AppRouter =>
+	createRouter({
+		context: {},
+		defaultPreload: "intent",
+		routeTree: tree,
+		scrollRestoration: true,
+	})
+
 // 类型定义
 interface AppConfig {
-	readonly router: ReturnType<typeof createRouter>
+	readonly router: AppRouter
 	readonly queryClient: QueryClient
 	readonly isDev: boolean
 }
@@ -26,20 +36,15 @@ interface RootElement {
 // 注册类型（类型提示）
 declare module "@tanstack/react-router" {
 	interface Register {
-		readonly router: typeof Router
+		readonly router: AppRouter
 	}
 }
 
 // 纯函数：创建应用配置
-const createAppConfig = (): AppConfig => ({
+const createAppConfig = (tree: typeof routeTree): AppConfig => ({
 	isDev: import.meta.env.DEV,
 	queryClient: new QueryClient(),
-	router: createRouter({
-		context: {},
-		defaultPreload: "intent",
-		routeTree,
-		scrollRestoration: true,
-	}),
+	router: createAppRouter(tree),
 })
 
 // 纯函数：获取根元素
@@ -62,33 +67,43 @@ const createApp = (config: AppConfig) => (
 )
 
 // IO 函数：渲染应用
-const renderApp = (rootElement: RootElement, config: AppConfig): TE.TaskEither<Error, void> =>
+const renderApp = (rootElement: RootElement): TE.TaskEither<Error, void> =>
 	TE.tryCatch(
 		async () => {
+			const bootstrap = readDetachedOrgWindowBootstrap()
 			const root = ReactDOM.createRoot(rootElement.element)
-			root.render(createApp(config))
+			if (bootstrap) {
+				root.render(<DetachedOrgWindow bootstrap={bootstrap} />)
+				return
+			}
+			// Child projections never load the normal router/default-workspace owner.
+			const { routeTree: tree } = await import("./routeTree.gen")
+			root.render(createApp(createAppConfig(tree)))
 		},
 		(error) => new Error(`Failed to render app: ${error}`),
 	)
 
 // 主流程：函数式管道
 const main = (): TE.TaskEither<Error, void> =>
-	pipe(createAppConfig(), (config) =>
-		pipe(
-			getRootElement(),
-			O.filter((root) => root.isEmpty),
-			O.fold(
-				() => TE.left(new Error("Root element not found or already rendered")),
-				(rootElement) => renderApp(rootElement, config),
-			),
+	pipe(
+		getRootElement(),
+		O.filter((root) => root.isEmpty),
+		O.fold(
+			() => TE.left(new Error("Root element not found or already rendered")),
+			(rootElement) => renderApp(rootElement),
 		),
 	)
 
+const nativeChildEntry = new URLSearchParams(window.location.search).has("orgWindow")
 // 启动应用
 pipe(
 	main(),
 	TE.fold(
-		(appError) => async () => error("[Main] App initialization failed", { error: appError }),
-		() => async () => info("[Main] App initialized successfully"),
+		(appError) => async () => nativeChildEntry
+			? console.error("[Native Source] Initialization failed", appError)
+			: error("[Main] App initialization failed", { error: appError }),
+		() => async () => nativeChildEntry
+			? console.info("[Native Source] Projection initialized")
+			: info("[Main] App initialized successfully"),
 	),
 )()

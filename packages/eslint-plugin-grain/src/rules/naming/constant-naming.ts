@@ -1,5 +1,5 @@
+import type { TSESTree } from "@typescript-eslint/utils"
 import { AST_NODE_TYPES, ESLintUtils } from "@typescript-eslint/utils"
-import { buildErrorMessage } from "../../utils/message-builder"
 
 const createRule = ESLintUtils.RuleCreator(
 	(name) => `https://github.com/grain/eslint-plugin-grain/blob/main/docs/rules/${name}.md`,
@@ -13,14 +13,14 @@ export default createRule({
 			return SCREAMING_SNAKE_CASE.test(name)
 		}
 
-		function isConstant(node: any): boolean {
+		function isConstant(node: TSESTree.VariableDeclarator): boolean {
 			// 必须是 const 声明
-			if (node.parent?.parent?.kind !== "const") {
+			if (node.parent.type !== AST_NODE_TYPES.VariableDeclaration || node.parent.kind !== "const") {
 				return false
 			}
 
 			// 必须在模块顶层或导出
-			const parent = node.parent?.parent?.parent
+			const parent = node.parent.parent
 			if (
 				parent?.type !== AST_NODE_TYPES.Program &&
 				parent?.type !== AST_NODE_TYPES.ExportNamedDeclaration
@@ -44,7 +44,7 @@ export default createRule({
 			return false
 		}
 
-		function isPrimitiveConstant(node: any): boolean {
+		function isPrimitiveConstant(node: TSESTree.VariableDeclarator): boolean {
 			if (!isConstant(node)) return false
 
 			// 只检查原始类型常量（字符串、数字、布尔）
@@ -56,7 +56,11 @@ export default createRule({
 			return false
 		}
 
-		function checkConstantName(name: string, node: any, declarator: any) {
+		function checkConstantName(
+			name: string,
+			node: TSESTree.Identifier,
+			declarator: TSESTree.VariableDeclarator,
+		) {
 			// 跳过私有常量
 			if (name.startsWith("_")) {
 				return

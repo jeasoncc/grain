@@ -1,12 +1,12 @@
 import * as E from "fp-ts/Either"
-import type { ContentInterface, ContentType } from "@/types/content"
-import type { NodeInterface } from "@/types/node"
-import { exportToOrgmode } from "../export"
+import { z } from "zod"
+import type { LegacyRecoveryGraph, LegacyRecoveryNode } from "@/types/org/org.interface"
+import { exportToOrgmode } from "../export/export.orgmode.fn"
 
 const RECOVERY_DIRECTORY = "_migration-recovered"
 const BACKUP_DIRECTORY = "_migration-raw-backups"
 const MANIFEST_FILE = "migration-manifest.json"
-const RECOVERY_SQL_FILE = "legacy-contents-recovery.sql"
+const RECOVERY_SQL_FILE = "legacy-workspace-recovery.sql"
 const VERIFICATION_FILE = "migration-verification.json"
 const MAX_COMPONENT_LENGTH = 120
 
@@ -37,7 +37,7 @@ export interface MigrationOrgDocument {
 export interface MigrationRawBackup {
 	readonly content: string
 	readonly contentId: string
-	readonly contentType: ContentType
+	readonly contentType: string
 	readonly nodeId: string
 	readonly version: string
 	readonly createdAt: string
@@ -52,13 +52,28 @@ export interface MigrationNodeResult {
 	readonly warnings: readonly MigrationWarningCode[]
 }
 
+export interface LegacyMigrationContent {
+	readonly id: string
+	readonly nodeId: string
+	readonly content: string
+	readonly contentType: string
+	readonly version: string
+	readonly createdAt: string
+	readonly updatedAt: string
+}
+
 export interface LegacyMigrationInput {
-	readonly contents: readonly ContentInterface[]
-	readonly nodes: readonly NodeInterface[]
-	readonly workspaceTitle: string
+	readonly contents: readonly LegacyMigrationContent[]
+	readonly graph: LegacyRecoveryGraph
+}
+
+interface MigrationNode extends LegacyRecoveryNode {
+	readonly parent: string | null
+	readonly type: string
 }
 
 export interface LegacyMigrationPlan {
+	readonly graph: LegacyRecoveryGraph
 	readonly directories: readonly MigrationDirectory[]
 	readonly documents: readonly MigrationOrgDocument[]
 	readonly manifest: string
@@ -77,28 +92,138 @@ const sqliteUtf8Literal = (value: string): string => {
 	return `CAST(X'${hex}' AS TEXT)`
 }
 
-/** Build a self-contained SQLite script that restores every raw legacy content row byte-exactly. */
-export const createLegacyContentsRecoverySql = (backups: readonly MigrationRawBackup[]): string => {
-	const decimalInteger = /^-?(?:0|[1-9]\d*)$/
-	for (const backup of backups) {
-		if (
-			!decimalInteger.test(backup.version) ||
-			!decimalInteger.test(backup.createdAt) ||
-			!decimalInteger.test(backup.updatedAt)
-		) {
-			throw new Error(`Invalid decimal metadata for legacy content ${backup.contentId}`)
+const isCanonicalI64 = (value: string): boolean =>
+	/^(?:0|-[1-9]\d*|[1-9]\d*)$/.test(value) &&
+	BigInt(value) >= -9223372036854775808n &&
+	BigInt(value) <= 9223372036854775807n
+
+const decimalSchema = z.string().refine(isCanonicalI64, "Expected canonical i64 decimal")
+const workspaceSchema = z.object({
+	id: z.string(), name: z.string(), description: z.string().nullable(),
+	createdAt: decimalSchema, updatedAt: decimalSchema,
+}).strict()
+const nodeSchema = z.object({
+	id: z.string(), workspaceId: z.string(), parentId: z.string().nullable(),
+	title: z.string(), nodeType: z.string(), isCollapsed: decimalSchema,
+	sortOrder: decimalSchema, tags: z.string().nullable(),
+	createdAt: decimalSchema, updatedAt: decimalSchema,
+}).strict()
+const graphSchema = z.object({ workspace: workspaceSchema, nodes: z.array(nodeSchema) }).strict()
+
+export const decodeLegacyRecoveryGraph = (value: unknown): LegacyRecoveryGraph => {
+	const graph = graphSchema.parse(value)
+	const ids = new Set<string>()
+	for (const node of graph.nodes) {
+		if (node.workspaceId !== graph.workspace.id || ids.has(node.id)) {
+			throw new Error("Invalid selected-workspace recovery graph")
 		}
+		ids.add(node.id)
 	}
+	return graph
+}
+
+export const decodeLegacyMigrationInput = (value: unknown): LegacyMigrationInput => {
+	const input = z.object({
+		graph: graphSchema,
+		contents: z.array(z.object({
+			id: z.string(), nodeId: z.string(), content: z.string(), contentType: z.string(),
+			version: decimalSchema, createdAt: decimalSchema, updatedAt: decimalSchema,
+		}).strict()),
+	}).strict().parse(value)
+	const graph = decodeLegacyRecoveryGraph(input.graph)
+	const ids = new Set<string>()
+	for (const content of input.contents) {
+		if (ids.has(content.id)) throw new Error("Duplicate recovery content ID")
+		ids.add(content.id)
+	}
+	return { graph, contents: input.contents }
+}
+
+/** The same required version-2 manifest/tuple format accepted by the native reader. */
+export const decodeLegacyRecoveryBundle = (value: unknown) => {
+	const metadataSchema = z.object({
+		path: z.string(), contentId: z.string(), contentType: z.string(), nodeId: z.string(),
+		version: decimalSchema, createdAt: decimalSchema, updatedAt: decimalSchema,
+	}).strict()
+	const bundle = z.object({
+		manifest: z.string(), graph: graphSchema,
+		rawBackups: z.array(metadataSchema.extend({ content: z.string() })),
+		recoverySql: z.string(),
+	}).strict().parse(value)
+	const manifest = z.object({
+		version: z.literal(2), rootDirectory: z.string(), graph: graphSchema,
+		rawBackups: z.array(metadataSchema), recoverySqlPath: z.string(),
+		directories: z.array(z.unknown()), documents: z.array(z.unknown()),
+		nodes: z.array(z.unknown()), warnings: z.array(z.string()),
+	}).strict().parse(JSON.parse(bundle.manifest))
+	const graph = decodeLegacyRecoveryGraph(bundle.graph)
+	if (JSON.stringify(graph) !== JSON.stringify(decodeLegacyRecoveryGraph(manifest.graph))) {
+		throw new Error("Recovery graph differs from manifest")
+	}
+	const safePath = (path: string): boolean =>
+		path !== "" && !path.includes("\\") && !path.includes("\u0000") && !/^[A-Za-z]:/.test(path) &&
+		path.split("/").every((part) => part !== "" && part !== "." && part !== ".." &&
+			!(part.startsWith(".grain-") && part.endsWith(".tmp")))
+	const seen = new Set<string>()
+	if (!safePath(manifest.rootDirectory) ||
+		manifest.recoverySqlPath !== `${manifest.rootDirectory}/${RECOVERY_SQL_FILE}` ||
+		bundle.rawBackups.length !== manifest.rawBackups.length) {
+		throw new Error("Invalid recovery artifact paths/count")
+	}
+	for (const [index, backup] of bundle.rawBackups.entries()) {
+		const { content: _content, ...metadata } = backup
+		if (!safePath(backup.path) ||
+			!backup.path.startsWith(`${manifest.rootDirectory}/${BACKUP_DIRECTORY}/`) ||
+			seen.has(backup.path) ||
+			JSON.stringify(metadata) !== JSON.stringify(manifest.rawBackups[index])) {
+			throw new Error("Recovery raw backup differs from manifest")
+		}
+		seen.add(backup.path)
+	}
+	if (bundle.recoverySql !== createLegacyWorkspaceRecoverySql(graph, bundle.rawBackups)) {
+		throw new Error("Recovery SQL differs from lossless tuples")
+	}
+	return bundle
+}
+
+/** Restore only the selected workspace graph and preserved raw rows into an empty SQLite DB. */
+export const createLegacyWorkspaceRecoverySql = (
+	inputGraph: LegacyRecoveryGraph,
+	backups: readonly MigrationRawBackup[],
+): string => {
+	const graph = decodeLegacyRecoveryGraph(inputGraph)
+	const workspace = graph.workspace
+	const contentIds = new Set<string>()
+	const integer = (value: string): string => {
+		if (!isCanonicalI64(value)) throw new Error("Invalid canonical i64 recovery metadata")
+		return value
+	}
+	const nullableText = (value: string | null): string =>
+		value === null ? "NULL" : sqliteUtf8Literal(value)
 	const statements = [
+		"-- Selected legacy workspace graph and raw contents only; not a whole-database backup.",
 		"PRAGMA foreign_keys=OFF;",
 		"BEGIN IMMEDIATE;",
-		"CREATE TABLE contents (id TEXT PRIMARY KEY NOT NULL, node_id TEXT NOT NULL, content TEXT NOT NULL, version INTEGER NOT NULL DEFAULT 1, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);",
+		"CREATE TABLE workspaces (id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL, description TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);",
+		"CREATE TABLE nodes (id TEXT PRIMARY KEY NOT NULL, workspace_id TEXT NOT NULL, parent_id TEXT, title TEXT NOT NULL, node_type TEXT NOT NULL, is_collapsed INTEGER NOT NULL, sort_order INTEGER NOT NULL, tags TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);",
+		"CREATE INDEX idx_nodes_workspace ON nodes(workspace_id);",
+		"CREATE INDEX idx_nodes_parent ON nodes(parent_id);",
+		// No node_id UNIQUE/FK constraint: duplicate and dangling historical rows must survive.
+		"CREATE TABLE contents (id TEXT PRIMARY KEY NOT NULL, node_id TEXT NOT NULL, content TEXT NOT NULL, version INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);",
 		"CREATE INDEX idx_contents_node ON contents(node_id);",
 		"CREATE TABLE grain_recovery_content_types (content_id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL);",
+		`INSERT INTO workspaces (id,name,description,created_at,updated_at) VALUES (${sqliteUtf8Literal(workspace.id)},${sqliteUtf8Literal(workspace.name)},${nullableText(workspace.description)},${integer(workspace.createdAt)},${integer(workspace.updatedAt)});`,
 	]
-	for (const backup of backups) {
+	for (const node of graph.nodes) {
 		statements.push(
-			`INSERT INTO contents (id,node_id,content,version,created_at,updated_at) VALUES (${sqliteUtf8Literal(backup.contentId)},${sqliteUtf8Literal(backup.nodeId)},${sqliteUtf8Literal(backup.content)},${backup.version},${backup.createdAt},${backup.updatedAt});`,
+			`INSERT INTO nodes (id,workspace_id,parent_id,title,node_type,is_collapsed,sort_order,tags,created_at,updated_at) VALUES (${sqliteUtf8Literal(node.id)},${sqliteUtf8Literal(node.workspaceId)},${nullableText(node.parentId)},${sqliteUtf8Literal(node.title)},${sqliteUtf8Literal(node.nodeType)},${integer(node.isCollapsed)},${integer(node.sortOrder)},${nullableText(node.tags)},${integer(node.createdAt)},${integer(node.updatedAt)});`,
+		)
+	}
+	for (const backup of backups) {
+		if (contentIds.has(backup.contentId)) throw new Error("Duplicate recovery content ID")
+		contentIds.add(backup.contentId)
+		statements.push(
+			`INSERT INTO contents (id,node_id,content,version,created_at,updated_at) VALUES (${sqliteUtf8Literal(backup.contentId)},${sqliteUtf8Literal(backup.nodeId)},${sqliteUtf8Literal(backup.content)},${integer(backup.version)},${integer(backup.createdAt)},${integer(backup.updatedAt)});`,
 			`INSERT INTO grain_recovery_content_types (content_id,content_type) VALUES (${sqliteUtf8Literal(backup.contentId)},${sqliteUtf8Literal(backup.contentType)});`,
 		)
 	}
@@ -114,14 +239,14 @@ interface PathEntry {
 const compareText = (left: string, right: string): number =>
 	left < right ? -1 : left > right ? 1 : 0
 
-const compareNodes = (left: NodeInterface, right: NodeInterface): number =>
-	left.order - right.order ||
+const compareNodes = (left: MigrationNode, right: MigrationNode): number =>
+	(BigInt(left.sortOrder) < BigInt(right.sortOrder) ? -1 : BigInt(left.sortOrder) > BigInt(right.sortOrder) ? 1 : 0) ||
 	compareText(left.id, right.id) ||
 	compareText(left.title, right.title) ||
 	compareText(left.type, right.type)
 
-const compareContents = (left: ContentInterface, right: ContentInterface): number =>
-	compareText(right.lastEdit, left.lastEdit) ||
+const compareContents = (left: LegacyMigrationContent, right: LegacyMigrationContent): number =>
+	(BigInt(right.updatedAt) < BigInt(left.updatedAt) ? -1 : BigInt(right.updatedAt) > BigInt(left.updatedAt) ? 1 : 0) ||
 	compareText(left.id, right.id) ||
 	compareText(left.contentType, right.contentType) ||
 	compareText(left.content, right.content)
@@ -171,7 +296,7 @@ const allocateComponent = (
 	return { collided: component !== requested, component }
 }
 
-const findCycleNodeIds = (nodesById: ReadonlyMap<string, NodeInterface>): ReadonlySet<string> => {
+const findCycleNodeIds = (nodesById: ReadonlyMap<string, MigrationNode>): ReadonlySet<string> => {
 	const cycleIds = new Set<string>()
 	for (const startingId of [...nodesById.keys()].sort(compareText)) {
 		const path: string[] = []
@@ -193,17 +318,17 @@ const findCycleNodeIds = (nodesById: ReadonlyMap<string, NodeInterface>): Readon
 	return cycleIds
 }
 
-const metadata = (node: NodeInterface): string => `#+TITLE: ${node.title}\n#+SOURCE_ID: ${node.id}`
+const metadata = (node: MigrationNode): string => `#+TITLE: ${node.title}\n#+SOURCE_ID: ${node.id}`
 
-const placeholder = (node: NodeInterface, reason: string): string =>
+const placeholder = (node: MigrationNode, reason: string): string =>
 	`${metadata(node)}\n\n* Migration notice\n${reason}\n\nThe original source is preserved in the migration raw-backup artifacts.`
 
-const plainTextDocument = (node: NodeInterface, source: string): string =>
+const plainTextDocument = (node: MigrationNode, source: string): string =>
 	`${metadata(node)}\n\n${source}`
 
 const contentForNode = (
-	node: NodeInterface,
-	content: ContentInterface | undefined,
+	node: MigrationNode,
+	content: LegacyMigrationContent | undefined,
 ): {
 	readonly content: string
 	readonly placeholder: boolean
@@ -246,22 +371,25 @@ const contentForNode = (
 /**
  * Build a complete migration plan. This function performs no IO and never mutates its inputs.
  */
-export const planLegacyMigration = ({
-	contents,
-	nodes,
-	workspaceTitle,
-}: LegacyMigrationInput): LegacyMigrationPlan => {
-	const rootDirectory = sanitizeMigrationFilename(workspaceTitle, "Workspace")
-	const sortedNodes = [...nodes].sort(compareNodes)
+export const planLegacyMigration = (input: LegacyMigrationInput): LegacyMigrationPlan => {
+	const { contents, graph: sourceGraph } = decodeLegacyMigrationInput(input)
+	const graph: LegacyRecoveryGraph = {
+		workspace: sourceGraph.workspace,
+		nodes: [...sourceGraph.nodes].sort((left, right) => compareText(left.id, right.id)),
+	}
+	const rootDirectory = sanitizeMigrationFilename(graph.workspace.name, "Workspace")
+	const sortedNodes = graph.nodes
+		.map((node): MigrationNode => ({ ...node, parent: node.parentId, type: node.nodeType }))
+		.sort(compareNodes)
 	const nodesById = new Map(sortedNodes.map((node) => [node.id, node]))
 	const uniqueNodes = [...nodesById.values()].sort(compareNodes)
 	const cycleIds = findCycleNodeIds(nodesById)
-	const isOrphan = (node: NodeInterface): boolean =>
+	const isOrphan = (node: MigrationNode): boolean =>
 		node.parent !== null &&
 		(!nodesById.has(node.parent) || nodesById.get(node.parent)?.type !== "folder")
 	const needsRecovery = uniqueNodes.some((node) => cycleIds.has(node.id) || isOrphan(node))
 
-	const contentsByNode = new Map<string, readonly ContentInterface[]>()
+	const contentsByNode = new Map<string, readonly LegacyMigrationContent[]>()
 	for (const content of [...contents].sort(compareContents)) {
 		contentsByNode.set(content.nodeId, [...(contentsByNode.get(content.nodeId) ?? []), content])
 	}
@@ -290,7 +418,7 @@ export const planLegacyMigration = ({
 		)
 	}
 
-	const childrenByParent = new Map<string | null, NodeInterface[]>()
+	const childrenByParent = new Map<string | null, MigrationNode[]>()
 	for (const node of uniqueNodes) {
 		const effectiveParent =
 			node.parent !== null && !cycleIds.has(node.id) && !isOrphan(node) ? node.parent : null
@@ -388,37 +516,37 @@ export const planLegacyMigration = ({
 			`content.${extension}`,
 		)
 		const allocated = allocateComponent(requested, false, backupNames)
-		const legacyTimestamp = String(Date.parse(source.lastEdit))
 		return {
 			content: source.content,
 			contentId: source.id,
 			contentType: source.contentType,
-			createdAt: source.legacyCreatedAt ?? legacyTimestamp,
+			createdAt: source.createdAt,
 			nodeId: source.nodeId,
 			path: `${rootDirectory}/${BACKUP_DIRECTORY}/${allocated.component}`,
-			updatedAt: source.legacyUpdatedAt ?? legacyTimestamp,
-			version: source.legacyVersion ?? "1",
+			updatedAt: source.updatedAt,
+			version: source.version,
 		}
 	})
 
 	const recoverySqlPath = `${rootDirectory}/${RECOVERY_SQL_FILE}`
-	const recoverySql = createLegacyContentsRecoverySql(rawBackups)
+	const recoverySql = createLegacyWorkspaceRecoverySql(graph, rawBackups)
 	const warnings = [...contentsByNode.keys()]
 		.filter((nodeId) => !nodesById.has(nodeId))
 		.sort(compareText)
 		.map((nodeId) => `Content references missing node ${nodeId}`)
 	const manifestData = {
+		graph,
 		directories,
 		documents: documents.map(({ content: _content, ...document }) => document),
 		nodes: nodeResults,
 		rawBackups: rawBackups.map(({ content: _content, ...backup }) => backup),
 		recoverySqlPath,
 		rootDirectory,
-		version: 1,
+		version: 2,
 		warnings,
-		workspaceTitle,
 	}
 	return {
+		graph,
 		directories,
 		documents,
 		manifest: `${JSON.stringify(manifestData, null, 2)}\n`,
@@ -432,9 +560,3 @@ export const planLegacyMigration = ({
 	}
 }
 
-/** Positional convenience API for callers that already load the three legacy values separately. */
-export const createLegacyMigrationPlan = (
-	nodes: readonly NodeInterface[],
-	contents: readonly ContentInterface[],
-	workspaceTitle: string,
-): LegacyMigrationPlan => planLegacyMigration({ contents, nodes, workspaceTitle })

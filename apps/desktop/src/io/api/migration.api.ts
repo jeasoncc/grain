@@ -1,19 +1,31 @@
 /** Legacy migration data access through one consistent backend snapshot. */
 
+import * as E from "fp-ts/Either"
 import { pipe } from "fp-ts/function"
 import * as TE from "fp-ts/TaskEither"
-import { decodeLegacyMigrationContents, decodeNodes } from "@/types/codec"
-import type { ContentInterface } from "@/types/content"
+import { decodeLegacyMigrationContents } from "@/types/codec"
+import { decodeLegacyMigrationInput, decodeLegacyRecoveryGraph, type LegacyMigrationContent } from "@/pipes/migration"
 import type { AppError } from "@/types/error"
-import type { NodeInterface } from "@/types/node"
+import type { LegacyRecoveryGraph, LegacyRecoveryWorkspace } from "@/types/org/org.interface"
 import { api } from "./client.api"
 
 export interface LegacyMigrationSnapshot {
-	readonly workspaceTitle: string
-	readonly workspaceNodes: readonly NodeInterface[]
-	readonly allNodes: readonly NodeInterface[]
-	readonly allContents: readonly ContentInterface[]
+	readonly graph: LegacyRecoveryGraph
+	readonly contents: readonly LegacyMigrationContent[]
 }
+
+/** Narrow, raw metadata; never uses generic editable workspace CRUD or JS integer projections. */
+export const listLegacyWorkspaces = (): TE.TaskEither<AppError, readonly LegacyRecoveryWorkspace[]> =>
+    pipe(api.listLegacyWorkspaces(), TE.chainEitherK((workspaces) => E.tryCatch(() => {
+        const ids = new Set<string>()
+        return workspaces.map((workspace) => {
+            // Reuse the exact recovery metadata decoder, with no graph/body projection loaded.
+            const decoded = decodeLegacyRecoveryGraph({ workspace, nodes: [] }).workspace
+            if (ids.has(decoded.id)) throw new Error("Duplicate historical workspace ID")
+            ids.add(decoded.id)
+            return decoded
+        })
+    }, (cause): AppError => ({ type: "VALIDATION_ERROR", message: String(cause) }))))
 
 /** Load and decode all migration inputs from the backend's single read snapshot. */
 export const getLegacyMigrationSnapshot = (
@@ -21,10 +33,11 @@ export const getLegacyMigrationSnapshot = (
 ): TE.TaskEither<AppError, LegacyMigrationSnapshot> =>
 	pipe(
 		api.getLegacyMigrationSnapshot(workspaceId),
-		TE.map(({ allContents, allNodes, workspaceNodes, workspaceTitle }) => ({
-			allContents: decodeLegacyMigrationContents(allContents),
-			allNodes: decodeNodes(allNodes),
-			workspaceNodes: decodeNodes(workspaceNodes),
-			workspaceTitle,
-		})),
+		TE.chainEitherK(({ graph, contents }) => E.tryCatch(
+			() => decodeLegacyMigrationInput({
+				graph,
+				contents: decodeLegacyMigrationContents(contents),
+			}),
+			(cause): AppError => ({ type: "VALIDATION_ERROR", message: String(cause) }),
+		)),
 	)

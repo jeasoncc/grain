@@ -1,20 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { Share2, Check, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { usePathname } from "next/navigation";
+import { useDocPathname } from "./hooks/use-doc-pathname";
+
+const subscribeToShareAPI = () => () => {};
+const getShareAPISnapshot = () => typeof navigator.share === "function";
+const getServerShareAPISnapshot = () => false;
 
 export function ShareButton() {
-  const pathname = usePathname();
+  const pathname = useDocPathname();
   const [copied, setCopied] = useState(false);
 
-  const shareUrl = typeof window !== "undefined" 
-    ? `${window.location.origin}${pathname}${window.location.hash}`
-    : "";
+  const hasShareAPI = useSyncExternalStore(
+    subscribeToShareAPI, getShareAPISnapshot, getServerShareAPISnapshot
+  );
 
   const handleShare = async () => {
+    const shareUrl = `${window.location.origin}${pathname}${window.location.hash}`;
     if (navigator.share) {
       try {
         await navigator.share({
@@ -26,11 +31,11 @@ export function ShareButton() {
       }
     } else {
       // 回退到复制链接
-      handleCopy();
+      await handleCopy(shareUrl);
     }
   };
 
-  const handleCopy = async () => {
+  const handleCopy = async (shareUrl: string) => {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
@@ -42,16 +47,13 @@ export function ShareButton() {
 
   if (pathname === "/docs") return null;
 
-  const hasShareAPI = typeof navigator !== 'undefined' && 'share' in navigator;
-
   return (
     <Button
       onClick={handleShare}
       variant="ghost"
       size="sm"
       className={cn(
-        "fixed bottom-32 right-[calc(50%-32rem+1rem)] z-50 hidden xl:flex items-center gap-2",
-        "bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg p-2",
+        "h-8 w-8 sm:w-auto shrink-0 flex items-center justify-center gap-2 p-0 sm:px-2",
         "hover:bg-gray-100 dark:hover:bg-gray-800",
         "text-gray-600 dark:text-gray-400"
       )}
@@ -61,7 +63,7 @@ export function ShareButton() {
       {copied ? (
         <>
           <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
-          <span className="text-sm">已复制</span>
+          <span className="text-sm hidden sm:inline">已复制</span>
         </>
       ) : (
         <>
@@ -70,7 +72,7 @@ export function ShareButton() {
           ) : (
             <LinkIcon className="w-4 h-4" />
           )}
-          <span className="text-sm hidden lg:inline">
+          <span className="text-sm hidden sm:inline">
             {hasShareAPI ? "分享" : "复制链接"}
           </span>
         </>

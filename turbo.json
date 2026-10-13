@@ -4,16 +4,16 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "target/**", "out/**", ".expo/**"]
+      "outputs": ["dist/**", ".next/**", "target/**", "out/**"]
     },
     "build:prod": {
       "dependsOn": ["^build:prod"],
-      "outputs": ["dist/**", ".next/**", "target/**", "out/**", ".expo/**"],
+      "outputs": ["dist/**", ".next/**", "target/**", "out/**"],
       "env": ["NODE_ENV"]
     },
     "build:test": {
       "dependsOn": ["^build:test"],
-      "outputs": ["dist/**", ".next/**", "target/**", "out/**", ".expo/**"],
+      "outputs": ["dist/**", ".next/**", "target/**", "out/**"],
       "env": ["NODE_ENV"]
     },
     "dev": {

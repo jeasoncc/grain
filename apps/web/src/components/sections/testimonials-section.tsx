@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
+import Image from "next/image";
 import { Star, Quote, Sparkles, Clock } from "lucide-react";
 import { SectionHeader } from "@/components/ui/section-header";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
@@ -148,9 +149,11 @@ export function TestimonialsSection() {
                   <div className="flex items-center gap-3 pt-4 border-t border-gray-200/50 dark:border-gray-800/50 relative">
                     <div className="relative flex-shrink-0">
                       <div className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-gray-200 dark:ring-gray-700 group-hover:ring-gray-300 dark:group-hover:ring-gray-600 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
-                        <img
+                        <Image
                           src={getAvatarUrl(testimonial.name, index)}
                           alt={testimonial.name}
+                          width={48}
+                          height={48}
                           className="w-full h-full object-cover"
                           loading="lazy"
                         />

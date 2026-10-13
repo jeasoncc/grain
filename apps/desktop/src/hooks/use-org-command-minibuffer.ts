@@ -1,53 +1,20 @@
-import { resolveOrgDateInput, systemOrgNow } from "@/utils/org-date-clock"
-import {
-	useEffect,
-	useLayoutEffect,
-	useRef,
-	useState,
-	useSyncExternalStore,
-	type RefObject,
-} from "react"
-import {
-	guardOrgCommandOrigin,
-	type OrgBufferCommand,
-	type OrgBufferCommandContext,
-	type OrgBufferCommandPreparation,
-} from "@/flows/org-command/org-buffer-command"
-import {
-	executeOrgArchiveCommand,
-	executeOrgRefileCommand,
-	prepareOrgArchiveCommand,
-	prepareOrgRefileCommand,
-} from "@/flows/org-command/org-refile.command"
-import type {
-	OrgMinibufferSession,
-	OrgMinibufferAcceptResult,
-} from "@/types/editor/minibuffer.interface"
-import {
-	createOrgRefileTargetSnapshot,
-	orgRefileTargetCandidates,
-	RootCandidateLabel,
-} from "@/pipes/org/org-refile-target.pipe"
-import { extractOrgSubtreeAt } from "@/pipes/org/org-subtree-refile.pipe"
-import { planOrgSameFileRefile } from "@/pipes/org/org-same-file-refile.pipe"
-import { buildOrgSparseTreePlan, parseOrgSparseTreeQuery } from "@/pipes/org/org-sparse-tree.pipe"
-import type { OrgEditorCommandTarget } from "@/views/org-editor"
+import * as E from "fp-ts/Either"
+import type { RefObject } from "react"
+import { useLayoutEffect, useRef } from "react"
+import { useSettings } from "./use-settings"
+import { useOrgSourceParameters } from "./use-org-source-parameters"
+import { captureOrgCalendarContext, systemOrgNow } from "@/utils/org-date-clock"
+import { parseOrgBehaviorConfiguration } from "@/pipes/org/org-behavior-configuration.pipe"
+import { configuredOrgRefileTargetCandidates, planOrgRefilePreview } from "@/pipes/org/org-refile-preview.pipe"
+import type { OrgBufferCommandContext } from "@/flows/org-command/org-buffer-command"
+import { executeOrgArchiveCommand, executeOrgRefileCommand, prepareOrgArchiveCommand, prepareOrgRefileCommand } from "@/flows/org-command/org-refile.command"
+import { createOrgRefileTargetSnapshot, type OrgRefileTargetSnapshot } from "@/pipes/org/org-refile-target.pipe"
+import { extractOrgSubtreeAt, planOrgRefilePayload, type OrgRefileLoggingIntent } from "@/pipes/org/org-subtree-refile.pipe"
+import { parseOrgSparseTreeQuery, type OrgSparseTreeNativeContext } from "@/pipes/org/org-sparse-tree.pipe"
+import { prepareOrgSparseTreeContext } from "@/flows/org-command/org-sparse-tree-context"
+import type { OrgTodoNoteResult } from "@/flows/org-command/org-todo-note"
+import type { OrgEditorCommandTarget } from "@/views/org-editor/org-editor.types"
 import type { OrgWorkspaceController } from "./use-org-workspace"
-
-import { createParameterSession, type ParameterLease } from "@/flows/org-command/parameter-session"
-
-type ParameterDescription = Pick<
-	OrgMinibufferSession,
-	"prompt" | "historyKey" | "completion" | "cancelWhileAccepting" | "acceptCandidate"
->
-type ParameterCommit = (
-	origin: OrgBufferCommandContext,
-	current: OrgWorkspaceController,
-	target: OrgEditorCommandTarget,
-	finish: (message: string, persistent?: boolean) => void,
-	input: string,
-	lease: ParameterLease,
-) => OrgMinibufferAcceptResult | Promise<OrgMinibufferAcceptResult>
 
 /** Shared parameter ownership; pure buffer transactions and explicit transfer effects remain distinct. */
 export const useOrgCommandMinibuffer = (
@@ -57,538 +24,244 @@ export const useOrgCommandMinibuffer = (
 	suspended = false,
 	now: () => Date = systemOrgNow,
 ) => {
-	const [core] = useState(createParameterSession)
-	const { session } = useSyncExternalStore(core.subscribe, core.getSnapshot, core.getSnapshot)
-	const [echo, setEcho] = useState<string | null>(null)
-	const originGateRef = useRef<{ lease: ParameterLease; isActive: () => boolean } | null>(null)
-	const lookupRef = useRef<{
-		abort: AbortController
-		lease: ParameterLease
-		isActive: () => boolean
-	} | null>(null)
-	const abortLookup = () => {
-		const lookup = lookupRef.current
-		if (lookup) {
-			lookupRef.current = null
-			core.endRead(lookup.lease, lookup.abort)
-			lookup.abort.abort()
-		}
-	}
-	const persistentEchoRef = useRef(false)
-	const runtimeRef = useRef({ controller, isBusy, suspended, now })
-	runtimeRef.current = { controller, isBusy, suspended, now }
-	useLayoutEffect(() => {
-		core.attach()
-		setEcho(null)
-		return () => {
-			core.detach()
-			lookupRef.current = null
-		}
-	}, [
-		core,
-		controller.workspace?.rootPath,
-		controller.workspace?.capabilityToken,
-		controller.workspaceSessionId,
-		controller.activeBufferId,
-		controller.activeDocument?.relativePath,
-	])
-	useLayoutEffect(() => {
-		const origin = originGateRef.current
-		if (origin && core.current(origin.lease) && !origin.isActive()) core.retire(origin.lease)
-		if (lookupRef.current && !lookupRef.current.isActive()) {
-			const lease = lookupRef.current.lease
-			abortLookup()
-			core.retire(lease)
-		}
-		if (suspended) {
-			const lease = core.getSnapshot().lease
-			if (lease) core.retire(lease)
-			setEcho(null)
-		}
-	})
-	useEffect(() => {
-		if (!echo || persistentEchoRef.current) return
-		const timer = window.setTimeout(() => setEcho(null), 3500)
-		return () => window.clearTimeout(timer)
-	}, [echo])
-
-	const launch = (
-		description: ParameterDescription,
-		prepare: (context: OrgBufferCommandContext) => OrgBufferCommandPreparation,
-		cursor: number,
-		commit: ParameterCommit,
-		previous?: ParameterLease,
-	) => {
-		const document = controller.activeDocument
-		const target = targetRef.current
-		if (!document || !target || isBusy || suspended || (!previous && core.busy())) return
-		const prepared = prepare({
-			relativePath: document.relativePath,
-			content: controller.content,
-			cursor,
-		})
-		if (prepared.kind === "rejected") {
-			setEcho(prepared.message)
-			return
-		}
-		const root = controller.workspace?.rootPath
-		const grant = controller.workspace?.capabilityToken
-		const workspaceSessionId = controller.workspaceSessionId
-		const activeBufferId = controller.activeBufferId
-		const originFocus = globalThis.document?.activeElement
-		const lease = core.begin(previous)
-		if (!lease) return
-		const sessionId = lease.id
-		setEcho(null)
-		const originIsActive = () =>
-			!runtimeRef.current.suspended &&
-			core.current(lease) &&
-			runtimeRef.current.controller.workspace?.rootPath === root &&
-			runtimeRef.current.controller.workspace?.capabilityToken === grant &&
-			runtimeRef.current.controller.workspaceSessionId === workspaceSessionId &&
-			runtimeRef.current.controller.activeBufferId === activeBufferId &&
-			runtimeRef.current.controller.activeDocument?.relativePath ===
-				prepared.context.relativePath &&
-			targetRef.current === target
-		originGateRef.current = { lease, isActive: originIsActive }
-		let completionFocus: { before: Element; host: Element } | null = null
-		const captureCompletionFocus = () => {
-			const before = globalThis.document?.activeElement
-			const host = before?.closest("[data-org-parameter-session]")
-			return before && host?.getAttribute("data-org-parameter-session") === String(lease.id)
-				? { before, host }
-				: null
-		}
-		const finish = (message: string, persistent = false) => {
-			if (!originIsActive()) return
-			const focus = completionFocus
-			// Ownership follows the original host, not an input that publication may replace.
-			const before = globalThis.document?.activeElement
-			const ownsFocus = Boolean(
-				focus?.host.isConnected &&
-					focus.host.getAttribute("data-org-parameter-session") === String(lease.id) &&
-					focus.host.contains(before ?? null),
-			)
-			if (!core.retire(lease) || !core.isAttached() || targetRef.current !== target) return
-			persistentEchoRef.current = persistent
-			setEcho(message)
-			const after = globalThis.document?.activeElement
-			if (
-				ownsFocus &&
-				focus &&
-				(after === before || (before && !before.isConnected && after === globalThis.document?.body))
-			)
-				target.restoreFocus()
-		}
-		core.publishSession(lease, {
-			...description,
-			id: sessionId,
-			initialInput: prepared.initialInput,
-			candidates: prepared.candidates,
-			onCancel: () => {
-				if (!originIsActive()) return
-				const before = globalThis.document?.activeElement
-				const ownsFocus =
-					(before === originFocus && before !== globalThis.document?.body && before?.isConnected) ||
-					(before === globalThis.document?.body &&
-						Boolean(originFocus && !originFocus.isConnected)) ||
-					before
-						?.closest("[data-org-parameter-session]")
-						?.getAttribute("data-org-parameter-session") === String(lease.id)
-				if (core.cancel(lease) && core.isAttached() && targetRef.current === target) {
-					persistentEchoRef.current = false
-					setEcho("Canceled")
-					const after = globalThis.document?.activeElement
-					if (
-						ownsFocus &&
-						(after === before ||
-							(before && !before.isConnected && after === globalThis.document?.body))
-					)
-						target.restoreFocus()
-				}
-			},
-			onAccept: (input) => {
-				const current = runtimeRef.current
-				if (!originIsActive())
-					return { ok: false, message: "The originating command or buffer is no longer active." }
-				if (
-					current.isBusy ||
-					current.controller.isSaving ||
-					current.controller.isLoading ||
-					core.busy()
-				)
-					return {
-						ok: false,
-						message: "The buffer is saving or loading. Try again when it finishes.",
-					}
-				const guard = guardOrgCommandOrigin(prepared.context, {
-					relativePath: current.controller.activeDocument?.relativePath ?? "",
-					content: current.controller.content,
-					cursor,
-				})
-				if (guard) return { ok: false, message: guard.message }
-				completionFocus = captureCompletionFocus()
-				return (
-					core.accept(lease, originIsActive, description.cancelWhileAccepting === false, () =>
-						commit(prepared.context, current.controller, target, finish, input, lease),
-					) ?? { ok: false, message: "The originating command or buffer is no longer active." }
-				)
-			},
-		})
-	}
-	const open = (command: OrgBufferCommand, cursor: number) =>
-		launch(
-			{ historyKey: command.id, prompt: command.prompt, completion: command.completion },
-			command.prepare,
-			cursor,
-			(origin, current, target, finish, input) => {
-				let dateContext: { today: string } | undefined
-				if (command.id === "org.heading.scheduled" || command.id === "org.heading.deadline") {
-					const resolved = resolveOrgDateInput(input, runtimeRef.current.now)
-					if (resolved.kind === "error") return { ok: false, message: resolved.message }
-					// Already captured before editor effects; raw input remains the session history value.
-					input = resolved.date
-					dateContext = { today: resolved.date }
-				}
-				const result = command.execute(
-					origin,
-					{
-						relativePath: current.activeDocument?.relativePath ?? "",
-						content: current.content,
-						cursor,
-					},
-					input,
-					dateContext,
-				)
-				if (result.kind === "rejected") return { ok: false, message: result.message }
-				if (result.kind === "view" && !target.applyView?.(origin.content, result.view))
-					return {
-						ok: false,
-						message: "This editor cannot apply the view, or the buffer changed. Cancel and retry.",
-					}
-				if (result.kind === "edit" && !target.applyEdit(origin.content, result.edit))
-					return {
-						ok: false,
-						message: "The buffer changed before the command could be applied. Cancel and retry.",
-					}
-				if (result.kind === "view" && result.view.query !== null) {
-					const query = parseOrgSparseTreeQuery(result.view.query)
-					if (
-						query &&
-						buildOrgSparseTreePlan(origin.content, query).matchedHeadingStarts.length === 0
-					) {
-						finish("No sparse-tree matches; the whole document remains visible.")
-						return { ok: true }
-					}
-				}
-				finish(result.kind === "no-change" ? command.unchangedMessage : command.updatedMessage)
-				return { ok: true }
-			},
-		)
+	const configurationGeneration = useRef({})
+	useLayoutEffect(() => useSettings.subscribe((state, previous) => {
+		if (state.orgBehaviorConfigurationJson !== previous.orgBehaviorConfigurationJson)
+			configurationGeneration.current = {}
+	}), [])
+	const source = useOrgSourceParameters({
+		current: controller, isBusy, suspended, now, preserveSelection: true,
+		captureClockContext: controller.clock.captureSparseContext,
+		scope: [controller.workspace?.rootPath, controller.workspace?.capabilityToken,
+			controller.workspaceSessionId, controller.activeBufferId, controller.activeDocument?.relativePath],
+		readSource: (current) => current.activeDocument ? {
+			relativePath: current.activeDocument.relativePath, content: current.content,
+			filename: current.workspace ? `${current.workspace.rootPath.replace(/[\\/]+$/, "")}/${current.activeDocument.relativePath}` : null,
+			savingOrLoading: current.isSaving || current.isLoading,
+		} : null,
+	}, targetRef)
+	const { launch, core, lookupRef } = source
 	const openTransfer = (archive: boolean, cursor: number) => {
-		if (archive && controller.isDirty) {
-			setEcho("Save the current document before refiling or archiving a subtree.")
+		const generation = configurationGeneration.current
+		const calendar = captureOrgCalendarContext(now)
+		if (!archive && calendar.kind === "error") {
+			source.reportRejected(calendar.message)
 			return
 		}
-		const description: ParameterDescription = {
+		const parsedConfiguration = parseOrgBehaviorConfiguration(useSettings.getState().orgBehaviorConfigurationJson)
+		if (!archive && E.isLeft(parsedConfiguration)) {
+			source.reportRejected(parsedConfiguration.left.message)
+			return
+		}
+		if (archive && controller.isDirty) {
+			source.reportRejected("Save the current document before refiling or archiving a subtree.")
+			return
+		}
+		const prepare = archive ? prepareOrgArchiveCommand : (context: OrgBufferCommandContext) => {
+			const configuration = E.isRight(parsedConfiguration) ? parsedConfiguration.right : null
+			if (!configuration) return { kind: "rejected" as const, reason: "invalid-path" as const, message: "Invalid Org behavior configuration." }
+			const prepared = prepareOrgRefileCommand(context, configuration.refile.files ??
+				controller.workspace?.documents.map((document) => document.relativePath) ?? [])
+			if (prepared.kind === "rejected" || configuration.refile.files === null) return prepared
+			// An explicit file allowlist governs completion AND typed input, including same-file moves.
+			const candidates = prepared.candidates.filter((path) => configuration.refile.files!.includes(path))
+			return { ...prepared, candidates, initialInput: candidates.includes(prepared.initialInput) ? prepared.initialInput : candidates[0] ?? "" }
+		}
+		launch({
 			historyKey: archive ? "org.subtree.archive" : "org.subtree.refile",
 			prompt: archive ? "Archive subtree (yes/no):" : "Refile to Org file:",
 			completion: "value",
-			cancelWhileAccepting: archive ? false : true,
-		}
-		const prepare = archive
-			? prepareOrgArchiveCommand
-			: (context: OrgBufferCommandContext) =>
-					prepareOrgRefileCommand(
-						context,
-						controller.workspace?.documents.map((document) => document.relativePath) ?? [],
-					)
-		launch(description, prepare, cursor, async (origin, current, _target, finish, input, lease) => {
-			if (
-				(archive && current.isDirty) ||
-				current.openBuffers?.some(
-					(buffer) =>
-						buffer.bufferId === current.activeBufferId &&
-						(buffer.hasConflict || buffer.autosavePaused),
-				)
-			)
-				return {
-					ok: false,
-					message: "Save the current document before refiling or archiving a subtree.",
-				}
-			const currentContext = {
-				relativePath: current.activeDocument?.relativePath ?? "",
-				content: current.content,
-				cursor,
-			}
-			const result = archive
-				? executeOrgArchiveCommand(origin, currentContext, input)
-				: executeOrgRefileCommand(origin, currentContext, input)
-			if (result.kind === "rejected") return { ok: false, message: result.message }
-			if (result.kind === "cancel") {
-				finish("Canceled")
-				return { ok: true }
-			}
-			if (result.kind === "local" && "targetRelativePath" in result) {
-				// Canonical memory only: no target RPC, persistent index, or loading owner.
-				const snapshot = createOrgRefileTargetSnapshot(origin.relativePath, "", origin.content)
-				const moved = extractOrgSubtreeAt(origin.content, origin.cursor)!
-				const candidates = orgRefileTargetCandidates(snapshot, true).filter(
-					(candidate) =>
-						candidate.kind === "root" ||
-						candidate.target.from < moved.from ||
-						candidate.target.from >= moved.to,
-				)
-				launch(
-					{
-						prompt: "Refile under heading:",
-						historyKey: "org.subtree.refile.heading",
-						completion: "value",
-						acceptCandidate: true,
-					},
-					() => ({
-						kind: "ready",
-						context: origin,
-						initialInput: RootCandidateLabel,
-						candidates: candidates.map((candidate) => candidate.label),
-					}),
-					cursor,
-					(headingOrigin, live, editor, retire, label) => {
-						if (
-							live.openBuffers?.some(
-								(buffer) =>
-									buffer.bufferId === live.activeBufferId &&
-									(buffer.hasConflict || buffer.autosavePaused),
-							)
-						)
-							return { ok: false, message: "Resolve the current buffer conflict before refiling." }
-						const candidate = candidates.find((entry) => entry.label === label)
-						if (!candidate)
-							return {
-								ok: false,
-								message: "Choose an exact target heading from the completion list.",
-							}
-						const plan = planOrgSameFileRefile(
-							live.content,
-							headingOrigin.cursor,
-							headingOrigin.content,
-							candidate.kind === "heading" ? candidate.target : undefined,
-						)
-						if (plan.kind === "rejected") return { ok: false, message: plan.message }
-						if (!editor.applyEdits)
-							return { ok: false, message: "This editor does not support atomic refile batches." }
-						if (!editor.applyEdits?.(headingOrigin.content, plan.batch))
-							return {
-								ok: false,
-								message: "The originating editor cannot apply this move. Cancel and retry.",
-							}
-						retire(plan.kind === "no-change" ? "Subtree already in place" : "Subtree refiled")
-						return { ok: true }
-					},
-					lease,
-				)
-				return { ok: true }
-			}
-			if (
-				current.isDirty ||
-				current.openBuffers?.some(
-					(buffer) => buffer.bufferId === current.activeBufferId && buffer.isDirty,
-				)
-			)
-				return {
-					ok: false,
-					message: "Save the current document before refiling or archiving a subtree.",
-				}
-			if (
-				!archive &&
-				"targetRelativePath" in result &&
-				typeof result.targetRelativePath === "string"
-			) {
-				const targetPath = result.targetRelativePath
-				const abort = core.beginRead(lease)
-				if (!abort)
-					return { ok: false, message: "The originating command or buffer is no longer active." }
-				const isActive = () => {
-					const live = runtimeRef.current
-					return (
-						!live.suspended &&
-						core.current(lease) &&
-						live.controller.workspace?.rootPath === current.workspace?.rootPath &&
-						live.controller.workspace?.capabilityToken === current.workspace?.capabilityToken &&
-						live.controller.workspaceSessionId === current.workspaceSessionId &&
-						live.controller.activeBufferId === current.activeBufferId &&
-						live.controller.activeDocument?.relativePath === origin.relativePath &&
-						live.controller.content === origin.content &&
-						targetRef.current === _target
-					)
-				}
-				lookupRef.current = { abort, lease, isActive }
+			cancelWhileAccepting: !archive,
+		}, prepare, cursor, async (origin, current, _target, finish, input, lease, isCurrent) => {
+			if (current.openBuffers?.some((buffer) => buffer.bufferId === current.activeBufferId && (buffer.hasConflict || buffer.autosavePaused)))
+				return { ok: false, message: "Resolve the current buffer conflict before refiling or archiving." }
+			const currentContext = { relativePath: current.activeDocument?.relativePath ?? "", content: current.content, cursor }
+			if (archive) {
+				if (current.isDirty || current.openBuffers?.some((buffer) => buffer.bufferId === current.activeBufferId && buffer.isDirty))
+					return { ok: false, message: "Save the current document before archiving a subtree." }
+				const result = executeOrgArchiveCommand(origin, currentContext, input)
+				if (result.kind === "rejected") return { ok: false, message: result.message }
+				if (result.kind === "cancel") { finish({ kind: "cancelled", message: "Canceled" }); return { ok: true } }
 				try {
-					const lookup = await current.readRefileTarget(targetPath, abort.signal)
-					if (abort.signal.aborted || !isActive())
-						return { ok: false, message: "The originating command or buffer is no longer active." }
-					if (lookup.kind === "rejected") return { ok: false, message: lookup.message }
-					// Own immutable DTOs, never a mutable controller cache or user-entered offset.
-					const snapshot = Object.freeze({
-						...lookup.snapshot,
-						headings: Object.freeze(
-							lookup.snapshot.headings.map((heading) => Object.freeze({ ...heading })),
-						),
-					})
-					const candidates = orgRefileTargetCandidates(snapshot, true)
-					core.endRead(lease, abort)
-					lookupRef.current = null
-					launch(
-						{
-							prompt: "Refile under heading:",
-							historyKey: "org.subtree.refile.heading",
-							completion: "value",
-							acceptCandidate: true,
-							cancelWhileAccepting: false,
-						},
-						() => ({
-							kind: "ready",
-							context: origin,
-							initialInput: RootCandidateLabel,
-							candidates: candidates.map((candidate) => candidate.label),
-						}),
-						cursor,
-						async (headingOrigin, live, _editor, retire, label) => {
-							const candidate = candidates.find((candidate) => candidate.label === label)
-							if (!candidate)
-								return {
-									ok: false,
-									message: "Choose an exact target heading from the completion list.",
-								}
-							if (
-								live.isDirty ||
-								live.openBuffers?.some(
-									(buffer) =>
-										buffer.bufferId === live.activeBufferId &&
-										(buffer.isDirty || buffer.hasConflict),
-								)
-							)
-								return {
-									ok: false,
-									message: "Save the current document before refiling or archiving a subtree.",
-								}
-							try {
-								const outcome = await live.refileSubtree(headingOrigin.cursor, targetPath, {
-									expectedTargetRevision: snapshot.revision,
-									...(candidate.kind === "heading"
-										? {
-												targetHeading: {
-													from: candidate.target.from,
-													heading: candidate.target.heading,
-												},
-											}
-										: {}),
-								})
-								retire(
-									outcome.message ??
-										(outcome.kind === "success"
-											? "Subtree refiled"
-											: "Transfer failed. Review the target and reopen refile for a fresh selection."),
-									outcome.kind !== "success" || Boolean(outcome.message),
-								)
-								return outcome.kind === "success"
-									? { ok: true }
-									: { ok: false, message: outcome.message }
-							} catch {
-								const message =
-									"Transfer ended without a confirmed result; files may have changed. Reread both documents before reconciling them. Do not automatically retry; no rollback was attempted."
-								retire(message, true)
-								return { ok: false, message }
-							}
-						},
-						lease,
-					)
-					return { ok: true }
+					const outcome = await current.archiveSubtree(origin.cursor)
+					finish({ kind: outcome.kind === "success" ? "success" : "rejected",
+						message: outcome.message ?? (outcome.kind === "success" ? "Subtree archived" : "Transfer failed. Reread both documents before retrying.") },
+					outcome.kind !== "success" || Boolean(outcome.message))
+					return outcome.kind === "success" ? { ok: true } : { ok: false, message: outcome.message }
 				} catch {
-					return {
-						ok: false,
-						message: "Could not read the target. Review the file path and try again.",
-					}
-				} finally {
-					core.endRead(lease, abort)
-					if (lookupRef.current?.abort === abort) lookupRef.current = null
+					const message = "Transfer ended without a confirmed result; files may have changed. Reread both documents before reconciling them. Do not automatically retry; no rollback was attempted."
+					finish({ kind: "rejected", message }, true)
+					return { ok: false, message }
 				}
 			}
+			const configuration = E.isRight(parsedConfiguration) ? parsedConfiguration.right : null
+			if (!configuration) return { ok: false, message: "Invalid Org behavior configuration." }
+			const result = executeOrgRefileCommand(origin, currentContext, input)
+			if (result.kind === "rejected") return { ok: false, message: result.message }
+			const targetPath = result.targetRelativePath
+			if (configuration.refile.files !== null && !configuration.refile.files.includes(targetPath))
+				return { ok: false, message: "Choose a target file allowed by the Org behavior configuration." }
+			if (result.kind === "transfer" && (current.isDirty || current.openBuffers?.some((buffer) => buffer.bufferId === current.activeBufferId && buffer.isDirty)))
+				return { ok: false, message: "Save the current document before refiling to another file." }
+			const logging: OrgRefileLoggingIntent = Object.freeze({
+				expectedSourceContent: origin.content,
+				stamp: calendar.kind === "context" ? calendar.context.logStamp! : "",
+				options: Object.freeze({ logging: configuration.logging, inheritance: configuration.inheritance }),
+			})
+			const payload = planOrgRefilePayload(origin.content, origin.cursor, logging)
+			if (payload.kind === "rejected") return { ok: false, message: payload.message }
+			const offerHeadings = (snapshot: OrgRefileTargetSnapshot, nativeContext: OrgSparseTreeNativeContext) => {
+				const moved = extractOrgSubtreeAt(origin.content, origin.cursor)!
+				const candidates = configuredOrgRefileTargetCandidates(snapshot, configuration, result.kind === "local" ? moved : undefined,
+					calendar.kind === "context" ? { calendar: calendar.context, nativeContext } : undefined)
+				if (candidates.length === 0) return { ok: false as const, message: "No legal Refile targets match the configured depth/filter rules." }
+				const read = lookupRef.current
+				if (read?.lease === lease) {
+					core.endRead(lease, read.abort)
+					lookupRef.current = null
+				}
+				launch({
+					prompt: "Refile under heading:",
+					historyKey: "org.subtree.refile.heading",
+					completion: "value",
+					acceptCandidate: true,
+				}, () => ({ kind: "ready", context: origin, initialInput: candidates[0].label, candidates: candidates.map((candidate) => candidate.label) }),
+				cursor, (headingOrigin, live, _editor, _retire, label, headingLease, headingIsCurrent) => {
+					if (live.openBuffers?.some((buffer) => buffer.bufferId === live.activeBufferId && (buffer.hasConflict || buffer.autosavePaused)))
+						return { ok: false, message: "Resolve the current buffer conflict before refiling." }
+					if (result.kind === "transfer" && (live.isDirty || live.openBuffers?.some((buffer) => buffer.bufferId === live.activeBufferId && buffer.isDirty)))
+						return { ok: false, message: "Save the current document before refiling to another file." }
+					const candidate = candidates.find((entry) => entry.label === label)
+					if (!candidate) return { ok: false, message: "Choose an exact target heading from the completion list." }
+					const plan = planOrgRefilePreview(headingOrigin, snapshot, candidate, payload.kind === "needs-note" ? undefined : logging)
+					if (plan.kind === "rejected") return { ok: false, message: plan.message }
+					if (!headingIsCurrent()) return { ok: false, message: "The originating command or buffer is no longer active." }
+					launch({
+						prompt: "Confirm Refile (yes/no):",
+						historyKey: "org.subtree.refile.confirm",
+						completion: "value",
+						cancelWhileAccepting: false,
+						preview: payload.kind === "needs-note" ? { ...plan.preview, detail: `${plan.preview.detail} The required Refile note is collected before any move or file effect.` } : plan.preview,
+					}, () => ({ kind: "ready", context: headingOrigin, initialInput: "no", candidates: ["no", "yes"] }),
+					cursor, async (confirmedOrigin, live, editor, retire, answer, confirmLease, confirmIsCurrent, loggingCollector) => {
+						const confirmation = answer.trim().toLowerCase()
+						if (confirmation === "no") { retire({ kind: "cancelled", message: "Canceled" }); return { ok: true } }
+						if (confirmation !== "yes") return { ok: false, message: "Type yes to refile, or no to cancel." }
+						if (live.openBuffers?.some((buffer) => buffer.bufferId === live.activeBufferId && (buffer.hasConflict || buffer.autosavePaused)))
+							return { ok: false, message: "Resolve the current buffer conflict before refiling." }
+						let transferMessage: string | undefined
+						const executeMove = async (intent: OrgRefileLoggingIntent, valid: () => boolean): Promise<OrgTodoNoteResult> => {
+							if (!valid() || configurationGeneration.current !== generation)
+								return { kind: "rejected", reason: "stale-refile-request" }
+							const reviewed = planOrgRefilePreview(confirmedOrigin, snapshot, candidate, intent)
+							if (reviewed.kind === "rejected") return { kind: "rejected", reason: reviewed.message }
+							if (reviewed.kind === "local") {
+								const revision = editor.getCommandContext().revision
+								try {
+									if (!editor.applyEdits?.(confirmedOrigin.content, reviewed.batch))
+										return { kind: "rejected", reason: "The originating editor cannot apply this atomic move." }
+								} catch {
+									let expected = confirmedOrigin.content
+									for (const edit of [...reviewed.batch.changes].reverse())
+										expected = expected.slice(0, edit.from) + edit.insert + expected.slice(edit.to)
+									const accepted = editor.getCommandContext()
+									if (accepted.content !== expected || accepted.revision <= revision)
+										return { kind: "rejected", reason: "Canonical Source did not confirm this atomic move." }
+								}
+								return { kind: "applied" }
+							}
+							const current = source.runtimeRef.current.current
+							if (current.isDirty || current.openBuffers?.some((buffer) => buffer.bufferId === current.activeBufferId && (buffer.isDirty || buffer.hasConflict || buffer.autosavePaused)))
+								return { kind: "rejected", reason: "Save or reconcile the current document before refiling to another file." }
+							try {
+								const outcome = await current.refileSubtree(confirmedOrigin.cursor, reviewed.target.relativePath, {
+									snapshot: reviewed.target,
+									...(reviewed.candidate.kind === "heading" ? { targetHeading: { from: reviewed.candidate.target.from, heading: reviewed.candidate.target.heading } } : {}),
+									...(payload.kind !== "ready" || payload.payload !== payload.moved.text ? { logging: intent } : {}),
+								})
+								// A settled file attempt is never left as a retryable note capability.
+								if (outcome.kind !== "success") {
+									transferMessage = outcome.message ?? "Transfer failed. Reread both documents before reconciling them."
+									source.reportRejected(transferMessage)
+									return { kind: "aborted" }
+								}
+								transferMessage = outcome.message
+								if (transferMessage) source.reportRejected(transferMessage)
+								return { kind: "applied" }
+							} catch {
+								transferMessage = "Transfer ended without a confirmed result; files may have changed. Reread both documents before reconciling them. Do not automatically retry; no rollback was attempted."
+								source.reportRejected(transferMessage)
+								return { kind: "aborted" }
+							}
+						}
+						if (payload.kind === "needs-note") {
+							const accepted = loggingCollector?.(confirmedOrigin.content, "Refile note",
+								(note, noteIsCurrent) => executeMove(Object.freeze({ ...logging, note }), noteIsCurrent),
+								plan.kind === "transfer" ? "Subtree transferred to the confirmed file snapshots. Review any retained-input warnings before saving." : undefined) ?? false
+							if (!accepted) return { ok: false, message: "This Source window cannot collect the required Refile note." }
+							core.retire(confirmLease)
+							return { ok: true }
+						}
+						const outcome = await executeMove(logging, confirmIsCurrent)
+						if (outcome.kind === "rejected") return { ok: false, message: outcome.reason }
+						const message = transferMessage ?? (outcome.kind === "applied"
+							? plan.kind === "local" && plan.unchanged ? "Subtree already in place" : "Subtree refiled"
+							: "Transfer failed. Reread both documents before reconciling them.")
+						retire({ kind: outcome.kind === "applied" ? "success" : "rejected", message }, outcome.kind !== "applied" || Boolean(transferMessage))
+						return outcome.kind === "applied" ? { ok: true } : { ok: false, message }
+					}, headingLease)
+					return { ok: true }
+				}, lease)
+				return { ok: true as const }
+			}
+			const prepareHeadings = (snapshot: OrgRefileTargetSnapshot, signal?: AbortSignal) => {
+				if (configuration.refile.match === null) return offerHeadings(snapshot, Object.freeze({}))
+				const match = configuration.refile.match.trim()
+				const query = parseOrgSparseTreeQuery(match.startsWith("match:") ? match : `match:${match}`, configuration.inheritance)
+				if (!query) return { ok: false as const, message: "Invalid configured Refile match expression." }
+				const filename = current.workspace ? `${current.workspace.rootPath.replace(/[\\/]+$/, "")}/${snapshot.relativePath}` : null
+				const context = prepareOrgSparseTreeContext(snapshot.source, query, filename, signal,
+					current.clock.captureSparseContext(snapshot.source, filename))
+				const publish = (nativeContext: OrgSparseTreeNativeContext) => {
+					if (signal?.aborted || !isCurrent()) return { ok: false as const, message: "The originating command or buffer is no longer active." }
+					return offerHeadings(snapshot, nativeContext)
+				}
+				return context instanceof Promise ? context.then(publish) : publish(context)
+			}
+			if (result.kind === "local" && configuration.refile.match === null)
+				return prepareHeadings(createOrgRefileTargetSnapshot(origin.relativePath, "", origin.content))
+			const abort = core.beginRead(lease)
+			if (!abort) return { ok: false, message: "The originating command or buffer is no longer active." }
+			const isActive = () => isCurrent() && source.runtimeRef.current.current.content === origin.content
+			lookupRef.current = { abort, lease, isActive }
 			try {
-				const outcome =
-					"targetRelativePath" in result && typeof result.targetRelativePath === "string"
-						? await current.refileSubtree(origin.cursor, result.targetRelativePath)
-						: await current.archiveSubtree(origin.cursor)
-				// Once filesystem effects began, retire the prompt even on failure; never retry blindly.
-				finish(
-					outcome.message ??
-						(outcome.kind === "success"
-							? archive
-								? "Subtree archived"
-								: "Subtree refiled"
-							: "Transfer failed. Reread both documents before retrying."),
-					outcome.kind !== "success" || Boolean(outcome.message),
-				)
-				return outcome.kind === "success" ? { ok: true } : { ok: false, message: outcome.message }
-			} catch {
-				const message =
-					"Transfer ended without a confirmed result; files may have changed. Reread both documents before reconciling them. Do not automatically retry; no rollback was attempted."
-				finish(message, true)
-				return { ok: false, message }
+				const lookup = result.kind === "local"
+					? { kind: "ready" as const, snapshot: createOrgRefileTargetSnapshot(origin.relativePath, "", origin.content) }
+					: await current.readRefileTarget(targetPath, abort.signal)
+				if (abort.signal.aborted || !isActive()) return { ok: false, message: "The originating command or buffer is no longer active." }
+				if (lookup.kind === "rejected") return { ok: false, message: lookup.message }
+				if (lookup.snapshot.relativePath !== targetPath || typeof lookup.snapshot.source !== "string")
+					return { ok: false, message: "Target lookup did not retain exact requested source provenance." }
+				if (configuration.refile.files !== null && lookup.snapshot.revision === "<missing>")
+					return { ok: false, message: "Configured Refile targets must be existing Org files. Create the target separately, then reopen Refile." }
+				// Context capture stays inside the same read lease as target IO, including dirty local Source.
+				return await prepareHeadings(lookup.snapshot, abort.signal)
+			} catch (cause) {
+				return { ok: false, message: abort.signal.aborted || !isActive()
+					? "The originating command or buffer is no longer active."
+					: `Cannot prepare Refile targets: ${cause instanceof Error ? cause.message : String(cause)}` }
+			} finally {
+				core.endRead(lease, abort)
+				if (lookupRef.current?.abort === abort) lookupRef.current = null
 			}
 		})
 	}
-	const clearSparseTree = () => {
-		const current = runtimeRef.current
-		const target = targetRef.current
-		if (
-			!current.controller.activeDocument ||
-			!target ||
-			current.isBusy ||
-			current.controller.isSaving ||
-			current.controller.isLoading ||
-			current.suspended ||
-			core.busy()
-		)
-			return
-		const lease = core.getSnapshot().lease
-		const before = globalThis.document?.activeElement
-		const host = before?.closest("[data-org-parameter-session]")
-		const ownsFocus = Boolean(
-			lease && host?.getAttribute("data-org-parameter-session") === String(lease.id),
-		)
-		if (!target.applyView?.(current.controller.content, { kind: "sparse-tree", query: null })) {
-			setEcho("This editor cannot clear the view, or the buffer changed. Cancel and retry.")
-			return
-		}
-		if (!core.isAttached() || targetRef.current !== target || core.getSnapshot().lease !== lease)
-			return
-		const currentFocus = globalThis.document?.activeElement
-		const stillOwned =
-			ownsFocus &&
-			host?.isConnected &&
-			host.getAttribute("data-org-parameter-session") === String(lease?.id) &&
-			host.contains(currentFocus ?? null) &&
-			core.getSnapshot().lease === lease
-		if (lease) core.retire(lease)
-		persistentEchoRef.current = false
-		setEcho("Sparse tree cleared")
-		if (
-			stillOwned &&
-			core.isAttached() &&
-			targetRef.current === target &&
-			(globalThis.document?.activeElement === currentFocus ||
-				(currentFocus &&
-					!currentFocus.isConnected &&
-					globalThis.document?.activeElement === globalThis.document?.body))
-		)
-			target.restoreFocus()
-	}
 	return {
-		session,
-		echo,
-		open,
-		clearSparseTree,
+		reportRejected: source.reportRejected,
+		session: source.session,
+		result: source.result,
+		open: source.open,
+		clearSparseTree: source.clearSparseTree,
 		openRefile: (cursor: number) => openTransfer(false, cursor),
 		openArchive: (cursor: number) => openTransfer(true, cursor),
 	}

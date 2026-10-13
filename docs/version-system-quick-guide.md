@@ -27,7 +27,7 @@ apps/desktop/src-tauri/Cargo.toml              # Rust 配置
 aur/PKGBUILD                                   # Arch Linux
 aur/PKGBUILD-binary                            # Arch Linux 二进制
 snap/snapcraft.yaml                           # Snap 包
-flatpak/com.lotus.NovelEditor.yml              # Flatpak 包
+flatpak/com.lotus.Grain.yml                    # Flatpak 包
 winget-manifests/*.yaml                        # Windows 包管理器
 ```
 
@@ -113,7 +113,7 @@ git add \
     aur/PKGBUILD \
     aur/PKGBUILD-binary \
     snap/snapcraft.yaml \
-    flatpak/com.lotus.NovelEditor.yml \
+    flatpak/com.lotus.Grain.yml \
     winget-manifests/*.yaml \
     path/to/newfile \                    # 添加这行
     2>/dev/null || true

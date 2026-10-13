@@ -1,23 +1,24 @@
 /**
  * LexicalCodeEditor - Code editing component using Lexical
- * Uses @lexical/code for syntax highlighting
+ * Uses @lexical/code-prism for syntax highlighting
  * @module @grain/editor-lexical/code
  */
 
 import type React from "react";
-import { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
-import { LexicalComposer } from "@lexical/react/LexicalComposer";
+import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react";
+import { LexicalExtensionComposer } from "@lexical/react/LexicalExtensionComposer";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
-import { CodeNode, CodeHighlightNode } from "@lexical/code";
-import type { EditorState } from "lexical";
+import { $createCodeNode, $isCodeNode } from "@lexical/code";
+import { CodePrismExtension } from "@lexical/code-prism";
+import { $createTextNode, $getRoot, defineExtension, type EditorState, type LexicalEditor } from "lexical";
 
 import type { SupportedLanguage } from "@grain/editor-core";
 
-import CodeHighlightPlugin from "../plugins/code-highlight-plugin";
+import EditorLifecyclePlugin from "../components/EditorLifecyclePlugin";
 import PrismLanguagesPlugin from "../plugins/prism-languages-plugin";
 
 /**
@@ -122,11 +123,11 @@ const LexicalCodeEditor = forwardRef<LexicalCodeEditorHandle, LexicalCodeEditorP
   ): React.ReactElement {
     const latestContentRef = useRef<string>(initialContent);
     const languageRef = useRef<SupportedLanguage>(language);
+    const editorRef = useRef<LexicalEditor | null>(null);
 
     const handleChange = useCallback(
       (editorState: EditorState) => {
         editorState.read(() => {
-          const { $getRoot } = require("lexical");
           const root = $getRoot();
           const content = root.getTextContent();
           latestContentRef.current = content;
@@ -141,41 +142,42 @@ const LexicalCodeEditor = forwardRef<LexicalCodeEditorHandle, LexicalCodeEditorP
       () => ({
         getContent: () => latestContentRef.current,
         setContent: (content: string) => {
+          editorRef.current?.update(() => {
+            const root = $getRoot();
+            root.clear();
+            root.append($createCodeNode(languageRef.current).append($createTextNode(content)));
+          }, { discrete: true });
           latestContentRef.current = content;
-          console.warn("[LexicalCodeEditor] setContent requires editor remount");
         },
         getLanguage: () => languageRef.current,
         setLanguage: (lang: SupportedLanguage) => {
+          editorRef.current?.update(() => {
+            for (const node of $getRoot().getChildren()) {
+              if ($isCodeNode(node)) node.setLanguage(lang);
+            }
+          }, { discrete: true });
           languageRef.current = lang;
         },
-        focus: () => {
-          // Would need editor ref
-        },
-        blur: () => {
-          // Would need editor ref
-        },
+        focus: () => editorRef.current?.focus(),
+        blur: () => editorRef.current?.blur(),
       }),
       []
     );
 
-    const initialConfig = {
+    const [extension] = useState(() => defineExtension({
+      name: "@grain/editor-lexical/code",
       namespace,
       theme: codeEditorTheme,
-      nodes: [CodeNode, CodeHighlightNode],
+      dependencies: [CodePrismExtension],
       editable: !readOnly,
       onError,
-      editorState: initialContent
-        ? () => {
-            const { $getRoot, $createTextNode } = require("lexical");
-            const root = $getRoot();
-            const textNode = $createTextNode(initialContent);
-            root.append(textNode);
-          }
-        : undefined,
-    };
+      $initialEditorState: () => {
+        $getRoot().append($createCodeNode(language).append($createTextNode(initialContent)));
+      },
+    }));
 
     return (
-      <LexicalComposer initialConfig={initialConfig}>
+      <LexicalExtensionComposer extension={extension} contentEditable={null}>
         <div className="relative flex flex-col h-full font-mono">
           <PlainTextPlugin
             contentEditable={
@@ -199,11 +201,11 @@ const LexicalCodeEditor = forwardRef<LexicalCodeEditorHandle, LexicalCodeEditorP
             }
           />
           <HistoryPlugin />
-          {onChange && <OnChangePlugin onChange={handleChange} ignoreSelectionChange />}
-          <CodeHighlightPlugin />
+          <OnChangePlugin onChange={handleChange} ignoreSelectionChange />
+          <EditorLifecyclePlugin editorRef={editorRef} readOnly={readOnly} />
           <PrismLanguagesPlugin />
         </div>
-      </LexicalComposer>
+      </LexicalExtensionComposer>
     );
   }
 );

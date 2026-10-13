@@ -4,7 +4,7 @@
  * @module @grain/editor-lexical/document
  */
 
-import type { SerializedEditorState } from "lexical";
+import type { LexicalEditor, SerializedEditorState } from "lexical";
 import type React from "react";
 import { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
 
@@ -12,6 +12,7 @@ import type { SerializedContent } from "@grain/editor-core";
 import { createJsonContent } from "@grain/editor-core";
 
 import Editor, { type EditorProps } from "../components/Editor";
+import { createInitialDocumentState } from "../utils/createInitialEditorState";
 
 /**
  * Props for LexicalDocumentEditor component
@@ -92,6 +93,7 @@ const LexicalDocumentEditor = forwardRef<LexicalDocumentEditorHandle, LexicalDoc
     const latestContentRef = useRef<SerializedContent | null>(
       initialContent ?? null
     );
+    const editorRef = useRef<LexicalEditor | null>(null);
 
     // Handle content changes from Lexical
     const handleChange = useCallback(
@@ -108,21 +110,21 @@ const LexicalDocumentEditor = forwardRef<LexicalDocumentEditorHandle, LexicalDoc
       ref,
       () => ({
         getContent: () => {
-          return latestContentRef.current ?? createJsonContent({ root: { children: [] } });
+          const state = editorRef.current?.getEditorState();
+          return state ? createJsonContent(state.toJSON()) :
+            latestContentRef.current ?? createJsonContent(JSON.parse(createInitialDocumentState("")));
         },
         setContent: (content: SerializedContent) => {
+          if (content.format !== "json") {
+            console.warn(`[LexicalDocumentEditor] Unsupported content format: ${content.format}`);
+            return;
+          }
+          const editor = editorRef.current;
+          if (editor) editor.setEditorState(editor.parseEditorState(content.data));
           latestContentRef.current = content;
-          // Note: Lexical doesn't support dynamic content updates easily
-          // This would require re-mounting the editor or using editor.update()
-          console.warn("[LexicalDocumentEditor] setContent requires editor remount");
         },
-        focus: () => {
-          // Focus is handled by AutoFocusPlugin
-          // For manual focus, we'd need editor ref
-        },
-        blur: () => {
-          // Blur would need editor ref
-        },
+        focus: () => editorRef.current?.focus(),
+        blur: () => editorRef.current?.blur(),
       }),
       []
     );
@@ -132,6 +134,7 @@ const LexicalDocumentEditor = forwardRef<LexicalDocumentEditorHandle, LexicalDoc
     return (
       <Editor
         initialState={initialState}
+        editorRef={editorRef}
         onChange={handleChange}
         placeholder={placeholder}
         readOnly={readOnly}

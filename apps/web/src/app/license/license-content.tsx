@@ -1,6 +1,7 @@
 "use client";
 
-import { Scale, Code, FileText, Github } from "lucide-react";
+import { Scale, Code, FileText } from "lucide-react";
+import { GitHubIcon } from "@/components/ui/github-icon";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ const licenseInfo = [
     description: "你可以自由使用、修改、分发本软件，包括商业用途。",
   },
   {
-    icon: <Github className="w-6 h-6" />,
+    icon: <GitHubIcon className="w-6 h-6" />,
     title: "开源友好",
     description: "欢迎贡献代码、提出建议或报告问题。让我们一起改进这个项目。",
   },
@@ -155,7 +156,7 @@ export function LicensePageContent() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Github className="w-5 h-5 mr-2" />
+                  <GitHubIcon className="w-5 h-5 mr-2" />
                   访问 GitHub
                 </Link>
               </Button>

@@ -13,7 +13,7 @@
 import dayjs from "dayjs"
 import * as E from "fp-ts/Either"
 import { pipe } from "fp-ts/function"
-import type { LexicalDocument } from "../content/content.generate.fn"
+import type { LexicalDocument } from "../content/legacy-content.pipe"
 
 // ==============================
 // Types

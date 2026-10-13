@@ -41,13 +41,11 @@ export function ScrollToTop() {
     <Button
       onClick={scrollToTop}
       className={cn(
-        "fixed bottom-8 z-40 rounded-full p-3 shadow-lg",
+        "h-8 w-8 shrink-0 p-0",
         "bg-gray-900 dark:bg-white text-white dark:text-gray-900",
         "hover:bg-gray-800 dark:hover:bg-gray-100",
         "transition-all duration-300",
-        "animate-fade-in-scale",
-        // 确保不在目录区域内，在内容区域右侧，不遮挡内容
-        "right-4 lg:right-8 xl:right-[calc((100vw-64rem)/2+64rem+1rem)]"
+        "animate-fade-in-scale"
       )}
       aria-label="滚动到顶部"
       title="滚动到顶部 (gg)"

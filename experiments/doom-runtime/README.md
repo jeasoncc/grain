@@ -13,16 +13,17 @@ npm test
 ```
 
 Use Node 26 or later (verification used Node 26.10.0). The isolated package/lock
-pins CM state 6.7.5, view 6.43.12, commands 6.11.1, Vim 6.4.0 and jsdom 30.1.1.
-The CM versions match the installed desktop runtime at the time of the probes.
-This folder is outside the application's workspace package globs. No production
-package or lockfile was changed and Vim is **not** enabled in Grain.
+pins CM state 6.7.6, view 6.43.13, commands 6.11.1, Vim 6.4.0 and jsdom 30.1.2.
+The CM versions match the desktop runtime after the dependency upgrade.
+This folder is outside the application's workspace package globs. The probes do
+not modify production packages and Vim is **not** enabled in Grain.
 
 Each process installs synthetic DOM globals/geometry stubs and exits after its
 checks. Results are written to ignored `*.results.json` files. Vim actions/maps
 are process-global, so tests intentionally run in separate Node processes.
 
-Fresh pinned `npm ci` reproduction on 2026-10-02 passed all three scripts:
+Fresh pinned `npm ci` reproduction after the dependency upgrade passed all three
+scripts (Node 26.10.0). The original 2026-10-02 probe also passed these same counts:
 
 | Probe | Passing test cases | What they establish |
 | --- | --- | --- |

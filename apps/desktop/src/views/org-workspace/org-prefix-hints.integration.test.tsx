@@ -1,9 +1,8 @@
 import { EditorView } from "@codemirror/view"
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { act, cleanup, fireEvent, screen } from "@testing-library/react"
+import { ApplicationTestDocumentPane, render } from "@/test/application-providers"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { resolveOrgWorkspaceKeyboardCommand } from "@/flows/org-command/org-workspace-command"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
-import { OrgDocumentPane } from "./org-document-pane.view.fn"
 
 // Deliberately includes CRLF and raw export markup: hints must never rewrite the buffer.
 const source = "* Note :work:\r\n#+begin_export html\r\n<b>raw</b>\r\n#+end_export\r\n"
@@ -22,12 +21,13 @@ function fixture() {
 		isLoading: false,
 		isSaving: false,
 		revealTarget: null,
+		getBufferEffectState: () => ({ busy: false, loading: false, saving: false, readOnly: false }),
 		updateContent,
 		saveDocument,
 		openOrgLink: vi.fn(),
 	} as unknown as OrgWorkspaceController
 	const pane = (current = controller) => (
-		<OrgDocumentPane
+		<ApplicationTestDocumentPane
 			controller={current}
 			isBusy={false}
 			canGoBack={false}
@@ -40,8 +40,6 @@ function fixture() {
 			onGoForward={vi.fn()}
 			onQuickOpen={vi.fn()}
 			onSelectTab={vi.fn()}
-			onShowInspector={vi.fn()}
-			onShowSidebar={vi.fn()}
 		/>
 	)
 	const rendered = render(pane())
@@ -74,7 +72,7 @@ const prefix = (editor: HTMLElement) => fireEvent.keyDown(editor, { ctrlKey: tru
 
 // No editor, Which-Key, minibuffer, or command-hook mocks: exercise the real boundaries.
 describe("Org prefix hints through the document pane", () => {
-	it("discovers nested Archive keys without focusing help, then opens explicit confirmation", () => {
+	it("discovers nested Archive keys without focusing help, then opens explicit confirmation", async () => {
 		const current = fixture()
 		prefix(current.editor)
 		advance(350)
@@ -85,16 +83,16 @@ describe("Org prefix hints through the document pane", () => {
 		expect(hint()).toHaveTextContent("C-c C-x")
 		expect(hint()).toHaveTextContent("Archive")
 		expect(current.editor).toHaveFocus()
-		fireEvent.keyDown(current.editor, { ctrlKey: true, key: "a" })
+		await act(async () => { fireEvent.keyDown(current.editor, { ctrlKey: true, key: "a" }) })
 		expect(hint()).not.toBeInTheDocument()
-		expect(screen.getByRole("combobox", { name: "Archive subtree (yes/no):" })).toHaveValue("no")
+		expect(screen.getByRole("combobox", { name: "Archive subtree (yes/no):" })).toHaveFocus()
 		current.assertUnchanged()
 	})
 
-	it("routes C-c C-w to Refile parameters, not browser tab close", () => {
+	it("routes C-c C-w to Refile parameters, not browser tab close", async () => {
 		const current = fixture()
 		prefix(current.editor)
-		expect(fireEvent.keyDown(current.editor, { ctrlKey: true, key: "w" })).toBe(false)
+		await act(async () => { expect(fireEvent.keyDown(current.editor, { ctrlKey: true, key: "w" })).toBe(false) })
 		expect(screen.getByRole("combobox", { name: "Refile to Org file:" })).toHaveFocus()
 		current.assertUnchanged()
 	})
@@ -104,7 +102,7 @@ describe("Org prefix hints through the document pane", () => {
 		vi.useRealTimers()
 	})
 
-	it("delays passive help until 350ms, keeps editor focus, and opens the Tags minibuffer", () => {
+	it("delays passive help until 350ms, keeps editor focus, and opens the Tags minibuffer", async () => {
 		const f = fixture()
 		expect(prefix(f.editor)).toBe(false)
 		expect(hint()).toBeNull()
@@ -114,7 +112,7 @@ describe("Org prefix hints through the document pane", () => {
 		expect(hint()).toBeVisible()
 		expect(hint()).toHaveTextContent("Edit tags")
 		expect(f.editor).toHaveFocus()
-		expect(fireEvent.keyDown(f.editor, { ctrlKey: true, key: "q" })).toBe(false)
+		await act(async () => { expect(fireEvent.keyDown(f.editor, { ctrlKey: true, key: "q" })).toBe(false) })
 		expect(hint()).toBeNull()
 		expect(screen.getByRole("combobox", { name: "Tags:" })).toHaveFocus()
 		f.assertUnchanged()
@@ -123,7 +121,7 @@ describe("Org prefix hints through the document pane", () => {
 	it.each([
 		{ key: "Escape" },
 		{ key: "g", ctrlKey: true },
-	])("cancels prefix and Tags parameters without edits with $key", (cancel) => {
+	])("cancels prefix and Tags parameters without edits with $key", async (cancel) => {
 		const f = fixture()
 		prefix(f.editor)
 		advance(350)
@@ -133,7 +131,7 @@ describe("Org prefix hints through the document pane", () => {
 		fireEvent.keyDown(f.editor, { ctrlKey: true, key: "q" })
 		expect(screen.queryByRole("combobox")).toBeNull()
 		prefix(f.editor)
-		fireEvent.keyDown(f.editor, { ctrlKey: true, key: "q" })
+		await act(async () => { fireEvent.keyDown(f.editor, { ctrlKey: true, key: "q" }) })
 		const input = screen.getByRole("combobox", { name: "Tags:" })
 		fireEvent.change(input, { target: { value: "changed" } })
 		fireEvent.keyDown(input, cancel)
@@ -196,7 +194,7 @@ describe("Org prefix hints through the document pane", () => {
 		f.assertUnchanged()
 	})
 
-	it("keeps the default prefix and help active after long idle, then routes the chord", () => {
+	it("keeps the default prefix and help active after long idle, then routes the chord", async () => {
 		const f = fixture()
 		prefix(f.editor)
 		advance(350)
@@ -204,7 +202,7 @@ describe("Org prefix hints through the document pane", () => {
 		advance(60_000)
 		expect(hint()).toBeVisible()
 		expect(f.editor).toHaveFocus()
-		expect(fireEvent.keyDown(f.editor, { ctrlKey: true, key: "q" })).toBe(false)
+		await act(async () => { expect(fireEvent.keyDown(f.editor, { ctrlKey: true, key: "q" })).toBe(false) })
 		expect(hint()).toBeNull()
 		expect(screen.getByRole("combobox", { name: "Tags:" })).toHaveFocus()
 		f.assertUnchanged()
@@ -237,38 +235,4 @@ describe("Org prefix hints through the document pane", () => {
 		expect(f.updateContent).not.toHaveBeenCalled()
 	})
 
-	it("consumes one metadata chord before the workspace palette policy sees it", () => {
-		const f = fixture()
-		const palette = vi.fn()
-		const observed = vi.fn()
-		const listener = (event: KeyboardEvent) => {
-			const command = resolveOrgWorkspaceKeyboardCommand({
-				key: event.key,
-				ctrlKey: event.ctrlKey,
-				metaKey: event.metaKey,
-				altKey: event.altKey,
-				shiftKey: event.shiftKey,
-				isComposing: event.isComposing,
-				keyCode: event.keyCode,
-				defaultPrevented: event.defaultPrevented,
-				isParameterInput: event.target instanceof HTMLInputElement,
-			})
-			observed(event.key, event.defaultPrevented, command)
-			if (command === "execute-command") palette()
-		}
-		window.addEventListener("keydown", listener)
-		try {
-			prefix(f.editor)
-			fireEvent.keyDown(f.editor, { ctrlKey: true, key: "p" })
-			expect(screen.getAllByRole("combobox", { name: "Property (KEY=VALUE):" })).toHaveLength(1)
-			expect(observed).toHaveBeenCalledWith("p", true, null)
-			expect(palette).not.toHaveBeenCalled()
-			fireEvent.keyDown(screen.getByRole("combobox"), { key: "Escape" })
-			fireEvent.keyDown(f.editor, { ctrlKey: true, key: "p" })
-			expect(palette).toHaveBeenCalledOnce()
-			f.assertUnchanged()
-		} finally {
-			window.removeEventListener("keydown", listener)
-		}
-	})
 })

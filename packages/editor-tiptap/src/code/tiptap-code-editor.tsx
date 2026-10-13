@@ -11,15 +11,18 @@ import {
   memo,
 } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
-import Document from "@tiptap/extension-document";
-import Text from "@tiptap/extension-text";
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
-import Placeholder from "@tiptap/extension-placeholder";
+import { Document } from "@tiptap/extension-document";
+import { Text } from "@tiptap/extension-text";
+import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
+import { Placeholder } from "@tiptap/extensions";
+import { common, createLowlight } from "lowlight";
 import type { SupportedLanguage } from "@grain/editor-core";
 import type {
   TiptapCodeEditorProps,
   TiptapCodeEditorHandle,
 } from "./tiptap-code-editor.types";
+
+const lowlight = createLowlight(common);
 
 /**
  * TiptapCodeEditor component
@@ -52,6 +55,7 @@ export const TiptapCodeEditor = memo(
           Document,
           Text,
           CodeBlockLowlight.configure({
+            lowlight,
             defaultLanguage: currentLanguage,
           }),
           Placeholder.configure({
@@ -125,10 +129,10 @@ export const TiptapCodeEditor = memo(
                 {
                   type: "codeBlock",
                   attrs: { language: currentLanguage },
-                  content: [{ type: "text", text: content }],
+                  content: content ? [{ type: "text", text: content }] : [],
                 },
               ],
-            });
+            }, { emitUpdate: false });
           },
           focus: () => {
             editor?.commands.focus();

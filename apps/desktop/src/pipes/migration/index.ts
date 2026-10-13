@@ -1,6 +1,9 @@
 export {
-	createLegacyContentsRecoverySql,
-	createLegacyMigrationPlan,
+	createLegacyWorkspaceRecoverySql,
+	decodeLegacyRecoveryGraph,
+	decodeLegacyRecoveryBundle,
+	decodeLegacyMigrationInput,
+	type LegacyMigrationContent,
 	type LegacyMigrationInput,
 	type LegacyMigrationPlan,
 	type MigrationDirectory,

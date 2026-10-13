@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useDocPathname } from "./hooks/use-doc-pathname";
 import {
   ChevronRight,
   ChevronDown,
@@ -16,7 +16,7 @@ interface NavItemComponentProps {
   item: NavItem;
   level?: number;
   pathname: string;
-  openItems: Set<string>;
+  openItems: Record<string, boolean>;
   onToggle: (href: string) => void;
 }
 
@@ -29,7 +29,7 @@ function NavItemComponent({
 }: NavItemComponentProps) {
   const hasChildren = item.children && item.children.length > 0;
   const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-  const isOpen = openItems.has(item.href);
+  const isOpen = Boolean(openItems[item.href]);
 
   const handleToggle = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -93,42 +93,47 @@ function NavItemComponent({
 }
 
 export function DocNav() {
-  const pathname = usePathname();
+  const pathname = useDocPathname();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
-  const initialOpenItems = useMemo(() => {
-    const set = new Set<string>();
+  const activeItems = useMemo(() => {
+    const items: Record<string, boolean> = {};
     docNavItems.forEach((item) => {
       if (item.children) {
         const hasActiveChild = item.children.some(
-          (child) => pathname === child.href || pathname.startsWith(child.href)
+          (child) => pathname === child.href || pathname.startsWith(child.href + "/")
         );
         if (hasActiveChild || pathname === item.href) {
-          set.add(item.href);
+          items[item.href] = true;
         }
       }
     });
-    return set;
+    return items;
   }, [pathname]);
 
-  const [openItems, setOpenItems] = useState<Set<string>>(initialOpenItems);
-
-  // 更新打开项当路径变化时
-  useEffect(() => {
-    setOpenItems(initialOpenItems);
-  }, [initialOpenItems]);
+  const [expansion, setExpansion] = useState<{
+    pathname: string;
+    items: Record<string, boolean>;
+  }>({ pathname, items: {} });
+  if (expansion.pathname !== pathname) {
+    setExpansion({ pathname, items: {} });
+  }
+  const openItems = useMemo(
+    () => ({ ...activeItems, ...(expansion.pathname === pathname ? expansion.items : {}) }),
+    [expansion, pathname, activeItems]
+  );
 
   const handleToggle = useCallback((href: string) => {
-    setOpenItems((prev) => {
-      const next = new Set(prev);
-      if (next.has(href)) {
-        next.delete(href);
-      } else {
-        next.add(href);
-      }
-      return next;
-    });
-  }, []);
+    setExpansion((previous) => ({
+      pathname,
+      items: {
+        ...(previous.pathname === pathname ? previous.items : {}),
+        [href]: previous.pathname === pathname
+          ? !(previous.items[href] ?? activeItems[href])
+          : !activeItems[href],
+      },
+    }));
+  }, [pathname, activeItems]);
 
   // 自动滚动到激活项
   useEffect(() => {

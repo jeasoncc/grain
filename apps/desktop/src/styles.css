@@ -211,12 +211,14 @@ code {
 }
 
 /* Heading Hierarchy */
-h1 { font-size: 1.5rem; font-weight: 600; line-height: 1.3; }
-h2 { font-size: 1.25rem; font-weight: 600; line-height: 1.4; }
-h3 { font-size: 1.125rem; font-weight: 600; line-height: 1.4; }
-h4 { font-size: 1rem; font-weight: 600; line-height: 1.5; }
-h5 { font-size: 0.875rem; font-weight: 600; line-height: 1.5; }
-h6 { font-size: 0.75rem; font-weight: 600; line-height: 1.5; }
+@layer base {
+  h1 { font-size: 1.5rem; font-weight: 600; line-height: 1.3; }
+  h2 { font-size: 1.25rem; font-weight: 600; line-height: 1.4; }
+  h3 { font-size: 1.125rem; font-weight: 600; line-height: 1.4; }
+  h4 { font-size: 1rem; font-weight: 600; line-height: 1.5; }
+  h5 { font-size: 0.875rem; font-weight: 600; line-height: 1.5; }
+  h6 { font-size: 0.75rem; font-weight: 600; line-height: 1.5; }
+}
 
 /* Text Selection - Enhanced Visibility */
 ::selection {
@@ -233,17 +235,37 @@ h6 { font-size: 0.75rem; font-weight: 600; line-height: 1.5; }
    Keyboard focus
    ======================================== */
 
-*:focus:not(:focus-visible) {
-  outline: none;
-}
-
 *:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
-input:focus-visible,
-textarea:focus-visible,
+/* Unlayered like the keyboard rule above, so text focus also overrides utility
+   rings. Native buttons, checks, radios, file/color pickers and ranges stay out. */
+:is(
+  input:not(
+    [type="button" i], [type="checkbox" i], [type="color" i],
+    [type="file" i], [type="hidden" i], [type="image" i],
+    [type="radio" i], [type="range" i], [type="reset" i], [type="submit" i]
+  ),
+  textarea,
+  [contenteditable]:not([contenteditable="false" i]),
+  .cm-content[role="textbox"]
+):focus:not(:disabled) {
+  border-color: var(--text-focus-border, color-mix(in srgb, var(--ring) 65%, var(--input)));
+  background-color: var(--text-focus-background, color-mix(in srgb, var(--muted) 65%, var(--background)));
+  caret-color: var(--editor-cursor, var(--primary));
+  box-shadow: none;
+  outline: none;
+}
+
+/* Local overrides keep invalid text fields distinct from ordinary focus,
+   without replacing their existing error border or message when blurred. */
+:is(input, textarea, [contenteditable], .cm-content)[aria-invalid="true"] {
+  --text-focus-border: var(--destructive);
+  --text-focus-background: color-mix(in srgb, var(--destructive) 8%, var(--background));
+}
+
 select:focus-visible {
   border-color: var(--ring);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 15%, transparent);
@@ -254,9 +276,37 @@ select:focus-visible {
 [role="menu"]:focus,
 [data-radix-focus-guard]:focus,
 [data-radix-popper-content-wrapper]:focus,
-.editor-container:focus-within,
 canvas:focus {
   outline: none;
+}
+
+@media (forced-colors: active) {
+  *:focus-visible {
+    outline-color: Highlight;
+  }
+
+  /* System colors may erase the quiet theme tint; use an inset 1px indicator
+     here, not a shadow (forced colors suppress shadows altogether). */
+  :is(
+    input:not(
+      [type="button" i], [type="checkbox" i], [type="color" i],
+      [type="file" i], [type="hidden" i], [type="image" i],
+      [type="radio" i], [type="range" i], [type="reset" i], [type="submit" i]
+    ),
+    textarea,
+    [contenteditable]:not([contenteditable="false" i]),
+    .cm-content[role="textbox"]
+  ):focus:not(:disabled) {
+    border-color: var(--text-focus-border, Highlight);
+    background-color: Canvas;
+    caret-color: CanvasText;
+    outline: 1px solid Highlight;
+    outline-offset: -1px;
+  }
+
+  :is(input, textarea, [contenteditable], .cm-content)[aria-invalid="true"] {
+    --text-focus-border: Mark;
+  }
 }
 
 /* ========================================
@@ -354,174 +404,11 @@ kbd {
   box-shadow: 0 1px 0 var(--border);
 }
 
-/* ========================================
-   Editor Styles - Enhanced
-   ======================================== */
-
-/* Editor Container */
-.editor-container {
-  position: relative;
-}
-
-/* Cursor Color - Use theme's editorCursor or primary, enhanced visibility */
-.editor-container [contenteditable="true"] {
+/* Editable surfaces use the current theme's cursor color. */
+[contenteditable="true"] {
   caret-color: var(--editor-cursor, var(--primary));
 }
 
-/* Enhanced Cursor Visibility - Use thicker cursor */
-[contenteditable="true"] {
-  caret-color: var(--primary);
-}
-
-/* Use brighter cursor in dark mode */
-.dark [contenteditable="true"] {
-  caret-color: #60a5fa;
-}
-
-/* Editor Text Selection - More visible background */
-.editor-container ::selection {
-  background-color: var(--editor-selection);
-  color: inherit;
-}
-
-.dark .editor-container ::selection {
-  background-color: var(--editor-selection);
-}
-
-/* Novel Editor Specific Styles */
-.novel-editor-content {
-  position: relative;
-}
-
-/* Novel Editor Selection Styles */
-.novel-editor-content ::selection {
-  background-color: var(--editor-selection);
-  color: inherit;
-}
-
-.dark .novel-editor-content ::selection {
-  background-color: var(--editor-selection);
-}
-
-/* Lexical Editor Selected Node Styles */
-.novel-editor-content [data-lexical-decorator="true"].selected,
-.novel-editor-content .lexical-selected {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-/* Current Line Highlight Effect */
-.novel-editor-content [data-lexical-editor="true"] > p:focus-within,
-.novel-editor-content [data-lexical-editor="true"] > div:focus-within,
-.novel-editor-content [data-lexical-editor="true"] > h1:focus-within,
-.novel-editor-content [data-lexical-editor="true"] > h2:focus-within,
-.novel-editor-content [data-lexical-editor="true"] > h3:focus-within,
-.novel-editor-content [data-lexical-editor="true"] > blockquote:focus-within {
-  background-color: var(--editor-line-highlight, color-mix(in srgb, var(--muted) 50%, transparent));
-  margin-left: -1rem;
-  margin-right: -1rem;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  border-radius: 0.25rem;
-  transition: background-color 0.15s ease;
-}
-
-/* Typewriter Mode Style Enhancement */
-.novel-editor-content.typewriter-mode {
-  /* Typewriter Mode Base Styles */
-  scroll-behavior: smooth;
-}
-
-.novel-editor-content.typewriter-mode [data-lexical-editor="true"] > *:not(:focus-within) {
-  opacity: 0.6;
-  transition: opacity 0.3s ease;
-}
-
-.novel-editor-content.typewriter-mode [data-lexical-editor="true"] > *:focus-within {
-  opacity: 1;
-  transition: opacity 0.15s ease;
-}
-
-/* Typewriter Mode Current Line Center Indicator */
-.novel-editor-content.typewriter-mode::before {
-  content: "";
-  position: fixed;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    color-mix(in srgb, var(--primary) 10%, transparent) 20%,
-    color-mix(in srgb, var(--primary) 10%, transparent) 80%,
-    transparent 100%
-  );
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* Editor Syntax Highlighting */
-.editor-container h1,
-.editor-container h2,
-.editor-container h3,
-.editor-container h4,
-.editor-container h5,
-.editor-container h6 {
-  color: var(--primary);
-}
-
-.editor-container strong,
-.editor-container b {
-  color: var(--foreground);
-  font-weight: 600;
-}
-
-.editor-container em,
-.editor-container i {
-  color: var(--muted-foreground);
-  font-style: italic;
-}
-
-.editor-container a {
-  color: var(--primary);
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--primary) 30%, transparent);
-  transition: text-decoration-color 0.2s;
-}
-
-.editor-container a:hover {
-  text-decoration-color: var(--primary);
-}
-
-.editor-container code {
-  color: var(--destructive);
-  background-color: var(--muted);
-  padding: 0.125rem 0.25rem;
-  border-radius: 0.25rem;
-  font-size: 0.875em;
-}
-
-.editor-container pre {
-  background-color: var(--muted);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 1rem;
-  overflow-x: auto;
-}
-
-.editor-container pre code {
-  background: none;
-  padding: 0;
-}
-
-.editor-container blockquote {
-  color: var(--muted-foreground);
-  border-left: 4px solid var(--border);
-  padding-left: 1rem;
-  margin-left: 0;
-  font-style: italic;
-}
 
 /* ========================================
    Animations
@@ -624,303 +511,7 @@ button, .no-select {
   -webkit-user-select: none;
 }
 
-.editor-container,
-.editor-container * {
-  user-select: text;
-  -webkit-user-select: text;
-}
 
-/* ========================================
-   Excalidraw Embed Styles
-   ======================================== */
-
-/* Excalidraw Container */
-.excalidraw-container {
-  position: relative;
-  border-radius: 0.5rem;
-  overflow: hidden;
-}
-
-/* Excalidraw Toolbar Show on Hover */
-.excalidraw-container .excalidraw-toolbar {
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.excalidraw-container:hover .excalidraw-toolbar {
-  opacity: 1;
-}
-
-/* Excalidraw Fullscreen Mode */
-.excalidraw-fullscreen {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  background: var(--background);
-}
-
-/* Override Excalidraw Default Styles to Match Theme */
-.excalidraw .App-menu_top {
-  background: var(--card) !important;
-}
-
-.excalidraw .Island {
-  background: var(--card) !important;
-  border-color: var(--border) !important;
-}
-
-.excalidraw .popover {
-  background: var(--popover) !important;
-  border-color: var(--border) !important;
-}
-
-/* Excalidraw Placeholder in Editor */
-.excalidraw-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: var(--muted-foreground);
-  gap: 0.5rem;
-}
-
-/* ========================================
-   Character Mention Styles
-   ======================================== */
-
-/* Mention Node Styles */
-.mention {
-  @apply inline-block px-1 py-0.5 mx-0.5 rounded bg-primary/10 text-primary font-medium cursor-pointer transition-colors;
-}
-
-.mention:hover {
-  @apply bg-primary/20;
-}
-
-/* Mention Menu Styles */
-.mentions-menu {
-  @apply min-w-[200px] max-w-[300px];
-}
-
-.mentions-menu .item {
-  @apply list-none;
-}
-
-.mentions-menu .item.selected {
-  @apply bg-accent;
-}
-
-/* Typeahead Popup Styles */
-.typeahead-popover {
-  @apply z-50;
-}
-
-/* ========================================
-   Mermaid Diagram Styles
-   ======================================== */
-
-/* Mermaid Container */
-.mermaid {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 200px;
-}
-
-/* Mermaid Global Style Optimization */
-.mermaid svg {
-  max-width: 100%;
-  height: auto;
-}
-
-/* Optimize Node Styles - Rounded Corners and Shadows */
-.mermaid .node rect,
-.mermaid .node circle,
-.mermaid .node ellipse,
-.mermaid .node polygon {
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
-  stroke-width: 2px;
-  rx: 8px;
-  ry: 8px;
-}
-
-/* Optimize Edge Styles */
-.mermaid .edgePath .path {
-  stroke-width: 2px;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-/* Optimize Arrows */
-.mermaid .arrowheadPath {
-  fill: currentColor;
-}
-
-/* Optimize Text Styles */
-.mermaid .nodeLabel,
-.mermaid .edgeLabel {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-/* Mermaid Status Style Classes - Modern Colors */
-.mermaid .completed {
-  fill: #d1fae5 !important;
-  stroke: #10b981 !important;
-  stroke-width: 2.5px !important;
-}
-
-.mermaid .inProgress {
-  fill: #dbeafe !important;
-  stroke: #3b82f6 !important;
-  stroke-width: 2.5px !important;
-}
-
-.mermaid .needsRevision {
-  fill: #fef3c7 !important;
-  stroke: #f59e0b !important;
-  stroke-width: 2.5px !important;
-}
-
-.mermaid .onHold {
-  fill: #f3f4f6 !important;
-  stroke: #9ca3af !important;
-  stroke-width: 2.5px !important;
-}
-
-.mermaid .draft {
-  fill: #ffffff !important;
-  stroke: #d1d5db !important;
-  stroke-width: 2.5px !important;
-}
-
-/* Mermaid Plot Point Styles - Gradient Effects */
-.mermaid .setup {
-  fill: #dbeafe !important;
-  stroke: #3b82f6 !important;
-  stroke-width: 2.5px !important;
-}
-
-.mermaid .conflict {
-  fill: #fed7aa !important;
-  stroke: #f97316 !important;
-  stroke-width: 2.5px !important;
-}
-
-.mermaid .climax {
-  fill: #fecaca !important;
-  stroke: #ef4444 !important;
-  stroke-width: 2.5px !important;
-}
-
-.mermaid .resolution {
-  fill: #d1fae5 !important;
-  stroke: #10b981 !important;
-  stroke-width: 2.5px !important;
-}
-
-/* Mermaid Styles in Dark Mode */
-.dark .mermaid .completed {
-  fill: #064e3b !important;
-  stroke: #34d399 !important;
-  stroke-width: 2.5px !important;
-}
-
-.dark .mermaid .inProgress {
-  fill: #1e3a8a !important;
-  stroke: #60a5fa !important;
-  stroke-width: 2.5px !important;
-}
-
-.dark .mermaid .needsRevision {
-  fill: #78350f !important;
-  stroke: #fbbf24 !important;
-  stroke-width: 2.5px !important;
-}
-
-.dark .mermaid .onHold {
-  fill: #374151 !important;
-  stroke: #9ca3af !important;
-  stroke-width: 2.5px !important;
-}
-
-.dark .mermaid .draft {
-  fill: #1f2937 !important;
-  stroke: #6b7280 !important;
-  stroke-width: 2.5px !important;
-}
-
-.dark .mermaid .setup {
-  fill: #1e3a8a !important;
-  stroke: #60a5fa !important;
-  stroke-width: 2.5px !important;
-}
-
-.dark .mermaid .conflict {
-  fill: #7c2d12 !important;
-  stroke: #fb923c !important;
-  stroke-width: 2.5px !important;
-}
-
-.dark .mermaid .climax {
-  fill: #7f1d1d !important;
-  stroke: #f87171 !important;
-  stroke-width: 2.5px !important;
-}
-
-.dark .mermaid .resolution {
-  fill: #064e3b !important;
-  stroke: #34d399 !important;
-  stroke-width: 2.5px !important;
-}
-
-/* Optimize Subgraph Styles */
-.mermaid .cluster rect {
-  fill: transparent !important;
-  stroke: var(--border) !important;
-  stroke-width: 2px !important;
-  stroke-dasharray: 5, 5 !important;
-  rx: 12px !important;
-  ry: 12px !important;
-}
-
-.dark .mermaid .cluster rect {
-  stroke: var(--border) !important;
-}
-
-/* Optimize Cluster Labels */
-.mermaid .cluster-label {
-  font-weight: 600 !important;
-  font-size: 15px !important;
-  fill: var(--foreground) !important;
-}
-
-/* ========================================
-   Mermaid Error Message Optimization
-   ======================================== */
-
-/* Hide Mermaid Library Auto-generated Error Messages (We Handle in Component) */
-#d2h-675094 {
-  display: none !important;
-}
-
-/* Hide All Mermaid Generated Error Containers */
-[id^="d2h-"] {
-  display: none !important;
-}
-
-/* 隐藏 Mermaid 错误图标和文本 */
-.error-icon,
-.error-text {
-  display: none !important;
-}
-
-/* 如果 Mermaid 使用 fixed 定位的错误提示 */
-body > div[style*="position: fixed"][style*="bottom"] {
-  display: none !important;
-}
 
 /* ========================================
    图表视图优化
@@ -937,117 +528,7 @@ body > div[style*="position: fixed"][style*="bottom"] {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* 优化图表容器的滚动条 */
-.diagram-container::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
 
-.diagram-container::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 5px;
-}
-
-.diagram-container::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--muted-foreground) 25%, transparent);
-  border-radius: 5px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-
-.diagram-container::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--muted-foreground) 35%, transparent);
-  background-clip: padding-box;
-}
-
-/* 优化按钮组样式 */
-.diagram-toolbar {
-  display: flex;
-  gap: 0.25rem;
-  padding: 0.25rem;
-  background: var(--muted);
-  border-radius: 0.5rem;
-}
-
-.diagram-toolbar button {
-  transition: all 0.15s ease;
-}
-
-.diagram-toolbar button:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
-
-.diagram-toolbar button:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-/* ========================================
-   大纲视图边框优化
-   ======================================== */
-
-/* 优化所有边框 - 更柔和、更透明 */
-.outline-view [class*="border-b"],
-.outline-view [class*="border-t"],
-.outline-view [class*="border-l"],
-.outline-view [class*="border-r"],
-.outline-view [class*="border"] {
-  border-color: color-mix(in srgb, var(--border) 30%, transparent) !important;
-}
-
-/* 卡片边框优化 */
-.outline-card {
-  border: 1px solid color-mix(in srgb, var(--border) 25%, transparent);
-  transition: all 0.2s ease;
-}
-
-.outline-card:hover {
-  border-color: color-mix(in srgb, var(--border) 40%, transparent);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-/* 树形视图项边框 */
-.outline-tree-item {
-  border: 1px solid transparent;
-  transition: all 0.2s ease;
-}
-
-.outline-tree-item:hover {
-  border-color: color-mix(in srgb, var(--border) 20%, transparent);
-  background: color-mix(in srgb, var(--muted) 30%, transparent);
-}
-
-/* 详情面板分隔线 */
-.outline-detail-separator {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    color-mix(in srgb, var(--border) 20%, transparent) 50%,
-    transparent 100%
-  );
-  height: 1px;
-  border: none;
-}
-
-/* 输入框边框优化 */
-.outline-view input,
-.outline-view textarea,
-.outline-view select {
-  border-color: color-mix(in srgb, var(--border) 30%, transparent);
-  transition: border-color 0.2s ease;
-}
-
-.outline-view input:hover,
-.outline-view textarea:hover,
-.outline-view select:hover {
-  border-color: color-mix(in srgb, var(--border) 50%, transparent);
-}
-
-.outline-view input:focus,
-.outline-view textarea:focus,
-.outline-view select:focus {
-  border-color: var(--ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 10%, transparent);
-}
 
 /* 虚线边框优化 */
 [class*="border-dashed"] {
@@ -1070,18 +551,4 @@ hr,
 }
 
 
-/* ========================================
-   Excalidraw 容器样式
-   Excalidraw 0.18.0+ 已有官方 CSS，这里只需要设置容器
-   ======================================== */
 
-/* Excalidraw 容器 - 确保有明确的尺寸 */
-.excalidraw-wrapper {
-  position: relative;
-  overflow: hidden;
-}
-
-/* ========================================
-   [REMOVED] Tiptap/CodeMirror Editor Styles
-   统一使用 Lexical 编辑器后，这些样式已被移除
-   ======================================== */

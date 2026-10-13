@@ -17,6 +17,96 @@ const props = {
 }
 
 describe("OrgNavigationPicker", () => {
+	it("searches display labels and markers while preserving single-path ranks", () => {
+		render(
+			<OrgNavigationPicker
+				{...props}
+				candidates={[
+					{
+						id: "display",
+						relativePath: "z.org",
+						optionLabel: "Note label",
+						markers: "Straße dirty",
+						value: 3,
+					},
+					{ id: "prefix", relativePath: "notebook.org", value: 2 },
+					{ id: "exact", relativePath: "note.org", value: 1 },
+				]}
+			/>,
+		)
+		const input = screen.getByRole("combobox")
+		fireEvent.change(input, { target: { value: "note" } })
+		expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual([
+			"note",
+			"notebook",
+			"Note labelStraße dirty",
+		])
+		fireEvent.change(input, { target: { value: "dirty STRASSE label" } })
+		expect(screen.getAllByRole("option")).toHaveLength(1)
+		expect(screen.getByRole("option", { name: "Note label" })).toHaveTextContent("Note label")
+	})
+
+	it("supports control-j/k and ignores held Enter even after a failed selection", async () => {
+		const onSelect = vi.fn(() => false)
+		render(
+			<OrgNavigationPicker
+				{...props}
+				onSelect={onSelect}
+				candidates={[...candidates, { id: "two", relativePath: "two.org", value: 2 }]}
+			/>,
+		)
+		const input = screen.getByRole("combobox")
+		fireEvent.keyDown(input, { key: "j", ctrlKey: true })
+		expect(screen.getAllByRole("option")[1]).toHaveAttribute("aria-selected", "true")
+		fireEvent.keyDown(input, { key: "k", ctrlKey: true })
+		expect(screen.getAllByRole("option")[0]).toHaveAttribute("aria-selected", "true")
+		await act(async () => fireEvent.keyDown(input, { key: "Enter", repeat: true }))
+		expect(onSelect).not.toHaveBeenCalled()
+		await act(async () => fireEvent.keyDown(input, { key: "Enter" }))
+		await act(async () => fireEvent.keyDown(input, { key: "Enter", repeat: true }))
+		expect(onSelect).toHaveBeenCalledTimes(1)
+	})
+
+	it("exposes disabled reasons and checks current eligibility before and after acceptance", async () => {
+		let resolve!: (value: boolean) => void
+		const onSelect = vi.fn(
+			() =>
+				new Promise<boolean>((done) => {
+					resolve = done
+				}),
+		)
+		const onOpenChange = vi.fn()
+		const disabled = [{ ...candidates[0], disabled: true, disabledReason: "Unavailable" }]
+		const view = render(
+			<OrgNavigationPicker
+				{...props}
+				candidates={disabled}
+				onSelect={onSelect}
+				onOpenChange={onOpenChange}
+			/>,
+		)
+		const input = screen.getByRole("combobox")
+		expect(screen.getByRole("option")).toBeDisabled()
+		expect(screen.getByRole("option")).toHaveAccessibleDescription("Unavailable")
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(onSelect).not.toHaveBeenCalled()
+		view.rerender(
+			<OrgNavigationPicker {...props} onSelect={onSelect} onOpenChange={onOpenChange} />,
+		)
+		fireEvent.keyDown(input, { key: "Enter" })
+		view.rerender(
+			<OrgNavigationPicker
+				{...props}
+				candidates={disabled}
+				onSelect={onSelect}
+				onOpenChange={onOpenChange}
+			/>,
+		)
+		await act(async () => resolve(true))
+		expect(screen.getByRole("alert")).toHaveTextContent("Failed")
+		expect(onOpenChange).not.toHaveBeenCalled()
+	})
+
 	describe.each(["synthetic", "native"] as const)("%s capture consumption", (consumption) => {
 		it.each([
 			{ key: "Enter" },
@@ -27,6 +117,8 @@ describe("OrgNavigationPicker", () => {
 			{ key: "ArrowUp" },
 			{ key: "n", ctrlKey: true },
 			{ key: "p", ctrlKey: true },
+			{ key: "j", ctrlKey: true },
+			{ key: "k", ctrlKey: true },
 		])("ignores a previously consumed $key (ctrl: $ctrlKey)", async (command) => {
 			const origin = document.createElement("button")
 			document.body.append(origin)

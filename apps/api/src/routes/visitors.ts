@@ -5,8 +5,9 @@ import { randomUUID } from 'crypto';
 
 export const visitorsRoutes = new Elysia({ prefix: '/visitors' })
   // 提交访客信息
-  .post('/', async ({ body, headers }) => {
+  .post('/', async ({ body, request }) => {
     try {
+      const headers = request.headers;
       const {
         path,
         query,

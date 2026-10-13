@@ -1,9 +1,9 @@
 app-id: com.lotus.Grain
 runtime: org.freedesktop.Platform
-runtime-version: '24.08'
+runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
 sdk-extensions:
-  - org.freedesktop.Sdk.Extension.node20
+  - org.freedesktop.Sdk.Extension.node24
   - org.freedesktop.Sdk.Extension.rust-stable
 command: grain
 
@@ -46,7 +46,7 @@ modules:
   - name: grain
     buildsystem: simple
     build-options:
-      append-path: /usr/lib/sdk/node20/bin:/usr/lib/sdk/rust-stable/bin
+      append-path: /usr/lib/sdk/node24/bin:/usr/lib/sdk/rust-stable/bin
       env:
         CARGO_HOME: /run/build/grain/cargo
         npm_config_cache: /run/build/grain/npm-cache
@@ -69,8 +69,8 @@ modules:
           echo "✅ node_modules found (pre-installed by Bun)"
           echo "Size: $(du -sh node_modules | cut -f1)"
         else
-          echo "⚠ node_modules not found, installing with npm..."
-          npm install --legacy-peer-deps --force
+          echo "ERROR: Run bun install --frozen-lockfile before entering the Flatpak sandbox."
+          exit 1
         fi
       
       # Build frontend

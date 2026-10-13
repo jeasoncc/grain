@@ -87,7 +87,7 @@ echo "📊 项目状态"
 if [ -d "node_modules" ]; then
     echo -e "${GREEN}✓${NC} node_modules 已安装"
 else
-    echo -e "${YELLOW}⚠${NC} node_modules 未安装，运行: bun install"
+    echo -e "${YELLOW}⚠${NC} node_modules 未安装，运行: bun install --frozen-lockfile"
 fi
 
 if [ -d "apps/api-rust/target" ]; then
@@ -102,5 +102,5 @@ echo ""
 echo "下一步："
 echo "  1. 如果有缺失工具，运行: bash scripts/setup-dev-env.sh"
 echo "  2. 加载环境变量: source .zshrc-grain"
-echo "  3. 安装依赖: bun install"
+echo "  3. 安装依赖: bun install --frozen-lockfile"
 echo "  4. 启动开发: bun run desktop:dev"

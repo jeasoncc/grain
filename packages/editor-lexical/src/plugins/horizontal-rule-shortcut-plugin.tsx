@@ -5,7 +5,7 @@
  */
 
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { $createHorizontalRuleNode } from "@lexical/react/LexicalHorizontalRuleNode";
+import { $createHorizontalRuleNode } from "@lexical/extension";
 import {
 	$createParagraphNode,
 	$getSelection,

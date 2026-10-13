@@ -73,6 +73,15 @@ Object.defineProperty(globalThis, "ResizeObserver", {
 	writable: true,
 })
 
+Object.defineProperty(Range.prototype, "getClientRects", {
+	configurable: true,
+	value: () => [],
+})
+Object.defineProperty(Range.prototype, "getBoundingClientRect", {
+	configurable: true,
+	value: () => new DOMRect(),
+})
+
 Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
 	configurable: true,
 	value: vi.fn(),

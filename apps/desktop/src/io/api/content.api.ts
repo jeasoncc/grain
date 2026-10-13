@@ -13,10 +13,8 @@ import {
 	decodeContent,
 	decodeContentOptional,
 	decodeContents,
-	encodeCreateContent,
-	encodeUpdateContent,
 } from "@/types/codec"
-import type { ContentCreateInput, ContentInterface, ContentType } from "@/types/content"
+import type { ContentInterface } from "@/types/content"
 import type { AppError } from "@/types/error"
 import { api } from "./client.api"
 
@@ -81,69 +79,6 @@ export const getContentByNodeIdOrFail = (
  */
 export const getContentVersion = (nodeId: string): TE.TaskEither<AppError, number | null> =>
 	api.getContentVersion(nodeId)
-
-// ============================================
-// 写入操作
-// ============================================
-
-/**
- * 创建内容
- */
-export const createContent = (
-	input: ContentCreateInput,
-): TE.TaskEither<AppError, ContentInterface> =>
-	pipe(TE.of(encodeCreateContent(input)), TE.chain(api.saveContent), TE.map(decodeContent))
-
-/**
- * 添加内容（别名，兼容旧 API）
- *
- * @param nodeId - 节点 ID
- * @param content - 内容字符串
- * @param contentType - 内容类型（可选，默认 "lexical"）
- */
-export const addContent = (
-	nodeId: string,
-	content: string,
-	contentType: ContentType = "lexical",
-): TE.TaskEither<AppError, ContentInterface> =>
-	createContent({
-		content,
-		contentType,
-		nodeId,
-	})
-
-/**
- * 更新节点内容
- *
- * @param nodeId - 节点 ID
- * @param content - 内容字符串
- * @param contentType - 内容类型（可选，目前后端不使用，保留兼容性）
- */
-export const updateContentByNodeId = (
-	nodeId: string,
-	content: string,
-	_contentType?: ContentType,
-): TE.TaskEither<AppError, ContentInterface> =>
-	pipe(
-		TE.of(encodeUpdateContent(nodeId, content)),
-		TE.chain(api.saveContent),
-		TE.map(decodeContent),
-	)
-
-/**
- * 保存内容（创建或更新）
- * 统一的保存接口，根据是否存在自动选择创建或更新
- */
-export const saveContent = (
-	nodeId: string,
-	content: string,
-	expectedVersion?: number,
-): TE.TaskEither<AppError, ContentInterface> =>
-	pipe(
-		TE.of(encodeUpdateContent(nodeId, content, expectedVersion)),
-		TE.chain(api.saveContent),
-		TE.map(decodeContent),
-	)
 
 /**
  * 批量获取多个节点的内容

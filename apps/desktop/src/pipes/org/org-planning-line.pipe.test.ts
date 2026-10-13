@@ -3,7 +3,7 @@ import { parseOrgPlanningLine } from "./org-planning-line.pipe"
 import { setOrgPlanningAt } from "./org-text.pipe"
 
 describe("planning source ranges", () => {
-	it("retains exact ranges and ignores field names inside timestamp details", () => {
+	it("retains exact valid timestamp source ranges", () => {
 		const text =
 			"\tCLOSED: [2026-09-01 Tue]  SCHEDULED: <2026-09-30 Wed 10:30 +1w -2d> DEADLINE: <2026-10-01 Thu>  "
 		const parsed = parseOrgPlanningLine(text)
@@ -11,6 +11,7 @@ describe("planning source ranges", () => {
 		expect(parsed.fields.map((field) => field.kind)).toEqual(["CLOSED", "SCHEDULED", "DEADLINE"])
 		for (const field of parsed.fields) {
 			expect(text.slice(field.dateFrom, field.dateFrom + 10)).toBe(field.date)
+			expect(text.slice(field.timestampFrom, field.timestampTo)).toBe(field.timestamp)
 			expect(text.slice(field.dateFrom, field.dateAndWeekdayTo)).toMatch(
 				/^\d{4}-\d{2}-\d{2} [A-Za-z]{3}$/,
 			)
@@ -31,13 +32,15 @@ describe("planning source ranges", () => {
 		]) {
 			expect(parseOrgPlanningLine(line)).toMatchObject({
 				kind: "invalid",
-				message: expect.stringContaining("noncanonical"),
 			})
 		}
 	})
-	it("keeps noncanonical names in bracketed details and body text opaque", () => {
+	it("rejects opaque text inside timestamps but preserves opaque text outside them", () => {
 		expect(
 			parseOrgPlanningLine("CLOSED: [2026-09-01 Tue scheduled: text] custom <deadline: text>"),
+		).toMatchObject({ kind: "invalid" })
+		expect(
+			parseOrgPlanningLine("CLOSED: [2026-09-01 Tue] custom <deadline: text>"),
 		).toMatchObject({ kind: "planning", fields: [{ kind: "CLOSED" }] })
 		expect(parseOrgPlanningLine("body scheduled: <2026-09-30>")).toEqual({ kind: "none" })
 		expect(parseOrgPlanningLine("UNKNOWN: <2026-09-30>")).toEqual({ kind: "none" })
@@ -67,11 +70,18 @@ describe("planning source ranges", () => {
 		).toMatchObject({ kind: "invalid" })
 	})
 
-	it("does not mutate a field name in timestamp details", () => {
+	it("does not guess a writable field inside malformed timestamp details", () => {
 		const content = "* Note\nCLOSED: [2026-09-01 Tue SCHEDULED: text]\nbody"
-		const edit = setOrgPlanningAt(content, 2, "SCHEDULED", "2026-10-01")!
+		expect(() => setOrgPlanningAt(content, 2, "SCHEDULED", "2026-10-01")).toThrow()
+	})
+	it("replaces complete rich timestamp ranges without rewriting adjacent bytes", () => {
+		const content = "* Note\r\n\tSCHEDULED:\t<2026-09-30 Wed 10:30 +1w>--<2026-10-02 Fri 11:30>  opaque\0 DEADLINE: <2026-12-01 Tue>\r\nbody"
+		const edit = setOrgPlanningAt(content, 2, "SCHEDULED", { date: "2026-10-01", time: "09:00", endTime: "10:00", repeater: { mode: ".+", value: 1, unit: "m" }, warning: { mode: "-", value: 3, unit: "d" } })!
 		expect(content.slice(0, edit.from) + edit.insert + content.slice(edit.to)).toBe(
-			"* Note\nCLOSED: [2026-09-01 Tue SCHEDULED: text] SCHEDULED: <2026-10-01>\nbody",
+			content.replace("<2026-09-30 Wed 10:30 +1w>--<2026-10-02 Fri 11:30>", "<2026-10-01 09:00-10:00 .+1m -3d>"),
 		)
+		const parsed = parseOrgPlanningLine(content.split("\r\n")[1])
+		if (parsed.kind !== "planning") throw new Error("Expected planning line")
+		expect(parsed.fields[0].timestamp).toBe("<2026-09-30 Wed 10:30 +1w>--<2026-10-02 Fri 11:30>")
 	})
 })

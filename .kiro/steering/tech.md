@@ -2,34 +2,38 @@
 
 ## Monorepo
 
-- **包管理器**: bun (with workspaces)
+- **包管理器**: Bun 1.4.2（workspace 隔离链接，统一根 `bun.lock`）
 - **构建编排**: Turborepo
-- **Node.js**: >= 20
-- **Bun**: >= 1.1.0
+- **Node.js**: `^22.22.2 || ^24.15.0 || >=26.0.0`（CI: 24.21.0）
+- **Bun**: >= 1.4.2（CI 固定 1.4.2）
 
 ## 核心技术
 
 | 应用 | 框架 | 构建工具 | UI |
 |-----|-----------|------------|-----|
-| Desktop | Tauri 2.x + React 19 | Vite 7 | shadcn/ui + Tailwind 4 |
-| Web | Next.js 15 | Next.js | shadcn/ui + Tailwind 4 |
-| Mobile | Expo + React Native | Expo | Custom |
-| Admin | React 19 | Vite 7 | shadcn/ui + Tailwind 4 |
+| Desktop | Tauri 2.x + React 19 | Vite 8 | shadcn/ui + Tailwind 4 |
+| Web | Next.js 16 | Next.js | shadcn/ui + Tailwind 4 |
+| Admin | 历史 React 源码（无 package.json，不在当前构建工作区） | — | shadcn/ui + Tailwind 4 |
 
 ## 关键库
 
 | 场景 | 库 |
 |------|-----|
-| 编辑器 | Lexical |
+| 编辑器 | CodeMirror（Org 主链路）、Lexical（旧模式） |
 | 状态管理 | Zustand + Immer |
 | 数据获取 | TanStack Query |
 | 持久化 | SQLite (Rust 后端) |
 | 路由 | TanStack Router |
 | 表单 | TanStack Form + Zod |
 | UI 组件 | Radix UI, Lucide icons |
-| 图表 | Mermaid, PlantUML |
+| 图表 | Mermaid 12（dagre/classic，原 loose 安全策略不变）, PlantUML |
 | 画板 | Excalidraw |
-| 代码检查 | Biome |
+| 代码检查 | Biome；Desktop/插件 ESLint 10，Web ESLint 9（Next 插件 peer 约束） |
+
+TypeScript 固定 6.0.x：稳定 typescript-eslint 的 peer 范围为 `<6.1.0`，
+声明文件构建仍依赖经典编译器 API，不能直接切换 TypeScript 7 原生编译器。
+编辑器包使用 `unplugin-dts/vite`；Lexical 0.52、Tiptap 3、panels 4 已迁移实际消费者。
+Mermaid 12 的 ES2024 原生 API 要求 Safari 17.4+；这不等同于已验证所有平台 WebView。
 
 ## 函数式编程库
 
@@ -43,15 +47,20 @@
 
 ## Rust 后端技术栈
 
+最低 Rust 版本为 1.94.0；保留 SQLite、TLS、原生凭据和桌面功能。
+
+
 | 场景 | 库 |
 |------|-----|
 | 框架 | Tauri 2.x |
-| ORM | SeaORM 1.1 |
+| ORM | SeaORM 2 / sqlx 0.9 |
 | 数据库 | SQLite |
 | 序列化 | serde + serde_json |
 | 异步运行时 | tokio |
 | 错误处理 | thiserror |
 | 日志 | tracing |
+| HTTP | Warp 0.4 / Hyper 1（HTTP/1 + HTTP/2） |
+| HTTP 客户端 | reqwest 0.13 |
 
 ## 常用命令
 

@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 import type { OrgDocumentEntryInterface } from "@/types/org"
-import { OrgNavigationPicker } from "./org-navigation-picker.view.fn"
+import { useOrgNavigationParameter } from "@/hooks/use-org-navigation-parameter"
 
 export const OrgQuickOpen = ({
 	documents,
@@ -24,15 +24,9 @@ export const OrgQuickOpen = ({
 			})),
 		[documents],
 	)
-	return (
-		<OrgNavigationPicker
-			{...props}
-			candidates={candidates}
-			label="Quick open"
-			inputLabel="Search workspace notes"
-			placeholder="Open a note…"
-			emptyMessage="No matching notes."
-			errorMessage="Could not open note. Try again."
-		/>
-	)
+	useOrgNavigationParameter({
+		...props, candidates, label: "Quick open", inputLabel: "Search workspace notes",
+		emptyMessage: "No matching notes.", errorMessage: "Could not open note. Try again.",
+	})
+	return null
 }

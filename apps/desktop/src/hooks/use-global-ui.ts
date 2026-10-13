@@ -11,8 +11,6 @@ import {
 	useBufferSwitcherActions,
 	useBufferSwitcherDirection,
 	useBufferSwitcherOpen,
-	useCommandPaletteActions,
-	useCommandPaletteOpen,
 	useExportDialogActions,
 	useExportDialogOpen,
 	useGlobalSearchActions,
@@ -32,14 +30,12 @@ import type { BufferSwitcherDirection } from "@/types/global-ui"
  */
 export function useGlobalUI() {
 	// Selectors
-	const commandPaletteOpen = useCommandPaletteOpen()
 	const globalSearchOpen = useGlobalSearchOpen()
 	const bufferSwitcherOpen = useBufferSwitcherOpen()
 	const bufferSwitcherDirection = useBufferSwitcherDirection()
 	const exportDialogOpen = useExportDialogOpen()
 
 	// Actions
-	const commandPaletteActions = useCommandPaletteActions()
 	const globalSearchActions = useGlobalSearchActions()
 	const bufferSwitcherActions = useBufferSwitcherActions()
 	const exportDialogActions = useExportDialogActions()
@@ -54,16 +50,6 @@ export function useGlobalUI() {
 			setDirection: bufferSwitcherActions.setDirection,
 			setOpen: (isOpen: boolean) => (isOpen ? undefined : bufferSwitcherActions.close()),
 		},
-		// Command Palette
-		commandPalette: {
-			close: commandPaletteActions.close,
-			isOpen: commandPaletteOpen,
-			open: commandPaletteActions.open,
-			setOpen: (isOpen: boolean) =>
-				isOpen ? commandPaletteActions.open() : commandPaletteActions.close(),
-			toggle: commandPaletteActions.toggle,
-		},
-
 		// Export Dialog
 		exportDialog: {
 			close: exportDialogActions.close,
@@ -86,32 +72,6 @@ export function useGlobalUI() {
 	}
 }
 
-/**
- * Hook for command palette
- */
-export function useCommandPalette() {
-	const open = useCommandPaletteOpen()
-	const actions = useCommandPaletteActions()
-
-	const openPalette = useCallback(() => {
-		actions.open()
-	}, [actions])
-
-	const closePalette = useCallback(() => {
-		actions.close()
-	}, [actions])
-
-	const togglePalette = useCallback(() => {
-		actions.toggle()
-	}, [actions])
-
-	return {
-		closePalette,
-		open,
-		openPalette,
-		togglePalette,
-	}
-}
 
 /**
  * Hook for global search

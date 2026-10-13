@@ -12,40 +12,32 @@ import {
   useCallback,
   memo,
 } from "react";
-import { useEditor, EditorContent, BubbleMenu, FloatingMenu } from "@tiptap/react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import { BubbleMenu, FloatingMenu } from "@tiptap/react/menus";
 
 // Core extensions - StarterKit includes most basic extensions
-import StarterKit from "@tiptap/starter-kit";
+import { StarterKit } from "@tiptap/starter-kit";
 
 // Text formatting extensions
-import TextStyle from "@tiptap/extension-text-style";
-import Color from "@tiptap/extension-color";
-import Highlight from "@tiptap/extension-highlight";
-import Underline from "@tiptap/extension-underline";
-import Subscript from "@tiptap/extension-subscript";
-import Superscript from "@tiptap/extension-superscript";
-import TextAlign from "@tiptap/extension-text-align";
-import FontFamily from "@tiptap/extension-font-family";
-import Typography from "@tiptap/extension-typography";
+import { TextStyle, Color, FontFamily } from "@tiptap/extension-text-style";
+import { Highlight } from "@tiptap/extension-highlight";
+import { Subscript } from "@tiptap/extension-subscript";
+import { Superscript } from "@tiptap/extension-superscript";
+import { TextAlign } from "@tiptap/extension-text-align";
+import { Typography } from "@tiptap/extension-typography";
 
 // Link and media extensions
-import Link from "@tiptap/extension-link";
-import Image from "@tiptap/extension-image";
-import Youtube from "@tiptap/extension-youtube";
+import { Image } from "@tiptap/extension-image";
+import { Youtube } from "@tiptap/extension-youtube";
 
 // List extensions
-import TaskList from "@tiptap/extension-task-list";
-import TaskItem from "@tiptap/extension-task-item";
+import { TaskList, TaskItem } from "@tiptap/extension-list";
 
 // Table extensions
-import Table from "@tiptap/extension-table";
-import TableRow from "@tiptap/extension-table-row";
-import TableCell from "@tiptap/extension-table-cell";
-import TableHeader from "@tiptap/extension-table-header";
+import { Table, TableRow, TableCell, TableHeader } from "@tiptap/extension-table";
 
 // Utility extensions
-import Placeholder from "@tiptap/extension-placeholder";
-import CharacterCount from "@tiptap/extension-character-count";
+import { Placeholder, CharacterCount } from "@tiptap/extensions";
 
 import { createJsonContent } from "@grain/editor-core";
 import type { SerializedContent } from "@grain/editor-core";
@@ -100,7 +92,7 @@ import type {
  * 【工具】
  * - Placeholder - 占位符
  * - CharacterCount - 字符计数
- * - History - 撤销/重做
+ * - UndoRedo - 撤销/重做
  * - Dropcursor - 拖放光标
  * - Gapcursor - 间隙光标
  * - BubbleMenu - 气泡菜单
@@ -145,15 +137,27 @@ export const TiptapDocumentEditor = memo(
         extensions: [
           // StarterKit includes: Document, Paragraph, Text, Bold, Italic, Strike, 
           // Code, Heading, Blockquote, BulletList, OrderedList, ListItem, HardBreak, 
-          // HorizontalRule, History, Dropcursor, Gapcursor, CodeBlock
+          // HorizontalRule, UndoRedo, Dropcursor, Gapcursor, CodeBlock, Link, Underline
           StarterKit.configure({
             heading: {
               levels: [1, 2, 3, 4, 5, 6],
             },
+            link: {
+              openOnClick: false,
+              autolink: true,
+              linkOnPaste: true,
+              HTMLAttributes: {
+                class: "tiptap-link",
+                rel: "noopener noreferrer",
+              },
+            },
+            // Keep v2 document structure and list keyboard behavior.
+            trailingNode: false,
+            listKeymap: false,
           }),
 
           // Text Style (required for Color and FontFamily)
-          TextStyle,
+          TextStyle.configure({ mergeNestedSpanStyles: false }),
 
           // Text Color
           Color.configure({
@@ -164,9 +168,6 @@ export const TiptapDocumentEditor = memo(
           Highlight.configure({
             multicolor: true,
           }),
-
-          // Underline
-          Underline,
 
           // Subscript
           Subscript,
@@ -187,17 +188,6 @@ export const TiptapDocumentEditor = memo(
 
           // Typography (smart quotes, dashes, ellipsis)
           Typography,
-
-          // Link
-          Link.configure({
-            openOnClick: false,
-            autolink: true,
-            linkOnPaste: true,
-            HTMLAttributes: {
-              class: "tiptap-link",
-              rel: "noopener noreferrer",
-            },
-          }),
 
           // Image
           Image.configure({
@@ -256,6 +246,7 @@ export const TiptapDocumentEditor = memo(
         content: getInitialContent(),
         editable: !readOnly,
         autofocus: autoFocus,
+        shouldRerenderOnTransaction: true,
         onUpdate: ({ editor }) => {
           if (onChange) {
             const content = createJsonContent(editor.getJSON());
@@ -312,12 +303,12 @@ export const TiptapDocumentEditor = memo(
             if (content.format === "json") {
               try {
                 const json = JSON.parse(content.data);
-                editor.commands.setContent(json);
+                editor.commands.setContent(json, { emitUpdate: false });
               } catch (e) {
                 console.warn("[TiptapDocumentEditor] Failed to parse JSON:", e);
               }
             } else if (content.format === "html") {
-              editor.commands.setContent(content.data);
+              editor.commands.setContent(content.data, { emitUpdate: false });
             }
           },
           focus: () => {
@@ -416,7 +407,6 @@ export const TiptapDocumentEditor = memo(
           {/* Bubble Menu - appears when text is selected */}
           <BubbleMenu 
             editor={editor} 
-            tippyOptions={{ duration: 100 }}
             className="tiptap-bubble-menu"
           >
             <div className="flex gap-1 p-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
@@ -480,7 +470,6 @@ export const TiptapDocumentEditor = memo(
           {/* Floating Menu - appears on empty lines */}
           <FloatingMenu 
             editor={editor} 
-            tippyOptions={{ duration: 100 }}
             className="tiptap-floating-menu"
           >
             <div className="flex gap-1 p-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">

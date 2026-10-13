@@ -15,6 +15,7 @@ import type { OrgDocumentInterface, OrgWorkspaceInterface } from "@/types/org"
 import type {
 	OrgAgendaOperationPlan,
 	OrgAgendaExecutionOptions,
+	OrgAgendaOperationCapture,
 } from "@/types/org/org-agenda-command.types"
 
 export interface OrgAgendaRootSnapshot {
@@ -81,7 +82,7 @@ export const runOrgAgendaOperationFlow = async (
 		message,
 	})
 	let entry: OrgAgendaEntry
-	let captured: ReturnType<typeof captureOrgAgendaOperation>
+	let captured: OrgAgendaOperationCapture
 	const observer = options?.onCommitStarted
 	try {
 		entry = freezeOrgAgendaEntrySnapshot(inputEntry)
@@ -90,7 +91,7 @@ export const runOrgAgendaOperationFlow = async (
 			inputOperation !== null &&
 			typeof inputOperation === "object" &&
 			"kind" in inputOperation &&
-			inputOperation.kind === "cycle-todo" &&
+			(inputOperation.kind === "cycle-todo" || inputOperation.kind === "todo-state" || inputOperation.kind === "complete-repeating") &&
 			(!("timestamp" in inputOperation) || inputOperation.timestamp === undefined)
 		let timestamp: string | undefined
 		if (needsClock) {
@@ -108,7 +109,7 @@ export const runOrgAgendaOperationFlow = async (
 	const operation = captured.operation
 	const scope = ports.scope
 	const origin = entry.origin
-	const current = () => ports.snapshot(entry.relativePath).current && !signal?.aborted
+	const current = () => ports.snapshot(entry.relativePath).current && !signal?.aborted && (options?.isCurrent?.() ?? true)
 	if (!scope || !current()) return stale()
 	const { grant, sessionId: session } = scope
 	if (

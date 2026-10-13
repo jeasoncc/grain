@@ -39,7 +39,9 @@ PORT=4001
 ### 步骤 4: 安装依赖并初始化数据库
 
 ```bash
-bun install
+# 在仓库根目录安装，再进入 apps/api
+bun install --frozen-lockfile
+cd apps/api
 bun run db:push  # 直接推送 schema 到数据库
 ```
 

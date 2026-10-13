@@ -14,7 +14,6 @@
  */
 
 export const strictConfig = {
-	plugins: ["grain"],
 	rules: {
 		"grain/boolean-naming": "error",
 		"grain/chinese-comments": "error",

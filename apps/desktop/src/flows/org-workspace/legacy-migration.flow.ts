@@ -4,7 +4,8 @@ import * as TE from "fp-ts/TaskEither"
 import { getLegacyMigrationSnapshot } from "@/io/api"
 import { type OrgFileRepository, orgFileRepository } from "@/io/file/org-file.repository"
 import {
-	createLegacyContentsRecoverySql,
+	createLegacyWorkspaceRecoverySql,
+	decodeLegacyRecoveryBundle,
 	type LegacyMigrationPlan,
 	planLegacyMigration,
 } from "@/pipes/migration"
@@ -18,9 +19,10 @@ import type {
 	OrgMigrationVerificationResultInterface,
 	OrgMigrationWriteResultInterface,
 } from "@/types/org"
+import type { LegacyRecoveryGraph } from "@/types/org/org.interface"
 import type { WorkspaceInterface } from "@/types/workspace"
 
-export type LegacyMigrationWorkspace = WorkspaceInterface
+export type LegacyMigrationWorkspace = Pick<WorkspaceInterface, "id">
 
 export type LegacyMigrationFlowError =
 	| {
@@ -82,22 +84,34 @@ export interface RecoveredLegacyContentRow {
 	readonly updatedAt: string
 }
 
-/** Reconstructs legacy content rows using only a capability-read manifest/raw-backup bundle. */
-export const reconstructLegacyContentsFromBundle = (
-	bundle: OrgMigrationRecoveryBundleInterface,
-): readonly RecoveredLegacyContentRow[] =>
-	bundle.rawBackups.map((backup) => ({
-		content: backup.content,
-		contentType: backup.contentType,
-		createdAt: backup.createdAt,
-		id: backup.contentId,
-		nodeId: backup.nodeId,
-		updatedAt: backup.updatedAt,
-		version: backup.version,
-	}))
+export interface RecoveredLegacyWorkspace {
+	readonly graph: LegacyRecoveryGraph
+	readonly contents: readonly RecoveredLegacyContentRow[]
+}
+
+/** Reconstructs the exact selected workspace graph/raw rows from the required v2 bundle. */
+export const reconstructLegacyWorkspaceFromBundle = (
+	input: OrgMigrationRecoveryBundleInterface,
+): RecoveredLegacyWorkspace => {
+	const bundle = decodeLegacyRecoveryBundle(input)
+	return {
+		graph: bundle.graph,
+		contents: bundle.rawBackups.map((backup) => ({
+			content: backup.content,
+			contentType: backup.contentType,
+			createdAt: backup.createdAt,
+			id: backup.contentId,
+			nodeId: backup.nodeId,
+			updatedAt: backup.updatedAt,
+			version: backup.version,
+		})),
+	}
+}
 
 export interface LegacyMigrationRecoveryDrillResult {
 	readonly recoveredContentCount: number
+	readonly recoveredNodeCount: number
+	readonly recoveredWorkspaceId: string
 	readonly verification: OrgMigrationVerificationResultInterface
 	readonly manifestPath: string
 	readonly recoverySqlPath: string
@@ -195,14 +209,19 @@ export const prepareLegacyMigrationFlow = (
 				type: "LEGACY_MIGRATION_ERROR",
 			}),
 		),
-		TE.map(({ allContents, allNodes, workspaceNodes: nodes, workspaceTitle }) => {
-			const currentNodeIds = new Set(nodes.map(({ id }) => id))
-			const globalNodeIds = new Set(allNodes.map(({ id }) => id))
-			const contents = allContents.filter(
-				({ nodeId }) => currentNodeIds.has(nodeId) || !globalNodeIds.has(nodeId),
-			)
-			return planLegacyMigration({ contents, nodes, workspaceTitle })
-		}),
+		TE.chainEitherK((snapshot) => E.tryCatch(
+			() => {
+				if (snapshot.graph.workspace.id !== workspace.id) {
+					throw new Error("Legacy snapshot belongs to a different workspace")
+				}
+				return planLegacyMigration(snapshot)
+			},
+			(cause): LegacyMigrationFlowError => ({
+				type: "LEGACY_MIGRATION_ERROR",
+				stage: "load-contents",
+				cause: { type: "VALIDATION_ERROR", message: String(cause) },
+			}),
+		)),
 	)
 
 const verifyExpectedArtifacts = (
@@ -255,26 +274,8 @@ export function executeLegacyMigrationFlow(
 	workspaceRoot: string,
 	capabilityToken: string | undefined,
 	plan: LegacyMigrationPlan,
-	repository?: OrgFileRepository,
-): TE.TaskEither<LegacyMigrationFlowError, LegacyMigrationCompletedResult>
-export function executeLegacyMigrationFlow(
-	workspaceRoot: string,
-	plan: LegacyMigrationPlan,
-	repository?: OrgFileRepository,
-	capabilityToken?: string,
-): TE.TaskEither<LegacyMigrationFlowError, LegacyMigrationCompletedResult>
-export function executeLegacyMigrationFlow(
-	workspaceRoot: string,
-	planOrToken: LegacyMigrationPlan | string | undefined,
-	planOrRepository?: LegacyMigrationPlan | OrgFileRepository,
-	repositoryOrToken?: OrgFileRepository | string,
+	repository: OrgFileRepository = orgFileRepository,
 ): TE.TaskEither<LegacyMigrationFlowError, LegacyMigrationCompletedResult> {
-	const legacyOrder = typeof planOrToken === "object"
-	const plan = (legacyOrder ? planOrToken : planOrRepository) as LegacyMigrationPlan
-	const capabilityToken = (legacyOrder ? repositoryOrToken : planOrToken) as string | undefined
-	const repository =
-		((legacyOrder ? planOrRepository : repositoryOrToken) as OrgFileRepository | undefined) ??
-		orgFileRepository
 	return pipe(
 		repository.writeMigration({
 			...createLegacyMigrationArtifactPayload(plan),
@@ -345,8 +346,8 @@ export const verifyLegacyMigrationRecoveryFlow = (
 	)
 
 /**
- * Proves that a completed migration can reconstruct every legacy content row from only the
- * manifest and raw-backup files, after first verifying the complete artifact hash set.
+ * Verifies the complete artifact hash set, then reconstructs the selected workspace graph and
+ * preserved content rows from the capability-read bundle. Unrelated DB tables are not restored.
  */
 export const runLegacyMigrationRecoveryDrillFlow =
 	(
@@ -402,20 +403,29 @@ export const runLegacyMigrationRecoveryDrillFlow =
 				type: "LEGACY_MIGRATION_ERROR",
 			})
 		}
-		const expectedBackups = new Map(plan.rawBackups.map((backup) => [backup.path, backup]))
-		const reconstructedRows = reconstructLegacyContentsFromBundle(bundle.right)
-		const reconstructedById = new Map(reconstructedRows.map((row) => [row.id, row]))
-		const recoveredPaths = new Set<string>()
 		const mismatch = (message: string) =>
 			E.left<LegacyMigrationFlowError, LegacyMigrationRecoveryDrillResult>({
 				cause: { message, type: "MIGRATION_RECOVERY_MISMATCH" },
 				stage: "read-recovery",
 				type: "LEGACY_MIGRATION_ERROR",
 			})
+		let reconstructed: RecoveredLegacyWorkspace
+		try {
+			reconstructed = reconstructLegacyWorkspaceFromBundle(bundle.right)
+		} catch (cause) {
+			return mismatch(`Invalid recovery bundle: ${String(cause)}`)
+		}
+		if (JSON.stringify(reconstructed.graph) !== JSON.stringify(plan.graph)) {
+			return mismatch("Recovered workspace graph differs from the rebuilt legacy plan.")
+		}
+		const expectedBackups = new Map(plan.rawBackups.map((backup) => [backup.path, backup]))
+		const reconstructedRows = reconstructed.contents
+		const reconstructedById = new Map(reconstructedRows.map((row) => [row.id, row]))
+		const recoveredPaths = new Set<string>()
 		if (bundle.right.manifest !== plan.manifest) {
 			return mismatch("Recovered migration manifest differs from the rebuilt legacy plan.")
 		}
-		const reconstructedSql = createLegacyContentsRecoverySql(bundle.right.rawBackups)
+		const reconstructedSql = createLegacyWorkspaceRecoverySql(bundle.right.graph, bundle.right.rawBackups)
 		if (bundle.right.recoverySql !== reconstructedSql || reconstructedSql !== plan.recoverySql) {
 			return mismatch("Recovery SQL does not reconstruct the manifest raw backups.")
 		}
@@ -450,6 +460,8 @@ export const runLegacyMigrationRecoveryDrillFlow =
 		return E.right({
 			manifestPath,
 			recoveredContentCount: recoveredPaths.size,
+			recoveredNodeCount: bundle.right.graph.nodes.length,
+			recoveredWorkspaceId: bundle.right.graph.workspace.id,
 			recoverySqlPath: plan.recoverySqlPath,
 			verification: verified.right,
 		})

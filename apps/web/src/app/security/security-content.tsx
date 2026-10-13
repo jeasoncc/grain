@@ -1,6 +1,7 @@
 "use client";
 
-import { Shield, AlertTriangle, Mail, Github } from "lucide-react";
+import { Shield, AlertTriangle, Mail } from "lucide-react";
+import { GitHubIcon } from "@/components/ui/github-icon";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { Button } from "@/components/ui/button";
@@ -227,7 +228,7 @@ export function SecurityPageContent() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <Github className="w-5 h-5 mr-2" />
+                    <GitHubIcon className="w-5 h-5 mr-2" />
                     GitHub 安全建议
                   </Link>
                 </Button>

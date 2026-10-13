@@ -2,6 +2,9 @@ export type {
 	CaptureOrgTodoInput,
 	CreateOrgDirectoryInput,
 	DeleteOrgDocumentInput,
+	LegacyRecoveryGraph,
+	LegacyRecoveryNode,
+	LegacyRecoveryWorkspace,
 	MoveOrgDocumentInput,
 	OpenOrgDocumentInput,
 	OrgCaptureValidationError,
@@ -23,6 +26,7 @@ export type {
 	OrgMigrationVerificationMismatchInterface,
 	OrgMigrationVerificationResultInterface,
 	OrgMigrationWriteResultInterface,
+	OrgOriginalRecoveryEntryInterface,
 	OrgTodoCaptureResultInterface,
 	OrgTreeDirectoryInterface,
 	OrgTreeDocumentInterface,
@@ -43,7 +47,7 @@ export type {
 	OrgAgendaOperation,
 	OrgAgendaOperationCapture,
 	OrgAgendaOperationPlan,
-	OrgAgendaPlanningPreparation,
+	OrgAgendaPreparation,
 } from "./org-agenda-command.types"
 export type {
 	OrgEffectiveTagSnapshot,

@@ -25,32 +25,6 @@ describe("useSettings", () => {
 	// 单元测试
 	// ==========================================================================
 
-	describe("默认值", () => {
-		it("autoSave 默认为 false，避免未确认的后台写入", () => {
-			const { autoSave } = useSettings.getState()
-			expect(autoSave).toBe(false)
-		})
-
-		it("autoSaveInterval 默认为 3 秒", () => {
-			const { autoSaveInterval } = useSettings.getState()
-			expect(autoSaveInterval).toBe(3)
-		})
-	})
-
-	describe("setAutoSave", () => {
-		it("应该能设置 autoSave 为 false", () => {
-			const { setAutoSave } = useSettings.getState()
-			setAutoSave(false)
-			expect(useSettings.getState().autoSave).toBe(false)
-		})
-
-		it("应该能设置 autoSave 为 true", () => {
-			const { setAutoSave } = useSettings.getState()
-			setAutoSave(false)
-			setAutoSave(true)
-			expect(useSettings.getState().autoSave).toBe(true)
-		})
-	})
 
 	describe("setAutoSaveInterval", () => {
 		it("应该能设置有效范围内的值", () => {

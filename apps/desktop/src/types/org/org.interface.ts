@@ -8,6 +8,7 @@ export interface OrgDocumentEntryInterface {
 export interface OrgWorkspaceScanInterface {
 	readonly documents: readonly OrgDocumentEntryInterface[]
 	readonly directories: readonly string[]
+	readonly originalRecoveries?: readonly OrgOriginalRecoveryEntryInterface[]
 }
 
 /** A selected filesystem workspace and its discovered Org tree. */
@@ -43,6 +44,15 @@ export type OrgTreeEntryInterface = OrgTreeDirectoryInterface | OrgTreeDocumentI
 /** An opened Org document. Content is kept verbatim at the IO boundary. */
 export interface OrgDocumentInterface extends OrgDocumentEntryInterface {
 	readonly content: string
+	readonly originalRecovery?: OrgOriginalRecoveryEntryInterface | null
+}
+
+/** A named mutable filesystem recovery object, never authoritative editor Source. */
+export interface OrgOriginalRecoveryEntryInterface {
+	readonly relativePath: string
+	readonly sourceRelativePath: string
+	readonly kind: "save" | "delete"
+	readonly object: "original" | "staged" | "journal" | "publicationprobe"
 }
 
 export interface OpenOrgDocumentInput {
@@ -109,7 +119,7 @@ export interface OrgMigrationArtifactSummaryInterface {
 export interface OrgMigrationRecoveryBackupInterface {
 	readonly path: string
 	readonly contentId: string
-	readonly contentType: "lexical" | "excalidraw" | "text"
+	readonly contentType: string
 	readonly nodeId: string
 	readonly version: string
 	readonly createdAt: string
@@ -117,10 +127,38 @@ export interface OrgMigrationRecoveryBackupInterface {
 	readonly content: string
 }
 
+/** Raw SQLite tuples for one selected legacy workspace; decimals preserve every i64 bit. */
+export interface LegacyRecoveryWorkspace {
+	readonly id: string
+	readonly name: string
+	readonly description: string | null
+	readonly createdAt: string
+	readonly updatedAt: string
+}
+
+export interface LegacyRecoveryNode {
+	readonly id: string
+	readonly workspaceId: string
+	readonly parentId: string | null
+	readonly title: string
+	readonly nodeType: string
+	readonly isCollapsed: string
+	readonly sortOrder: string
+	readonly tags: string | null
+	readonly createdAt: string
+	readonly updatedAt: string
+}
+
+export interface LegacyRecoveryGraph {
+	readonly workspace: LegacyRecoveryWorkspace
+	readonly nodes: readonly LegacyRecoveryNode[]
+}
+
 export interface OrgMigrationRecoveryBundleInterface {
 	readonly manifest: string
+	readonly graph: LegacyRecoveryGraph
 	readonly rawBackups: readonly OrgMigrationRecoveryBackupInterface[]
-	readonly recoverySql: string | null
+	readonly recoverySql: string
 }
 
 export interface OrgMigrationWriteResultInterface {
@@ -149,7 +187,9 @@ export interface OrgMigrationVerificationResultInterface {
 	readonly mismatches: readonly OrgMigrationVerificationMismatchInterface[]
 }
 
-export type OrgDocumentWriteResultInterface = OrgDocumentEntryInterface
+export interface OrgDocumentWriteResultInterface extends OrgDocumentEntryInterface {
+	readonly originalRecovery?: OrgOriginalRecoveryEntryInterface | null
+}
 
 /** Disposable search/index rows derived exclusively from revision-checked Org reads. */
 export interface OrgIndexDocumentInput {

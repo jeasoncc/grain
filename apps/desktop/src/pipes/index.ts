@@ -15,8 +15,6 @@
 export * as contentPipe from "./content"
 // Editor 管道（编辑器类型判断）
 export * as editorPipe from "./editor"
-// Editor Tab 管道（编辑器标签页操作）
-export * as editorTabPipe from "./editor-tab"
 // Export 管道（JSON、Markdown、Org-mode 导出）
 export * as exportPipe from "./export"
 // Import 管道（Markdown 导入）

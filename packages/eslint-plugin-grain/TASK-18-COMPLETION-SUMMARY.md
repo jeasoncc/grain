@@ -164,7 +164,7 @@ Comprehensive documentation including:
 
 ```javascript
 // eslint.config.js
-import grainPlugin from 'eslint-plugin-grain';
+import grainPlugin from '@grain/eslint-plugin';
 
 export default [
   {
@@ -178,7 +178,7 @@ export default [
 
 ```javascript
 // eslint.config.js
-import grainPlugin from 'eslint-plugin-grain';
+import grainPlugin from '@grain/eslint-plugin';
 
 export default [
   {
@@ -192,7 +192,7 @@ export default [
 
 ```javascript
 // eslint.config.js
-import grainPlugin from 'eslint-plugin-grain';
+import grainPlugin from '@grain/eslint-plugin';
 
 export default [
   {
@@ -263,7 +263,6 @@ export default [
 
 The configuration files are syntactically correct TypeScript/JavaScript. The build errors encountered are related to:
 1. Existing TypeScript errors in rule files (not related to this task)
-2. React Native type conflicts (project-wide issue)
 
 The configuration files themselves:
 - Follow correct TypeScript syntax

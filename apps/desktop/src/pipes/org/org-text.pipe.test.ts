@@ -3,6 +3,7 @@ import {
 	appendOrgTodoCapture,
 	changeOrgHeadingLevelAt,
 	cycleOrgTodoAt,
+	headingPositionAt,
 	insertOrgTimestampAt,
 	moveOrgSubtreeAt,
 	type OrgTextEdit,
@@ -169,6 +170,41 @@ describe("Org local text transformations", () => {
 		expect(apply(checked, toggleOrgCheckboxAt(checked, checked.length))).toBe(source)
 	})
 
+	it("keeps checkbox cursors on both CRLF code units and preserves mixed raw offsets", () => {
+		const source = "- [ ] 😀 first\r\n- [ ] second\r- [ ] third\n"
+		const firstBreak = source.indexOf("\r\n")
+		for (const cursor of [firstBreak, firstBreak + 1]) {
+			expect(apply(source, toggleOrgCheckboxAt(source, cursor))).toBe(
+				source.replace("- [ ] 😀 first", "- [X] 😀 first"),
+			)
+		}
+		expect(apply(source, toggleOrgCheckboxAt(source, source.indexOf("\r-")))).toBe(
+			source.replace("- [ ] second", "- [X] second"),
+		)
+		expect(apply(source, toggleOrgCheckboxAt(source, source.length - 1))).toBe(
+			source.replace("- [ ] third", "- [X] third"),
+		)
+		expect(toggleOrgCheckboxAt(source, source.length)).toBeNull()
+		expect(toggleOrgCheckboxAt(source, source.length + 10)).toBeNull()
+		expect(apply(source, toggleOrgCheckboxAt(source, -10))).toBe(
+			source.replace("- [ ] 😀 first", "- [X] 😀 first"),
+		)
+	})
+
+	it.each(["\n", "\r", "\r\n"])("cycles the preceding heading at each delimiter (%j)", (ending) => {
+		const first = "* 😀 First"
+		const source = `${first}${ending}* Second`
+		for (let offset = 0; offset < ending.length; offset++) {
+			expect(apply(source, cycleOrgTodoAt(source, first.length + offset))).toBe(
+				`* TODO 😀 First${ending}* Second`,
+			)
+		}
+		expect(apply(source, cycleOrgTodoAt(source, source.length))).toBe(
+			`${first}${ending}* TODO Second`,
+		)
+		expect(cycleOrgTodoAt(`${source}${ending}`, source.length + ending.length)).toBeNull()
+	})
+
 	it("moves a complete subtree up and down among siblings", () => {
 		const source =
 			"* Parent\n** First\nfirst body\n*** Child\nchild body\n** Second\nsecond body\n* Tail"
@@ -257,6 +293,48 @@ describe("Org heading metadata transformations", () => {
 		)
 	})
 
+	it("keeps lexical headings in drawers and configured COMMENT subtrees editable", () => {
+		const source =
+			"#+TODO: NEXT | DONE\r\n* NEXT COMMENT Outer\r:LOGBOOK:\n#+begin_src\r* Drawer :old:\r\nbody\r:END:\n"
+		const from = source.indexOf("* Drawer")
+		const contentTo = source.indexOf("\r\n", from)
+		expect(headingPositionAt(source, source.indexOf("body"))).toEqual({
+			from,
+			contentTo,
+			breakTo: contentTo + 2,
+			text: "* Drawer :old:",
+		})
+		expect(apply(source, setOrgHeadingTagsAt(source, source.indexOf("body"), ["new"]))).toBe(
+			source.replace("* Drawer :old:", "* Drawer :new:"),
+		)
+		expect(apply(source, setOrgHeadingTagsAt(source, source.indexOf("Outer"), ["comment"]))).toBe(
+			source.replace("* NEXT COMMENT Outer", "* NEXT COMMENT Outer :comment:"),
+		)
+	})
+
+	it("protects lexical block delimiters and ignores only heading text owned by blocks", () => {
+		const source =
+			"* Before\r\n#+begin_src\r* Literal\n#+end_quote\r\n#+end_src\r\nbody\r* After\n"
+		const begin = source.indexOf("#+begin_src")
+		const end = source.indexOf("#+end_src") + "#+end_src".length
+		for (const cursor of [begin, source.indexOf("Literal"), end, end + 1]) {
+			expect(headingPositionAt(source, cursor)).toBeNull()
+			expect(setOrgHeadingTagsAt(source, cursor, ["blocked"])).toBeNull()
+		}
+		expect(headingPositionAt(source, begin - 1)?.text).toBe("* Before")
+		expect(headingPositionAt(source, end + 2)?.text).toBe("* Before")
+		expect(headingPositionAt(source, source.length)?.text).toBe("* After")
+	})
+
+	it.each(["\n", "\r", "\r\n"])("preserves lexical block EOF boundaries (%j)", (ending) => {
+		const source = ["* Real", "#+begin_example", "* Literal"].join(ending)
+		expect(headingPositionAt(source, source.length - 1)).toBeNull()
+		expect(headingPositionAt(source, source.length)?.text).toBe("* Real")
+		const closed = `${source}${ending}#+end_example`
+		expect(headingPositionAt(closed, closed.length - 1)).toBeNull()
+		expect(headingPositionAt(closed, closed.length)?.text).toBe("* Real")
+	})
+
 	it("updates or inserts planning without touching timestamp details", () => {
 		const source = "* Heading\nSCHEDULED: <2025-01-01 Wed +1w>  custom\nbody"
 		expect(
@@ -327,6 +405,18 @@ describe("Org heading metadata transformations", () => {
 		)
 		expect(apply(source, setOrgPropertyAt(source, source.indexOf("body"), "Owner", "Ada"))).toBe(
 			"* Heading\n:PROPERTIES:\n:ID: old\n:ODD: untouched  \n:Owner: Ada\n:END:\nbody",
+		)
+	})
+
+	it("updates planning and properties without normalizing mixed metadata line endings", () => {
+		const source =
+			"* Heading\r\nSCHEDULED: <2025-01-01>\r:PROPERTIES:\n:ID: 😀 old\r\n:END:\rbody\n"
+		const cursor = source.indexOf("body")
+		expect(apply(source, setOrgPlanningAt(source, cursor, "SCHEDULED", "2026-02-03"))).toBe(
+			source.replace("<2025-01-01>", "<2026-02-03>"),
+		)
+		expect(apply(source, setOrgPropertyAt(source, cursor, "ID", "😀 new"))).toBe(
+			source.replace(":ID: 😀 old", ":ID: 😀 new"),
 		)
 	})
 

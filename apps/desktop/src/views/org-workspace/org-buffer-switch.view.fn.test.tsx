@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, screen } from "@testing-library/react"
+import { render } from "@/test/application-providers"
 import { describe, expect, it, vi } from "vitest"
 import type { OrgOpenBufferSummary } from "@/hooks/use-org-workspace"
 import { OrgBufferSwitch } from "./org-buffer-switch.view.fn"
@@ -215,36 +216,20 @@ describe("OrgBufferSwitch", () => {
 			/>,
 		)
 		await act(async () => resolve(true))
-		expect(screen.getByRole("alert")).toHaveTextContent("Could not switch buffer")
 		expect(onOpenChange).not.toHaveBeenCalled()
 		expect(onSelect).toHaveBeenCalledTimes(1)
 	})
 
-	it("has distinct accessible labels and unique nonmodal combobox/listbox/option IDs alongside Quick Open", () => {
-		render(
-			<>
-				<OrgBufferSwitch {...props} />
-				<OrgQuickOpen
-					documents={[{ relativePath: "current.org", revision: "one" }]}
-					open
-					onOpenChange={vi.fn()}
-					onSelect={vi.fn()}
-				/>
-			</>,
-		)
+	it("supersedes buffer candidates with Quick Open in the one nonmodal shared host", () => {
+		const retired = vi.fn()
+		render(<>
+			<OrgBufferSwitch {...props} onOpenChange={retired} />
+			<OrgQuickOpen documents={[{ relativePath: "current.org", revision: "one" }]}
+				open onOpenChange={vi.fn()} onSelect={vi.fn()} />
+		</>)
 		expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
-		expect(screen.getByRole("region", { name: "Buffer Switch" })).toBeInTheDocument()
-		expect(screen.getByRole("listbox", { name: "Buffer Switch" })).toBeInTheDocument()
-		const inputs = screen.getAllByRole("combobox")
-		expect(inputs[0].id).not.toBe(inputs[1].id)
-		for (const item of inputs) {
-			const list = document.getElementById(item.getAttribute("aria-controls")!)!
-			expect(list).toHaveAttribute("role", "listbox")
-			expect(list.compareDocumentPosition(item) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-			expect(document.getElementById(item.getAttribute("aria-activedescendant")!)).toHaveAttribute(
-				"aria-selected",
-				"true",
-			)
-		}
+		expect(screen.getAllByRole("combobox")).toHaveLength(1)
+		expect(screen.getByRole("combobox", { name: "Search workspace notes" })).toBeInTheDocument()
+		expect(retired).toHaveBeenCalledWith(false)
 	})
 })

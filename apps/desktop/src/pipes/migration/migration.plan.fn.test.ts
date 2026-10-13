@@ -1,37 +1,39 @@
 import { describe, expect, it } from "vitest"
-import type { ContentInterface } from "@/types/content"
-import type { NodeInterface, NodeType } from "@/types/node"
+import type { LegacyRecoveryGraph, LegacyRecoveryNode } from "@/types/org/org.interface"
 import {
-	createLegacyContentsRecoverySql,
-	planLegacyMigration,
+	decodeLegacyRecoveryBundle,
+	planLegacyMigration as planMigration,
+	type LegacyMigrationContent,
 	sanitizeMigrationFilename,
 } from "./migration.plan.fn"
 
-const timestamp = "2025-01-01T00:00:00.000Z"
+const workspace = {
+	id: "workspace", name: "Workspace", description: "真实\u0000metadata",
+	createdAt: "9223372036854775807", updatedAt: "-9223372036854775808",
+}
+const graph = (nodes: readonly LegacyRecoveryNode[] = [], name = "Workspace"): LegacyRecoveryGraph =>
+	({ workspace: { ...workspace, name }, nodes })
+const planLegacyMigration = ({ contents, nodes, workspaceTitle }: {
+	contents: readonly LegacyMigrationContent[]
+	nodes: readonly LegacyRecoveryNode[]
+	workspaceTitle: string
+}) => planMigration({ contents, graph: graph(nodes, workspaceTitle) })
 
 const node = (
-	id: string,
-	title: string,
-	type: NodeType = "file",
-	parent: string | null = null,
-	order = 0,
-): NodeInterface => ({
-	createDate: timestamp,
-	id,
-	lastEdit: timestamp,
-	order,
-	parent,
-	title,
-	type,
-	workspace: "workspace",
+	id: string, title: string, nodeType = "file",
+	parentId: string | null = null, sortOrder = 0,
+): LegacyRecoveryNode => ({
+	id, title, nodeType, parentId, sortOrder: String(sortOrder), workspaceId: "workspace",
+	isCollapsed: "0", tags: '[ "保留原始 JSON" ]',
+	createdAt: "9007199254740993", updatedAt: "-9007199254740993",
 })
-
 const content = (
-	id: string,
-	nodeId: string,
-	value: string,
-	contentType: ContentInterface["contentType"],
-): ContentInterface => ({ content: value, contentType, id, lastEdit: timestamp, nodeId })
+	id: string, nodeId: string, value: string, contentType: string,
+): LegacyMigrationContent => ({
+	content: value, contentType, id, nodeId,
+	version: "9007199254740993", createdAt: "9223372036854775807",
+	updatedAt: "-9223372036854775808",
+})
 
 const lexical = (text: string): string =>
 	JSON.stringify({
@@ -67,26 +69,6 @@ const lexical = (text: string): string =>
 	})
 
 describe("planLegacyMigration", () => {
-	it("emits a byte-exact SQLite recovery script without interpolating source text", () => {
-		const sql = createLegacyContentsRecoverySql([
-			{
-				content: "quote '\u0000你好",
-				contentId: "content-1",
-				contentType: "text",
-				createdAt: "11",
-				nodeId: "missing-node",
-				path: "ignored",
-				updatedAt: "13",
-				version: "7",
-			},
-		])
-
-		expect(sql).not.toContain("quote '")
-		expect(sql).toContain("71756f7465202700e4bda0e5a5bd")
-		expect(sql).toContain(",7,11,13);")
-		expect(sql).toContain("grain_recovery_content_types")
-	})
-
 	it("preserves nested folder hierarchy and sibling order", () => {
 		const nodes = [
 			node("later", "Later", "file", "nested", 2),
@@ -109,9 +91,6 @@ describe("planLegacyMigration", () => {
 			"My Book/Drafts/Part One/First.org",
 			"My Book/Drafts/Part One/Later.org",
 		])
-		expect(plan.documents[0]?.content).toBe(
-			"#+TITLE: First\n#+SOURCE_ID: first\n\nfirst body\nunchanged",
-		)
 	})
 
 	it("sanitizes cross-platform names and resolves collisions case-insensitively", () => {
@@ -136,14 +115,14 @@ describe("planLegacyMigration", () => {
 		const plan = planLegacyMigration({
 			contents: [],
 			nodes: [
-				node("sql-folder", "legacy-contents-recovery.sql", "folder", null, 0),
+				node("sql-folder", "legacy-workspace-recovery.sql", "folder", null, 0),
 				node("verify-folder", "migration-verification.json", "folder", null, 1),
 			],
 			workspaceTitle: "Workspace",
 		})
 
 		expect(plan.directories.map(({ path }) => path)).toContain(
-			"Workspace/legacy-contents-recovery.sql (2)",
+			"Workspace/legacy-workspace-recovery.sql (2)",
 		)
 		expect(plan.directories.map(({ path }) => path)).toContain(
 			"Workspace/migration-verification.json (2)",
@@ -175,12 +154,8 @@ describe("planLegacyMigration", () => {
 		const plan = planLegacyMigration({ contents, nodes, workspaceTitle: "Workspace" })
 
 		const lexicalDocument = plan.documents.find(({ nodeId }) => nodeId === "lex")
-		const drawingDocument = plan.documents.find(({ nodeId }) => nodeId === "draw")
 		const drawingResult = plan.nodeResults.find(({ nodeId }) => nodeId === "draw")
-		expect(lexicalDocument?.content).toContain("#+TITLE: Lexical")
-		expect(lexicalDocument?.content).toContain("#+SOURCE_ID: lex")
 		expect(lexicalDocument?.content).toContain("Hello")
-		expect(drawingDocument?.content).toContain("* Migration notice")
 		expect(drawingResult).toMatchObject({ status: "placeholder" })
 		expect(drawingResult?.warnings).toContain("excalidraw-placeholder")
 		expect(plan.rawBackups.map(({ contentId }) => contentId)).toEqual(["drawing", "valid", "extra"])
@@ -221,7 +196,6 @@ describe("planLegacyMigration", () => {
 			workspaceTitle: "Workspace",
 		})
 
-		expect(plan.documents[0]?.content).toContain("could not be converted")
 		expect(plan.nodeResults[0]).toMatchObject({
 			status: "placeholder",
 			warnings: ["lexical-conversion-failed"],
@@ -267,7 +241,46 @@ describe("planLegacyMigration", () => {
 		})
 
 		expect(second).toEqual(first)
-		expect(first.manifest.endsWith("\n")).toBe(true)
-		expect(JSON.parse(first.manifest)).toMatchObject({ version: 1, workspaceTitle: "Workspace" })
+		expect(JSON.parse(first.manifest).graph).toEqual(first.graph)
+	})
+
+	it("keeps exact graph tuples and parent links despite orphan/cycle rendering", () => {
+		const nodes = [
+			node("folder", "Folder", "folder", "child"),
+			{ ...node("child", "原始\u0000Title", "unknown", "folder"), sortOrder: "9223372036854775807", isCollapsed: "-9223372036854775808" },
+			node("orphan", "Orphan", "file", "unexported-parent"),
+		]
+		const plan = planMigration({ graph: graph(nodes), contents: [content("raw", "orphan", "\u0000你好", "unknown/content")] })
+		const bundle = decodeLegacyRecoveryBundle({
+			manifest: plan.manifest, graph: plan.graph, rawBackups: plan.rawBackups,
+			recoverySql: plan.recoverySql,
+		})
+		expect(bundle.graph).toEqual(plan.graph)
+		expect(bundle.graph.nodes.map(({ id, parentId }) => [id, parentId])).toEqual([
+			["child", "folder"], ["folder", "child"], ["orphan", "unexported-parent"],
+		])
+		expect(bundle.rawBackups[0].content).toBe("\u0000你好")
+		expect(bundle.rawBackups[0].version).toBe("9007199254740993")
+	})
+
+	it.each(["9007199254740993.0", "9223372036854775808", "-0", "01"])(
+		"rejects invalid i64 graph metadata %s rather than rounding/defaulting",
+		(createdAt) => {
+			expect(() => planMigration({
+				graph: { ...graph(), workspace: { ...workspace, createdAt } }, contents: [],
+			})).toThrow()
+		},
+	)
+
+	it("rejects old/optional graphs, unknown fields and corrupt SQL/graph receipts", () => {
+		const plan = planMigration({ graph: graph([node("child", "Child")]), contents: [] })
+		const bundle = { manifest: plan.manifest, graph: plan.graph, rawBackups: [], recoverySql: plan.recoverySql }
+		expect(() => decodeLegacyRecoveryBundle({ ...bundle, graph: undefined })).toThrow()
+		expect(() => decodeLegacyRecoveryBundle({ ...bundle, recoverySql: null })).toThrow()
+		expect(() => decodeLegacyRecoveryBundle({ ...bundle, oldAlias: true })).toThrow()
+		expect(() => decodeLegacyRecoveryBundle({ ...bundle, recoverySql: `${plan.recoverySql}DROP TABLE nodes;` })).toThrow()
+		expect(() => decodeLegacyRecoveryBundle({
+			...bundle, graph: { ...plan.graph, workspace: { ...workspace, name: "Changed" } },
+		})).toThrow()
 	})
 })

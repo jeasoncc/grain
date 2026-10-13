@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useDocPathname } from "./hooks/use-doc-pathname";
 
 export function ReadingProgressIndicator() {
-  const pathname = usePathname();
+  const pathname = useDocPathname();
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {

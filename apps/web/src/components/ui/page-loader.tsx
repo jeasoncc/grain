@@ -1,59 +1,54 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { LoadingSpinner } from "./loading-spinner";
+import { useHydrated } from "@/hooks/use-hydrated";
+
+const getDocumentLoaded = () => document.readyState === "complete";
+const getServerDocumentLoaded = () => false;
+const subscribeToLoad = (onLoad: () => void) => {
+  window.addEventListener("load", onLoad);
+  return () => window.removeEventListener("load", onLoad);
+};
 
 export function PageLoader() {
-  const [isLoading, setIsLoading] = useState(true);
+  const hydrated = useHydrated();
+  return hydrated ? <ClientPageLoader /> : <PageLoaderOverlay progress={0} />;
+}
+
+function ClientPageLoader() {
+  const documentLoaded = useSyncExternalStore(
+    subscribeToLoad,
+    getDocumentLoaded,
+    getServerDocumentLoaded
+  );
+  const [loadedOnMount] = useState(documentLoaded);
+  const [dismissed, setDismissed] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [mounted, setMounted] = useState(false);
+  const isLoading = !loadedOnMount && !dismissed;
+  const progressComplete = progress >= 100;
 
   useEffect(() => {
-    setMounted(true);
-    
-    // 如果页面已加载，立即隐藏加载器
-    if (document.readyState === "complete") {
-      setIsLoading(false);
-      return;
-    }
-
-    // 模拟加载进度
+    if (!isLoading || documentLoaded || progressComplete) return;
     const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setTimeout(() => setIsLoading(false), 300);
-          return 100;
-        }
-        return Math.min(prev + Math.random() * 15, 100);
-      });
+      const increment = Math.random() * 15;
+      setProgress((current) => Math.min(current + increment, 100));
     }, 100);
+    return () => clearInterval(interval);
+  }, [isLoading, documentLoaded, progressComplete]);
 
-    // 监听页面加载完成
-    const handleLoad = () => {
-      setProgress(100);
-      clearInterval(interval);
-      setTimeout(() => setIsLoading(false), 300);
-    };
-
-    window.addEventListener("load", handleLoad);
-
-    // 确保至少显示一段时间
-    const minDisplayTime = setTimeout(() => {
-      if (progress >= 100) {
-        setIsLoading(false);
-      }
-    }, 800);
-
-    return () => {
-      clearInterval(interval);
-      clearTimeout(minDisplayTime);
-      window.removeEventListener("load", handleLoad);
-    };
-  }, [progress]);
+  useEffect(() => {
+    if (!isLoading || (!documentLoaded && !progressComplete)) return;
+    // Allow the completed progress bar its existing 300ms animation.
+    const timer = setTimeout(() => setDismissed(true), 300);
+    return () => clearTimeout(timer);
+  }, [isLoading, documentLoaded, progressComplete]);
 
   if (!isLoading) return null;
+  return <PageLoaderOverlay progress={documentLoaded ? 100 : progress} />;
+}
 
+function PageLoaderOverlay({ progress }: { progress: number }) {
   return (
     <div className="fixed inset-0 z-[9999] bg-white dark:bg-black flex items-center justify-center transition-opacity duration-300">
       <div className="text-center">

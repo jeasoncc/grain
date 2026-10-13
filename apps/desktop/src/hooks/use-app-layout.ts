@@ -55,8 +55,7 @@ export function useAppLayout(): UseAppLayoutReturn {
 	 * @param layout - Layout object from react-resizable-panels
 	 */
 	const handleLayoutChanged = useCallback((layout: Layout) => {
-		// layout is an array-like object with panel sizes
-		const newWidth = layout[0]
+		const newWidth = layout.sidebar
 		if (newWidth !== undefined && newWidth !== sidebarWidth) {
 			setSidebarWidth(newWidth)
 		}

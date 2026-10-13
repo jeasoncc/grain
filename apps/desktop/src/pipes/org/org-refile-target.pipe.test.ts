@@ -42,6 +42,7 @@ describe("Org refile targets", () => {
 		)
 		expect(snapshot.relativePath).toBe("notes/a.org")
 		expect(snapshot.revision).toBe("opaque-revision")
+		expect(snapshot.source).toBe("* (file root)\n* Same\n* Same")
 		expect(Object.isFrozen(snapshot)).toBe(true)
 		expect(Object.isFrozen(snapshot.headings)).toBe(true)
 		expect(snapshot.headings.every(Object.isFrozen)).toBe(true)

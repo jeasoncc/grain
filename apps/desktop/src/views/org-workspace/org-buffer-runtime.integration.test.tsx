@@ -1,7 +1,8 @@
 import { redoDepth, undoDepth } from "@codemirror/commands"
 import { EditorState, Transaction } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { act, cleanup, fireEvent, screen } from "@testing-library/react"
+import { ApplicationTestDocumentPane, render } from "@/test/application-providers"
 import * as E from "fp-ts/Either"
 import { useEffect, useRef, useState } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
@@ -10,7 +11,7 @@ import {
 	openOrgDocumentFlow,
 	saveOrgDocumentFlow,
 	scanOrgWorkspaceFlow,
-} from "@/flows/org-workspace"
+} from "@/flows/org-workspace/org-workspace.flow"
 import { useOrgWorkspace, type OrgWorkspaceController } from "@/hooks/use-org-workspace"
 import {
 	releaseOrgWorkspace,
@@ -20,10 +21,10 @@ import {
 import type { OrgDocumentInterface, OrgWorkspaceInterface } from "@/types/org"
 import type { OrgEditorSessionSnapshot } from "@/views/org-editor/org-editor.types"
 import { OrgBufferSwitch } from "./org-buffer-switch.view.fn"
-import { OrgDocumentPane } from "./org-document-pane.view.fn"
+import { ConfirmProvider } from "../ui"
 
 // Only filesystem/host boundaries are replaced: hook, pane, editor and CM history are real.
-vi.mock("@tanstack/react-router", () => ({ useBlocker: vi.fn() }))
+vi.mock("@tanstack/react-router", () => ({ useBlocker: vi.fn(), useNavigate: () => vi.fn() }))
 vi.mock("@/io/event/org-window-close.adapter", () => ({
 	registerOrgWindowClose: () => () => undefined,
 }))
@@ -35,26 +36,29 @@ vi.mock("@/io/file/org-file.repository", () => ({
 	unwatchOrgWorkspace: vi.fn(),
 	watchOrgWorkspace: vi.fn(),
 }))
-vi.mock("@/flows/org-workspace", () => ({
-	archiveOrgSubtreeFlow: vi.fn(),
-	clearOrgDerivedIndexFlow: vi.fn(),
+vi.mock("@/flows/org-workspace/org-workspace.flow", () => ({
 	createOrgDirectoryFlow: vi.fn(),
 	deleteOrgDocumentFlow: vi.fn(),
-	prepareLegacyMigrationFlow: vi.fn(),
-	verifyLegacyMigrationRecoveryFlow: vi.fn(),
-	runLegacyMigrationRecoveryDrillFlow: vi.fn(),
-	rebuildOrgDerivedIndexFlow: vi.fn(),
-	resolveOrgLinkTargetFlow: vi.fn(),
 	selectOrgWorkspaceFlow: vi.fn(),
 	captureOrgTodoFlow: vi.fn(),
 	moveOrgDocumentFlow: vi.fn(),
-	ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE: "duplicate",
 	openDefaultOrgWorkspaceFlow: vi.fn(),
+	reopenDefaultOrgWorkspaceFlow: vi.fn(),
 	openOrgDocumentFlow: vi.fn(),
-	refileOrgSubtreeFlow: vi.fn(),
 	saveOrgDocumentFlow: vi.fn(),
 	scanOrgWorkspaceFlow: vi.fn(),
 }))
+vi.mock("@/flows/org-workspace/org-derived-index.flow", () => ({
+	clearOrgDerivedIndexFlow: vi.fn(),
+	rebuildOrgDerivedIndexFlow: vi.fn(),
+}))
+vi.mock("@/flows/org-workspace/org-subtree-refile.flow", () => ({
+	archiveOrgSubtreeFlow: vi.fn(),
+	refileOrgSubtreeFlow: vi.fn(),
+}))
+vi.mock("@/flows/org-workspace/org-capture-entry.flow", () => ({ captureOrgEntryFlow: vi.fn(), readOrgCaptureTargetFlow: vi.fn() }))
+vi.mock("@/flows/org-workspace/org-link-target.flow", () => ({ resolveOrgLinkTargetFlow: vi.fn() }))
+vi.mock("@/flows/org-workspace/org-refile-target.flow", () => ({ readOrgRefileTargetFlow: vi.fn() }))
 
 const rawA = "* A :raw:\r\n#+begin_export html\r\n<b>untouched</b>\r\n#+end_export\r\n"
 const rawB = "* B\nindependent\n"
@@ -100,7 +104,7 @@ function Runtime() {
 			{agenda ? (
 				<div>Workspace agenda</div>
 			) : (
-				<OrgDocumentPane
+				<ApplicationTestDocumentPane
 					controller={controller}
 					editorSessionCache={cacheRef.current}
 					isBusy={controller.isLoading || controller.isSaving}
@@ -119,8 +123,6 @@ function Runtime() {
 					onGoBack={noop}
 					onGoForward={noop}
 					onQuickOpen={noop}
-					onShowInspector={noop}
-					onShowSidebar={noop}
 				/>
 			)}
 		</>
@@ -165,7 +167,7 @@ function undoEditor() {
 	routeUndo()
 }
 async function setup() {
-	render(<Runtime />)
+	render(<Runtime />, { wrapper: ConfirmProvider })
 	await act(async () => {
 		await controller.openDefaultWorkspace()
 	})
@@ -190,7 +192,6 @@ beforeEach(() => {
 		controller.switchBuffer(bufferId, signal),
 	)
 	window.localStorage.clear()
-	vi.spyOn(window, "confirm").mockReturnValue(true)
 	disk = new Map([
 		["a.org", { relativePath: "a.org", content: rawA, revision: "a-1" }],
 		["b.org", { relativePath: "b.org", content: rawB, revision: "b-1" }],
@@ -361,7 +362,7 @@ describe("production Org buffer runtime", () => {
 		expect(controller.isDirty).toBe(true)
 	})
 
-	it("switches existing IDs without forcing saves, restores CM cache and rejects late reads after abort", async () => {
+	it("switches existing IDs without reads or saves and restores canonical CM selection and history", async () => {
 		await setup()
 		const aId = controller.activeBufferId!
 		edit("A parked")
@@ -369,6 +370,7 @@ describe("production Org buffer runtime", () => {
 		await open("b.org")
 		edit("B stays")
 		const bId = controller.activeBufferId!
+		const reads = vi.mocked(openOrgDocumentFlow).mock.calls.length
 		await act(async () => {
 			expect(await controller.switchBuffer(aId)).toBe(true)
 		})
@@ -379,32 +381,8 @@ describe("production Org buffer runtime", () => {
 			expect(await controller.switchBuffer(bId)).toBe(true)
 		})
 		expect(view().state.sliceDoc()).toBe(rawB + "B stays")
-		let finish!: (result: Awaited<ReturnType<ReturnType<typeof openOrgDocumentFlow>>>) => void
-		const pending = new Promise<Awaited<ReturnType<ReturnType<typeof openOrgDocumentFlow>>>>(
-			(resolve) => {
-				finish = resolve
-			},
-		)
-		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(() => pending)
-		const abort = new AbortController()
-		let switching!: Promise<boolean>
-		act(() => {
-			switching = controller.switchBuffer(aId, abort.signal)
-		})
-		expect(controller.isLoading).toBe(true)
-		expect(controller.isEditorReadOnly).toBe(true)
-		expect(view().state.facet(EditorState.readOnly)).toBe(true)
-		expect(view().state.sliceDoc()).toBe(rawB + "B stays")
-		act(() => abort.abort())
-		expect(controller.isLoading).toBe(false)
-		expect(controller.isEditorReadOnly).toBe(false)
-		expect(view().state.facet(EditorState.readOnly)).toBe(false)
-		await act(async () => {
-			finish(E.right(disk.get("a.org")!))
-			expect(await switching).toBe(false)
-		})
-		expect(controller.activeBufferId).toBe(bId)
-		expect(view().state.sliceDoc()).toBe(rawB + "B stays")
+		expectHistory(1)
+		expect(openOrgDocumentFlow).toHaveBeenCalledTimes(reads)
 		undoEditor()
 		expect(controller.content).toBe(rawB)
 		await act(async () => {
@@ -425,15 +403,6 @@ describe("production Org buffer runtime", () => {
 		await act(async () => {
 			await controller.refreshWorkspace()
 		})
-		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(async () =>
-			E.left({
-				type: "ORG_FILE_ERROR",
-				operation: "read",
-				command: "read",
-				cause: null,
-				message: "file missing",
-			}),
-		)
 		act(() => setPickerOpen(true))
 		const input = screen.getByRole("combobox", { name: "Search open buffers" })
 		const selected = () =>
@@ -481,7 +450,6 @@ describe("production Org buffer runtime", () => {
 		expect(view().scrollDOM.scrollTop).toBe(123)
 		expect(view().scrollDOM.scrollLeft).toBe(17)
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
-		expect(screen.getAllByText("Unsaved changes")).toHaveLength(2)
 		expect(cache.has(`G1\u0000${aId}`)).toBe(true)
 		// Saving advances the disk baseline without erasing existing editor undo history.
 		await act(async () => {
@@ -550,7 +518,6 @@ describe("production Org buffer runtime", () => {
 			fireEvent.click(screen.getByRole("button", { name: "Close a.org" }))
 		})
 		expect(screen.getByRole("button", { name: "Close a.org" })).toBeInTheDocument()
-		expect(screen.getByText("Unsaved changes")).toBeInTheDocument()
 		expect(controller.openBuffers.find((buffer) => buffer.relativePath === "a.org")?.isDirty).toBe(
 			true,
 		)

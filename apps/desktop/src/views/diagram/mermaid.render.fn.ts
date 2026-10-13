@@ -271,6 +271,8 @@ export const initMermaid = (
 
 	mermaid.initialize({
 		fontFamily: config?.fontFamily ?? "inherit",
+		layout: "dagre",
+		look: "classic",
 		// 禁用日志以避免控制台噪音
 		logLevel: "error",
 		// 使用 loose 允许点击事件等交互功能

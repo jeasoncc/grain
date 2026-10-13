@@ -42,7 +42,7 @@ export { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 export { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
 export { AutoLinkPlugin } from "@lexical/react/LexicalAutoLinkPlugin";
 export { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
-export { HorizontalRulePlugin } from "@lexical/react/LexicalHorizontalRulePlugin";
+export { HorizontalRuleExtension } from "@lexical/extension";
 // TEMPORARILY DISABLED: TablePlugin (has dependency issues)
 // export { TablePlugin } from "@lexical/react/LexicalTablePlugin";
 export { ClearEditorPlugin } from "@lexical/react/LexicalClearEditorPlugin";

@@ -31,8 +31,6 @@ describe("sparse tree query candidates", () => {
 			"itag:global",
 			"itag:Work",
 			"itag:研究",
-			"itag:work",
-			"itag:a.b[+]",
 		])
 		for (const candidate of orgSparseTreeCandidates(source)) {
 			expect(parseOrgSparseTreeQuery(candidate)).not.toBeNull()
@@ -41,6 +39,14 @@ describe("sparse tree query candidates", () => {
 		expect(buildOrgSparseTreePlan(source, query).matchedHeadingStarts).toEqual([
 			source.indexOf("* NEXT"),
 		])
+		expect(buildOrgSparseTreePlan(source, parseOrgSparseTreeQuery("tag:a.b[+]")!).matchedHeadingStarts).toEqual([
+			source.indexOf("* 終了"),
+		])
+		expect(buildOrgSparseTreePlan(source, parseOrgSparseTreeQuery("itag:a.b[+]")!).matchedHeadingStarts).toEqual([])
+		expect(buildOrgSparseTreePlan(source, parseOrgSparseTreeQuery("tag:work")!).matchedHeadingStarts).toEqual([
+			source.indexOf("* 終了"),
+		])
+		expect(buildOrgSparseTreePlan(source, parseOrgSparseTreeQuery("itag:work")!).matchedHeadingStarts).toEqual([])
 	})
 	it.each([
 		"\n",
@@ -73,12 +79,11 @@ describe("sparse tree query candidates", () => {
 			"itag:Local",
 		])
 	})
-	it("defaults states and derives afresh from each source", () => {
-		expect(orgSparseTreeCandidates("")).toEqual(["todo", "todo:TODO", "todo:DONE"])
-		expect(orgSparseTreeCandidates("* Plain :one:")).toEqual([
+	it("replaces declared state and tag candidates when the source changes", () => {
+		expect(orgSparseTreeCandidates("#+TODO: NEXT | FINISHED\n* Plain :one:")).toEqual([
 			"todo",
-			"todo:TODO",
-			"todo:DONE",
+			"todo:NEXT",
+			"todo:FINISHED",
 			"tag:one",
 			"itag:one",
 		])

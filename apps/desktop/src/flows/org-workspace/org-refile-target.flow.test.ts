@@ -26,12 +26,37 @@ const repository = (exists = true) => {
 }
 
 describe("readOrgRefileTargetFlow", () => {
+	it("retains the authorized target path, capability and live guard from immutable setup across scan IO", async () => {
+		const repo = repository()
+		const entered = Promise.withResolvers<void>()
+		const waiting = Promise.withResolvers<void>()
+		vi.mocked(repo.scanWorkspace).mockImplementation(() => async () => {
+			entered.resolve()
+			await waiting.promise
+			return E.right({ directories: [], documents: [{ relativePath: "target.org", revision: "scanned" }] })
+		})
+		const request = { ...input, confirmCurrent: () => true }
+		const task = readOrgRefileTargetFlow(request, repo)()
+		await entered.promise
+		request.targetRelativePath = "other.org"
+		request.sourceRelativePath = "other-source.org"
+		request.capabilityToken = "replacement-grant"
+		request.workspaceRoot = "/replacement-root"
+		request.confirmCurrent = () => false
+		waiting.resolve()
+		expect(await task).toMatchObject({ _tag: "Right", right: { relativePath: "target.org", revision: "fresh" } })
+		expect(repo.readDocument).toHaveBeenCalledExactlyOnceWith({
+			capabilityToken: "grant", relativePath: "target.org", workspaceRoot: "/synthetic",
+		})
+		expect(repo.writeDocument).not.toHaveBeenCalled()
+	})
+
 	it("uses fresh exact-path content/revision and forwards capability on all reads without writes", async () => {
 		const repo = repository()
 		const result = await readOrgRefileTargetFlow(input, repo)()
 		expect(E.isRight(result)).toBe(true)
 		if (E.isRight(result)) {
-			expect(result.right).toMatchObject({ relativePath: "target.org", revision: "fresh" })
+			expect(result.right).toMatchObject({ relativePath: "target.org", revision: "fresh", source: "* Parent\n** Child\n" })
 			expect(result.right.headings.map((h) => h.outlinePath)).toEqual(["Parent", "Parent / Child"])
 		}
 		expect(repo.scanWorkspace).toHaveBeenCalledWith("/synthetic", "grant")
@@ -46,7 +71,7 @@ describe("readOrgRefileTargetFlow", () => {
 		const repo = repository(false)
 		const result = await readOrgRefileTargetFlow(input, repo)()
 		expect(result).toEqual(
-			E.right({ headings: [], relativePath: "target.org", revision: "<missing>" }),
+			E.right({ headings: [], relativePath: "target.org", revision: "<missing>", source: "" }),
 		)
 		if (E.isRight(result)) {
 			expect(orgRefileTargetCandidates(result.right, true).map((c) => c.kind)).toEqual(["root"])

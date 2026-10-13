@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { usePathname } from "next/navigation";
+import { useState, useMemo, useEffect } from "react";
+import { useDocPathname } from "./hooks/use-doc-pathname";
 import { Search, FileText, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { docNavItems, type NavItem } from "./doc-nav-data";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 interface SearchResult {
   item: NavItem;
@@ -16,7 +15,7 @@ interface SearchResult {
 }
 
 export function DocSearch() {
-  const pathname = usePathname();
+  const pathname = useDocPathname();
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
 
@@ -164,7 +163,7 @@ export function DocSearch() {
             <div className="p-8 text-center">
               <Search className="w-8 h-8 text-gray-400 mx-auto mb-3" />
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                未找到与 "<span className="font-medium">{query}</span>" 相关的文档
+                未找到与 &quot;<span className="font-medium">{query}</span>&quot; 相关的文档
               </p>
             </div>
           </div>

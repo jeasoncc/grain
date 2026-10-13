@@ -25,7 +25,7 @@
 //!
 //! // 使用宏生成 Warp 路由
 //! let routes = warp_routes!(db,
-//!     GetWorkspaces => GET "/api/workspaces",
+//!     GetWorkspaces => get ("api" / "workspaces"),
 //! );
 //! ```
 
@@ -33,6 +33,8 @@ pub mod api;
 pub mod db;
 pub mod r#fn;
 pub mod macros;
+pub mod org_clock_context;
+pub mod org_collation;
 pub mod org_filesystem;
 pub mod server;
 pub mod tauri;

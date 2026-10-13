@@ -1,26 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { useDocPathname } from "./hooks/use-doc-pathname";
 import { ThumbsUp, ThumbsDown, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useSafeLocalStorage } from "./hooks/use-safe-local-storage";
+import { useLocalStorageValue } from "./hooks/use-safe-local-storage";
 
 export function DocumentFeedback() {
-  const pathname = usePathname();
-  const [feedback, setFeedback] = useState<"helpful" | "not-helpful" | null>(null);
-  const [submitted, setSubmitted] = useState(false);
-  const { get: getLocalStorage, set: setLocalStorage } = useSafeLocalStorage();
-
-  useEffect(() => {
-    if (pathname === "/docs") return;
-    
-    const saved = getLocalStorage(`docs-feedback-${pathname}`);
-    if (saved === "helpful" || saved === "not-helpful") {
-      setFeedback(saved as "helpful" | "not-helpful");
-      setSubmitted(true);
-    }
-  }, [pathname, getLocalStorage]);
+  const pathname = useDocPathname();
+  const [savedFeedback, setFeedback] = useLocalStorageValue(`docs-feedback-${pathname}`);
+  const submitted = savedFeedback === "helpful" || savedFeedback === "not-helpful";
 
   // 在 /docs 路径上不显示（必须在所有 hooks 之后）
   if (pathname === "/docs") return null;
@@ -29,11 +17,6 @@ export function DocumentFeedback() {
     if (submitted) return;
     
     setFeedback(type);
-    setSubmitted(true);
-    setLocalStorage(`docs-feedback-${pathname}`, type);
-    
-    // 这里可以发送反馈到服务器
-    // fetch('/api/feedback', { method: 'POST', body: JSON.stringify({ pathname, feedback: type }) });
   };
 
   return (

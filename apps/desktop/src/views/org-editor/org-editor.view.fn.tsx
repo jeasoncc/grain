@@ -1,3 +1,9 @@
+import { useOrgModalMinibuffer } from "@/hooks/use-org-modal-minibuffer"
+import { orgTableCommandDefinitions } from "@/flows/org-command/org-table.command"
+import { planOrgTableEdit, planOrgTableNavigation } from "@/pipes/org/org-table.pipe"
+import { structuralOrgSourceLines } from "@/pipes/org/org-text.pipe"
+import type { OrgNativeEditorProjectionHandle } from "@/flows/org-native-window/org-native-editor-projection.types"
+import { orgCompositionHistory } from "@/flows/org-editor-runtime/org-composition-history"
 import {
 	defaultKeymap,
 	history,
@@ -22,6 +28,7 @@ import {
 	Compartment,
 	EditorSelection,
 	EditorState,
+	Facet,
 	type Range,
 	StateEffect,
 	Transaction,
@@ -33,9 +40,18 @@ import {
 	keymap,
 	ViewPlugin,
 	type ViewUpdate,
+	type KeyBinding,
+    drawSelection,
 } from "@codemirror/view"
-import { memo, useEffect, useRef, useState } from "react"
-import { resolveOrgPrefixKey } from "@/flows/org-command/org-prefix-keymap"
+import { memo, useEffect, useLayoutEffect, useRef, useState } from "react"
+import * as E from "fp-ts/Either"
+import { claimOrgInputEvent, isOrgRepeatedKeyEvent, orgInputIsProtected, retainOrgInputKeys, resolveOrgInput } from "@/flows/org-command/org-prefix-keymap"
+import { dispatchOrgCommand, isOrgCommandId, type OrgCommandEditorContext, type OrgCommandId } from "@/flows/org-command/org-workspace-command"
+import { getOrgInputConfiguration, useOrgInputConfiguration, type OrgInputConfigurationSnapshot } from "@/hooks/use-org-input-configuration"
+import { createOrgModalAdapter, type OrgModalAdapter } from "@/flows/org-modal"
+import { useSettings } from "@/hooks/use-settings"
+import { parseOrgBehaviorConfiguration } from "@/pipes/org/org-behavior-configuration.pipe"
+import { extractOrgSubtreeAt } from "@/pipes/org/org-subtree-refile.pipe"
 import type { OrgTodoNoteRequest, OrgTodoNoteResult } from "@/flows/org-command/org-todo-note"
 import {
 	createOrgWindowEffectRegistry,
@@ -47,16 +63,18 @@ import {
 	insertOrgTimestampAt,
 	moveOrgSubtreeAt,
 	type OrgTextEdit,
+	type OrgTextEditBatch,
 	orgFileLinkAt,
 	orgLinkTargetAt,
 	parseOrgTodoKeywords,
 	planOrgTodoTransition,
 	toggleOrgCheckboxAt,
 } from "@/pipes/org"
-import { parseOrgSparseTreeQuery } from "@/pipes/org/org-sparse-tree.pipe"
+import { orgSparseTreeSpecialPropertyRequest, parseOrgSparseTreeQuery } from "@/pipes/org/org-sparse-tree.pipe"
+import { prepareOrgSparseTreeContext } from "@/flows/org-command/org-sparse-tree-context"
 import type { OrgPrefixSession } from "@/types/editor/org-keymap.interface"
 import type { OrgEditorCommandTarget, OrgEditorProps } from "./org-editor.types"
-import { orgHeadingFoldRange } from "./org-fold.pipe"
+import { createOrgHeadingFoldLookup } from "./org-fold.pipe"
 import { editorOffsetFromSource } from "./org-source-offset.pipe"
 import { safeOrgSparseBoundaryChange } from "./org-sparse-boundary.pipe"
 import {
@@ -65,10 +83,22 @@ import {
 	createOrgSparseBatchController,
 	createOrgSparseHistoryController,
 	orgSparseTreeField,
+	orgSparseTreeNativeContextRefresh,
 	setOrgSparseTree,
 } from "./org-sparse-tree.extension"
 import { OrgTodoNote } from "./org-todo-note.view.fn"
+import {
+	allowOrgRemarkNoteSourceTransaction,
+	createOrgRemarkExtension,
+	orgRemarkNoteRangeField,
+	setOrgRemarkNoteRange,
+	setOrgRemarkSnapshot,
+} from "./org-remark.extension"
 
+
+const orgInputConfiguration = Facet.define<OrgInputConfigurationSnapshot, OrgInputConfigurationSnapshot | null>({
+	combine: (values) => values[values.length - 1] ?? null,
+})
 let nextWindowId = 0
 
 const externalValueUpdate = Annotation.define<boolean>()
@@ -267,9 +297,18 @@ const orgDecorations = (view: EditorView): DecorationSet =>
 		true,
 	)
 
-const orgHeadingFolding = foldService.of((state, lineStart) =>
-	orgHeadingFoldRange(state.doc.toString(), lineStart),
-)
+const orgHeadingFolding = () => {
+	// Retain only the current immutable document, not an index for every history state.
+	let document: EditorState["doc"] | null = null
+	let lookup: ReturnType<typeof createOrgHeadingFoldLookup> | null = null
+	return foldService.of((state, lineStart) => {
+		if (!lookup || document !== state.doc) {
+			document = state.doc
+			lookup = createOrgHeadingFoldLookup(document.toString())
+		}
+		return lookup(lineStart)
+	})
+}
 
 const orgHighlightPlugin = ViewPlugin.fromClass(
 	class {
@@ -297,8 +336,16 @@ const editorTheme = EditorView.theme({
 		margin: "0 auto",
 		maxWidth: "820px",
 		minHeight: "100%",
-		padding: "2rem 2rem 6rem",
-		width: "calc(100% - 2rem)",
+		padding: "1.75rem clamp(1rem, 4%, 2rem) 5rem",
+		width: "100%",
+	},
+	".cm-gutters": {
+		backgroundColor: "var(--background)",
+		borderRight: "1px solid color-mix(in srgb, var(--border) 60%, transparent)",
+		color: "var(--muted-foreground)",
+	},
+	".cm-activeLineGutter": {
+		backgroundColor: "color-mix(in srgb, var(--muted) 35%, transparent)",
 	},
 	".cm-org-directive, .cm-org-property": {
 		color: "var(--muted-foreground)",
@@ -336,6 +383,8 @@ const editorTheme = EditorView.theme({
 	},
 })
 
+type ModalSourceOrigin = { readonly isCurrent: () => boolean; readonly restore: () => void }
+
 /**
  * A controlled CodeMirror editor for raw Org text.
  *
@@ -344,6 +393,7 @@ const editorTheme = EditorView.theme({
  */
 export const OrgEditor = memo(function OrgEditor({
 	runtime,
+	nativeProjection,
 	windowId,
 	sessionKey,
 	sessionCache,
@@ -351,15 +401,22 @@ export const OrgEditor = memo(function OrgEditor({
 	value,
 	onChange,
 	onSave,
+	captureSave,
 	todoClock = () => formatOrgLocalTimestamp(new Date()),
 	onTodoRejected,
 	onTodoNoteRequest,
 	getTodoNotePermit,
 	onCommandTarget,
+	onCommand,
 	onPrefixChange,
 	prefixContextKey,
-	prefixTimeoutMs = null,
+	prefixTimeoutMs,
+	inputAdapter,
+	inputScope = "org-source",
+	onInputCommand,
 	documentPath,
+	documentFilename = null,
+	captureClockContext,
 	onOpenFileLink,
 	onOpenOrgLink,
 	onRefileSubtree,
@@ -369,12 +426,32 @@ export const OrgEditor = memo(function OrgEditor({
 	onDeadline,
 	onSetProperty,
 	onSparseTree,
+	onClearSparseTree,
 	onCursorChange,
 	revealTarget,
+	remarkSnapshot,
+	visibleSourceRange,
 	readOnly = false,
+	getEditPermission,
 	ariaLabel = "Org document editor",
 }: OrgEditorProps) {
+	const inputConfiguration = useOrgInputConfiguration()
+	useLayoutEffect(() => retainOrgInputKeys(window), [])
+	const inputConfigurationRef = useRef(inputConfiguration)
+	const inputGenerationChanged = inputConfigurationRef.current.generation !== inputConfiguration.generation
+	inputConfigurationRef.current = inputConfiguration
+	const inputAdapterRef = useRef(inputAdapter)
+	inputAdapterRef.current = inputAdapter
+	const modalAdapterRef = useRef<OrgModalAdapter | null>(null)
+	const modalBindingRef = useRef<{ owner: object; generation: object } | null>(null)
+	const onInputCommandRef = useRef(onInputCommand)
+	onInputCommandRef.current = onInputCommand
+	const inputScopeRef = useRef(inputScope)
+	const inputScopeChanged = inputScopeRef.current !== inputScope
+	inputScopeRef.current = inputScope
 	const initialRuntimeRef = useRef(runtime ?? null)
+	const initialNativeProjectionRef = useRef(nativeProjection)
+	const nativeProjectionHandleRef = useRef<OrgNativeEditorProjectionHandle | null>(null)
 	const windowIdRef = useRef(windowId ?? `org-editor:${++nextWindowId}`)
 	const runtimeHandleRef = useRef<OrgBufferWindowHandle | null>(null)
 	const effectRegistryRef = useRef(createOrgWindowEffectRegistry())
@@ -385,7 +462,10 @@ export const OrgEditor = memo(function OrgEditor({
 	const viewRef = useRef<EditorView | null>(null)
 	const cancelScrollRestoreRef = useRef<() => void>(() => {})
 	const onChangeRef = useRef(onChange)
+	const editPermissionRef = useRef(getEditPermission)
 	const onSaveRef = useRef(onSave)
+	const captureSaveRef = useRef(captureSave)
+	captureSaveRef.current = captureSave
 	const [todoMessage, setTodoMessage] = useState<string | null>(null)
 	const [todoNote, setTodoNote] = useState<OrgTodoNoteRequest | null>(null)
 	const onTodoNoteRequestRef = useRef(onTodoNoteRequest)
@@ -398,18 +478,24 @@ export const OrgEditor = memo(function OrgEditor({
 		target: OrgEditorCommandTarget | null
 	} | null>(null)
 	const localRevisionRef = useRef(0)
+	const commandContextListenersRef = useRef(new Set<() => void>())
+	const sparseContextIdentityRef = useRef({})
+	const sparseContextOwnerRef = useRef<object | null>(null)
 	const noteContextRef = useRef({
 		documentPath,
+		documentFilename,
 		prefixContextKey,
 		readOnly,
 		runtime,
 		sessionKey,
 		windowId,
 	})
+	const commandOwnerRef = useRef<object>(noteContextRef.current)
 	const todoClockRef = useRef(todoClock)
 	const onTodoRejectedRef = useRef(onTodoRejected)
 	const commandTargetRef = useRef<OrgEditorCommandTarget | null>(null)
 	const onCommandTargetRef = useRef(onCommandTarget)
+	const onCommandRef = useRef(onCommand)
 	const onPrefixChangeRef = useRef(onPrefixChange)
 	const prefixTimeoutRef = useRef(prefixTimeoutMs)
 	const clearPrefixRef = useRef<() => void>(() => {})
@@ -422,41 +508,79 @@ export const OrgEditor = memo(function OrgEditor({
 	const onDeadlineRef = useRef(onDeadline)
 	const onSetPropertyRef = useRef(onSetProperty)
 	const onSparseTreeRef = useRef(onSparseTree)
+	const onClearSparseTreeRef = useRef(onClearSparseTree)
 	const onCursorChangeRef = useRef(onCursorChange)
 	const documentPathRef = useRef(documentPath)
+	const documentFilenameRef = useRef(documentFilename)
+	const captureClockContextRef = useRef(captureClockContext)
+	captureClockContextRef.current = captureClockContext
 	const initialSessionRef = useRef({ sessionCache, sessionKey })
 	const initialValueRef = useRef(value)
 	const initialReadOnlyRef = useRef(readOnly)
 	const initialAriaLabelRef = useRef(ariaLabel)
 	const readOnlyCompartmentRef = useRef(new Compartment())
 	const accessibilityCompartmentRef = useRef(new Compartment())
+	const inputCompartmentRef = useRef(new Compartment())
+	const modalCompartmentRef = useRef(new Compartment())
 	const lineSeparatorCompartmentRef = useRef(new Compartment())
 
+	const modalHost = useOrgModalMinibuffer({
+		capture: () => {
+			const editor = viewRef.current
+			const target = commandTargetRef.current
+			const policy = getOrgInputConfiguration()
+			if (!editor || !target || policy.configuration?.modalEngine !== "vim" || inputScopeRef.current !== "org-source") return null
+			const context = target.getCommandContext()
+			const permit = getTodoNotePermitRef.current?.() ?? (() => !initialRuntimeRef.current)
+			if (!context.available || !permit()) return null
+			const handle = runtimeHandleRef.current
+			const nativeHandle = nativeProjectionHandleRef.current
+			const restore = target.captureFocus()
+			const isCurrent = () => {
+				if (viewRef.current !== editor || commandTargetRef.current !== target || !permit() ||
+					runtimeHandleRef.current !== handle || nativeProjectionHandleRef.current !== nativeHandle ||
+					getOrgInputConfiguration().generation !== policy.generation) return false
+				const current = target.getCommandContext()
+				return current.available && current.ownership === context.ownership && current.revision === context.revision && current.content === context.content
+			}
+			return { isCurrent, restore: () => { if (isCurrent()) restore?.() } } satisfies ModalSourceOrigin
+		},
+		isCurrent: (lease) => (lease as ModalSourceOrigin).isCurrent(),
+		restore: (lease) => (lease as ModalSourceOrigin).restore(),
+	})
 	onChangeRef.current = onChange
+	editPermissionRef.current = getEditPermission
 	onSaveRef.current = onSave
 	todoClockRef.current = todoClock
 	onTodoRejectedRef.current = onTodoRejected
 	onTodoNoteRequestRef.current = onTodoNoteRequest
 	getTodoNotePermitRef.current = getTodoNotePermit
 	const previousNoteContext = noteContextRef.current
-	if (
+	const commandOwnerChanged =
 		previousNoteContext.runtime !== runtime ||
 		previousNoteContext.windowId !== windowId ||
 		previousNoteContext.sessionKey !== sessionKey ||
 		previousNoteContext.documentPath !== documentPath ||
-		previousNoteContext.prefixContextKey !== prefixContextKey ||
+		previousNoteContext.documentFilename !== documentFilename ||
+		previousNoteContext.prefixContextKey !== prefixContextKey
+	if (
+		commandOwnerChanged ||
 		previousNoteContext.readOnly !== readOnly
 	) {
 		noteContextRef.current = {
 			documentPath,
+			documentFilename,
 			prefixContextKey,
 			readOnly,
 			runtime,
 			sessionKey,
 			windowId,
 		}
+		if (commandOwnerChanged) commandOwnerRef.current = noteContextRef.current
 	}
+	if (inputGenerationChanged || inputScopeChanged) commandOwnerRef.current = {}
 	onCommandTargetRef.current = onCommandTarget
+	onCommandRef.current = onCommand
 	onPrefixChangeRef.current = onPrefixChange
 	prefixTimeoutRef.current = prefixTimeoutMs
 	onOpenFileLinkRef.current = onOpenFileLink
@@ -468,128 +592,91 @@ export const OrgEditor = memo(function OrgEditor({
 	onDeadlineRef.current = onDeadline
 	onSetPropertyRef.current = onSetProperty
 	onSparseTreeRef.current = onSparseTree
+	onClearSparseTreeRef.current = onClearSparseTree
 	onCursorChangeRef.current = onCursorChange
 	documentPathRef.current = documentPath
+	documentFilenameRef.current = documentFilename
 
-	useEffect(() => {
+	// Capture the viewport before React removes the scroll container from the DOM.
+	useLayoutEffect(() => {
 		const host = hostRef.current
 		if (!host) {
 			return
 		}
 
 		const bufferRuntime = initialRuntimeRef.current
+		const projection = initialNativeProjectionRef.current
 		const readOnlyCompartment = readOnlyCompartmentRef.current
 		const accessibilityCompartment = accessibilityCompartmentRef.current
 		const lineSeparatorCompartment = lineSeparatorCompartmentRef.current
 		const effectRegistry = createOrgWindowEffectRegistry(
-			[readOnlyCompartment, accessibilityCompartment],
-			[setOrgSparseTree, clearOrgSparseTree],
+			[readOnlyCompartment, accessibilityCompartment, inputCompartmentRef.current, modalCompartmentRef.current],
+			[setOrgSparseTree, clearOrgSparseTree, setOrgRemarkSnapshot, setOrgRemarkNoteRange],
 		)
 		effectRegistryRef.current = effectRegistry
+		const knownWindowEffect = (effect: StateEffect<unknown>) =>
+			effectRegistry.knownEffect(effect) || (modalAdapterRef.current?.ownsEffect(effect) ?? false)
 		const applyOrgEdit = (view: EditorView, edit: OrgEditFactory) =>
-			applySourceEdit(view, edit, bufferRuntime !== null)
+			applySourceEdit(view, edit, bufferRuntime !== null || projection !== undefined)
 		const batchController = createOrgSparseBatchController(() => viewRef.current)
-		const transitionTodo = (editor: EditorView): boolean => {
-			if (editor.state.readOnly || noteRequestRef.current) return true
-			const source = editor.state.sliceDoc()
+		const captureLoggingNote: NonNullable<OrgEditorCommandTarget["captureLoggingNote"]> = () => {
+			const editor = viewRef.current
+			const target = commandTargetRef.current
 			const context = noteContextRef.current
+			const owner = commandOwnerRef.current
+			const generation = getOrgInputConfiguration().generation
+			const behavior = useSettings.getState().orgBehaviorConfigurationJson
 			const handle = runtimeHandleRef.current
+			const nativeHandle = nativeProjectionHandleRef.current
 			const revision = bufferRuntime?.revision ?? localRevisionRef.current
-			// Runtime installation (including null-origin normal commits) is not Root authority.
 			const permit = getTodoNotePermitRef.current?.() ?? (() => !bufferRuntime)
-			const cursor = sourceOffsetFromEditor(editor, editor.state.selection.main.head)
-			let stamp: string
-			try {
-				stamp = todoClockRef.current()
-			} catch {
-				setTodoMessage("Invalid local TODO timestamp.")
-				onTodoRejectedRef.current?.("invalid-timestamp")
-				return true
-			}
-			const plan = planOrgTodoTransition(source, cursor, stamp)
-			if (plan.kind === "needs-note") {
-				if (
-					!permit() ||
-					noteContextRef.current !== context ||
-					runtimeHandleRef.current !== handle ||
-					editor.state.readOnly ||
-					editor.state.sliceDoc() !== source ||
-					(bufferRuntime && (bufferRuntime.closed || !handle || bufferRuntime.source !== source)) ||
-					(bufferRuntime?.revision ?? localRevisionRef.current) !== revision
-				) {
-					setTodoMessage("Cannot change TODO state: stale-note-request.")
-					return true
-				}
-				const target = commandTargetRef.current
+			if (!editor || !target || noteRequestRef.current || editor.state.readOnly || !permit() || (projection && !nativeHandle?.isCurrent())) return null
+			const capturedSource = editor.state.sliceDoc()
+			const scopeIsCurrent = () => permit() && viewRef.current === editor && commandTargetRef.current === target &&
+				runtimeHandleRef.current === handle && noteContextRef.current === context && commandOwnerRef.current === owner &&
+				getOrgInputConfiguration().generation === generation && useSettings.getState().orgBehaviorConfigurationJson === behavior &&
+				!editor.state.readOnly && editor.state.sliceDoc() === capturedSource &&
+				(!bufferRuntime || !bufferRuntime.closed && !!handle && bufferRuntime.source === capturedSource) &&
+				(!projection || nativeProjectionHandleRef.current === nativeHandle && !!nativeHandle && nativeHandle.isCurrent()) &&
+				(bufferRuntime?.revision ?? localRevisionRef.current) === revision
+			return (source, label, execute, successMessage) => {
+				if (source !== capturedSource || noteRequestRef.current || !scopeIsCurrent()) return false
 				let active = true
-				const validate = (): OrgTodoNoteResult => {
-					if (
-						!active ||
-						!permit() ||
-						noteRequestRef.current !== request ||
-						viewRef.current !== editor ||
-						commandTargetRef.current !== target ||
-						runtimeHandleRef.current !== handle ||
-						noteContextRef.current !== context ||
-						editor.state.readOnly ||
-						editor.state.sliceDoc() !== source ||
-						(bufferRuntime &&
-							(bufferRuntime.closed || !handle || bufferRuntime.source !== source)) ||
-						(bufferRuntime?.revision ?? localRevisionRef.current) !== revision
-					)
-						return { kind: "rejected", reason: "stale-note-request" }
-					return { kind: "ready" }
-				}
+				let pending = false
+				const listeners = new Set<() => void>()
+				const isCurrent = () => active && noteRequestRef.current === request && scopeIsCurrent()
+				const validate = (): OrgTodoNoteResult => isCurrent() && !pending
+					? { kind: "ready" } : { kind: "rejected", reason: "stale-note-request" }
 				const request: OrgTodoNoteRequest = {
+					label,
+					successMessage: successMessage ?? "Org change accepted in the working copy. Save to write the file.",
+					validate,
+					subscribeValidation: (listener) => {
+						listeners.add(listener)
+						commandContextListenersRef.current.add(listener)
+						return () => { listeners.delete(listener); commandContextListenersRef.current.delete(listener) }
+					},
 					abort: () => {
 						active = false
 						if (noteRequestRef.current === request) noteRequestRef.current = null
+						for (const listener of listeners) listener()
 					},
 					execute: (note) => {
-						const validity = validate()
-						if (validity.kind === "rejected") return validity
-						let finishStamp: string
+						const valid = validate()
+						if (valid.kind !== "ready") return valid
+						pending = true
+						const settle = (result: OrgTodoNoteResult) => {
+							pending = false
+							if (result.kind === "applied" || result.kind === "aborted") request.abort()
+							return result
+						}
 						try {
-							finishStamp = todoClockRef.current()
-						} catch {
-							return { kind: "rejected", reason: "invalid-timestamp" }
+							const result = execute(note, isCurrent)
+							return "then" in result ? result.then(settle, (cause) => settle({ kind: "rejected", reason: cause instanceof Error ? cause.message : String(cause) })) : settle(result)
+						} catch (cause) {
+							return settle({ kind: "rejected", reason: cause instanceof Error ? cause.message : String(cause) })
 						}
-						// The injected clock is an effect boundary and may synchronously revoke authority.
-						const afterClock = validate()
-						if (afterClock.kind === "rejected") return afterClock
-						const finished = planOrgTodoTransition(source, cursor, finishStamp, note)
-						if (finished.kind !== "edit")
-							return {
-								kind: "rejected",
-								reason: finished.kind === "rejected" ? finished.reason : finished.kind,
-							}
-						let nextSource = source
-						for (const edit of [...finished.edits].sort((a, b) => b.from - a.from)) {
-							const insert = bufferRuntime
-								? edit.insert
-								: edit.insert.replace(/\r\n|\r|\n/g, editor.state.lineBreak)
-							nextSource = nextSource.slice(0, edit.from) + insert + nextSource.slice(edit.to)
-						}
-						let applied = false
-						try {
-							applied =
-								target?.applyEdits?.(source, {
-									changes: finished.edits,
-									cursor: finished.edits[0].cursor,
-									requiredVisibleRanges: finished.edits.map(({ from, to }) => ({ from, to })),
-								}) ?? false
-						} catch {
-							// Publication callbacks may throw after the canonical commit succeeded.
-						}
-						applied =
-							applied ||
-							((bufferRuntime?.source ?? editor.state.sliceDoc()) === nextSource &&
-								(bufferRuntime?.revision ?? localRevisionRef.current) > revision)
-						if (!applied) return { kind: "rejected", reason: "commit-refused" }
-						request.abort()
-						return { kind: "applied" }
 					},
-					validate,
 				}
 				noteRequestRef.current = request
 				noteRequestIdRef.current++
@@ -599,6 +686,67 @@ export const OrgEditor = memo(function OrgEditor({
 					localNoteOwnerRef.current = { request, editor, target }
 					setTodoNote(request)
 				}
+				return active
+			}
+		}
+		const transitionTodo = (editor: EditorView): boolean => {
+			if (editor.state.readOnly || noteRequestRef.current) return true
+			const source = editor.state.sliceDoc()
+			const revision = bufferRuntime?.revision ?? localRevisionRef.current
+			const cursor = sourceOffsetFromEditor(editor, editor.state.selection.main.head)
+			const configurationIdentity = sparseContextIdentityRef.current
+			const configuration = parseOrgBehaviorConfiguration(useSettings.getState().orgBehaviorConfigurationJson)
+			if (E.isLeft(configuration)) {
+				setTodoMessage(configuration.left.message)
+				onTodoRejectedRef.current?.("invalid-configuration")
+				return true
+			}
+			const loggingOptions = { logging: configuration.right.logging, inheritance: configuration.right.inheritance }
+			const collectLoggingNote = captureLoggingNote()
+			const rootPermit = getTodoNotePermitRef.current?.() ?? (() => !bufferRuntime)
+			let stamp: string
+			try {
+				stamp = todoClockRef.current()
+			} catch {
+				setTodoMessage("Invalid local TODO timestamp.")
+				onTodoRejectedRef.current?.("invalid-timestamp")
+				return true
+			}
+			if (!rootPermit() || viewRef.current !== editor || sparseContextIdentityRef.current !== configurationIdentity || (bufferRuntime?.revision ?? localRevisionRef.current) !== revision) {
+				setTodoMessage("The originating Source authority changed before the TODO transition.")
+				return true
+			}
+			const plan = planOrgTodoTransition(source, cursor, stamp, undefined, loggingOptions)
+			if (plan.kind === "needs-note") {
+				const accepted = collectLoggingNote?.(source, "TODO note", (note, isCurrent) => {
+					const perform = (): OrgTodoNoteResult => {
+						if (!isCurrent()) return { kind: "rejected", reason: "stale-note-request" }
+						const finished = planOrgTodoTransition(source, cursor, plan.request.stamp, note, loggingOptions)
+						if (finished.kind !== "edit") return { kind: "rejected", reason: finished.kind === "rejected" ? finished.reason : finished.kind }
+						let nextSource = source
+						for (const edit of [...finished.edits].sort((a, b) => b.from - a.from)) {
+							const insert = bufferRuntime || projection ? edit.insert : edit.insert.replace(/\r\n|\r|\n/g, editor.state.lineBreak)
+							nextSource = nextSource.slice(0, edit.from) + insert + nextSource.slice(edit.to)
+						}
+						let applied = false
+						try {
+							applied = commandTargetRef.current?.applyEdits?.(source, {
+								changes: finished.edits, cursor: finished.edits[0].cursor,
+								requiredVisibleRanges: finished.edits.map(({ from, to }) => ({ from, to })),
+							}, "preserve") ?? false
+						} catch { /* A publication callback may throw after canonical acceptance. */ }
+						applied ||= (bufferRuntime?.source ?? editor.state.sliceDoc()) === nextSource &&
+							(bufferRuntime?.revision ?? localRevisionRef.current) > revision
+						return applied ? { kind: "applied" } : { kind: "rejected", reason: "commit-refused" }
+					}
+					if (!projection) return perform()
+					let result: OrgTodoNoteResult = { kind: "rejected", reason: "commit-refused" }
+					return projection.captureSubmission(() => {
+						result = perform()
+						return result.kind === "applied"
+					}).then((outcome) => outcome.kind === "success" ? result : { kind: "rejected", reason: outcome.message })
+				}) ?? false
+				if (!accepted) setTodoMessage("Cannot collect a note from this Source window.")
 				return true
 			}
 			setTodoMessage(
@@ -614,7 +762,7 @@ export const OrgEditor = memo(function OrgEditor({
 					changes: plan.edits,
 					cursor: plan.edits[0].cursor,
 					requiredVisibleRanges: plan.edits.map(({ from, to }) => ({ from, to })),
-				})
+				}, "preserve")
 				if (!applied) {
 					setTodoMessage("TODO change was refused; reveal the affected text and retry.")
 					onTodoRejectedRef.current?.("commit-refused")
@@ -624,10 +772,14 @@ export const OrgEditor = memo(function OrgEditor({
 		}
 		const standaloneHistory = createOrgSparseHistoryController(
 			() => viewRef.current,
-			effectRegistry.knownEffect,
+			knownWindowEffect,
 		)
 		const routeHistory = (isRedo: boolean) => {
 			if (viewRef.current?.state.readOnly) {
+				return true
+			}
+			if (projection) {
+				void nativeProjectionHandleRef.current?.requestHistory(isRedo ? "redo" : "undo")
 				return true
 			}
 			const handle = runtimeHandleRef.current
@@ -666,30 +818,207 @@ export const OrgEditor = memo(function OrgEditor({
 			}
 		}
 		clearPrefixRef.current = () => publishPrefix(null)
-		const onWindowBlur = () => publishPrefix(null)
+		let commandSourceDoc: EditorState["doc"] | null = null
+		let commandSourceSeparator: string | null = null
+		let commandSource = ""
+		let commandContextState: EditorState | null = null
+		let commandContext: OrgCommandEditorContext | null = null
+		const getCommandContext = () => {
+			const editor = viewRef.current
+			const state = editor?.state ?? null
+			const readOnly = !state || state.readOnly || (!bufferRuntime && !projection && editPermissionRef.current?.() === false)
+			const ownership = commandOwnerRef.current
+			const revision = bufferRuntime?.revision ?? localRevisionRef.current
+			const available = Boolean(editor && state?.facet(orgInputConfiguration)?.generation === getOrgInputConfiguration().generation &&
+				(!bufferRuntime || (!bufferRuntime.closed && runtimeHandleRef.current)) &&
+				(!projection || nativeProjectionHandleRef.current?.isCurrent()))
+			const windowId = windowIdRef.current
+			const relativePath = documentPathRef.current ?? ""
+			if (commandContext && commandContextState === state && commandContext.ownership === ownership &&
+				commandContext.revision === revision && commandContext.available === available &&
+				commandContext.readOnly === readOnly &&
+				commandContext.windowId === windowId && commandContext.relativePath === relativePath) return commandContext
+			if (commandSourceDoc !== state?.doc || commandSourceSeparator !== state?.lineBreak) {
+				commandSourceDoc = state?.doc ?? null
+				commandSourceSeparator = state?.lineBreak ?? null
+				commandSource = state
+					? bufferRuntime?.state.doc === state.doc && bufferRuntime.state.lineBreak === state.lineBreak
+						? bufferRuntime.source : state.sliceDoc()
+					: ""
+			}
+			commandContextState = state
+			commandContext = Object.freeze({
+				ownership, revision, available, content: commandSource,
+				cursor: editor ? sourceOffsetFromEditor(editor, editor.state.selection.main.head) : 0,
+				selectionFrom: editor ? sourceOffsetFromEditor(editor, editor.state.selection.main.from) : 0,
+				selectionTo: editor ? sourceOffsetFromEditor(editor, editor.state.selection.main.to) : 0,
+				selectionRangeCount: editor?.state.selection.ranges.length ?? 0,
+				windowId, readOnly, relativePath,
+			})
+			return commandContext
+		}
+		const executeCommand = (id: OrgCommandId): boolean => dispatchOrgCommand(id, {
+			getContext: () => ({
+				hasWorkspace: true, hasDocument: true, isDirty: id === "save", isBusy: false,
+				sidebarVisible: false, inspectorVisible: false, editor: getCommandContext(),
+				blockedReason: noteRequestRef.current ? "A TODO note is awaiting input" : null,
+			}),
+			onRejected: (_id, reason) => setTodoMessage(reason),
+			execute: (command) => {
+				const editor = viewRef.current
+				if (!editor) return false
+				const cursor = sourceOffsetFromEditor(editor, editor.state.selection.main.head)
+				const tableCommand = orgTableCommandDefinitions.find((definition) => definition.id === command)
+				if (tableCommand) {
+					const source = editor.state.sliceDoc()
+					const plan = planOrgTableEdit(source, cursor, tableCommand.operation)
+					if (plan.kind === "rejected") { setTodoMessage(plan.message); return false }
+					return plan.kind === "unchanged" || (commandTargetRef.current?.applyEdits?.(source, plan.batch) ?? false)
+				}
+				switch (command) {
+					case "todo": return transitionTodo(editor)
+					case "checkbox": return applyOrgEdit(editor, toggleOrgCheckboxAt)
+					case "heading-promote": return applyOrgEdit(editor, (content, position) => changeOrgHeadingLevelAt(content, position, -1))
+					case "heading-demote": return applyOrgEdit(editor, (content, position) => changeOrgHeadingLevelAt(content, position, 1))
+					case "subtree-up": return applyOrgEdit(editor, (content, position) => moveOrgSubtreeAt(content, position, -1))
+					case "subtree-down": return applyOrgEdit(editor, (content, position) => moveOrgSubtreeAt(content, position, 1))
+					case "insert-item": return insertOrgMetaItem(editor)
+					case "timestamp-active":
+					case "timestamp-inactive":
+						return applyOrgEdit(editor, (content, position) => insertOrgTimestampAt(content, position, localDate(), command === "timestamp-active"))
+					case "link": {
+						const path = documentPathRef.current
+						if (!path) return false
+						const content = editor.state.sliceDoc()
+						const target = orgLinkTargetAt(content, cursor, path)
+						if (target && onOpenOrgLinkRef.current) { onOpenOrgLinkRef.current(target, cursor); return true }
+						const file = orgFileLinkAt(content, cursor, path)
+						if (!file || !onOpenFileLinkRef.current) return false
+						onOpenFileLinkRef.current(file)
+						return true
+					}
+					case "save": onSaveRef.current(); return true
+					case "narrow-to-subtree": {
+						const subtree = extractOrgSubtreeAt(editor.state.sliceDoc(), cursor)
+						if (!subtree) return false
+						editor.dispatch({
+							annotations: Transaction.addToHistory.of(false),
+							effects: effectRegistry.localEffect(setOrgRemarkNoteRange.of({ from: subtree.from, to: subtree.to })),
+						})
+						return true
+					}
+					case "widen":
+						editor.dispatch({
+							annotations: Transaction.addToHistory.of(false),
+							effects: effectRegistry.localEffect(setOrgRemarkNoteRange.of(null)),
+						})
+						return true
+					case "toggle-fold": return toggleFold(editor)
+					case "fold-all": return foldAll(editor)
+					case "unfold-all": return unfoldAll(editor)
+					case "cycle-folds":
+						return foldedRanges(editor.state).size ? unfoldAll(editor) : foldAll(editor)
+					case "clear-sparse-tree":
+						if (!onClearSparseTreeRef.current) return false
+						onClearSparseTreeRef.current()
+						return true
+					default: {
+						const effects = {
+							archive: onArchiveSubtreeRef.current, deadline: onDeadlineRef.current,
+							property: onSetPropertyRef.current, refile: onRefileSubtreeRef.current,
+							scheduled: onScheduleRef.current, tags: onEditTagsRef.current,
+							"sparse-tree": onSparseTreeRef.current,
+						}
+						const effect = effects[command as keyof typeof effects]
+						if (!effect) return false
+						effect(cursor)
+						return true
+					}
+				}
+			},
+		})
+		const routeCommand = (id: OrgCommandId) => onCommandRef.current ? onCommandRef.current(id) : executeCommand(id)
+		const onWindowBlur = () => { publishPrefix(null); inputAdapterRef.current?.cancel?.(); modalAdapterRef.current?.suspendInput() }
 		window.addEventListener("blur", onWindowBlur)
+		let lastRoutedKey: KeyboardEvent | null = null
+		const fallbackProtected = (editor: EditorView) => editor.composing || Boolean(lastRoutedKey &&
+			(lastRoutedKey.isComposing || lastRoutedKey.keyCode === 229 || lastRoutedKey.defaultPrevented ||
+				lastRoutedKey.getModifierState("AltGraph") || modalAdapterRef.current?.ownsInput(lastRoutedKey.target) ||
+				Boolean((lastRoutedKey.target as Element | null)?.closest?.("[data-org-parameter-session]"))))
+		const navigateTable = (event: KeyboardEvent, editor: EditorView): boolean => {
+			if (event.ctrlKey || event.metaKey || event.altKey || event.key !== "Tab" && event.key !== "Enter" ||
+				event.key === "Enter" && event.shiftKey) return false
+			const line = editor.state.doc.lineAt(editor.state.selection.main.head)
+			if (!/^[ \t]*\|/.test(line.text)) return false
+			const source = editor.state.sliceDoc()
+			const from = sourceOffsetFromEditor(editor, line.from)
+			if (!structuralOrgSourceLines(source).some((row) => row.from === from)) return false
+			if (event.repeat) return true
+			if (editor.state.readOnly || editor.state.selection.ranges.length !== 1 || !editor.state.selection.main.empty) return true
+			const plan = planOrgTableNavigation(source, sourceOffsetFromEditor(editor, editor.state.selection.main.head),
+				event.key === "Enter" ? "next-row" : event.shiftKey ? "previous-field" : "next-field")
+			if (plan.kind === "rejected") { setTodoMessage(plan.message); return true }
+			if (plan.kind === "unchanged") return true
+			const target = commandTargetRef.current
+			const visible = target?.getVisibleSourceRanges?.() ?? []
+			if ((plan.batch.requiredVisibleRanges ?? []).some((range) =>
+				!visible.some((part) => range.from >= part.from && range.to <= part.to))) {
+				setTodoMessage("The complete table must be visible for table navigation.")
+				return true
+			}
+			if (!target?.applyEdits?.(source, plan.batch, "cursor")) {
+				setTodoMessage("Table navigation was not accepted by the current Source.")
+				return true
+			}
+			if (!plan.batch.changes.length) target.revealSourcePosition?.(source, plan.batch.cursor)
+			return true
+		}
 		// Rebuild every view-bound extension before attaching a cached state. In
 		// particular, cached listeners/compartments must never revive old refs.
 		const extensions = [
 			batchController.extension,
 			...(bufferRuntime
 				? [bufferRuntime.historyFreeSourceExtensions]
-				: [
-						history(),
-						lineSeparatorCompartment.of(
-							EditorState.lineSeparator.of(lineSeparatorFor(initialValueRef.current)),
-						),
-					]),
+				: projection
+					? [projection.historyFreeExtensions]
+					: [
+							history(),
+							lineSeparatorCompartment.of(
+								EditorState.lineSeparator.of(lineSeparatorFor(initialValueRef.current)),
+							),
+						]),
 			EditorState.allowMultipleSelections.of(true),
+			drawSelection(),
+			inputCompartmentRef.current.of(orgInputConfiguration.of(inputConfigurationRef.current)),
+			modalCompartmentRef.current.of([]),
+			...(bufferRuntime || projection ? [orgCompositionHistory((editor) =>
+				viewRef.current === editor && (bufferRuntime
+					? !bufferRuntime.closed && runtimeHandleRef.current !== null
+					: nativeProjectionHandleRef.current?.isCurrent() === true))] : []),
 			orgHighlightPlugin,
 			orgSparseTreeField,
-			orgHeadingFolding,
+			orgSparseTreeNativeContextRefresh({
+				isCurrent: (editor) => viewRef.current === editor && getCommandContext().available === true,
+				contextIdentity: () => {
+					if (sparseContextOwnerRef.current !== commandOwnerRef.current) {
+						sparseContextOwnerRef.current = commandOwnerRef.current
+						sparseContextIdentityRef.current = {}
+					}
+					return sparseContextIdentityRef.current
+				},
+				source: () => getCommandContext().content,
+				read: (source, query, signal) => prepareOrgSparseTreeContext(source, query, documentFilenameRef.current, signal,
+					captureClockContextRef.current?.(source, documentFilenameRef.current)),
+				issue: (effect) => effectRegistry.localEffect(effect),
+			}),
+			createOrgRemarkExtension(knownWindowEffect),
+			orgHeadingFolding(),
 			foldGutter(),
 			EditorView.lineWrapping,
 			EditorView.domEventHandlers({
 				beforeinput: (event) => {
 					if (
-						!bufferRuntime ||
+						(!bufferRuntime && !projection) ||
 						(event.inputType !== "historyUndo" && event.inputType !== "historyRedo")
 					) {
 						return false
@@ -698,88 +1027,70 @@ export const OrgEditor = memo(function OrgEditor({
 					publishPrefix(null)
 					return routeHistory(event.inputType === "historyRedo")
 				},
-				blur: () => {
+				blur: (event) => {
 					publishPrefix(null)
+					inputAdapterRef.current?.cancel?.()
+					if (!modalAdapterRef.current?.ownsInput(event.relatedTarget)) modalAdapterRef.current?.suspendInput()
 					return false
 				},
 				compositionstart: () => {
 					publishPrefix(null)
+					inputAdapterRef.current?.cancel?.()
 					return false
 				},
 				keydown: (event, editor) => {
-					// These guards must also fence the later CodeMirror shortcut keymap.
-					const todoShortcut = event.altKey && event.shiftKey && event.key.toLowerCase() === "t"
-					if (
-						todoShortcut &&
-						(event.repeat || event.isComposing || event.keyCode === 229 || event.defaultPrevented)
-					)
-						return true
-					if (event.repeat && (prefix || (event.ctrlKey && event.key.toLowerCase() === "c")))
-						return true
-					const routed = resolveOrgPrefixKey(
-						prefix,
-						{
-							altKey: event.altKey,
-							ctrlKey: event.ctrlKey,
-							defaultPrevented: event.defaultPrevented,
-							isComposing: event.isComposing,
-							key: event.key,
-							keyCode: event.keyCode,
-							metaKey: event.metaKey,
-							shiftKey: event.shiftKey,
-						},
-						Date.now(),
-						editor.state.selection.main.empty,
-						prefixId + 1,
-						prefixTimeoutRef.current,
-					)
-					if (routed.session && routed.session !== prefix) {
-						prefixId = routed.session.id
+					if (!claimOrgInputEvent(event)) return false
+					const input = {
+						altKey: event.altKey, altGraphKey: event.getModifierState("AltGraph"),
+						ctrlKey: event.ctrlKey, defaultPrevented: event.defaultPrevented,
+						isComposing: event.isComposing, key: event.key, keyCode: event.keyCode,
+						metaKey: event.metaKey, repeat: isOrgRepeatedKeyEvent(event), shiftKey: event.shiftKey,
+						isParameterInput: Boolean((event.target as Element | null)?.closest?.("[data-org-parameter-session]")),
 					}
-					publishPrefix(routed.session)
-					if (!routed.consumed) {
+					lastRoutedKey = event
+					const policy = editor.state.facet(orgInputConfiguration)
+					if (orgInputIsProtected(input) || editor.composing) {
+						const guarded = resolveOrgInput({ configuration: policy?.generation === getOrgInputConfiguration().generation ? policy.configuration : null,
+							scope: inputScopeRef.current, current: null, input: { ...input, isComposing: input.isComposing || editor.composing },
+							now: Date.now(), nextId: prefixId + 1, selectionEmpty: editor.state.selection.ranges.every((range) => range.empty),
+							owner: commandOwnerRef.current, generation: getOrgInputConfiguration().generation })
+						publishPrefix(null)
+						if (guarded.consumed) event.preventDefault()
+						return guarded.consumed
+					}
+					if (inputAdapterRef.current?.ownedMinibufferKey?.(event, editor) || modalAdapterRef.current?.ownedMinibufferKey(event)) {
+						publishPrefix(null)
+						return true
+					}
+					if (modalAdapterRef.current?.ownsInput(event.target)) {
+						publishPrefix(null)
 						return false
 					}
-					event.preventDefault()
-					const command = routed.commandId
-					if (!command) {
-						return true
+					if (!policy || policy.generation !== getOrgInputConfiguration().generation) {
+						publishPrefix(null)
+						return false
 					}
-					const cursor = sourceOffsetFromEditor(editor, editor.state.selection.main.head)
-					if (command === "todo") {
-						if (!event.repeat) transitionTodo(editor)
-					} else if (command === "checkbox") {
-						applyOrgEdit(editor, toggleOrgCheckboxAt)
-					} else if (command === "link") {
-						if (!documentPathRef.current) {
+					const routed = resolveOrgInput({
+						configuration: policy.configuration, scope: inputScopeRef.current, current: prefix, input,
+						now: Date.now(), selectionEmpty: editor.state.selection.ranges.every((range) => range.empty),
+						nextId: prefixId + 1, timeoutMs: prefixTimeoutRef.current,
+						owner: commandOwnerRef.current, generation: policy.generation,
+					})
+					if (routed.session && routed.session !== prefix) prefixId = routed.session.id
+					publishPrefix(routed.session)
+					if (!routed.consumed) {
+						if (inputAdapterRef.current?.modalKey?.(event, editor) || modalAdapterRef.current?.modalKey(event)) return true
+						if ((!routed.protected || input.repeat && !orgInputIsProtected(input)) && navigateTable(event, editor)) {
+							event.preventDefault()
 							return true
 						}
-						const content = editor.state.sliceDoc()
-						const orgTarget = orgLinkTargetAt(content, cursor, documentPathRef.current)
-						if (orgTarget && onOpenOrgLinkRef.current) {
-							onOpenOrgLinkRef.current(orgTarget)
-						} else {
-							const fileTarget = orgFileLinkAt(content, cursor, documentPathRef.current)
-							if (fileTarget) {
-								onOpenFileLinkRef.current?.(fileTarget)
-							}
-						}
-					} else if (command === "timestamp-active" || command === "timestamp-inactive") {
-						applyOrgEdit(editor, (content, position) =>
-							insertOrgTimestampAt(content, position, localDate(), command === "timestamp-active"),
-						)
-					} else if (command === "sparse-tree") {
-						onSparseTreeRef.current?.(cursor)
-					} else if (!editor.state.readOnly) {
-						const callbacks = {
-							archive: onArchiveSubtreeRef.current,
-							deadline: onDeadlineRef.current,
-							property: onSetPropertyRef.current,
-							refile: onRefileSubtreeRef.current,
-							scheduled: onScheduleRef.current,
-							tags: onEditTagsRef.current,
-						}
-						callbacks[command]?.(cursor)
+						return false
+					}
+					const command = routed.commandId
+					event.preventDefault()
+					if (command) {
+						const handled = isOrgCommandId(command) ? routeCommand(command) : onInputCommandRef.current?.(command) ?? false
+						if (!handled) setTodoMessage(`Input command "${command}" is unavailable in this window.`)
 					}
 					return true
 				},
@@ -802,7 +1113,7 @@ export const OrgEditor = memo(function OrgEditor({
 					const orgTarget = orgLinkTargetAt(content, sourcePosition, documentPathRef.current)
 					if (orgTarget && onOpenOrgLinkRef.current) {
 						event.preventDefault()
-						onOpenOrgLinkRef.current(orgTarget)
+						onOpenOrgLinkRef.current(orgTarget, sourcePosition)
 						return true
 					}
 					const fileTarget = orgFileLinkAt(content, sourcePosition, documentPathRef.current)
@@ -814,8 +1125,8 @@ export const OrgEditor = memo(function OrgEditor({
 					return true
 				},
 			}),
-			keymap.of([
-				...(bufferRuntime
+			keymap.of(([
+				...(bufferRuntime || projection
 					? [
 							{ key: "Mod-z", preventDefault: true, run: () => routeHistory(false) },
 							{ key: "Mod-Shift-z", preventDefault: true, run: () => routeHistory(true) },
@@ -830,9 +1141,10 @@ export const OrgEditor = memo(function OrgEditor({
 				{
 					key: "Tab",
 					run: (editor) => {
+						if (fallbackProtected(editor)) return false
 						const line = editor.state.doc.lineAt(editor.state.selection.main.head)
 						if (/^\*+\s/.test(line.text)) {
-							toggleFold(editor)
+							routeCommand("toggle-fold")
 							return true
 						}
 						return indentMore(editor)
@@ -841,95 +1153,24 @@ export const OrgEditor = memo(function OrgEditor({
 				{
 					key: "Shift-Tab",
 					preventDefault: true,
-					run: (editor) => {
-						let hasFoldedRange = false
-						foldedRanges(editor.state).between(0, editor.state.doc.length, () => {
-							hasFoldedRange = true
-						})
-						if (hasFoldedRange) {
-							unfoldAll(editor)
-						} else {
-							foldAll(editor)
-						}
-						return true
-					},
+					run: (editor) => !fallbackProtected(editor) && routeCommand("cycle-folds"),
 				},
-				{
-					key: "Alt-Enter",
-					preventDefault: true,
-					run: insertOrgMetaItem,
-				},
+				// Org shortcuts are routed above, before CodeMirror's default keymap.
 				{
 					key: "Enter",
-					run: continueOrgList,
-				},
-				{
-					key: "Alt-ArrowLeft",
-					run: (editor) =>
-						applyOrgEdit(editor, (content, cursor) => changeOrgHeadingLevelAt(content, cursor, -1)),
-				},
-				{
-					key: "Alt-ArrowRight",
-					run: (editor) =>
-						applyOrgEdit(editor, (content, cursor) => changeOrgHeadingLevelAt(content, cursor, 1)),
-				},
-				{
-					key: "Alt-ArrowUp",
-					run: (editor) =>
-						applyOrgEdit(editor, (content, cursor) => moveOrgSubtreeAt(content, cursor, -1)),
-				},
-				{
-					key: "Alt-ArrowDown",
-					run: (editor) =>
-						applyOrgEdit(editor, (content, cursor) => moveOrgSubtreeAt(content, cursor, 1)),
-				},
-				{
-					key: "Alt-Shift-t",
-					preventDefault: true,
-					run: transitionTodo,
-				},
-				{
-					key: "Mod-Shift-x",
-					run: (editor) => applyOrgEdit(editor, toggleOrgCheckboxAt),
-				},
-				{
-					key: "Mod-Shift-r",
-					preventDefault: true,
-					run: (editor) => {
-						if (editor.state.readOnly || !onRefileSubtreeRef.current) {
-							return false
-						}
-						onRefileSubtreeRef.current(
-							sourceOffsetFromEditor(editor, editor.state.selection.main.head),
-						)
-						return true
-					},
-				},
-				{
-					key: "Mod-Alt-a",
-					preventDefault: true,
-					run: (editor) => {
-						if (editor.state.readOnly || !onArchiveSubtreeRef.current) {
-							return false
-						}
-						onArchiveSubtreeRef.current(
-							sourceOffsetFromEditor(editor, editor.state.selection.main.head),
-						)
-						return true
-					},
-				},
-				{
-					key: "Mod-s",
-					preventDefault: true,
-					run: () => {
-						onSaveRef.current()
-						return true
-					},
+					run: (editor) => !fallbackProtected(editor) && continueOrgList(editor),
 				},
 				...foldKeymap,
 				...defaultKeymap,
-			]),
-			...(bufferRuntime
+			] satisfies readonly KeyBinding[]).map((binding: KeyBinding): KeyBinding => ({
+				...binding,
+				// Conditional prevention must follow input ownership, not a static
+				// keymap flag that also swallows IME/AltGraph/native reader events.
+				preventDefault: false,
+				run: (editor) => !fallbackProtected(editor) && ((binding.run?.(editor) ?? false) || binding.preventDefault === true),
+				shift: binding.shift ? (editor) => !fallbackProtected(editor) && (binding.shift!(editor) || binding.preventDefault === true) : undefined,
+			}))),
+			...(bufferRuntime || projection
 				? [standaloneHistory.presentationExtension]
 				: [standaloneHistory.extension]),
 			readOnlyCompartment.of([
@@ -940,15 +1181,20 @@ export const OrgEditor = memo(function OrgEditor({
 				EditorView.contentAttributes.of({
 					"aria-label": initialAriaLabelRef.current,
 					"aria-multiline": "true",
+					tabindex: "0",
 				}),
 			),
 			EditorView.updateListener.of((update) => {
-				if (update.docChanged) localRevisionRef.current++
+				if (update.docChanged) {
+					publishPrefix(null)
+					localRevisionRef.current++
+					for (const listener of commandContextListenersRef.current) listener()
+				}
 				const isExternalUpdate = update.transactions.some(
 					(transaction) => transaction.annotation(externalValueUpdate) === true,
 				)
-				if (!bufferRuntime && update.docChanged && !isExternalUpdate) {
-					onChangeRef.current(update.state.sliceDoc())
+				if (!bufferRuntime && !projection && update.docChanged && !isExternalUpdate) {
+					onChangeRef.current?.(update.state.sliceDoc())
 				}
 				if (update.selectionSet || update.docChanged) {
 					onCursorChangeRef.current?.(
@@ -1060,21 +1306,46 @@ export const OrgEditor = memo(function OrgEditor({
 							handle.dispatchTransactions(transactions)
 						},
 					}
-				: {
-						dispatchTransactions: (transactions: readonly Transaction[], localView: EditorView) => {
-							standaloneHistory.dispatch(transactions, localView)
-						},
-					}),
+				: projection
+					? {
+							dispatchTransactions: (transactions: readonly Transaction[]) => {
+								nativeProjectionHandleRef.current?.dispatchTransactions(transactions)
+							},
+						}
+					: {
+							dispatchTransactions: (transactions: readonly Transaction[], localView: EditorView) => {
+								if (transactions.some((tr) => !allowOrgRemarkNoteSourceTransaction(tr))) return
+								if (editPermissionRef.current?.() === false && transactions.some((tr) =>
+									!tr.annotation(externalValueUpdate) && (tr.docChanged || tr.startState.lineBreak !== tr.state.lineBreak))) return
+								standaloneHistory.dispatch(transactions, localView)
+							},
+						}),
 		})
+		const cancelForeignConsumedKey = (event: KeyboardEvent) => {
+			// A higher-priority CM/DOM owner may consume a key without running our handler.
+			if (event.defaultPrevented && lastRoutedKey !== event) publishPrefix(null)
+			lastRoutedKey = null
+		}
+		view.contentDOM.addEventListener("keydown", cancelForeignConsumedKey)
 		if (bufferRuntime) {
 			runtimeHandleRef.current = bufferRuntime.attachWindow({
 				knownLocalEffects: [EditorView.announce],
-				knownReconfigure: effectRegistry.knownEffect,
+				knownReconfigure: knownWindowEffect,
 				preflightSourceTransaction: (tr) =>
-					allowOrgSparseTreeSourceTransaction(tr, effectRegistry.knownEffect),
+					allowOrgSparseTreeSourceTransaction(tr, knownWindowEffect) &&
+					allowOrgRemarkNoteSourceTransaction(tr),
 				view,
+				readViewport: () => ({ scrollTop: view.scrollDOM.scrollTop, scrollLeft: view.scrollDOM.scrollLeft }),
 				windowId: windowIdRef.current,
 			})
+		}
+		if (projection) {
+			nativeProjectionHandleRef.current = projection.attach(
+				view,
+				(effect) => effect.is(EditorView.announce) || knownWindowEffect(effect),
+				(tr) => allowOrgSparseTreeSourceTransaction(tr, knownWindowEffect) &&
+					allowOrgRemarkNoteSourceTransaction(tr),
+			)
 		}
 		if (localState && (bufferRuntime || snapshot?.windowState)) {
 			const effects: StateEffect<unknown>[] = []
@@ -1087,6 +1358,8 @@ export const OrgEditor = memo(function OrgEditor({
 				view.dispatch({ effects })
 			}
 		}
+		const mountScrollTop = view.scrollDOM.scrollTop
+		const mountScrollLeft = view.scrollDOM.scrollLeft
 		let scrollFrame: number | null = null
 		const cancelScrollRestore = () => {
 			if (scrollFrame !== null) {
@@ -1112,6 +1385,163 @@ export const OrgEditor = memo(function OrgEditor({
 		onCursorChangeRef.current?.(sourceOffsetFromEditor(view, view.state.selection.main.head))
 		viewRef.current = view
 		const commandTarget: OrgEditorCommandTarget = {
+			captureLoggingNote,
+			subscribeCommandContext: (listener) => {
+				commandContextListenersRef.current.add(listener)
+				return () => { commandContextListenersRef.current.delete(listener) }
+			},
+			getCommandContext: () => {
+				const context = getCommandContext()
+				return viewRef.current === view ? context : { ...context, available: false }
+			},
+			captureSourceTransform: () => {
+				const context = commandTarget.getCommandContext()
+				if (!context.available || !context.windowId) return null
+				const selection = view.state.selection
+				const ownership = commandOwnerRef.current
+				const handle = runtimeHandleRef.current
+				const nativeHandle = nativeProjectionHandleRef.current
+				const configurationGeneration = getOrgInputConfiguration().generation
+				const behaviorGeneration = sparseContextIdentityRef.current
+				const snapshot = Object.freeze({
+					content: context.content, relativePath: context.relativePath, windowId: context.windowId,
+					revision: context.revision, configurationGeneration, readOnly: context.readOnly, cursor: context.cursor,
+					selection: Object.freeze({
+						mainIndex: selection.mainIndex,
+						ranges: Object.freeze(selection.ranges.map((range) => Object.freeze({
+							anchor: sourceOffsetFromEditor(view, range.anchor), head: sourceOffsetFromEditor(view, range.head),
+							assoc: range.assoc, bidiLevel: range.bidiLevel, goalColumn: range.goalColumn,
+							undirectional: range.undirectional,
+						}))),
+					}),
+				})
+				const isCurrent = () => viewRef.current === view &&
+					commandOwnerRef.current === ownership && runtimeHandleRef.current === handle &&
+					nativeProjectionHandleRef.current === nativeHandle &&
+					getOrgInputConfiguration().generation === configurationGeneration &&
+					sparseContextIdentityRef.current === behaviorGeneration &&
+					(bufferRuntime?.revision ?? localRevisionRef.current) === snapshot.revision &&
+					getCommandContext().available && getCommandContext().content === snapshot.content &&
+					(!bufferRuntime || bufferRuntime.source === snapshot.content)
+				let submitted = false
+				return Object.freeze({
+					snapshot, isCurrent,
+					apply: async (batch: OrgTextEditBatch, policy: "preserve" | "cursor" = "preserve") => {
+						if (submitted || !isCurrent() || view.state.readOnly || !view.state.selection.eq(selection, true) ||
+							view.state.selection.ranges.some((range, index) => range.bidiLevel !== selection.ranges[index].bidiLevel ||
+								range.goalColumn !== selection.ranges[index].goalColumn || range.undirectional !== selection.ranges[index].undirectional)) return false
+						submitted = true
+						const run = () => {
+							if (!isCurrent() || view.state.readOnly) return false
+							try { return commandTarget.applyEdits?.(snapshot.content, batch, policy) ?? false }
+							catch (error) {
+								// Native optimistic state is never canonical acceptance.
+								if (projection || !bufferRuntime) throw error
+								let expected = snapshot.content
+								for (const change of [...batch.changes].sort((a, b) => b.from - a.from))
+									expected = expected.slice(0, change.from) + change.insert + expected.slice(change.to)
+								return viewRef.current === view && runtimeHandleRef.current === handle &&
+									!bufferRuntime.closed && bufferRuntime.revision > snapshot.revision && bufferRuntime.source === expected
+							}
+						}
+						return projection ? (await projection.captureSubmission(run)).kind === "success" : run()
+					},
+				})
+			},
+			getVisibleSourceRanges: () => {
+				if (viewRef.current !== view) return []
+				const hidden: { from: number; to: number }[] = []
+				foldedRanges(view.state).between(0, view.state.doc.length, (from, to) => { hidden.push({ from, to }) })
+				hidden.push(...(view.state.field(orgSparseTreeField)?.hiddenRanges ?? []))
+				hidden.push(...(view.state.field(orgRemarkNoteRangeField)?.hiddenRanges ?? []))
+				hidden.sort((first, second) => first.from - second.from)
+				const ranges: { from: number; to: number }[] = []
+				let position = 0
+				for (const range of hidden) {
+					if (range.from > position) ranges.push({
+						from: sourceOffsetFromEditor(view, position),
+						to: sourceOffsetFromEditor(view, range.from) - 1,
+					})
+					position = Math.max(position, range.to)
+				}
+				ranges.push({ from: sourceOffsetFromEditor(view, position), to: view.state.sliceDoc().length })
+				return ranges
+			},
+			revealSourcePosition: (expectedSource, position) => {
+				if (viewRef.current !== view || !getCommandContext().available || view.state.sliceDoc() !== expectedSource ||
+					!Number.isInteger(position) || position < 0 || position > expectedSource.length ||
+					(expectedSource[position - 1] === "\r" && expectedSource[position] === "\n")) return false
+				const offset = editorOffsetFromSource(expectedSource, position, view.state.lineBreak)
+				view.dispatch({
+					annotations: Transaction.addToHistory.of(false),
+					selection: { anchor: offset },
+					effects: effectRegistry.scrollIntoView(offset, { y: "center" }),
+				})
+				return view.state.selection.main.head === offset
+			},
+			executeCommand: (id) => viewRef.current === view ? executeCommand(id) : false,
+			captureCommand: (id) => {
+				if (viewRef.current !== view || !getCommandContext().available) return null
+				const source = view.state.sliceDoc()
+				const selection = view.state.selection
+				const revision = bufferRuntime?.revision ?? localRevisionRef.current
+				const ownership = commandOwnerRef.current
+				const configurationGeneration = getOrgInputConfiguration().generation
+				const behaviorGeneration = sparseContextIdentityRef.current
+				const handle = runtimeHandleRef.current
+				const nativeHandle = nativeProjectionHandleRef.current
+				const save = id === "save" ? captureSaveRef.current?.() ?? null : null
+				const run = () => {
+					if (
+						viewRef.current !== view ||
+						!getCommandContext().available ||
+						getOrgInputConfiguration().generation !== configurationGeneration ||
+						sparseContextIdentityRef.current !== behaviorGeneration ||
+						commandOwnerRef.current !== ownership ||
+						runtimeHandleRef.current !== handle ||
+						nativeProjectionHandleRef.current !== nativeHandle ||
+						view.state.sliceDoc() !== source ||
+						!view.state.selection.eq(selection) ||
+						(bufferRuntime?.revision ?? localRevisionRef.current) !== revision
+					) return false
+					if (id === "save") return save ? save() : false
+					return projection
+						? projection.captureSubmission(() => executeCommand(id)).then((outcome) => outcome.kind === "success")
+						: executeCommand(id)
+				}
+				return run
+			},
+			captureFocus: () => {
+				if (viewRef.current !== view || !getCommandContext().available) return null
+				const source = view.state.sliceDoc()
+				const revision = bufferRuntime?.revision ?? localRevisionRef.current
+				const selection = view.state.selection
+				const { scrollTop, scrollLeft } = view.scrollDOM
+				const scrollSnapshot = effectRegistry.scrollSnapshot(view)
+				const ownership = commandOwnerRef.current
+				const configurationGeneration = getOrgInputConfiguration().generation
+				const handle = runtimeHandleRef.current
+				return () => {
+					if (
+						viewRef.current !== view || !getCommandContext().available ||
+						getOrgInputConfiguration().generation !== configurationGeneration ||
+						commandOwnerRef.current !== ownership ||
+						runtimeHandleRef.current !== handle ||
+						view.state.sliceDoc() !== source ||
+						(bufferRuntime?.revision ?? localRevisionRef.current) !== revision
+					) return false
+					cancelScrollRestore()
+					view.focus()
+					view.dispatch({
+						annotations: Transaction.addToHistory.of(false),
+						effects: scrollSnapshot,
+						...(!view.state.selection.eq(selection) ? { selection } : {}),
+					})
+					view.scrollDOM.scrollTop = scrollTop
+					view.scrollDOM.scrollLeft = scrollLeft
+					return true
+				}
+			},
 			applyEdit: (expectedSource, edit) => {
 				if (
 					viewRef.current !== view ||
@@ -1130,7 +1560,7 @@ export const OrgEditor = memo(function OrgEditor({
 				) {
 					return false
 				}
-				const insert = bufferRuntime
+				const insert = bufferRuntime || projection
 					? edit.insert
 					: edit.insert.replace(/\r\n|\r|\n/g, view.state.lineBreak)
 				const nextSource =
@@ -1152,7 +1582,7 @@ export const OrgEditor = memo(function OrgEditor({
 				})
 				return view.state.sliceDoc() === nextSource
 			},
-			applyEdits: (expectedSource, batch) => {
+			applyEdits: (expectedSource, batch, selectionPolicy = "cursor") => {
 				if (
 					(bufferRuntime &&
 						(bufferRuntime.closed ||
@@ -1211,7 +1641,7 @@ export const OrgEditor = memo(function OrgEditor({
 				if (!changes.length) return validOffset(expectedSource, batch.cursor)
 				const normalized = changes.map((change) => ({
 					...change,
-					insert: bufferRuntime
+					insert: bufferRuntime || projection
 						? change.insert
 						: change.insert.replace(/\r\n|\r|\n/g, view.state.lineBreak),
 				}))
@@ -1231,24 +1661,25 @@ export const OrgEditor = memo(function OrgEditor({
 				for (const change of [...normalized].reverse())
 					nextSource =
 						nextSource.slice(0, change.from) + change.insert + nextSource.slice(change.to)
-				if (!validOffset(nextSource, batch.cursor)) return false
+				if (selectionPolicy === "cursor" && !validOffset(nextSource, batch.cursor)) return false
+				const editorChanges = normalized.map(({ from, to, insert }) => ({
+					from: editorOffsetFromSource(expectedSource, from, view.state.lineBreak),
+					insert,
+					to: editorOffsetFromSource(expectedSource, to, view.state.lineBreak),
+				}))
+				const nextSelection = selectionPolicy === "preserve"
+					? view.state.selection.map(view.state.changes(editorChanges))
+					: EditorSelection.single(editorOffsetFromSource(nextSource, batch.cursor, view.state.lineBreak))
 				return batchController.run(() => {
 					view.dispatch({
 						annotations: isolateHistory.of("full"),
-						changes: normalized.map(({ from, to, insert }) => ({
-							from: editorOffsetFromSource(expectedSource, from, view.state.lineBreak),
-							insert,
-							to: editorOffsetFromSource(expectedSource, to, view.state.lineBreak),
-						})),
+						changes: editorChanges,
 						scrollIntoView: true,
-						selection: {
-							anchor: editorOffsetFromSource(nextSource, batch.cursor, view.state.lineBreak),
-						},
+						selection: nextSelection,
 					})
 					return (
 						view.state.sliceDoc() === nextSource &&
-						view.state.selection.main.head ===
-							editorOffsetFromSource(nextSource, batch.cursor, view.state.lineBreak)
+						view.state.selection.eq(nextSelection, true)
 					)
 				})
 			},
@@ -1271,7 +1702,9 @@ export const OrgEditor = memo(function OrgEditor({
 					})
 					return true
 				}
-				const query = parseOrgSparseTreeQuery(operation.query)
+				const behavior = parseOrgBehaviorConfiguration(useSettings.getState().orgBehaviorConfigurationJson)
+				if (E.isLeft(behavior)) return false
+				const query = parseOrgSparseTreeQuery(operation.query, behavior.right.inheritance)
 				if (!query) {
 					return false
 				}
@@ -1280,6 +1713,7 @@ export const OrgEditor = memo(function OrgEditor({
 					effects: effectRegistry.localEffect(
 						setOrgSparseTree.of({
 							query,
+							nativeContext: operation.nativeContext,
 							restoreSelection: active ? active.restoreSelection : view.state.selection,
 						}),
 					),
@@ -1294,9 +1728,36 @@ export const OrgEditor = memo(function OrgEditor({
 		}
 		commandTargetRef.current = commandTarget
 		onCommandTargetRef.current?.(commandTarget)
+		const unsubscribeConfiguration = useSettings.subscribe((current, previous) => {
+			if (current.orgBehaviorConfigurationJson === previous.orgBehaviorConfigurationJson &&
+				current.orgKeymapConfigurationJson === previous.orgKeymapConfigurationJson) return
+			// Observe every transition, including equal-JSON configuration ABAs.
+			sparseContextIdentityRef.current = {}
+			noteRequestRef.current?.abort()
+			const sparse = view.state.field(orgSparseTreeField)
+			if (sparse?.contextStatus === "pending") {
+				view.dispatch({
+					annotations: Transaction.addToHistory.of(false),
+					effects: effectRegistry.localEffect(clearOrgSparseTree.of(null)),
+				})
+			}
+		})
 		return () => {
+			unsubscribeConfiguration()
+			inputAdapterRef.current?.cancel?.()
+			modalAdapterRef.current?.destroy()
+			modalAdapterRef.current = null
+			modalBindingRef.current = null
 			noteRequestRef.current?.abort()
 			commandTargetRef.current = null
+			// An unmeasured, untouched mount still owns the cached viewport.
+			// Preserve newer DOM scroll intent instead of replaying an old bookmark.
+			const pendingScrollRestore =
+				scrollFrame !== null &&
+				view.scrollDOM.scrollTop === mountScrollTop &&
+				view.scrollDOM.scrollLeft === mountScrollLeft
+					? snapshot
+					: undefined
 			cancelScrollRestore()
 			cancelScrollRestoreRef.current = () => {}
 			for (const event of ["scroll", "wheel", "touchstart", "pointerdown", "keydown"]) {
@@ -1306,14 +1767,15 @@ export const OrgEditor = memo(function OrgEditor({
 				cache.set(key, {
 					...snapshot,
 					runtimeOwner: bufferRuntime ?? undefined,
-					scrollLeft: view.scrollDOM.scrollLeft,
-					scrollTop: view.scrollDOM.scrollTop,
+					scrollLeft: pendingScrollRestore?.scrollLeft ?? view.scrollDOM.scrollLeft,
+					scrollTop: pendingScrollRestore?.scrollTop ?? view.scrollDOM.scrollTop,
 					source: bufferRuntime?.source ?? view.state.sliceDoc(),
 					state: bufferRuntime?.state ?? view.state,
 					windowState: bufferRuntime ? view.state : undefined,
 				})
 			}
 			window.removeEventListener("blur", onWindowBlur)
+			view.contentDOM.removeEventListener("keydown", cancelForeignConsumedKey)
 			publishPrefix(null)
 			if (prefixTimer !== null) {
 				clearTimeout(prefixTimer)
@@ -1323,18 +1785,54 @@ export const OrgEditor = memo(function OrgEditor({
 			viewRef.current = null
 			runtimeHandleRef.current?.detach()
 			runtimeHandleRef.current = null
+			nativeProjectionHandleRef.current?.detach()
+			nativeProjectionHandleRef.current = null
 			view.destroy()
 		}
 	}, [])
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: context changes invalidate the window-local prefix session.
-	useEffect(() => {
+	useLayoutEffect(() => {
 		clearPrefixRef.current()
-	}, [documentPath, prefixContextKey, readOnly, prefixTimeoutMs])
+		inputAdapter?.cancel?.()
+		const view = viewRef.current
+		if (view) {
+			const owner = commandOwnerRef.current
+			const generation = inputConfiguration.generation
+			const enabled = inputScope === "org-source" && inputConfiguration.configuration?.modalEngine === "vim"
+			const binding = modalBindingRef.current
+			const replace = !binding || binding.owner !== owner || binding.generation !== generation || !enabled
+			let modal = modalAdapterRef.current
+			if (replace) {
+				modal?.destroy()
+				modal = enabled && (initialRuntimeRef.current || initialNativeProjectionRef.current)
+					? createOrgModalAdapter({
+						...modalHost,
+						captureSave: () => captureSaveRef.current?.() ?? null,
+						isCurrent: () => viewRef.current === view && commandOwnerRef.current === owner &&
+							getOrgInputConfiguration().generation === generation &&
+							view.state.facet(orgInputConfiguration)?.generation === generation &&
+							(!initialRuntimeRef.current || !initialRuntimeRef.current.closed && !!runtimeHandleRef.current) &&
+							(!initialNativeProjectionRef.current || (nativeProjectionHandleRef.current?.isCurrent() ?? false)),
+						requestHistory: (operation) => nativeProjectionHandleRef.current
+							? nativeProjectionHandleRef.current.requestHistory(operation)
+							: runtimeHandleRef.current?.[operation]() ?? false,
+						reportError: setTodoMessage,
+					}) : null
+				modalAdapterRef.current = modal
+				modalBindingRef.current = modal ? { owner, generation } : null
+				if (enabled && !modal) setTodoMessage("Vim requires an owned Org Source buffer/window.")
+			} else modal?.suspendInput()
+			const effects = [effectRegistryRef.current.reconfigure(inputCompartmentRef.current, orgInputConfiguration.of(inputConfiguration))]
+			if (replace) effects.push(effectRegistryRef.current.reconfigure(modalCompartmentRef.current, modal?.extensions ?? []))
+			view.dispatch({ effects })
+		}
+		for (const listener of commandContextListenersRef.current) listener()
+		return () => { inputAdapter?.cancel?.() }
+	}, [inputConfiguration, inputAdapter, inputScope, documentPath, prefixContextKey, readOnly, prefixTimeoutMs])
 
 	useEffect(() => {
 		const view = viewRef.current
-		if (initialRuntimeRef.current || !view || view.state.sliceDoc() === value) {
+		if (initialRuntimeRef.current || initialNativeProjectionRef.current || !view || view.state.sliceDoc() === value) {
 			return
 		}
 
@@ -1415,6 +1913,42 @@ export const OrgEditor = memo(function OrgEditor({
 		}
 	}, [value])
 
+	useLayoutEffect(() => {
+		const view = viewRef.current, sparse = view?.state.field(orgSparseTreeField, false)
+		if (!view || !sparse) return
+		const request = orgSparseTreeSpecialPropertyRequest(view.state.sliceDoc(), sparse.query)
+		if (!request.properties.includes("FILE")) return
+		// Filename changes are readonly metadata changes even when Source is identical.
+		// Retire an in-flight/ready FILE column without relocating any current range.
+		const specialProperties = new Map(sparse.nativeContext?.specialProperties)
+		specialProperties.delete("FILE")
+		view.dispatch({
+			annotations: Transaction.addToHistory.of(false),
+			effects: effectRegistryRef.current.localEffect(setOrgSparseTree.of({
+				query: sparse.query, restoreSelection: sparse.restoreSelection,
+				nativeContext: { compareStrings: sparse.nativeContext?.compareStrings, specialProperties },
+			})),
+		})
+	}, [documentFilename])
+
+	useLayoutEffect(() => {
+		const view = viewRef.current
+		if (!view || (remarkSnapshot && view.state.sliceDoc() !== remarkSnapshot.source)) return
+		view.dispatch({
+			annotations: Transaction.addToHistory.of(false),
+			effects: effectRegistryRef.current.localEffect(setOrgRemarkSnapshot.of(remarkSnapshot ?? null)),
+		})
+	}, [remarkSnapshot])
+
+	useLayoutEffect(() => {
+		const view = viewRef.current
+		if (!view) return
+		view.dispatch({
+			annotations: Transaction.addToHistory.of(false),
+			effects: effectRegistryRef.current.localEffect(setOrgRemarkNoteRange.of(visibleSourceRange ?? null)),
+		})
+	}, [visibleSourceRange?.from, visibleSourceRange?.to])
+
 	useEffect(() => {
 		const view = viewRef.current
 		if (!view || !revealTarget) {
@@ -1454,6 +1988,7 @@ export const OrgEditor = memo(function OrgEditor({
 				EditorView.contentAttributes.of({
 					"aria-label": ariaLabel,
 					"aria-multiline": "true",
+					tabindex: "0",
 				}),
 			),
 		})
@@ -1461,8 +1996,13 @@ export const OrgEditor = memo(function OrgEditor({
 
 	return (
 		<div className="flex h-full min-h-0 w-full flex-col">
+			{inputConfiguration.error && (
+				<div role="alert" className="shrink-0 px-3 py-1 text-sm">
+					Saved keymap configuration is invalid: {inputConfiguration.error} Repair it in Settings → Editor → Org input keymaps.
+				</div>
+			)}
 			{todoMessage && (
-				<div role="status" className="shrink-0 px-3 py-1 text-sm">
+				<div role="status" aria-label="Org command feedback" className="shrink-0 px-3 py-1 text-sm">
 					{todoMessage}
 				</div>
 			)}
@@ -1470,6 +2010,14 @@ export const OrgEditor = memo(function OrgEditor({
 				<OrgTodoNote
 					key={noteRequestIdRef.current}
 					request={todoNote}
+					closeFence={prefixContextKey}
+					origin={(() => {
+						const owner = localNoteOwnerRef.current
+						return {
+							isLive: () => !!owner && owner.request === todoNote && viewRef.current === owner.editor && commandTargetRef.current === owner.target,
+							restore: () => { owner?.target?.restoreFocus() },
+						}
+					})()}
 					onClose={(host) => {
 						const owner = localNoteOwnerRef.current
 						if (owner?.request !== todoNote) return

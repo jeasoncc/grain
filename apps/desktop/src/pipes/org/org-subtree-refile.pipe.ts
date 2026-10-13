@@ -1,4 +1,42 @@
 import { structuralOrgSourceLines } from "./org-text.pipe"
+import { planOrgOperationLogging, type OrgLoggingNoteRequest } from "./org-todo-logging.pipe"
+import type { OrgLoggingPolicyOptions } from "./org-logging-policy.pipe"
+
+/** A reviewed logging intent, never arbitrary replacement text or a new write capability. */
+export interface OrgRefileLoggingIntent {
+	readonly expectedSourceContent: string
+	readonly stamp: string
+	readonly note?: string
+	readonly options: OrgLoggingPolicyOptions
+}
+
+export type OrgRefilePayloadPlan =
+	| { readonly kind: "ready"; readonly moved: OrgSubtreeExtraction; readonly payload: string }
+	| { readonly kind: "needs-note"; readonly request: OrgLoggingNoteRequest }
+	| { readonly kind: "rejected"; readonly message: string }
+
+/** Recompute authorized log ranges against the exact frozen source before copying anything. */
+export const planOrgRefilePayload = (
+	source: string, cursor: number, logging?: OrgRefileLoggingIntent,
+): OrgRefilePayloadPlan => {
+	const moved = extractOrgSubtreeAt(source, cursor)
+	if (!moved) return { kind: "rejected", message: "Place the cursor on a real heading line." }
+	if (!logging) return { kind: "ready", moved, payload: moved.text }
+	if (logging.expectedSourceContent !== source)
+		return { kind: "rejected", message: "The logging source changed. Cancel and reopen Refile." }
+	const plan = planOrgOperationLogging(source, moved.from, logging.stamp, { kind: "refile" }, logging.note, logging.options)
+	if (plan.kind === "rejected") return { kind: "rejected", message: `Cannot log Refile: ${plan.reason}` }
+	if (plan.kind === "needs-note") return plan
+	let payload = moved.text
+	if (plan.kind === "edit") {
+		for (const edit of [...plan.edits].sort((a, b) => b.from - a.from)) {
+			if (edit.from < moved.from || edit.to > moved.to || edit.to < edit.from)
+				return { kind: "rejected", message: "Refile logging escaped the selected subtree." }
+			payload = payload.slice(0, edit.from - moved.from) + edit.insert + payload.slice(edit.to - moved.from)
+		}
+	}
+	return { kind: "ready", moved, payload }
+}
 
 export type OrgNewline = "\n" | "\r\n" | "\r"
 
@@ -59,6 +97,22 @@ export const extractOrgSubtreeAt = (
 	if (!Number.isInteger(cursor) || cursor < 0 || cursor > source.length) {
 		return null
 	}
+	// Availability checks run on every input publication. Reject a non-heading
+	// locally before allocating whole-source lines and structural exclusion sets.
+	let from = cursor
+	if (source[from] === "\n" && from > 0 && source[from - 1] === "\r") from -= 1
+	while (from > 0 && source[from - 1] !== "\r" && source[from - 1] !== "\n") {
+		from -= 1
+	}
+	let prefixTo = from
+	while (source[prefixTo] === "*") prefixTo += 1
+	if (
+		prefixTo === from ||
+		(source[prefixTo] !== " " && source[prefixTo] !== "\t")
+	) {
+		return null
+	}
+
 	const lines = orgLines(source)
 	const lineIndex = lines.findIndex(
 		(line) =>

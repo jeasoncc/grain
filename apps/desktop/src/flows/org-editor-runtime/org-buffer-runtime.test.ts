@@ -15,18 +15,22 @@ import {
 	type StateEffectType,
 	StateField,
 	Transaction,
+	type TransactionSpec,
 } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import {
 	createOrgBufferRuntime,
 	isOrgRuntimeProjection,
+	orgSemanticHistory,
 	type OrgBufferRuntime,
+	type OrgBufferCommitReceipt,
 	OrgBufferRuntimeError,
 	type OrgBufferWindowHandle,
 } from "./org-buffer-runtime"
 import { createOrgWindowEffectRegistry } from "./org-window-effects"
 import { setOrgSparseTree } from "@/views/org-editor/org-sparse-tree.extension"
+import { decodeOrgNativeTransaction, encodeOrgNativeTransaction } from "@/flows/org-native-window/org-native-window-protocol"
 import type { OrgSparseTreeQuery } from "@/types/org"
 
 const views: EditorView[] = []
@@ -342,11 +346,14 @@ describe("canonical Org buffer/window runtime", () => {
 		}
 		type(a.view, "Z")
 		expect(runtime.source).toBe(`Z${source}`)
+		expect(runtime.source).toBe(runtime.state.sliceDoc())
 		expect(b.view.state.sliceDoc()).toBe(runtime.source)
 		expect(a.handle.undo()).toBe(true)
 		expect(runtime.source).toBe(source)
+		expect(runtime.source).toBe(runtime.state.sliceDoc())
 		expect(a.handle.redo()).toBe(true)
 		expect(runtime.source).toBe(`Z${source}`)
+		expect(runtime.source).toBe(runtime.state.sliceDoc())
 	})
 	it("groups 400ms typing, exact pre-edit caret, and origin changes isolate groups", () => {
 		const { runtime, onCommit } = buffer()
@@ -442,9 +449,51 @@ describe("canonical Org buffer/window runtime", () => {
 		expect(foldedRanges(b.view.state).size).toBe(0)
 		expect(a.view.state.facet(EditorView.editable)).toBe(false)
 		expect(b.view.state.facet(EditorView.editable)).toBe(true)
-		expect(peerUpdate.mock.calls[0][0][0].scrollIntoView).toBe(false)
-		expect(peerUpdate.mock.calls[0][0][0].effects).toHaveLength(0)
+		expect(peerUpdate).not.toHaveBeenCalled()
 		expect(b.view.state.selection.main.head).toBe(0)
+	})
+	it("keeps unaffected peers quiescent but preflights their next document change atomically", () => {
+		const { runtime, onCommit } = buffer("heading\n  body\nend")
+		const a = window(runtime, "a", { extensions: codeFolding() })
+		const unknown = StateEffect.define<null>()
+		let inject = true
+		const b = window(runtime, "b", {
+			extensions: [
+				codeFolding(),
+				EditorState.transactionExtender.of(() => inject ? { effects: unknown.of(null) } : null),
+			],
+			selection: EditorSelection.cursor(16),
+		})
+		const peerState = b.view.state
+		const peerUpdate = vi.spyOn(b.view, "update")
+		a.view.dispatch({
+			effects: foldEffect.of({ from: 7, to: 14 }),
+			selection: EditorSelection.cursor(2),
+		})
+		expect(b.view.state).toBe(peerState)
+		expect(peerUpdate).not.toHaveBeenCalled()
+		expect(onCommit).not.toHaveBeenCalled()
+		const canonical = runtime.state
+		const originState = a.view.state
+		expectCode(() => type(a.view, "X"), "unknown-effect")
+		expect(runtime.state).toBe(canonical)
+		expect(a.view.state).toBe(originState)
+		expect(b.view.state).toBe(peerState)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(runtime.revision).toBe(0)
+		expect(onCommit).not.toHaveBeenCalled()
+		inject = false
+		type(a.view, "X")
+		expect(b.view.state.sliceDoc()).toBe("heXading\n  body\nend")
+		expect(b.view.state.selection.main.head).toBe(17)
+		expect(foldedRanges(a.view.state).size).toBe(1)
+		expect(foldedRanges(b.view.state).size).toBe(0)
+		expect(b.handle.undo()).toBe(true)
+		expect(runtime.source).toBe("heading\n  body\nend")
+		expect(a.view.state.selection.main.head).toBe(2)
+		expect(b.view.state.selection.main.head).toBe(16)
+		expect(a.view.state.sliceDoc()).toBe(runtime.source)
+		expect(b.view.state.sliceDoc()).toBe(runtime.source)
 	})
 	it("preflights chained batches once and rejects a late unknown effect atomically", () => {
 		const { runtime, onCommit } = buffer()
@@ -495,6 +544,8 @@ describe("canonical Org buffer/window runtime", () => {
 		const a = window(runtime, "a"),
 			b = window(runtime, "b")
 		b.view.dispatch({ selection: EditorSelection.cursor(6) })
+		expect(runtime.source).toBe("abc\ndef")
+		expect(runtime.source).toBe(runtime.state.sliceDoc())
 		expectCode(() => runtime.applyControllerSource("stale", "bad"), "stale-source")
 		runtime.applyControllerSource("abc\ndef", "aXc\ndef")
 		expect(b.view.state.selection.main.head).toBe(6)
@@ -502,6 +553,7 @@ describe("canonical Org buffer/window runtime", () => {
 		expect(runtime.applyControllerSource(runtime.source, runtime.source)).toBe(false)
 		runtime.applyControllerSource(runtime.source, "a\r\nb\nc\r\0🦊\r\n")
 		expect(runtime.source).toBe("a\r\nb\nc\r\0🦊\r\n")
+		expect(runtime.source).toBe(runtime.state.sliceDoc())
 		for (const view of [a.view, b.view]) {
 			expect(view.state.sliceDoc()).toBe(runtime.source)
 			expect(view.state.lineBreak).toBe("\r\n")
@@ -544,6 +596,8 @@ describe("canonical Org buffer/window runtime", () => {
 		expect(redoDepth(legacy)).toBe(1)
 		callback.mockClear()
 		expect(runtime.adoptLegacyState(legacy)).toBe(true)
+		expect(runtime.source).toBe(legacy.sliceDoc())
+		expect(runtime.source).toBe(runtime.state.sliceDoc())
 		expect(runtime.state.field(historyField)).toBe(legacy.field(historyField))
 		const a = window(runtime, "a")
 		expect(a.handle.redo()).toBe(true)
@@ -581,10 +635,13 @@ describe("canonical Org buffer/window runtime", () => {
 		const a = window(runtime, "a")
 		expectCode(() => type(a.view, "Z"), "commit-denied")
 		expect(runtime.source).toBe("abcdef")
+		expect(runtime.source).toBe(runtime.state.sliceDoc())
 		expect(a.view.state.sliceDoc()).toBe("abcdef")
 		runtime = buffer("abcdef", {
 			onCommit: () => {
 				expectCode(() => runtime.close(), "reentrant")
+				expect(runtime.source).toBe("Qabcdef")
+				expect(runtime.source).toBe(runtime.state.sliceDoc())
 				throw new Error("mirror failed")
 			},
 			onError: (error) => errors.push(error),
@@ -749,5 +806,216 @@ describe("canonical Org buffer/window runtime", () => {
 		expectCode(() => bad.handle.undo(), "stale-window")
 		good.handle.undo()
 		expect(runtime.source).toBe("abcdef")
+	})
+	it("delivers exact canonical transaction chains before projections for edit, undo, commands and installations", () => {
+		const order: string[] = []
+		const { runtime } = buffer("abcdef", {
+			canCommit: (previous) => {
+				expect(runtime.source).toBe(previous)
+				expect(runtime.source).toBe(runtime.state.sliceDoc())
+				order.push("guard")
+				return true
+			},
+			onCommit: (receipt) => {
+				expect(runtime.source).toBe(receipt.source)
+				expect(runtime.source).toBe(runtime.state.sliceDoc())
+				order.push("callback")
+			},
+		})
+		const a = window(runtime, "a"), b = window(runtime, "b")
+		const peerUpdate = b.view.update.bind(b.view)
+		vi.spyOn(b.view, "update").mockImplementation((transactions) => {
+			order.push("projection")
+			peerUpdate(transactions)
+		})
+		const receipts: OrgBufferCommitReceipt[] = []
+		runtime.subscribeCommits((receipt) => {
+			order.push("subscriber")
+			expect(runtime.source).toBe(receipt.source)
+			expect(runtime.source).toBe(runtime.state.sliceDoc())
+			expect(b.view.state.sliceDoc()).toBe(receipt.previousSource)
+			expectCode(() => runtime.applyControllerSource(runtime.source, "nested"), "reentrant")
+			expect(Object.isFrozen(receipt.transactions)).toBe(true)
+			for (let i = 1; i < receipt.transactions.length; i++) {
+				expect(receipt.transactions[i].startState).toBe(receipt.transactions[i - 1].state)
+			}
+			expect(receipt.transactions[0].startState.sliceDoc()).toBe(receipt.previousSource)
+			expect(receipt.transactions.at(-1)!.state.sliceDoc()).toBe(receipt.source)
+			expect(receipt.transactions.every((transaction) => !isOrgRuntimeProjection(transaction))).toBe(true)
+			receipts.push(receipt)
+		})
+		const local = a.view.state.update({ changes: { from: 2, insert: "X" } })
+		a.handle.dispatchTransactions([local])
+		expect(receipts[0].transactions).not.toContain(local)
+		expect(order).toEqual(["guard", "callback", "subscriber", "projection"])
+		a.handle.undo()
+		b.handle.redo()
+		runtime.applyCommandEdit(runtime.source, { from: 0, to: 0, insert: "!", cursor: 1 })
+		runtime.applyControllerSource(runtime.source, "new\r\nsource")
+		expect(receipts.map((receipt) => receipt.operation)).toEqual(["edit", "edit", "edit", "command", "installation"])
+		expect(receipts.map((receipt) => receipt.revision)).toEqual([1, 2, 3, 4, 5])
+	})
+
+	it("subscribes to net-zero document batches but not presentation or failed preflight", () => {
+		const { runtime, onCommit } = buffer()
+		const a = window(runtime, "a")
+		const listener = vi.fn()
+		runtime.subscribeCommits(listener)
+		a.view.dispatch({ selection: EditorSelection.cursor(1) })
+		expect(runtime.source).toBe("abcdef")
+		expect(runtime.source).toBe(runtime.state.sliceDoc())
+		expect(listener).not.toHaveBeenCalled()
+		const first = a.view.state.update({ changes: { from: 1, to: 3, insert: "" } })
+		const second = first.state.update({ changes: { from: 1, insert: "bc" } })
+		a.handle.dispatchTransactions([first, second])
+		expect(runtime.source).toBe("abcdef")
+		expect(runtime.source).toBe(runtime.state.sliceDoc())
+		expect(runtime.revision).toBe(0)
+		expect(onCommit).not.toHaveBeenCalled()
+		expect(listener).toHaveBeenCalledTimes(1)
+		expect(listener.mock.calls[0][0].transactions.filter((transaction: Transaction) => transaction.docChanged)).toHaveLength(2)
+		const denied = buffer("abc", { canCommit: () => false })
+		const deniedListener = vi.fn()
+		denied.runtime.subscribeCommits(deniedListener)
+		expectCode(() => denied.runtime.applyCommandEdit("abc", { from: 0, to: 0, insert: "x", cursor: 1 }), "commit-denied")
+		expect(deniedListener).not.toHaveBeenCalled()
+	})
+
+	it("isolates subscriber failures, preserves callback failure semantics and retires subscriptions", () => {
+		const onError = vi.fn()
+		const { runtime } = buffer("abc", { onError })
+		const late = vi.fn(), removed = vi.fn()
+		let remove = () => {}
+		runtime.subscribeCommits(() => {
+			remove()
+			runtime.subscribeCommits(late)
+			throw new Error("listener failed")
+		})
+		remove = runtime.subscribeCommits(removed)
+		runtime.applyCommandEdit("abc", { from: 0, to: 0, insert: "!", cursor: 1 })
+		expect(removed).not.toHaveBeenCalled()
+		expect(late).not.toHaveBeenCalled()
+		expect(onError.mock.calls[0][0].code).toBe("callback-failed")
+		runtime.applyCommandEdit(runtime.source, { from: 0, to: 0, insert: "?", cursor: 1 })
+		expect(late).toHaveBeenCalledTimes(1)
+		remove()
+		remove()
+		runtime.close()
+		const retired = vi.fn()
+		runtime.subscribeCommits(retired)()
+		expect(retired).not.toHaveBeenCalled()
+		expectCode(() => runtime.applyControllerSource(runtime.source, "closed"), "closed")
+		expect(late).toHaveBeenCalledTimes(1)
+		const broken = buffer("abc", { onCommit: () => { throw new Error("mirror") } })
+		const committed = vi.fn()
+		broken.runtime.subscribeCommits(committed)
+		const view = window(broken.runtime, "broken")
+		type(view.view, "X")
+		expect(committed).toHaveBeenCalledTimes(1)
+		expect(view.view.state.sliceDoc()).toBe("Xabc")
+		expectCode(() => type(view.view, "Y"), "disabled")
+	})
+})
+
+describe("canonical composition settlement (CM transactions, not native evidence)", () => {
+	function lifecycle(view: EditorView, group = crypto.randomUUID(), wire = false) {
+		const selection = view.state.selection
+		const dispatch = (spec: TransactionSpec) => {
+			const transaction = view.state.update(spec)
+			view.dispatch(wire ? decodeOrgNativeTransaction(view.state, encodeOrgNativeTransaction(transaction, () => false)) : transaction)
+		}
+		return {
+			update(from: number, to: number, insert: string, head: number, first = false) {
+				dispatch({ changes: { from, to, insert }, selection: EditorSelection.cursor(head),
+					annotations: [Transaction.userEvent.of(first ? "input.type.compose.start" : "input.type.compose"),
+						orgSemanticHistory.of({ selection, group, composition: "update" })] })
+			},
+			end() {
+				dispatch({ annotations: [Transaction.addToHistory.of(false),
+					orgSemanticHistory.of({ selection, group, composition: "end" })] })
+			},
+		}
+	}
+	for (const wire of [false, true]) {
+		it(`collapses preedit replacement/deletion and commit, restores exact cursor, and separates following typing${wire ? " through detached codecs" : ""}`, () => {
+			const { runtime } = buffer("Gather evidence")
+			const before = EditorSelection.create([EditorSelection.cursor(0, -1, 2, 17)])
+			const origin = window(runtime, "origin", { selection: before })
+			const peer = window(runtime, "peer", { selection: EditorSelection.cursor(7) })
+			const composition = lifecycle(origin.view, undefined, wire)
+			composition.update(0, 0, "ni", 2, true)
+			origin.view.dispatch({ selection: EditorSelection.single(0, 2), userEvent: "select" })
+			composition.update(0, 2, "ni hao", 6)
+			origin.view.dispatch({ selection: EditorSelection.single(0, 6), userEvent: "select" })
+			composition.update(0, 6, "", 0)
+			composition.update(0, 0, "你好", 2)
+			composition.end()
+			expect(undoDepth(runtime.state)).toBe(1)
+			type(origin.view, "Z", 100000)
+			expect(origin.handle.undo()).toBe(true)
+			expect(runtime.source).toBe("你好Gather evidence")
+			expect(peer.view.state.sliceDoc()).toBe(runtime.source)
+			expect(origin.handle.undo()).toBe(true)
+			expect(runtime.source).toBe("Gather evidence")
+			expect(origin.view.state.selection.eq(before, true)).toBe(true)
+			expect(peer.view.state.selection.main.head).toBe(7)
+			expect(origin.handle.redo()).toBe(true)
+			expect(runtime.source).toBe("你好Gather evidence")
+		})
+		it(`cancellation neither consumes a prior edit nor reintroduces preedit on redo${wire ? " through detached codecs" : ""}`, () => {
+			const { runtime } = buffer("Gather")
+			const origin = window(runtime, "origin")
+			type(origin.view, "A")
+			const priorSelection = origin.view.state.selection
+			const composition = lifecycle(origin.view, undefined, wire)
+			composition.update(1, 3, "ni", 3, true)
+			composition.update(1, 3, "ni hao", 7)
+			composition.update(1, 7, "Ga", 3)
+			origin.view.dispatch({ selection: priorSelection, annotations: Transaction.addToHistory.of(false) })
+			composition.end()
+			expect(runtime.source).toBe("AGather")
+			expect(undoDepth(runtime.state)).toBe(1)
+			expect(origin.handle.undo()).toBe(true)
+			expect(runtime.source).toBe("Gather")
+			expect(origin.handle.redo()).toBe(true)
+			expect(runtime.source).toBe("AGather")
+			expect(origin.view.state.selection.eq(priorSelection, true)).toBe(true)
+		})
+	}
+	it("seals peer interleaving and retains accepted Source when the composing window retires after grant revocation", () => {
+		let allowed = true
+		const { runtime } = buffer("Gather", { canCommit: () => allowed })
+		const origin = window(runtime, "origin")
+		const peer = window(runtime, "peer", { selection: EditorSelection.cursor(6) })
+		const first = lifecycle(origin.view)
+		first.update(0, 0, "ni", 2, true)
+		type(peer.view, "Q")
+		first.end()
+		expect(runtime.source).toBe("niGatherQ")
+		const second = lifecycle(origin.view)
+		second.update(2, 2, "hao", 5, true)
+		allowed = false
+		origin.handle.detach()
+		expect(runtime.source).toBe("nihaoGatherQ")
+		expect(peer.view.state.sliceDoc()).toBe("nihaoGatherQ")
+		allowed = true
+		expect(peer.handle.undo()).toBe(true)
+		expect(runtime.source).toBe("niGatherQ")
+		expect(peer.handle.undo()).toBe(true)
+		expect(runtime.source).toBe("niGather")
+		expect(peer.handle.undo()).toBe(true)
+		expect(runtime.source).toBe("Gather")
+	})
+	it("preserves an intervening canonical command as a separate history operation", () => {
+		const { runtime } = buffer("Gather")
+		const origin = window(runtime, "origin")
+		const composition = lifecycle(origin.view)
+		composition.update(0, 0, "ni", 2, true)
+		runtime.applyCommandEdit(runtime.source, { from: runtime.source.length, to: runtime.source.length, insert: "Q", cursor: runtime.source.length + 1 })
+		composition.end()
+		expect(origin.handle.undo()).toBe(true)
+		expect(runtime.source).toBe("niGather")
+		expect(origin.handle.undo()).toBe(true)
+		expect(runtime.source).toBe("Gather")
 	})
 })

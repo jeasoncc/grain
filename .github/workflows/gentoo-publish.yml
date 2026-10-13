@@ -49,6 +49,7 @@ jobs:
           # Distributed under the terms of the GNU General Public License v2
           
           EAPI=8
+          RUST_MIN_VER="1.94.0"
           
           CRATES="
           	# Cargo dependencies will be listed here
@@ -62,6 +63,7 @@ jobs:
           SRC_URI="
           	https://github.com/${{ github.repository }}/archive/refs/tags/desktop-v${PV}.tar.gz -> ${P}.tar.gz
           	$(cargo_crate_uris)
+          	https://github.com/oven-sh/bun/releases/download/bun-v1.4.2/bun-linux-x64.zip -> bun-1.4.2-linux-x64.zip
           "
           
           LICENSE="MIT"
@@ -77,8 +79,8 @@ jobs:
           "
           RDEPEND="${DEPEND}"
           BDEPEND="
-          	net-libs/nodejs[npm]
-          	sys-apps/yarn
+          	>=net-libs/nodejs-22.22.2[npm]
+          	app-arch/unzip
           "
           
           S="${WORKDIR}/grain-desktop-v${PV}"
@@ -86,16 +88,15 @@ jobs:
           src_prepare() {
           	default
           	
-          	# Install Node.js dependencies
-          	cd apps/desktop || die
-          	npm install || die "npm install failed"
+          	# Install the complete workspace from the root lockfile
+          	"${WORKDIR}/bun-linux-x64/bun" install --frozen-lockfile || die "Bun install failed"
           }
           
           src_compile() {
           	cd apps/desktop || die
           	
           	# Build frontend
-          	npm run build || die "Frontend build failed"
+          	"${WORKDIR}/bun-linux-x64/bun" run build || die "Frontend build failed"
           	
           	# Build Tauri app
           	cargo_src_compile --manifest-path src-tauri/Cargo.toml

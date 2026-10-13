@@ -1,12 +1,13 @@
 import { redoDepth, undoDepth } from "@codemirror/commands"
 import { EditorSelection } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
-import { act, cleanup, createEvent, fireEvent, render, screen } from "@testing-library/react"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { act, cleanup, createEvent, fireEvent, screen } from "@testing-library/react"
+import { ApplicationTestDocumentPane, render } from "@/test/application-providers"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { createOrgBufferRuntime } from "@/flows/org-editor-runtime"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
 import { orgSparseTreeField } from "../org-editor/org-sparse-tree.extension"
-import { OrgDocumentPane } from "./org-document-pane.view.fn"
+import type { OrgDocumentCommandPort } from "./org-document-pane.view.fn"
 
 const source = "* DONE Hidden\nhidden body\n* TODO Visible\nvisible body"
 const makeRuntime = (sourceText = source) =>
@@ -16,12 +17,10 @@ const makeRuntime = (sourceText = source) =>
 		onCommit: vi.fn(),
 		source: sourceText,
 	})
-type Capture = (command: "sparse-tree" | "clear-sparse-tree") => (() => void) | null
-const originRef: { current: Capture | null } = { current: null }
+const originRef: { current: OrgDocumentCommandPort | null } = { current: null }
 const props = (
 	runtime: ReturnType<typeof makeRuntime>,
 	grant = "G1",
-	execute?: (() => void) | null,
 ) => ({
 	canGoBack: false,
 	canGoForward: false,
@@ -31,6 +30,7 @@ const props = (
 		activeDocument: { content: runtime.source, relativePath: "note.org", revision: "one" },
 		content: runtime.source,
 		isDirty: false,
+		getBufferEffectState: () => null,
 		liveBuffers: [
 			{
 				bufferId: "note.org",
@@ -57,21 +57,9 @@ const props = (
 	onGoForward: vi.fn(),
 	onQuickOpen: vi.fn(),
 	onSelectTab: vi.fn(),
-	onShowInspector: vi.fn(),
-	onShowSidebar: vi.fn(),
 	openDocumentPaths: ["note.org"],
 	sidebarVisible: true,
-	viewCommandOriginRef: originRef,
-	viewCommandRequest:
-		execute === undefined
-			? null
-			: {
-					bufferId: "note.org",
-					command: "sparse-tree" as const,
-					execute,
-					id: 1,
-					workspaceSessionId: "G1",
-				},
+	commandPortRef: originRef,
 })
 const views = () =>
 	screen.getAllByRole("textbox", { name: /^Editing/ }).map((node) => EditorView.findFromDOM(node)!)
@@ -89,14 +77,34 @@ function submit(query = "todo") {
 	fireEvent.change(input, { target: { value: query } })
 	fireEvent.keyDown(input, { key: "Enter" })
 }
+const rangeRects = Object.getOwnPropertyDescriptor(Range.prototype, "getClientRects")
+const rangeBounds = Object.getOwnPropertyDescriptor(Range.prototype, "getBoundingClientRect")
+beforeEach(() => {
+	Object.defineProperty(Range.prototype, "getClientRects", { configurable: true, value: () => [] })
+	Object.defineProperty(Range.prototype, "getBoundingClientRect", {
+		configurable: true,
+		value: () => new DOMRect(),
+	})
+})
 describe("production pane sparse origin ownership", () => {
-	afterEach(() => {
+	afterEach(async () => {
 		cleanup()
 		originRef.current = null
+		// Let Radix's deferred focus cleanup finish before jsdom restores Node globals.
+		await act(async () => {
+			await new Promise<void>((resolve) => setTimeout(resolve, 0))
+		})
+		for (const [key, descriptor] of [
+			["getClientRects", rangeRects],
+			["getBoundingClientRect", rangeBounds],
+		] as const) {
+			if (descriptor) Object.defineProperty(Range.prototype, key, descriptor)
+			else Reflect.deleteProperty(Range.prototype, key)
+		}
 	})
 	it("toolbar relocates a hidden caret and Clear restores the entire origin selection", async () => {
 		const runtime = makeRuntime()
-		render(<OrgDocumentPane {...props(runtime)} />)
+		render(<ApplicationTestDocumentPane {...props(runtime)} />)
 		const view = views()[0]
 		const original = EditorSelection.single(2, 12)
 		act(() => {
@@ -118,7 +126,7 @@ describe("production pane sparse origin ownership", () => {
 	})
 	it("ignores IME/consumed/repeated acceptance, cancels without mutation, and reports no matches", async () => {
 		const runtime = makeRuntime()
-		render(<OrgDocumentPane {...props(runtime)} />)
+		render(<ApplicationTestDocumentPane {...props(runtime)} />)
 		const view = views()[0]
 		act(() => view.focus())
 		await menu("Sparse tree")
@@ -146,34 +154,34 @@ describe("production pane sparse origin ownership", () => {
 		expect(view.state.sliceDoc()).toBe(source)
 		expect(view.contentDOM).toHaveFocus()
 	})
-	it("bound catalog complex queries remain independent and invalid match retains the origin view", () => {
+	it("bound catalog complex queries remain independent and invalid match retains the origin view", async () => {
 		const raw =
 			"#+FILETAGS: :file:\n* Parent :work:\nparent BODY\n** TODO Visible\nvisible BODY\n** DONE Hidden :blocked:\nhidden BODY\n* TODO Outside\noutside BODY"
 		const runtime = makeRuntime(raw)
-		const mounted = render(<OrgDocumentPane {...props(runtime)} />)
+		render(<ApplicationTestDocumentPane {...props(runtime)} />)
 		fireEvent.click(screen.getByRole("button", { name: "Split editor" }))
 		act(() => views()[0].focus())
-		const execute = originRef.current!("sparse-tree")!
-		mounted.rerender(<OrgDocumentPane {...props(runtime, "G1", execute)} />)
-		submit('match: itag:work AND (todo OR text:"Hidden") AND NOT tag:blocked')
+		const execute = originRef.current!.capture("sparse-tree", props(runtime).controller)!
+		await act(async () => { expect(await execute()).toBe(true) })
+		submit('match: itag:work AND (todo:TODO OR text:"Hidden") AND NOT tag:blocked')
 		const origin = views()[0].state.field(orgSparseTreeField)!
-		expect(origin.plan.matchedHeadingStarts).toEqual([raw.indexOf("** TODO Visible")])
+		expect(origin.plan?.matchedHeadingStarts).toEqual([raw.indexOf("** TODO Visible")])
 		expect(views()[0].contentDOM.textContent).toContain("visible BODY")
 		expect(views()[0].contentDOM.textContent).not.toContain("hidden BODY")
 		expect(views()[0].contentDOM.textContent).not.toContain("outside BODY")
 		expect(views()[1].state.field(orgSparseTreeField)).toBeNull()
 		act(() => views()[1].focus())
-		const peerCommand = originRef.current!("sparse-tree")!
-		act(() => peerCommand())
-		submit('match: itag:file AND (tag:blocked OR text:"Outside") AND NOT todo')
+		const peerCommand = originRef.current!.capture("sparse-tree", props(runtime).controller)!
+		await act(async () => { expect(await peerCommand()).toBe(true) })
+		submit('match: itag:file AND (tag:blocked OR text:"Outside") AND NOT todo:TODO')
 		const peer = views()[1].state.field(orgSparseTreeField)!
-		expect(peer.plan.matchedHeadingStarts).toEqual([raw.indexOf("** DONE Hidden")])
+		expect(peer.plan?.matchedHeadingStarts).toEqual([raw.indexOf("** DONE Hidden")])
 		expect(views()[0].state.field(orgSparseTreeField)).toBe(origin)
 		expect(views()[1].contentDOM.textContent).toContain("hidden BODY")
 		expect(views()[1].contentDOM.textContent).not.toContain("visible BODY")
 		act(() => views()[1].focus())
-		act(() => originRef.current!("sparse-tree")!())
-		submit("match: todo AND (")
+		await act(async () => { expect(await originRef.current!.capture("sparse-tree", props(runtime).controller)!()).toBe(true) })
+		submit("match: todo:TODO AND (")
 		expect(screen.getByRole("combobox", { name: /^Sparse tree/ })).toBeInTheDocument()
 		expect(views()[1].state.field(orgSparseTreeField)).toBe(peer)
 		expect(views()[0].state.field(orgSparseTreeField)).toBe(origin)
@@ -188,24 +196,24 @@ describe("production pane sparse origin ownership", () => {
 		"close",
 		"reincarnation",
 		"G2",
-	])("rejects deferred catalog origin after %s", (change) => {
+	])("rejects deferred catalog origin after %s", async (change) => {
 		const runtime = makeRuntime()
-		const mounted = render(<OrgDocumentPane {...props(runtime)} />)
+		const mounted = render(<ApplicationTestDocumentPane {...props(runtime)} />)
 		fireEvent.click(screen.getByRole("button", { name: "Split editor" }))
 		act(() => views()[1].focus())
-		const execute = originRef.current!("sparse-tree")!
+		const execute = originRef.current!.capture("sparse-tree", props(runtime).controller)!
 		if (change === "peer focus") act(() => views()[0].focus())
 		if (change === "close")
 			fireEvent.click(screen.getByRole("button", { name: "Close editor split" }))
 		mounted.rerender(
-			<OrgDocumentPane
+			<ApplicationTestDocumentPane
 				{...props(
 					change === "reincarnation" ? makeRuntime() : runtime,
 					change === "G2" ? "G2" : "G1",
-					execute,
 				)}
 			/>,
 		)
+		await act(async () => { expect(await execute()).toBe(false) })
 		expect(screen.queryByRole("combobox", { name: /^Sparse tree/ })).toBeNull()
 		for (const view of views()) expect(view.state.field(orgSparseTreeField)).toBeNull()
 	})

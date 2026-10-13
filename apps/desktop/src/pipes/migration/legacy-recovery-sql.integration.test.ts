@@ -3,96 +3,71 @@ import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { afterEach, describe, expect, it } from "vitest"
-import type { ContentType } from "@/types/content"
-import { createLegacyContentsRecoverySql } from "./migration.plan.fn"
+import type { LegacyRecoveryGraph, LegacyRecoveryNode, LegacyRecoveryWorkspace } from "@/types/org/org.interface"
+import { decodeLegacyRecoveryBundle, planLegacyMigration } from "./migration.plan.fn"
 
 const sqliteAvailable = spawnSync("sqlite3", ["-version"], { encoding: "utf8" }).status === 0
 const temporaryDirectories: string[] = []
-const utf8Hex = (value: string): string => Buffer.from(value, "utf8").toString("hex")
-const fromUtf8Hex = (value: string): string => Buffer.from(value, "hex").toString("utf8")
-const rowQuery =
-	"SELECT hex(id)||'|'||hex(node_id)||'|'||hex(content)||'|'||version||'|'||created_at||'|'||updated_at FROM contents ORDER BY id;"
-
-const inferFixtureType = (content: string): ContentType => {
-	try {
-		const parsed = JSON.parse(content)
-		return parsed.root ? "lexical" : "text"
-	} catch {
-		return "text"
-	}
+const literal = (value: string): string => `CAST(X'${Buffer.from(value).toString("hex")}' AS TEXT)`
+const unhex = (value: string): string => Buffer.from(value, "hex").toString("utf8")
+const query = <T>(path: string, sql: string): T => {
+	const result = spawnSync("sqlite3", ["-json", path, sql], { encoding: "utf8" })
+	expect(result.status, result.stderr).toBe(0)
+	return JSON.parse(result.stdout) as T
 }
+const contentsQuery = "SELECT hex(id) AS id,hex(node_id) AS nodeId,hex(content) AS content,CAST(version AS TEXT) AS version,CAST(created_at AS TEXT) AS createdAt,CAST(updated_at AS TEXT) AS updatedAt FROM contents ORDER BY id;"
+const workspaceQuery = "SELECT id,hex(name) AS name,CASE WHEN description IS NULL THEN NULL ELSE hex(description) END AS description,CAST(created_at AS TEXT) AS createdAt,CAST(updated_at AS TEXT) AS updatedAt FROM workspaces ORDER BY id;"
+const nodeQuery = "SELECT id,workspace_id AS workspaceId,parent_id AS parentId,hex(title) AS title,node_type AS nodeType,CAST(is_collapsed AS TEXT) AS isCollapsed,CAST(sort_order AS TEXT) AS sortOrder,CASE WHEN tags IS NULL THEN NULL ELSE hex(tags) END AS tags,CAST(created_at AS TEXT) AS createdAt,CAST(updated_at AS TEXT) AS updatedAt FROM nodes ORDER BY id;"
 
 afterEach(() => {
-	for (const directory of temporaryDirectories.splice(0)) {
-		rmSync(directory, { force: true, recursive: true })
-	}
+	for (const directory of temporaryDirectories.splice(0)) rmSync(directory, { force: true, recursive: true })
 })
 
-describe.runIf(sqliteAvailable)("legacy recovery SQL destructive drill", () => {
-	it("rebuilds a fresh database byte-for-byte from a grain.db copy snapshot", () => {
-		const directory = mkdtempSync(join(tmpdir(), "grain-recovery-drill-"))
+describe.runIf(sqliteAvailable)("selected legacy workspace SQLite recovery drill", () => {
+	it("restores exact workspace/node/content tuples including cycles, orphans, NUL and i64 extremes after restart", () => {
+		const directory = mkdtempSync(join(tmpdir(), "grain-owned-graph-drill-"))
 		temporaryDirectories.push(directory)
-		const sourcePath = join(directory, "grain.db.copy")
+		const sourcePath = join(directory, "owned-source.sqlite")
 		const restoredPath = join(directory, "restored.sqlite")
-		const firstContent = "quote '\u0000你好"
-		const secondContent = '{"root":{"type":"root","children":[]}}'
 		const sourceSql = [
-			"CREATE TABLE contents (id TEXT PRIMARY KEY NOT NULL, node_id TEXT NOT NULL, content TEXT NOT NULL, version INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);",
-			`INSERT INTO contents VALUES (CAST(X'${utf8Hex("content-a")}' AS TEXT),CAST(X'${utf8Hex("dangling-node")}' AS TEXT),CAST(X'${utf8Hex(firstContent)}' AS TEXT),2147483647,9223372036854775807,-9223372036854775808);`,
-			`INSERT INTO contents VALUES (CAST(X'${utf8Hex("content-b")}' AS TEXT),CAST(X'${utf8Hex("dangling-node")}' AS TEXT),CAST(X'${utf8Hex(secondContent)}' AS TEXT),1,1,2);`,
+			"CREATE TABLE workspaces (id TEXT PRIMARY KEY,name TEXT NOT NULL,description TEXT,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL);",
+			"CREATE TABLE nodes (id TEXT PRIMARY KEY,workspace_id TEXT NOT NULL,parent_id TEXT,title TEXT NOT NULL,node_type TEXT NOT NULL,is_collapsed INTEGER NOT NULL,sort_order INTEGER NOT NULL,tags TEXT,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL);",
+			"CREATE TABLE contents (id TEXT PRIMARY KEY,node_id TEXT NOT NULL,content TEXT NOT NULL,version INTEGER NOT NULL,created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL);",
+			`INSERT INTO workspaces VALUES ('workspace',${literal("原始\u0000Workspace")},${literal("description '\u0000📚")},9223372036854775807,-9223372036854775808);`,
+			`INSERT INTO nodes VALUES ('folder','workspace','cycle',${literal("Folder 目录")},'folder',9007199254740993,-9007199254740993,${literal('[ "原始" ]')},9223372036854775807,-9223372036854775808);`,
+			`INSERT INTO nodes VALUES ('cycle','workspace','folder',${literal("Cycle\u0000")},'folder',0,9223372036854775807,NULL,11,13);`,
+			`INSERT INTO nodes VALUES ('child','workspace','folder',${literal("Child '你好")},'file',1,-9223372036854775808,${literal("[]")},9007199254740993,9007199254740995);`,
+			`INSERT INTO nodes VALUES ('orphan','workspace','absent',${literal("Orphan")},'unknown-node-type',0,1,NULL,17,19);`,
+			`INSERT INTO contents VALUES ('content-a','child',${literal("quote '\u0000你好")},9007199254740993,9223372036854775807,-9223372036854775808);`,
+			`INSERT INTO contents VALUES ('content-b','child',${literal('{"root":{"type":"root","children":[]}}')},1,1,2);`,
+			`INSERT INTO contents VALUES ('content-folder','folder',${literal("folder content")},3,5,7);`,
+			`INSERT INTO contents VALUES ('content-orphan','missing-node',${literal("dangling\u0000📚")},11,13,17);`,
 		].join("\n")
-		const sourceCreated = spawnSync("sqlite3", [sourcePath], {
-			encoding: "utf8",
-			input: sourceSql,
-		})
+		const sourceCreated = spawnSync("sqlite3", [sourcePath], { encoding: "utf8", input: sourceSql })
 		expect(sourceCreated.status, sourceCreated.stderr).toBe(0)
-
-		const sourceRows = spawnSync("sqlite3", [sourcePath, rowQuery], { encoding: "utf8" })
-		expect(sourceRows.status, sourceRows.stderr).toBe(0)
-		const backups = sourceRows.stdout
-			.trim()
-			.split("\n")
-			.map((row, index) => {
-				const [id, nodeId, content, version, createdAt, updatedAt] = row.split("|") as [
-					string,
-					string,
-					string,
-					string,
-					string,
-					string,
-				]
-				const decodedContent = fromUtf8Hex(content)
-				return {
-					content: decodedContent,
-					contentId: fromUtf8Hex(id),
-					contentType: inferFixtureType(decodedContent),
-					createdAt,
-					nodeId: fromUtf8Hex(nodeId),
-					path: `Book/_migration-raw-backups/${index}.backup`,
-					updatedAt,
-					version,
-				}
-			})
-
-		const restored = spawnSync("sqlite3", [restoredPath], {
-			encoding: "utf8",
-			input: createLegacyContentsRecoverySql(backups),
+		const workspaceRows = query<LegacyRecoveryWorkspace[]>(sourcePath, workspaceQuery)
+		const nodeRows = query<LegacyRecoveryNode[]>(sourcePath, nodeQuery)
+		const graph: LegacyRecoveryGraph = {
+			workspace: { ...workspaceRows[0], name: unhex(workspaceRows[0].name), description: unhex(workspaceRows[0].description!) },
+			nodes: nodeRows.map((row) => ({ ...row, title: unhex(row.title), tags: row.tags === null ? null : unhex(row.tags) })),
+		}
+		const contentRows = query<{ id: string; nodeId: string; content: string; version: string; createdAt: string; updatedAt: string }[]>(sourcePath, contentsQuery)
+		const plan = planLegacyMigration({
+			graph,
+			contents: contentRows.map((row) => ({ ...row, id: unhex(row.id), nodeId: unhex(row.nodeId), content: unhex(row.content), contentType: row.id === Buffer.from("content-b").toString("hex").toUpperCase() ? "lexical" : "unknown/content" })),
 		})
+		const bundle = decodeLegacyRecoveryBundle({ manifest: plan.manifest, graph: plan.graph, rawBackups: plan.rawBackups, recoverySql: plan.recoverySql })
+		const restored = spawnSync("sqlite3", [restoredPath], { encoding: "utf8", input: bundle.recoverySql })
 		expect(restored.status, restored.stderr).toBe(0)
-		const restoredRows = spawnSync("sqlite3", [restoredPath, rowQuery], { encoding: "utf8" })
-		expect(restoredRows.status, restoredRows.stderr).toBe(0)
-		expect(restoredRows.stdout).toBe(sourceRows.stdout)
-
-		const ownershipCount = spawnSync(
-			"sqlite3",
-			[restoredPath, "SELECT count(*) FROM contents WHERE node_id='dangling-node';"],
-			{ encoding: "utf8" },
+		// Each query opens a new SQLite process: no in-memory fixture or live connection is authority.
+		expect(query(restoredPath, workspaceQuery)).toEqual(workspaceRows)
+		expect(query(restoredPath, nodeQuery)).toEqual(nodeRows)
+		expect(query(restoredPath, contentsQuery)).toEqual(contentRows)
+		expect(query(restoredPath, "SELECT node_id,count(*) AS count FROM contents GROUP BY node_id ORDER BY node_id;")).toEqual(query(sourcePath, "SELECT node_id,count(*) AS count FROM contents GROUP BY node_id ORDER BY node_id;"))
+		expect(query<{ content_id: string; content_type: string }[]>(restoredPath, "SELECT content_id,content_type FROM grain_recovery_content_types ORDER BY content_id;")).toEqual(
+			bundle.rawBackups.map((row) => ({ content_id: row.contentId, content_type: row.contentType })).sort((left, right) => left.content_id.localeCompare(right.content_id)),
 		)
-		expect(ownershipCount.stdout.trim()).toBe("2")
-		const integrity = spawnSync("sqlite3", [restoredPath, "PRAGMA integrity_check;"], {
-			encoding: "utf8",
-		})
-		expect(integrity.status, integrity.stderr).toBe(0)
-		expect(integrity.stdout.trim()).toBe("ok")
+		expect(query(restoredPath, "PRAGMA integrity_check;")).toEqual([{ integrity_check: "ok" }])
+		expect(query<{ name: string }[]>(restoredPath, "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;").map(({ name }) => name)).toEqual(["contents", "grain_recovery_content_types", "nodes", "workspaces"])
 	})
 })

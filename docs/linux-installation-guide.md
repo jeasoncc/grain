@@ -10,7 +10,7 @@ Novel Editor 支持多种 Linux 发行版和安装方式。选择最适合你系
 | Fedora/RHEL | RPM 包 | 从 GitHub Release 下载 |
 | Arch Linux | AUR | `yay -S novel-editor-bin` |
 | 所有发行版 | Snap | `sudo snap install novel-editor-app` |
-| 所有发行版 | Flatpak | `flatpak install com.lotus.NovelEditor` |
+| 所有发行版 | Flatpak | `flatpak install com.lotus.Grain` |
 | 所有发行版 | AppImage | 从 GitHub Release 下载 |
 
 ---
@@ -94,16 +94,16 @@ sudo dnf install flatpak  # Fedora
 flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
 # 安装
-flatpak install flathub com.lotus.NovelEditor
+flatpak install flathub com.lotus.Grain
 
 # 运行
-flatpak run com.lotus.NovelEditor
+flatpak run com.lotus.Grain
 
 # 更新
-flatpak update com.lotus.NovelEditor
+flatpak update com.lotus.Grain
 ```
 
-**Flathub 页面：** https://flathub.org/apps/com.lotus.NovelEditor
+**Flathub 页面：** https://flathub.org/apps/com.lotus.Grain
 
 ---
 
@@ -215,7 +215,7 @@ sudo dnf remove novel-editor
 sudo snap remove novel-editor-app
 
 # Flatpak
-flatpak uninstall com.lotus.NovelEditor
+flatpak uninstall com.lotus.Grain
 
 # AUR
 yay -R novel-editor-bin

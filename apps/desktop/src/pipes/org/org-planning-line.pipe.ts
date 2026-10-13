@@ -1,7 +1,12 @@
+import { readOrgStoredTimestamp } from "./org-date-reader.pipe"
+
 export interface OrgPlanningFieldRange {
 	readonly kind: "CLOSED" | "SCHEDULED" | "DEADLINE"
 	readonly from: number
 	readonly to: number
+	readonly timestampFrom: number
+	readonly timestampTo: number
+	readonly timestamp: string
 	readonly date: string
 	readonly dateFrom: number
 	/** Includes an existing weekday, which must be removed when changing the date. */
@@ -90,15 +95,29 @@ export const parseOrgPlanningLine = (text: string): OrgPlanningLineResult => {
 				message:
 					"The timestamp uses an unsupported weekday or detail format. Edit it directly before changing its date.",
 			}
+		let rangeTo = timestampTo + 1
+		if (text.slice(rangeTo, rangeTo + 2) === "--") {
+			if (text[rangeTo + 2] !== opener)
+				return { kind: "invalid", message: "Malformed planning timestamp range." }
+			const end = text.indexOf(close, rangeTo + 3)
+			if (end < 0) return { kind: "invalid", message: "Unterminated planning timestamp range." }
+			rangeTo = end + 1
+		}
+		const timestamp = text.slice(timestampFrom, rangeTo)
+		const parsed = readOrgStoredTimestamp(timestamp)
+		if (parsed.kind === "error") return { kind: "invalid", message: parsed.message }
 		fields.push({
 			kind,
 			from: position,
-			to: timestampTo + 1,
+			to: rangeTo,
+			timestampFrom,
+			timestampTo: rangeTo,
+			timestamp,
 			date: date[1],
 			dateFrom: timestampFrom + 1,
 			dateAndWeekdayTo: timestampFrom + 1 + date[0].length,
 		})
-		position = timestampTo + 1
+		position = rangeTo
 	}
 	return { kind: "planning", fields }
 }

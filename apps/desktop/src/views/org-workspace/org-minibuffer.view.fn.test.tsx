@@ -23,17 +23,18 @@ const deferredAccept = () => {
 }
 
 describe("Org minibuffer", () => {
-	it("consumes held Enter across a new session without accepting its default", () => {
+	it("accepts a first native repeat-flagged Enter but cannot accept the next phase while held", () => {
 		const first = makeSession()
 		const { rerender } = render(<OrgMinibuffer session={first} />)
 		const input = screen.getByRole("combobox")
-		fireEvent.keyDown(input, { key: "Enter" })
+		fireEvent.keyDown(input, { key: "Enter", repeat: true })
 		expect(first.onAccept).toHaveBeenCalledOnce()
 		const next = makeSession({ id: 2, initialInput: "(file root)" })
 		rerender(<OrgMinibuffer session={next} />)
 		expect(fireEvent.keyDown(input, { key: "Enter", repeat: true })).toBe(false)
 		expect(next.onAccept).not.toHaveBeenCalled()
-		fireEvent.keyDown(input, { key: "Enter" })
+		fireEvent.keyUp(input, { key: "Enter" })
+		fireEvent.keyDown(input, { key: "Enter", repeat: true })
 		expect(next.onAccept).toHaveBeenCalledExactlyOnceWith("(file root)")
 	})
 
@@ -180,6 +181,37 @@ describe("Org minibuffer", () => {
 		expect(screen.getByRole("alert")).toHaveTextContent("Cannot commit")
 		expect(session.onCancel).not.toHaveBeenCalled()
 	})
+	it("mediates native Enter rejection, correction, and pending acceptance through the shared result path", async () => {
+		const pending = deferredAccept()
+		const onAccept = vi.fn((value: string) => value === "write other.org"
+			? { ok: false as const, message: "Captured Source only" }
+			: pending.promise)
+		const onKeyDown = vi.fn(() => false)
+		const session = makeSession({
+			initialInput: "write other.org", candidates: [], cancelWhileAccepting: false, onAccept,
+			nativeInput: { bind: vi.fn(), onInput: vi.fn(), onKeyDown, onKeyUp: vi.fn(), selectValueOnOpen: false },
+		})
+		render(<OrgMinibuffer session={session} />)
+		const input = screen.getByRole("combobox")
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(input).toHaveValue("write other.org")
+		expect(screen.getByRole("alert")).toHaveTextContent("Captured Source only")
+		fireEvent.change(input, { target: { value: "write" } })
+		fireEvent.keyDown(input, { key: "Enter", repeat: true })
+		expect(onAccept).toHaveBeenCalledTimes(1)
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(input).toHaveAttribute("readonly")
+		fireEvent.keyDown(input, { key: "Enter" })
+		fireEvent.keyDown(input, { key: "Escape" })
+		fireEvent.keyUp(input, { key: "ArrowUp" })
+		expect(onAccept).toHaveBeenCalledTimes(2)
+		expect(onKeyDown).toHaveBeenCalledTimes(2)
+		expect(session.onCancel).not.toHaveBeenCalled()
+		await act(async () => pending.resolve({ ok: false, message: "Save not acknowledged" }))
+		expect(input).not.toHaveAttribute("readonly")
+		expect(screen.getByRole("alert")).toHaveTextContent("Save not acknowledged")
+	})
+
 
 	it.each([
 		"success",

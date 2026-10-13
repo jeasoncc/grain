@@ -266,6 +266,27 @@ describe("agenda command flow adversarial boundaries", () => {
 		expect(h.owner()).toBe(0)
 		expect(h.readOwner()).toBe(0)
 	})
+	it.each([false, true])("plans rich logging without allocation, then publishes one guarded history event (live=%s)", async (live) => {
+		const raw = `#+STARTUP: lognotereschedule logdrawer\n${source}`
+		const h = setup(raw, live)
+		const context = { today: "2026-07-01", now: "00:01", logStamp: "[2026-07-01 Wed 00:01]" }
+		const chosen = { kind: "schedule", date: "<2026-07-09 08:00-10:00 ++1w --2d>", context }
+		const staged = await runOrgAgendaOperationFlow(h.row(), chosen, h.ports)
+		if (staged.kind !== "needs-note" || staged.command.kind !== "schedule") throw new Error("Expected planning note")
+		expect(h.ports.commit).not.toHaveBeenCalled()
+		expect(h.ports.parkEditSource).not.toHaveBeenCalled()
+		const result = await runOrgAgendaOperationFlow(staged.entry, {
+			...staged.command, context: { ...staged.command.context, note: "literal 😀\r\n* not a heading\u0000" },
+		}, h.ports)
+		expect(result).toEqual({ kind: "confirmed" })
+		expect(h.ports.captureClock).not.toHaveBeenCalled()
+		expect(h.ports.commit).toHaveBeenCalledOnce()
+		expect(h.runtime().source).toContain("SCHEDULED: <2026-07-09 08:00-10:00 ++1w --2d>")
+		expect(h.runtime().source).toContain(context.logStamp)
+		expect(undoDepth(h.runtime().state)).toBe(1)
+		expect(h.runtime().revision).toBe(1)
+		expect(h.owner()).toBe(0)
+	})
 
 	it("observer throw is prepublication and preserves CM state/history", async () => {
 		const h = setup(source, true),

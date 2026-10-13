@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { decodeContents } from "./content.codec"
+import { decodeContents, decodeLegacyMigrationContents } from "./content.codec"
 
 describe("decodeContents", () => {
 	it("infers legacy type because the database has no content-type column", () => {
@@ -30,5 +30,19 @@ describe("decodeContents", () => {
 			nodeId: "missing-node",
 		})
 		expect(drawing?.contentType).toBe("excalidraw")
+	})
+
+	it("retains migration i64 decimals and NUL/Unicode without deriving an ISO date", () => {
+		const [content] = decodeLegacyMigrationContents([{
+			id: "raw", nodeId: "missing", content: "\u0000原始📚",
+			version: "9007199254740993", createdAt: "9223372036854775807",
+			updatedAt: "-9223372036854775808",
+		}])
+		expect(content).toEqual({
+			id: "raw", nodeId: "missing", content: "\u0000原始📚", contentType: "text",
+			version: "9007199254740993", createdAt: "9223372036854775807",
+			updatedAt: "-9223372036854775808",
+		})
+		expect(content).not.toHaveProperty("lastEdit")
 	})
 })

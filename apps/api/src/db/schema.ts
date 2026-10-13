@@ -33,13 +33,13 @@ export const visitors = pgTable('visitors', {
   
   // 创建时间（数据库级别）
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-}, (table) => ({
+}, (table) => [
   // 索引优化查询
-  ipIdx: index('ip_idx').on(table.ip),
-  pathIdx: index('path_idx').on(table.path),
-  timestampIdx: index('timestamp_idx').on(table.timestamp),
-  visitedAtIdx: index('visited_at_idx').on(table.visitedAt),
-}));
+  index('ip_idx').on(table.ip),
+  index('path_idx').on(table.path),
+  index('timestamp_idx').on(table.timestamp),
+  index('visited_at_idx').on(table.visitedAt),
+]);
 
 // 导出类型
 export type VisitorRow = typeof visitors.$inferSelect;

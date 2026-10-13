@@ -1,20 +1,20 @@
-import { act, renderHook } from "@testing-library/react"
-import { StrictMode } from "react"
+import { act, fireEvent, renderHook, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import type { OrgWindowCloseOptions } from "@/io/event/org-window-close.adapter"
-import {
-	ORG_WINDOW_CLOSE_BUSY_MESSAGE,
-	ORG_WINDOW_CLOSE_DISCARD_MESSAGE,
-	useOrgWindowClose,
-} from "./use-org-window-close"
+import { ConfirmProvider } from "@/views/ui/confirm"
+import { useOrgWindowClose } from "./use-org-window-close"
 
 const native = vi.hoisted(() => ({ isTauri: vi.fn() }))
 vi.mock("@tauri-apps/api/core", () => ({ isTauri: native.isTauri }))
 const adapter = vi.hoisted(() => ({ register: vi.fn(), stop: vi.fn() }))
 vi.mock("@/io/event/org-window-close.adapter", () => ({ registerOrgWindowClose: adapter.register }))
+const captureDiscard = vi.fn<OrgWindowCloseOptions["captureDiscard"]>()
+const closeViewOnly = vi.fn<OrgWindowCloseOptions["closeViewOnly"]>()
 beforeEach(() => {
 	native.isTauri.mockReturnValue(true)
 	adapter.register.mockReturnValue(adapter.stop)
+	captureDiscard.mockReturnValue(() => true)
+	closeViewOnly.mockResolvedValue(false)
 })
 afterEach(() => {
 	vi.restoreAllMocks()
@@ -24,7 +24,8 @@ afterEach(() => {
 describe("useOrgWindowClose", () => {
 	it("keeps native editing unready until registration signals readiness", () => {
 		const { result, unmount } = renderHook(() =>
-			useOrgWindowClose({ hasDirtyBuffers: false, isBusy: false }, vi.fn()),
+			useOrgWindowClose({ hasDirtyBuffers: false, isBusy: false, hasOtherWindows: false }, vi.fn(), captureDiscard, closeViewOnly),
+			{ wrapper: ConfirmProvider },
 		)
 		expect(result.current).toBe(false)
 		const options = adapter.register.mock.calls[0][0] as OrgWindowCloseOptions
@@ -35,7 +36,8 @@ describe("useOrgWindowClose", () => {
 	it("remains unready after registration fails", () => {
 		const onMessage = vi.fn()
 		const { result, unmount } = renderHook(() =>
-			useOrgWindowClose({ hasDirtyBuffers: false, isBusy: false }, onMessage),
+			useOrgWindowClose({ hasDirtyBuffers: false, isBusy: false, hasOtherWindows: false }, onMessage, captureDiscard, closeViewOnly),
+			{ wrapper: ConfirmProvider },
 		)
 		const options = adapter.register.mock.calls[0][0] as OrgWindowCloseOptions
 		act(() => options.onError(new Error("listener failed")))
@@ -46,14 +48,16 @@ describe("useOrgWindowClose", () => {
 	it("is ready on the initial browser render", () => {
 		native.isTauri.mockReturnValue(false)
 		const { result, unmount } = renderHook(() =>
-			useOrgWindowClose({ hasDirtyBuffers: false, isBusy: false }, vi.fn()),
+			useOrgWindowClose({ hasDirtyBuffers: false, isBusy: false, hasOtherWindows: false }, vi.fn(), captureDiscard, closeViewOnly),
+			{ wrapper: ConfirmProvider },
 		)
 		expect(result.current).toBe(true)
 		unmount()
 	})
 	it("ignores a late readiness callback after unmount", () => {
 		const { result, unmount } = renderHook(() =>
-			useOrgWindowClose({ hasDirtyBuffers: false, isBusy: false }, vi.fn()),
+			useOrgWindowClose({ hasDirtyBuffers: false, isBusy: false, hasOtherWindows: false }, vi.fn(), captureDiscard, closeViewOnly),
+			{ wrapper: ConfirmProvider },
 		)
 		const options = adapter.register.mock.calls[0][0] as OrgWindowCloseOptions
 		unmount()
@@ -63,8 +67,8 @@ describe("useOrgWindowClose", () => {
 	})
 	it("ignores readiness from a retired effect lifecycle", () => {
 		const { result, unmount } = renderHook(
-			() => useOrgWindowClose({ hasDirtyBuffers: false, isBusy: false }, vi.fn()),
-			{ wrapper: StrictMode },
+			() => useOrgWindowClose({ hasDirtyBuffers: false, isBusy: false, hasOtherWindows: false }, vi.fn(), captureDiscard, closeViewOnly),
+			{ wrapper: ConfirmProvider, reactStrictMode: true },
 		)
 		expect(adapter.register).toHaveBeenCalledTimes(2)
 		const retired = adapter.register.mock.calls[0][0] as OrgWindowCloseOptions
@@ -75,41 +79,55 @@ describe("useOrgWindowClose", () => {
 		expect(result.current).toBe(true)
 		unmount()
 	})
-	it("uses latest aggregate state and inline message callback without re-registering; cleans on unmount", () => {
-		adapter.register.mockReturnValue(adapter.stop)
-		const originalMessage = vi.fn()
-		const nextMessage = vi.fn()
-		const { rerender, unmount } = renderHook(
-			({ state, onMessage }) => useOrgWindowClose(state, onMessage),
-			{
-				initialProps: {
-					onMessage: originalMessage,
-					state: { hasDirtyBuffers: false, isBusy: false },
-				},
-			},
+	it.each([false, true])("awaits the actual application dialog before returning %s", async (accepted) => {
+		const { unmount } = renderHook(
+			() => useOrgWindowClose({ hasDirtyBuffers: true, isBusy: false, hasOtherWindows: false }, vi.fn(), captureDiscard, closeViewOnly),
+			{ wrapper: ConfirmProvider },
 		)
 		const options = adapter.register.mock.calls[0][0] as OrgWindowCloseOptions
-		rerender({ onMessage: nextMessage, state: { hasDirtyBuffers: true, isBusy: true } })
-		expect(options.getState()).toEqual({ hasDirtyBuffers: true, isBusy: true })
-		act(() => options.onBlocked())
-		expect(nextMessage).toHaveBeenCalledWith(ORG_WINDOW_CLOSE_BUSY_MESSAGE)
-		expect(originalMessage).not.toHaveBeenCalled()
-		expect(adapter.register).toHaveBeenCalledOnce()
+		const controller = new AbortController()
+		let decision!: Promise<boolean>
+		act(() => {
+			decision = options.confirmDiscard(controller.signal)
+		})
+		const settled = vi.fn()
+		void decision.then(settled)
+		await act(async () => { await Promise.resolve() })
+		expect(screen.getByRole("dialog")).toBeInTheDocument()
+		expect(settled).not.toHaveBeenCalled()
+		fireEvent.click(screen.getByRole("button", {
+			name: accepted ? "Discard and close" : "Keep editing",
+		}))
+		await expect(decision).resolves.toBe(accepted)
+		expect(screen.queryByRole("dialog")).toBeNull()
 		unmount()
-		expect(adapter.stop).toHaveBeenCalledOnce()
 	})
-	it("uses synchronous explicit discard confirmation and reports errors inline", () => {
-		adapter.register.mockReturnValue(adapter.stop)
-		const confirm = vi.spyOn(window, "confirm").mockReturnValue(false)
-		const onMessage = vi.fn()
-		const { unmount } = renderHook(() =>
-			useOrgWindowClose({ hasDirtyBuffers: true, isBusy: false }, onMessage),
+	it("dismisses the real dialog when the native registration cancels its signal", async () => {
+		const { unmount } = renderHook(
+			() => useOrgWindowClose({ hasDirtyBuffers: true, isBusy: false, hasOtherWindows: false }, vi.fn(), captureDiscard, closeViewOnly),
+			{ wrapper: ConfirmProvider },
 		)
 		const options = adapter.register.mock.calls[0][0] as OrgWindowCloseOptions
-		expect(options.confirmDiscard()).toBe(false)
-		expect(confirm).toHaveBeenCalledWith(ORG_WINDOW_CLOSE_DISCARD_MESSAGE)
+		const controller = new AbortController()
+		let decision!: Promise<boolean>
+		act(() => { decision = options.confirmDiscard(controller.signal) })
+		expect(screen.getByRole("dialog")).toBeInTheDocument()
+		act(() => controller.abort())
+		await expect(decision).resolves.toBe(false)
+		expect(screen.queryByRole("dialog")).toBeNull()
+		unmount()
+	})
+	it("reports close failures inline without changing native readiness", () => {
+		const onMessage = vi.fn()
+		const { result, unmount } = renderHook(
+			() => useOrgWindowClose({ hasDirtyBuffers: true, isBusy: false, hasOtherWindows: false }, onMessage, captureDiscard, closeViewOnly),
+			{ wrapper: ConfirmProvider },
+		)
+		const options = adapter.register.mock.calls[0][0] as OrgWindowCloseOptions
+		act(() => options.onReady())
 		act(() => options.onError(new Error("destroy failed")))
 		expect(onMessage).toHaveBeenCalledWith(expect.stringContaining("destroy failed"))
+		expect(result.current).toBe(true)
 		unmount()
 	})
 })

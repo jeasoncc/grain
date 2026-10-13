@@ -1,11 +1,13 @@
 import * as E from "fp-ts/Either"
 import * as TE from "fp-ts/TaskEither"
+import { z } from "zod"
 import { type OrgFileRepository, orgFileRepository } from "@/io/file/org-file.repository"
 import {
 	deriveOrgArchivePath,
-	extractOrgSubtreeAt,
+	planOrgRefilePayload,
 	isSafeRelativeOrgPath,
 	removeOrgSubtree,
+	type OrgRefileLoggingIntent,
 } from "@/pipes/org/org-subtree-refile.pipe"
 import {
 	planOrgRefileInsertion,
@@ -22,7 +24,10 @@ export interface RefileOrgSubtreeInput {
 	readonly cursor: number
 	readonly targetRelativePath: string
 	readonly expectedTargetRevision?: string
+	/** Exact reviewed target bytes; revision remains the disk CAS authority. */
+	readonly expectedTargetContent?: string
 	readonly targetHeading?: Pick<OrgRefileHeadingTarget, "from" | "heading">
+	readonly logging?: OrgRefileLoggingIntent
 	/** Live guard checked immediately before target copy and again before source removal. */
 	readonly confirmSourceUnchanged?: () => boolean
 	/** Live dirty/conflict protection for either affected document. */
@@ -100,15 +105,48 @@ const partialError = (
 	type: "ORG_SUBTREE_REFILE_PARTIAL_ERROR",
 })
 
+// Match the native preflight proof inside the repository's typed command error.
+// Human-readable collision messages and generic noWrite flags confer no authority.
+const unpublishedTargetCollisionSchema = z.object({
+	type: z.literal("ORG_FILE_ERROR"),
+	operation: z.literal("write"),
+	command: z.literal("write_org_document"),
+	cause: z.object({
+		kind: z.literal("creation-collision"),
+		noWrite: z.literal(true),
+		relativePath: z.string(),
+	}),
+})
+
+const isUnpublishedTargetCollision = (error: OrgFileError, relativePath: string): boolean => {
+	const parsed = unpublishedTargetCollisionSchema.safeParse(error)
+	return parsed.success && parsed.data.cause.relativePath === relativePath
+}
+
 /**
  * Copies a complete subtree to its target before removing it from the source.
- * A failed source write is intentionally not rolled back, so the data remains
- * recoverable as a duplicate in both documents.
+ * Only an exact native preflight collision proves a target failure wrote nothing.
+ * A confirmed target followed by any source failure remains a recoverable duplicate;
+ * neither uncertain nor partial effects are retried or rolled back automatically.
  */
 export const refileOrgSubtreeFlow = (
-	input: RefileOrgSubtreeInput,
+	request: RefileOrgSubtreeInput,
 	repository: OrgFileRepository = orgFileRepository,
 ): TE.TaskEither<OrgSubtreeRefileFlowError, OrgSubtreeRefileResult> => {
+	// Retain setup values across IO; live guards are the only intentional continuations.
+	let input: RefileOrgSubtreeInput
+	try {
+		const setup = { ...request }
+		input = Object.freeze({
+			...setup,
+			...(setup.targetHeading ? { targetHeading: Object.freeze({ ...setup.targetHeading }) } : {}),
+		})
+	} catch (cause) {
+		return TE.left({
+			type: "ORG_FILE_ERROR", operation: "read", command: "read_org_document", cause,
+			message: cause instanceof Error ? cause.message : String(cause),
+		})
+	}
 	if (!isSafeRelativeOrgPath(input.sourceRelativePath)) {
 		return TE.left(
 			validationError("Org refile source must be a safe relative lowercase .org path."),
@@ -128,16 +166,18 @@ export const refileOrgSubtreeFlow = (
 	if (input.targetHeading !== undefined && input.expectedTargetRevision === undefined) {
 		return TE.left(validationError("A heading target requires its snapshot revision."))
 	}
-	const subtree = extractOrgSubtreeAt(input.sourceContent, input.cursor)
-	if (!subtree) {
-		return TE.left(validationError("Org refile cursor must be on a heading line."))
-	}
+	const payload = planOrgRefilePayload(input.sourceContent, input.cursor, input.logging)
+	if (payload.kind === "rejected") return TE.left(validationError(payload.message))
+	if (payload.kind === "needs-note") return TE.left(validationError("Collect the required Refile note before writing either file."))
+	const subtree = payload.moved
 	const sourceContent = removeOrgSubtree(input.sourceContent, subtree)
 	return async () => {
 		let phase: "scan" | "read" | "targetWrite" | "confirm" | "guard" | "sourceWrite" = "scan"
 		let target: OrgDocumentInterface | undefined
 		const classify = (cause: OrgFileError): OrgSubtreeRefileFlowError => {
 			if (target) return partialError(cause, target)
+			if (phase === "targetWrite" && isUnpublishedTargetCollision(cause, input.targetRelativePath))
+				return cause
 			if (phase === "targetWrite")
 				return {
 					type: "ORG_SUBTREE_REFILE_UNCERTAIN_WRITE_ERROR",
@@ -200,7 +240,9 @@ export const refileOrgSubtreeFlow = (
 					validationError("The target snapshot revision changed; refresh the target selection."),
 				)
 			}
-			const plan = planOrgRefileInsertion(targetBefore.content, subtree.text, input.targetHeading)
+			if (input.expectedTargetContent !== undefined && input.expectedTargetContent !== targetBefore.content)
+				return E.left(validationError("The reviewed target source changed; refresh the target selection."))
+			const plan = planOrgRefileInsertion(targetBefore.content, payload.payload, input.targetHeading)
 			if (E.isLeft(plan)) return E.left(validationError(plan.left.message))
 			const targetContent = plan.right.content
 			phase = "guard"

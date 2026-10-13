@@ -5,4 +5,7 @@
 mod routes;
 mod warp_server;
 
+#[cfg(test)]
+mod http_contract_test;
+
 pub use warp_server::run_server;

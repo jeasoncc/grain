@@ -53,14 +53,14 @@ cp apps/desktop/src-tauri/icons/icon.png snap/gui/novel-editor.png
 
 **图标源**: 从 Tauri 图标目录安装多尺寸图标
 
-**配置文件**: `flatpak/com.lotus.NovelEditor.yml`
+**配置文件**: `flatpak/com.lotus.Grain.yml`
 
 **安装的图标尺寸**:
 - 32x32px
 - 128x128px  
 - 256x256px
 
-**安装位置**: `/app/share/icons/hicolor/{size}x{size}/apps/com.lotus.NovelEditor.png`
+**安装位置**: `/app/share/icons/hicolor/{size}x{size}/apps/com.lotus.Grain.png`
 
 ### 4. AUR Package
 

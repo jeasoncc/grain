@@ -8,6 +8,25 @@ export type ParameterSnapshot = Readonly<{
 	session: OrgMinibufferSession | null
 }>
 
+/** Owned lifecycle protocol shared by parameter producers and the sole application host. */
+export interface ParameterSession {
+	readonly getSnapshot: () => ParameterSnapshot
+	readonly isAttached: () => boolean
+	readonly subscribe: (listener: () => void) => () => void
+	readonly current: (lease: ParameterLease) => boolean
+	readonly begin: (previous?: ParameterLease) => ParameterLease | null
+	readonly busy: () => boolean
+	readonly publishSession: (lease: ParameterLease, session: OrgMinibufferSession) => boolean
+	readonly accept: <T>(lease: ParameterLease, originCurrent: () => boolean, locked: boolean, callback: () => T) => T | null
+	readonly beginRead: (lease: ParameterLease) => AbortController | null
+	readonly endRead: (lease: ParameterLease, abort: AbortController) => void
+	readonly beginCommit: (lease: ParameterLease) => boolean
+	readonly cancel: (lease: ParameterLease) => boolean
+	readonly retire: (lease: ParameterLease) => boolean
+	readonly detach: () => void
+	readonly attach: () => void
+}
+
 /** Lifecycle law only: origin gates never confer domain or filesystem authority. */
 export const canCancelParameter = (phase: ParameterPhase) =>
 	phase === "prepare" || phase === "collect" || phase === "read"
@@ -18,7 +37,7 @@ export const ownsParameter = (snapshot: ParameterSnapshot, lease: ParameterLease
 let sequence = 0
 
 /** Scoped reservoir. Callers own all domain guards, effects, and DOM focus. */
-export function createParameterSession() {
+export function createParameterSession(): ParameterSession {
 	let snapshot: ParameterSnapshot = Object.freeze({ lease: null, phase: "retired", session: null })
 	let attached = true
 	let notifying = false

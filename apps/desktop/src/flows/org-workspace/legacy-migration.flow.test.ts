@@ -4,15 +4,11 @@ import { describe, expect, it, vi } from "vitest"
 import type { OrgFileRepository } from "@/io/file/org-file.repository"
 import { planLegacyMigration } from "@/pipes/migration"
 import type { AppError } from "@/types/error"
-import type {
-	OrgDocumentInterface,
-	OrgDocumentWriteResultInterface,
-	OrgFileError,
-} from "@/types/org"
+import type { LegacyRecoveryGraph } from "@/types/org/org.interface"
+import type { OrgFileError } from "@/types/org"
 import type { WorkspaceInterface } from "@/types/workspace"
 import {
 	areLegacyMigrationPlansEquivalent,
-	createLegacyMigrationArtifactPayload,
 	executeLegacyMigrationFlow,
 	migrateLegacyWorkspaceFlow,
 	prepareLegacyMigrationFlow,
@@ -23,694 +19,146 @@ import {
 
 const timestamp = "2025-01-01T00:00:00.000Z"
 const workspace: WorkspaceInterface = {
-	author: "Author",
-	createDate: timestamp,
-	description: "",
-	id: "workspace-1",
-	language: "en",
-	lastOpen: timestamp,
-	publisher: "",
-	title: "My Book",
+	author: "Author", createDate: timestamp, description: "", id: "workspace-1",
+	language: "en", lastOpen: timestamp, publisher: "", title: "Stale UI title",
 }
-const nodes = [
-	{
-		createDate: timestamp,
-		id: "folder-1",
-		lastEdit: timestamp,
-		order: 0,
-		parent: null,
-		title: "Drafts",
-		type: "folder" as const,
-		workspace: workspace.id,
+const graph: LegacyRecoveryGraph = {
+	workspace: {
+		id: workspace.id, name: "My Book", description: "原始\u0000metadata",
+		createdAt: "9223372036854775807", updatedAt: "-9223372036854775808",
 	},
-	{
-		createDate: timestamp,
-		id: "document-1",
-		lastEdit: timestamp,
-		order: 0,
-		parent: "folder-1",
-		title: "Chapter",
-		type: "file" as const,
-		workspace: workspace.id,
-	},
-]
-const contents = [
-	{
-		content: "body",
-		contentType: "text" as const,
-		id: "content-1",
-		lastEdit: timestamp,
-		nodeId: "document-1",
-	},
-]
-const writeResult: OrgDocumentWriteResultInterface = {
-	relativePath: "unused.org",
-	revision: "revision",
+	nodes: [
+		{ id: "folder-1", workspaceId: workspace.id, parentId: null, title: "Drafts", nodeType: "folder", isCollapsed: "1", sortOrder: "9007199254740993", tags: '[ "原始" ]', createdAt: "9223372036854775807", updatedAt: "-9223372036854775808" },
+		{ id: "document-1", workspaceId: workspace.id, parentId: "folder-1", title: "Chapter", nodeType: "file", isCollapsed: "0", sortOrder: "-9007199254740993", tags: null, createdAt: "9007199254740993", updatedAt: "9007199254740995" },
+	],
 }
-const openedDocument: OrgDocumentInterface = { ...writeResult, content: "" }
-const unexpectedOrgError: OrgFileError = {
-	cause: "unexpected",
-	command: "test",
-	message: "unexpected recovery read",
-	operation: "readMigrationRecovery",
-	type: "ORG_FILE_ERROR",
-}
-
+const contents = [{ content: "body\u0000你好", contentType: "text", id: "content-1", nodeId: "document-1", version: "9007199254740993", createdAt: "9223372036854775807", updatedAt: "-9223372036854775808" }]
+const snapshot = { graph, contents }
+const dependencies = { getLegacyMigrationSnapshot: () => TE.right(snapshot), summarizeArtifacts: summarizeLegacyMigrationArtifacts }
+const boundaryError: OrgFileError = { cause: "unavailable", command: "test", message: "unavailable", operation: "readMigrationRecovery", type: "ORG_FILE_ERROR" }
 const repositoryWith = (overrides: Partial<OrgFileRepository> = {}): OrgFileRepository => ({
-	clearDerivedIndex: () =>
-		TE.right({ agendaCount: 0, documentCount: 0, headingCount: 0, linkCount: 0 }),
-	createDirectory: () => TE.right(undefined),
-	deleteDocument: () => TE.right(undefined),
-	getDerivedIndexStats: () =>
-		TE.right({ agendaCount: 0, documentCount: 0, headingCount: 0, linkCount: 0 }),
-	moveDocument: () => TE.right(writeResult),
-	openDefaultWorkspace: () => TE.right({ directories: [], documents: [], rootPath: "/notes" }),
-	readDocument: () => TE.right(openedDocument),
-	readMigrationRecovery: () => TE.left(unexpectedOrgError),
-	releaseWorkspace: () => TE.right(undefined),
-	reopenDefaultWorkspace: () => TE.right(null),
-	replaceDerivedIndex: () =>
-		TE.right({ agendaCount: 0, documentCount: 0, headingCount: 0, linkCount: 0 }),
-	scanWorkspace: () => TE.right({ directories: [], documents: [] }),
-	selectWorkspace: () => TE.right(null),
-	unwatchWorkspace: () => TE.right(undefined),
-	verifyMigration: () => TE.right({ checkedCount: 0, mismatches: [] }),
-	watchWorkspace: () => TE.right("watch-token"),
-	writeDocument: () => TE.right(writeResult),
-	writeMigration: () =>
-		TE.right({ artifacts: [], verificationPath: "migration-verification.json", writtenPaths: [] }),
+	clearDerivedIndex: () => TE.left(boundaryError), createDirectory: () => TE.left(boundaryError),
+	deleteDocument: () => TE.left(boundaryError), getDerivedIndexStats: () => TE.left(boundaryError),
+	moveDocument: () => TE.left(boundaryError), openDefaultWorkspace: () => TE.left(boundaryError),
+	readDocument: () => TE.left(boundaryError), readMigrationRecovery: () => TE.left(boundaryError),
+	releaseWorkspace: () => TE.left(boundaryError), reopenDefaultWorkspace: () => TE.left(boundaryError),
+	replaceDerivedIndex: () => TE.left(boundaryError), scanWorkspace: () => TE.left(boundaryError),
+	selectWorkspace: () => TE.left(boundaryError), unwatchWorkspace: () => TE.left(boundaryError),
+	verifyMigration: () => TE.right({ checkedCount: 0, mismatches: [] }), watchWorkspace: () => TE.left(boundaryError),
+	writeDocument: () => TE.left(boundaryError),
+	writeMigration: () => TE.right({ artifacts: [], verificationPath: "My Book/migration-verification.json", writtenPaths: [] }),
 	...overrides,
 })
 
 describe("legacy migration flows", () => {
-	it.each(["synthetic-migration-capability", undefined])(
-		"supports the token-second signature with capability %s",
-		async (capabilityToken) => {
-			const plan = planLegacyMigration({ contents, nodes, workspaceTitle: workspace.title })
-			const writeMigration = vi.fn<OrgFileRepository["writeMigration"]>(() =>
-				TE.right({ artifacts: [], verificationPath: "verification.json", writtenPaths: [] }),
-			)
-			const verifyMigration = vi.fn<OrgFileRepository["verifyMigration"]>(() =>
-				TE.right({ checkedCount: 0, mismatches: [] }),
-			)
-			const repository = repositoryWith({ writeMigration, verifyMigration })
-
-			expect(
-				await executeLegacyMigrationFlow("/approved", capabilityToken, plan, repository)(),
-			).toHaveProperty("_tag", "Right")
-			expect(writeMigration).toHaveBeenCalledExactlyOnceWith({
-				...createLegacyMigrationArtifactPayload(plan),
-				capabilityToken,
-				workspaceRoot: "/approved",
-			})
-			expect(verifyMigration).toHaveBeenCalledExactlyOnceWith({
-				capabilityToken,
-				expectedArtifacts: [],
-				verificationPath: "verification.json",
-				workspaceRoot: "/approved",
-			})
-		},
-	)
-
-	it.each(["synthetic-migration-capability", undefined])(
-		"forwards capability %s through publication, verification, and recovery",
-		async (capabilityToken) => {
-			const targetWorkspace = { id: "target-org-workspace", rootPath: "/approved", capabilityToken }
-			const sourceSnapshot = {
-				allContents: contents,
-				allNodes: nodes,
-				workspaceNodes: nodes,
-				workspaceTitle: workspace.title,
-			}
-			const originalSource = JSON.stringify({ workspace, sourceSnapshot })
-			const getLegacyMigrationSnapshot = vi.fn(() => TE.right(sourceSnapshot))
-			const plan = planLegacyMigration({ contents, nodes, workspaceTitle: workspace.title })
-			const dependencies = {
-				getLegacyMigrationSnapshot,
-				summarizeArtifacts: summarizeLegacyMigrationArtifacts,
-			}
-			const writeMigration = vi.fn<OrgFileRepository["writeMigration"]>(() =>
-				TE.right({ artifacts: [], verificationPath: "verification.json", writtenPaths: [] }),
-			)
-			const verifyMigration = vi.fn<OrgFileRepository["verifyMigration"]>(({ expectedArtifacts }) =>
-				TE.right({ checkedCount: expectedArtifacts.length, mismatches: [] }),
-			)
-			const readMigrationRecovery = vi.fn<OrgFileRepository["readMigrationRecovery"]>(() =>
-				TE.right({
-					manifest: plan.manifest,
-					rawBackups: plan.rawBackups.map((backup) => ({ ...backup })),
-					recoverySql: plan.recoverySql,
-				}),
-			)
-			const repository = repositoryWith({ writeMigration, verifyMigration, readMigrationRecovery })
-			expect(
-				await executeLegacyMigrationFlow("/approved", plan, repository, capabilityToken)(),
-			).toHaveProperty("_tag", "Right")
-			expect(
-				await migrateLegacyWorkspaceFlow(
-					workspace,
-					targetWorkspace.rootPath,
-					dependencies,
-					repository,
-					targetWorkspace.capabilityToken,
-				)(),
-			).toHaveProperty("_tag", "Right")
-			expect(
-				await verifyLegacyMigrationRecoveryFlow(
-					workspace,
-					targetWorkspace.rootPath,
-					dependencies,
-					repository,
-					targetWorkspace.capabilityToken,
-				)(),
-			).toHaveProperty("_tag", "Right")
-			expect(
-				await runLegacyMigrationRecoveryDrillFlow(
-					workspace,
-					targetWorkspace.rootPath,
-					dependencies,
-					repository,
-					targetWorkspace.capabilityToken,
-				)(),
-			).toHaveProperty("_tag", "Right")
-			expect(workspace.id).not.toBe(targetWorkspace.id)
-			expect(getLegacyMigrationSnapshot).toHaveBeenCalledTimes(5)
-			for (const args of getLegacyMigrationSnapshot.mock.calls) {
-				expect(args).toEqual([workspace.id])
-			}
-			expect(JSON.stringify({ workspace, sourceSnapshot })).toBe(originalSource)
-			for (const value of [
-				workspace,
-				sourceSnapshot,
-				plan,
-				plan.manifest,
-				createLegacyMigrationArtifactPayload(plan),
-			]) {
-				const serialized = JSON.stringify(value)
-				expect(serialized).not.toContain("capabilityToken")
-				if (capabilityToken) {
-					expect(serialized).not.toContain(capabilityToken)
-				}
-			}
-			expect(writeMigration).toHaveBeenCalledTimes(2)
-			expect(verifyMigration).toHaveBeenCalledTimes(4)
-			for (const [request] of writeMigration.mock.calls) {
-				expect(request).toEqual({
-					...createLegacyMigrationArtifactPayload(plan),
-					capabilityToken: targetWorkspace.capabilityToken,
-					workspaceRoot: targetWorkspace.rootPath,
-				})
-			}
-			for (const [request] of [...writeMigration.mock.calls, ...verifyMigration.mock.calls]) {
-				expect(request.capabilityToken).toBe(capabilityToken)
-				expect(request.workspaceRoot).toBe("/approved")
-			}
-			expect(readMigrationRecovery).toHaveBeenCalledExactlyOnceWith(
-				"/approved",
-				plan.manifestPath,
-				capabilityToken,
-			)
-		},
-	)
-
-	it("detects artifact content drift even when the serialized manifest is unchanged", () => {
-		const plan = planLegacyMigration({ contents, nodes, workspaceTitle: workspace.title })
-		const changed = {
-			...plan,
-			documents: plan.documents.map((document, index) =>
-				index === 0 ? { ...document, content: `${document.content}changed` } : document,
-			),
-		}
-
-		expect(changed.manifest).toBe(plan.manifest)
-		expect(areLegacyMigrationPlansEquivalent(plan, changed)).toBe(false)
+	it("detects document drift even when the manifest is unchanged", () => {
+		const plan = planLegacyMigration(snapshot)
+		expect(areLegacyMigrationPlansEquivalent(plan, {
+			...plan, documents: plan.documents.map((document) => ({ ...document, content: `${document.content}changed` })),
+		})).toBe(false)
 	})
 
-	it("summarizes UTF-8 content with Rust-compatible byte length, SHA-256, and path order", async () => {
-		const summaries = await summarizeLegacyMigrationArtifacts([
-			{ content: "second", relativePath: "𐀀.org" },
-			{ content: "你好🌾", relativePath: "\uE000.org" },
-		])
+	it("detects raw workspace/node metadata changes that leave rendered Org unchanged", () => {
+		const original = planLegacyMigration(snapshot)
+		const changed = planLegacyMigration({ ...snapshot, graph: {
+			...graph, workspace: { ...graph.workspace, description: "changed raw metadata" },
+			nodes: graph.nodes.map((node) => ({ ...node, updatedAt: "9007199254740997" })),
+		} })
+		expect(changed.documents).toEqual(original.documents)
+		expect(areLegacyMigrationPlansEquivalent(original, changed)).toBe(false)
+	})
 
-		expect(summaries).toEqual([
-			{
-				byteLength: 10,
-				relativePath: "\uE000.org",
-				revision: "bdfb3860c6a56c4e7b83e37244375e78f4c1e45f9c6bed184aea4179a9e3e0d8",
-			},
-			{
-				byteLength: 6,
-				relativePath: "𐀀.org",
-				revision: "16367aacb67a4a017c8da8ab95682ccb390863780f7114dda0a0e0c55644c7c4",
-			},
+	it("summarizes UTF-8 with native byte lengths, SHA-256, and bytewise path ordering", async () => {
+		expect(await summarizeLegacyMigrationArtifacts([
+			{ content: "second", relativePath: "𐀀.org" }, { content: "你好🌾", relativePath: "\uE000.org" },
+		])).toEqual([
+			{ byteLength: 10, relativePath: "\uE000.org", revision: "bdfb3860c6a56c4e7b83e37244375e78f4c1e45f9c6bed184aea4179a9e3e0d8" },
+			{ byteLength: 6, relativePath: "𐀀.org", revision: "16367aacb67a4a017c8da8ab95682ccb390863780f7114dda0a0e0c55644c7c4" },
 		])
 	})
 
-	it("builds the same deterministic artifact payload for every execution", () => {
-		const plan = planLegacyMigration({ contents, nodes, workspaceTitle: workspace.title })
-		expect(createLegacyMigrationArtifactPayload(plan)).toEqual(
-			createLegacyMigrationArtifactPayload(plan),
-		)
-	})
-
-	it("includes dangling content but excludes content owned by another workspace", async () => {
-		const otherWorkspaceNode = { ...nodes[1], id: "other-document", workspace: "workspace-2" }
-		const danglingContent = {
-			...contents[0],
-			content: "{dangling legacy source}",
-			contentType: "lexical" as const,
-			id: "content-dangling",
-			nodeId: "missing-node",
-		}
-		const otherWorkspaceContent = {
-			...danglingContent,
-			content: "{must not migrate}",
-			id: "content-other",
-			nodeId: otherWorkspaceNode.id,
-		}
-		const getSnapshot = vi.fn(() =>
-			TE.right({
-				allContents: [...contents, danglingContent, otherWorkspaceContent],
-				allNodes: [...nodes, otherWorkspaceNode],
-				workspaceNodes: nodes,
-				workspaceTitle: workspace.title,
-			}),
-		)
-
-		const result = await prepareLegacyMigrationFlow(workspace, {
-			getLegacyMigrationSnapshot: getSnapshot,
-		})()
-
+	it("uses the atomic raw workspace title and preserves dangling content without UI-derived metadata", async () => {
+		const dangling = { ...contents[0], id: "dangling", nodeId: "missing-node", content: "orphan\u0000" }
+		const result = await prepareLegacyMigrationFlow(workspace, { getLegacyMigrationSnapshot: () => TE.right({ graph, contents: [...contents, dangling] }) })()
 		expect(E.isRight(result)).toBe(true)
 		if (E.isRight(result)) {
 			expect(result.right.rootDirectory).toBe("My Book")
-			expect(result.right.documents).toEqual([
-				{
-					content: "#+TITLE: Chapter\n#+SOURCE_ID: document-1\n\nbody",
-					nodeId: "document-1",
-					path: "My Book/Drafts/Chapter.org",
-				},
-			])
-			expect(result.right.rawBackups.map(({ contentId }) => contentId)).toEqual([
-				"content-1",
-				"content-dangling",
-			])
-			expect(result.right.manifest).toContain("Content references missing node missing-node")
-			expect(result.right.manifest).not.toContain("other-document")
-			expect(result.right.manifest).not.toContain("content-other")
-		}
-		expect(getSnapshot).toHaveBeenCalledOnce()
-		expect(getSnapshot).toHaveBeenCalledWith("workspace-1")
-	})
-
-	it("preserves the failing API error and identifies its preparation stage", async () => {
-		const nodeError: AppError = { message: "nodes unavailable", type: "DB_ERROR" }
-		const getSnapshot = vi.fn(() => TE.left(nodeError))
-
-		const nodeFailure = await prepareLegacyMigrationFlow(workspace, {
-			getLegacyMigrationSnapshot: getSnapshot,
-		})()
-		expect(nodeFailure).toEqual({
-			_tag: "Left",
-			left: { cause: nodeError, stage: "load-nodes", type: "LEGACY_MIGRATION_ERROR" },
-		})
-		expect(getSnapshot).toHaveBeenCalledOnce()
-	})
-
-	it("writes an exact batch, verifies its sidecar, and returns the completed result", async () => {
-		const plan = planLegacyMigration({
-			contents: [
-				{
-					content: "{legacy lexical}",
-					contentType: "lexical",
-					id: "content-1",
-					lastEdit: timestamp,
-					nodeId: "document-1",
-				},
-			],
-			nodes: [nodes[1]],
-			workspaceTitle: workspace.title,
-		})
-		const migrationResult = {
-			artifacts: plan.documents.map(({ path }) => ({
-				byteLength: 12,
-				relativePath: path,
-				revision: "rev-1",
-			})),
-			verificationPath: "My Book/migration-verification.json",
-			writtenPaths: plan.documents.map(({ path }) => path),
-		}
-		const verificationResult = { checkedCount: 1, mismatches: [] }
-		const writeMigration = vi.fn(() => TE.right(migrationResult))
-		const verifyMigration = vi.fn(() => TE.right(verificationResult))
-
-		const result = await executeLegacyMigrationFlow(
-			"/approved",
-			plan,
-			repositoryWith({ verifyMigration, writeMigration }),
-		)()
-
-		expect(result).toEqual({
-			_tag: "Right",
-			right: { verification: verificationResult, write: migrationResult },
-		})
-		expect(writeMigration).toHaveBeenCalledWith({
-			artifacts: [
-				...plan.documents.map(({ content, path }) => ({ content, relativePath: path })),
-				...plan.rawBackups.map(({ content, path }) => ({ content, relativePath: path })),
-				{ content: plan.recoverySql, relativePath: plan.recoverySqlPath },
-				{ content: plan.manifest, relativePath: plan.manifestPath },
-			],
-			directories: plan.directories.map(({ path }) => path),
-			workspaceRoot: "/approved",
-		})
-		expect(verifyMigration).toHaveBeenCalledWith({
-			expectedArtifacts: migrationResult.artifacts,
-			verificationPath: migrationResult.verificationPath,
-			workspaceRoot: "/approved",
-		})
-		expect(plan.rawBackups).toHaveLength(1)
-	})
-
-	it("returns a typed verify-artifacts failure when the verifier command fails", async () => {
-		const error: OrgFileError = {
-			cause: "verification sidecar unreadable",
-			command: "verify_org_migration",
-			message: "verify_org_migration failed: verification sidecar unreadable",
-			operation: "verifyMigration",
-			type: "ORG_FILE_ERROR",
-		}
-		const plan = planLegacyMigration({ contents, nodes, workspaceTitle: workspace.title })
-
-		const result = await executeLegacyMigrationFlow(
-			"/approved",
-			plan,
-			repositoryWith({ verifyMigration: () => TE.left(error) }),
-		)()
-
-		expect(result).toEqual({
-			_tag: "Left",
-			left: { cause: error, stage: "verify-artifacts", type: "LEGACY_MIGRATION_ERROR" },
-		})
-	})
-
-	it("returns mismatch details as a typed verify-artifacts failure", async () => {
-		const mismatch = {
-			actualByteLength: 8,
-			actualRevision: "actual-revision",
-			expectedByteLength: 12,
-			expectedRevision: "expected-revision",
-			relativePath: "My Book/Chapter.org",
-		}
-		const plan = planLegacyMigration({ contents, nodes, workspaceTitle: workspace.title })
-
-		const result = await executeLegacyMigrationFlow(
-			"/approved",
-			plan,
-			repositoryWith({
-				verifyMigration: () => TE.right({ checkedCount: 3, mismatches: [mismatch] }),
-			}),
-		)()
-
-		expect(result).toEqual({
-			_tag: "Left",
-			left: {
-				cause: {
-					checkedCount: 3,
-					message: "Migration verification found 1 artifact mismatch(es)",
-					mismatches: [mismatch],
-					type: "MIGRATION_VERIFICATION_MISMATCH",
-				},
-				stage: "verify-artifacts",
-				type: "LEGACY_MIGRATION_ERROR",
-			},
-		})
-	})
-
-	it("rejects a verification result that checked fewer artifacts than were written", async () => {
-		const plan = planLegacyMigration({ contents, nodes, workspaceTitle: workspace.title })
-		const migrationResult = {
-			artifacts: [
-				{ byteLength: 12, relativePath: "My Book/Chapter.org", revision: "rev-1" },
-				{ byteLength: 8, relativePath: "My Book/manifest.json", revision: "rev-2" },
-			],
-			verificationPath: "My Book/migration-verification.json",
-			writtenPaths: [],
-		}
-
-		const result = await executeLegacyMigrationFlow(
-			"/approved",
-			plan,
-			repositoryWith({
-				verifyMigration: () => TE.right({ checkedCount: 1, mismatches: [] }),
-				writeMigration: () => TE.right(migrationResult),
-			}),
-		)()
-
-		expect(result).toEqual({
-			_tag: "Left",
-			left: {
-				cause: {
-					checkedCount: 1,
-					message: "Migration verification checked 1 of 2 artifact(s)",
-					mismatches: [],
-					type: "MIGRATION_VERIFICATION_MISMATCH",
-				},
-				stage: "verify-artifacts",
-				type: "LEGACY_MIGRATION_ERROR",
-			},
-		})
-	})
-
-	it("verifies a rebuilt migration plan after restart", async () => {
-		const verifyMigration = vi.fn(
-			({ expectedArtifacts }: { expectedArtifacts: readonly unknown[] }) =>
-				TE.right({ checkedCount: expectedArtifacts.length, mismatches: [] }),
-		)
-
-		const result = await verifyLegacyMigrationRecoveryFlow(
-			workspace,
-			"/approved",
-			{
-				getLegacyMigrationSnapshot: () =>
-					TE.right({
-						allContents: contents,
-						allNodes: nodes,
-						workspaceNodes: nodes,
-						workspaceTitle: workspace.title,
-					}),
-				summarizeArtifacts: summarizeLegacyMigrationArtifacts,
-			},
-			repositoryWith({ verifyMigration }),
-		)()
-
-		expect(E.isRight(result)).toBe(true)
-		expect(verifyMigration).toHaveBeenCalledWith({
-			expectedArtifacts: expect.arrayContaining([
-				expect.objectContaining({ relativePath: "My Book/Drafts/Chapter.org" }),
-			]),
-			verificationPath: "My Book/migration-verification.json",
-			workspaceRoot: "/approved",
-		})
-		if (E.isRight(result)) {
-			expect(result.right.verification.checkedCount).toBe(result.right.expectedArtifacts.length)
+			expect(result.right.graph.workspace).toEqual(graph.workspace)
+			expect(result.right.rawBackups.map(({ contentId }) => contentId).sort()).toEqual(["content-1", "dangling"])
+			expect(result.right.rawBackups.find(({ contentId }) => contentId === "dangling")?.content).toBe("orphan\u0000")
 		}
 	})
 
-	it("reports a changed rebuilt legacy source as a verification mismatch", async () => {
-		const mismatch = {
-			actualByteLength: 4,
-			actualRevision: "old-revision",
-			expectedByteLength: 7,
-			expectedRevision: "new-revision",
-			relativePath: "My Book/Drafts/Chapter.org",
-		}
-		const result = await verifyLegacyMigrationRecoveryFlow(
-			workspace,
-			"/approved",
-			{
-				getLegacyMigrationSnapshot: () =>
-					TE.right({
-						allContents: [{ ...contents[0], content: "changed" }],
-						allNodes: nodes,
-						workspaceNodes: nodes,
-						workspaceTitle: workspace.title,
-					}),
-				summarizeArtifacts: summarizeLegacyMigrationArtifacts,
-			},
-			repositoryWith({
-				verifyMigration: ({ expectedArtifacts }) =>
-					TE.right({ checkedCount: expectedArtifacts.length, mismatches: [mismatch] }),
-			}),
-		)()
-
-		expect(result).toEqual({
-			_tag: "Left",
-			left: {
-				cause: {
-					checkedCount: 4,
-					message: "Migration verification found 1 artifact mismatch(es)",
-					mismatches: [mismatch],
-					type: "MIGRATION_VERIFICATION_MISMATCH",
-				},
-				stage: "verify-artifacts",
-				type: "LEGACY_MIGRATION_ERROR",
-			},
-		})
+	it("preserves failing API errors in the preparation stage", async () => {
+		const error: AppError = { message: "nodes unavailable", type: "DB_ERROR" }
+		expect(await prepareLegacyMigrationFlow(workspace, { getLegacyMigrationSnapshot: () => TE.left(error) })()).toMatchObject({ _tag: "Left", left: { cause: error, stage: "load-nodes" } })
 	})
 
-	it("keeps recovery verifier command failures in the typed verification stage", async () => {
-		const error: OrgFileError = {
-			cause: "sidecar unavailable",
-			command: "verify_org_migration",
-			message: "verify_org_migration failed: sidecar unavailable",
-			operation: "verifyMigration",
-			type: "ORG_FILE_ERROR",
+	it("rejects another workspace's graph and noncanonical metadata in the typed preparation stage", async () => {
+		for (const invalidGraph of [
+			{ ...graph, workspace: { ...graph.workspace, id: "another-workspace" } },
+			{ ...graph, nodes: graph.nodes.map((node) => ({ ...node, createdAt: "9223372036854775808" })) },
+		]) {
+			expect(await prepareLegacyMigrationFlow(workspace, { getLegacyMigrationSnapshot: () => TE.right({ graph: invalidGraph, contents }) })()).toMatchObject({ _tag: "Left", left: { stage: "load-contents", cause: { type: "VALIDATION_ERROR" } } })
 		}
-		const result = await verifyLegacyMigrationRecoveryFlow(
-			workspace,
-			"/approved",
-			{
-				getLegacyMigrationSnapshot: () =>
-					TE.right({
-						allContents: contents,
-						allNodes: nodes,
-						workspaceNodes: nodes,
-						workspaceTitle: workspace.title,
-					}),
-				summarizeArtifacts: summarizeLegacyMigrationArtifacts,
-			},
-			repositoryWith({ verifyMigration: () => TE.left(error) }),
-		)()
-
-		expect(result).toEqual({
-			_tag: "Left",
-			left: { cause: error, stage: "verify-artifacts", type: "LEGACY_MIGRATION_ERROR" },
-		})
 	})
 
-	it("keeps recovery hashing failures in the typed hash stage", async () => {
+	it("preserves write and verification command errors in their typed stages", async () => {
+		const plan = planLegacyMigration(snapshot)
+		for (const [stage, repository] of [
+			["write-artifacts", repositoryWith({ writeMigration: () => TE.left(boundaryError) })],
+			["verify-artifacts", repositoryWith({ verifyMigration: () => TE.left(boundaryError) })],
+		] as const) {
+			expect(await executeLegacyMigrationFlow("/approved", "grant", plan, repository)()).toMatchObject({ _tag: "Left", left: { stage, cause: boundaryError } })
+		}
+	})
+
+	it("reports verifier mismatches and rejects incomplete verification receipts", async () => {
+		const plan = planLegacyMigration(snapshot)
+		const mismatch = { actualByteLength: 8, actualRevision: "actual", expectedByteLength: 12, expectedRevision: "expected", relativePath: "My Book/Chapter.org" }
+		const result = await executeLegacyMigrationFlow("/approved", "grant", plan, repositoryWith({ verifyMigration: () => TE.right({ checkedCount: 3, mismatches: [mismatch] }) }))()
+		expect(result).toMatchObject({ _tag: "Left", left: { stage: "verify-artifacts", cause: { type: "MIGRATION_VERIFICATION_MISMATCH", mismatches: [mismatch] } } })
+		const incomplete = await executeLegacyMigrationFlow("/approved", "grant", plan, repositoryWith({
+			writeMigration: () => TE.right({ artifacts: [{ byteLength: 12, relativePath: "My Book/Chapter.org", revision: "rev-1" }, { byteLength: 8, relativePath: plan.manifestPath, revision: "rev-2" }], verificationPath: "My Book/migration-verification.json", writtenPaths: [] }),
+			verifyMigration: () => TE.right({ checkedCount: 1, mismatches: [] }),
+		}))()
+		expect(incomplete).toMatchObject({ _tag: "Left", left: { stage: "verify-artifacts", cause: { type: "MIGRATION_VERIFICATION_MISMATCH", checkedCount: 1 } } })
+	})
+
+	it("reports changed rebuilt source, command failures, and hashing failures after restart", async () => {
+		const mismatch = { actualByteLength: 4, actualRevision: "old", expectedByteLength: 7, expectedRevision: "new", relativePath: "My Book/Drafts/Chapter.org" }
+		const changed = await verifyLegacyMigrationRecoveryFlow(workspace, "/approved", { ...dependencies, getLegacyMigrationSnapshot: () => TE.right({ graph, contents: [{ ...contents[0], content: "changed" }] }) }, repositoryWith({ verifyMigration: ({ expectedArtifacts }) => TE.right({ checkedCount: expectedArtifacts.length, mismatches: [mismatch] }) }), "grant")()
+		expect(changed).toMatchObject({ _tag: "Left", left: { stage: "verify-artifacts", cause: { mismatches: [mismatch] } } })
+		expect(await verifyLegacyMigrationRecoveryFlow(workspace, "/approved", dependencies, repositoryWith({ verifyMigration: () => TE.left(boundaryError) }), "grant")()).toMatchObject({ _tag: "Left", left: { stage: "verify-artifacts", cause: boundaryError } })
 		const failure = new Error("crypto unavailable")
-		const result = await verifyLegacyMigrationRecoveryFlow(
-			workspace,
-			"/approved",
-			{
-				getLegacyMigrationSnapshot: () =>
-					TE.right({
-						allContents: contents,
-						allNodes: nodes,
-						workspaceNodes: nodes,
-						workspaceTitle: workspace.title,
-					}),
-				summarizeArtifacts: () => Promise.reject(failure),
-			},
-			repositoryWith(),
-		)()
-
-		expect(result).toEqual({
-			_tag: "Left",
-			left: {
-				cause: {
-					cause: failure,
-					message: "Failed to hash rebuilt migration artifacts",
-					type: "MIGRATION_ARTIFACT_HASH_ERROR",
-				},
-				stage: "hash-artifacts",
-				type: "LEGACY_MIGRATION_ERROR",
-			},
-		})
+		expect(await verifyLegacyMigrationRecoveryFlow(workspace, "/approved", { ...dependencies, summarizeArtifacts: () => Promise.reject(failure) }, repositoryWith(), "grant")()).toMatchObject({ _tag: "Left", left: { stage: "hash-artifacts", cause: { cause: failure, type: "MIGRATION_ARTIFACT_HASH_ERROR" } } })
 	})
 
-	it("reconstructs every content row exactly from verified raw backups", async () => {
-		const plan = planLegacyMigration({ contents, nodes, workspaceTitle: workspace.title })
-		const result = await runLegacyMigrationRecoveryDrillFlow(
-			workspace,
-			"/approved",
-			{
-				getLegacyMigrationSnapshot: () =>
-					TE.right({
-						allContents: contents,
-						allNodes: nodes,
-						workspaceNodes: nodes,
-						workspaceTitle: workspace.title,
-					}),
-				summarizeArtifacts: summarizeLegacyMigrationArtifacts,
-			},
-			repositoryWith({
-				readMigrationRecovery: () =>
-					TE.right({
-						manifest: plan.manifest,
-						rawBackups: plan.rawBackups.map((backup) => ({ ...backup })),
-						recoverySql: plan.recoverySql,
-					}),
-				verifyMigration: ({ expectedArtifacts }) =>
-					TE.right({ checkedCount: expectedArtifacts.length, mismatches: [] }),
-			}),
-		)()
-
-		expect(result).toMatchObject({
-			_tag: "Right",
-			right: {
-				manifestPath: plan.manifestPath,
-				recoveredContentCount: contents.length,
-			},
-		})
+	it.each(["body", "graph", "sql", "missing-graph"])("rejects corrupted %s recovery receipts without throwing", async (kind) => {
+		const plan = planLegacyMigration(snapshot)
+		const bundle = { manifest: plan.manifest, graph: plan.graph, rawBackups: plan.rawBackups, recoverySql: plan.recoverySql }
+		const corrupted = kind === "body" ? { ...bundle, rawBackups: bundle.rawBackups.map((backup) => ({ ...backup, content: "tampered" })) }
+			: kind === "graph" ? { ...bundle, graph: { ...graph, workspace: { ...graph.workspace, updatedAt: "1" } } }
+			: kind === "sql" ? { ...bundle, recoverySql: "DROP TABLE nodes;" }
+			: { ...bundle, graph: undefined }
+		const result = await runLegacyMigrationRecoveryDrillFlow(workspace, "/approved", dependencies, repositoryWith({
+			readMigrationRecovery: () => TE.right(corrupted as typeof bundle),
+			verifyMigration: ({ expectedArtifacts }) => TE.right({ checkedCount: expectedArtifacts.length, mismatches: [] }),
+		}), "grant")()
+		expect(result).toMatchObject({ _tag: "Left", left: { stage: "read-recovery", cause: { type: "MIGRATION_RECOVERY_MISMATCH" } } })
 	})
 
-	it("rejects a raw backup whose exact content differs from the rebuilt source", async () => {
-		const plan = planLegacyMigration({ contents, nodes, workspaceTitle: workspace.title })
-		const result = await runLegacyMigrationRecoveryDrillFlow(
-			workspace,
-			"/approved",
-			{
-				getLegacyMigrationSnapshot: () =>
-					TE.right({
-						allContents: contents,
-						allNodes: nodes,
-						workspaceNodes: nodes,
-						workspaceTitle: workspace.title,
-					}),
-				summarizeArtifacts: summarizeLegacyMigrationArtifacts,
-			},
-			repositoryWith({
-				readMigrationRecovery: () =>
-					TE.right({
-						manifest: plan.manifest,
-						rawBackups: plan.rawBackups.map((backup, index) => ({
-							...backup,
-							content: index === 0 ? `${backup.content}tampered` : backup.content,
-						})),
-						recoverySql: plan.recoverySql,
-					}),
-				verifyMigration: ({ expectedArtifacts }) =>
-					TE.right({ checkedCount: expectedArtifacts.length, mismatches: [] }),
-			}),
-		)()
-		expect(result).toMatchObject({
-			_tag: "Left",
-			left: { cause: { type: "MIGRATION_RECOVERY_MISMATCH" }, stage: "read-recovery" },
-		})
+	it("refuses publication when exact graph metadata changes between atomic snapshots", async () => {
+		let reads = 0
+		const writeMigration = vi.fn<OrgFileRepository["writeMigration"]>(() => TE.left(boundaryError))
+		const result = await migrateLegacyWorkspaceFlow(workspace, "/approved", { getLegacyMigrationSnapshot: () => TE.right(++reads === 1 ? snapshot : { ...snapshot, graph: { ...graph, workspace: { ...graph.workspace, description: "changed" } } }) }, repositoryWith({ writeMigration }), "grant")()
+		expect(result).toMatchObject({ _tag: "Left", left: { stage: "read-recovery", cause: { type: "MIGRATION_RECOVERY_MISMATCH" } } })
+		expect(writeMigration).not.toHaveBeenCalled()
 	})
 
-	it("preserves a repository failure at the write stage", async () => {
-		const error: OrgFileError = {
-			cause: "disk full",
-			command: "write_org_migration",
-			message: "write_org_migration failed: disk full",
-			operation: "writeMigration",
-			type: "ORG_FILE_ERROR",
-		}
-		const plan = planLegacyMigration({ contents, nodes, workspaceTitle: workspace.title })
-
-		const result = await executeLegacyMigrationFlow(
-			"/approved",
-			plan,
-			repositoryWith({ writeMigration: () => TE.left(error) }),
-		)()
-
-		expect(result).toEqual({
-			_tag: "Left",
-			left: { cause: error, stage: "write-artifacts", type: "LEGACY_MIGRATION_ERROR" },
-		})
+	it("retains a published snapshot and reports source changes during publication", async () => {
+		let reads = 0
+		const result = await migrateLegacyWorkspaceFlow(workspace, "/approved", { getLegacyMigrationSnapshot: () => TE.right(++reads < 3 ? snapshot : { ...snapshot, graph: { ...graph, nodes: graph.nodes.map((node) => ({ ...node, tags: "changed raw metadata" })) } }) }, repositoryWith(), "grant")()
+		expect(result).toMatchObject({ _tag: "Left", left: { stage: "read-recovery", cause: { type: "MIGRATION_RECOVERY_MISMATCH" } } })
 	})
 })

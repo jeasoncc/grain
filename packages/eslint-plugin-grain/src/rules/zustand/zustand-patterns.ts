@@ -1,6 +1,6 @@
 import type { TSESTree } from "@typescript-eslint/utils"
 import { ESLintUtils } from "@typescript-eslint/utils"
-import { getArchitectureLayer, isViewComponent } from "../../utils/architecture"
+import { isViewComponent } from "../../utils/architecture"
 import { buildErrorMessage } from "../../utils/message-builder"
 
 const createRule = ESLintUtils.RuleCreator(
@@ -16,8 +16,7 @@ type MessageIds =
 
 export default createRule<[], MessageIds>({
 	create(context) {
-		const filename = context.getFilename()
-		const layer = getArchitectureLayer(filename)
+		const filename = context.filename
 		const isView = isViewComponent(filename)
 
 		// Track if we're in a store definition file
@@ -152,9 +151,9 @@ export default createRule<[], MessageIds>({
 					) {
 						return n
 					}
-					// 递归查找子节点
-					for (const key in n) {
-						const child = (n as any)[key]
+					// Only follow AST children, never ESLint's parent backreferences.
+					for (const key of context.sourceCode.visitorKeys[n.type] ?? []) {
+						const child = (n as unknown as Record<string, TSESTree.Node | TSESTree.Node[]>)[key]
 						if (child && typeof child === "object") {
 							if (Array.isArray(child)) {
 								for (const item of child) {

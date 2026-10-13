@@ -9,7 +9,7 @@ const createRule = ESLintUtils.RuleCreator(
 
 export default createRule({
 	create(context) {
-		const filename = context.getFilename()
+		const filename = context.filename
 
 		// 跳过测试文件
 		if (/\.(test|spec)\.(ts|tsx)$/.test(filename)) {
@@ -35,7 +35,7 @@ export default createRule({
 							layer,
 						},
 						messageId: "invalidFileName",
-						node,
+						node: node.body[0] ?? node,
 					})
 				}
 			},

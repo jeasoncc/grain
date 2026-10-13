@@ -30,9 +30,6 @@ export {
 	decodeContentOptional,
 	decodeContents,
 	decodeLegacyMigrationContents,
-	encodeContentToSaveRequest,
-	encodeCreateContent,
-	encodeUpdateContent,
 } from "./content.codec"
 // Node Codec
 export {

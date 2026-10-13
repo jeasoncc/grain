@@ -2,14 +2,14 @@
 //!
 //! 实现数据库备份和恢复功能
 
-use crate::types::config::AppConfig;
+use crate::types::config::{AppConfig, ORG_DERIVED_DB_FILENAME};
 use crate::types::error::{AppError, AppResult};
 use chrono::Utc;
+use cap_std::{ambient_authority, fs::Dir};
 use std::fs::{self, File};
 use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::path::{Component, Path, PathBuf};
 use tracing::{info, warn};
-use walkdir::WalkDir;
 use zip::write::SimpleFileOptions;
 use zip::{ZipArchive, ZipWriter};
 
@@ -31,20 +31,36 @@ pub struct BackupInfo {
 // 纯函数（数据转换）
 // ============================================================================
 
-/// 生成备份文件名（使用毫秒精度避免重复）
-pub fn generate_backup_filename() -> String {
-    let timestamp = Utc::now().format("%Y%m%d_%H%M%S_%3f");
-    format!("grain-backup-{}.zip", timestamp)
+fn backup_prefix(config: &AppConfig) -> &'static str {
+    if config.db_filename == ORG_DERIVED_DB_FILENAME {
+        "grain-org-index-backup-"
+    } else {
+        "grain-backup-"
+    }
 }
 
-/// 检查文件名是否为有效的备份文件
+/// Generate a database-specific namespace; derived cache archives are never historical backups.
+pub fn generate_backup_filename(config: &AppConfig) -> String {
+    let timestamp = Utc::now().format("%Y%m%d_%H%M%S_%3f");
+    format!("{}{}.zip", backup_prefix(config), timestamp)
+}
+
+/// Accept only single-component historical or derived backup timestamp names.
 pub fn is_valid_backup_filename(filename: &str) -> bool {
-    filename.starts_with("grain-backup-") && filename.ends_with(".zip")
+    let timestamp = filename.strip_prefix("grain-backup-")
+        .or_else(|| filename.strip_prefix("grain-org-index-backup-"))
+        .and_then(|name| name.strip_suffix(".zip"));
+    let Some(timestamp) = timestamp else { return false };
+    matches!(timestamp.len(), 15 | 19)
+        && timestamp.bytes().enumerate().all(|(index, byte)| {
+            if index == 8 || index == 15 { byte == b'_' } else { byte.is_ascii_digit() }
+        })
 }
 
 /// 从文件路径提取备份信息
 pub fn extract_backup_info(path: &PathBuf) -> Option<BackupInfo> {
-    if !path.is_file() {
+    let metadata = fs::symlink_metadata(path).ok()?;
+    if !metadata.file_type().is_file() {
         return None;
     }
 
@@ -54,7 +70,6 @@ pub fn extract_backup_info(path: &PathBuf) -> Option<BackupInfo> {
         return None;
     }
 
-    let metadata = fs::metadata(path).ok()?;
     let created_at = metadata
         .modified()
         .ok()?
@@ -68,6 +83,43 @@ pub fn extract_backup_info(path: &PathBuf) -> Option<BackupInfo> {
         created_at,
         size: metadata.len(),
     })
+}
+
+fn backup_namespace(config: &AppConfig) -> AppResult<Dir> {
+    let path = config.backup_dir();
+    if !fs::symlink_metadata(&path)?.file_type().is_dir() {
+        return Err(AppError::backup_error("Backup namespace must be a real directory"));
+    }
+    Ok(Dir::open_ambient_dir(&path, ambient_authority())?)
+}
+
+fn confined_backup_name<'a>(config: &AppConfig, path: &'a Path) -> AppResult<&'a str> {
+    let filename = path.file_name().and_then(|name| name.to_str())
+        .ok_or_else(|| AppError::backup_error("Invalid backup filename"))?;
+    let single_component = path.components().count() == 1
+        && matches!(path.components().next(), Some(Component::Normal(_)));
+    if (!single_component && path.parent() != Some(config.backup_dir().as_path()))
+        || !is_valid_backup_filename(filename)
+        || !filename.starts_with(backup_prefix(config))
+    {
+        return Err(AppError::backup_error("Backup path is outside its database namespace"));
+    }
+    Ok(filename)
+}
+
+/// Classify archives by both namespace and exact database membership. Old, mixed, corrupt,
+/// symlinked and otherwise unidentified archives are recovery assets, not retention candidates.
+fn open_classified_backup(config: &AppConfig, directory: &Dir, name: &str) -> AppResult<File> {
+    confined_backup_name(config, Path::new(name))?;
+    if !directory.symlink_metadata(name)?.file_type().is_file() {
+        return Err(AppError::backup_error("Backup must be a regular file, not a symbolic link"));
+    }
+    let file = directory.open(name)?.into_std();
+    let mut archive = ZipArchive::new(file)?;
+    if archive.len() != 1 || archive.by_index(0)?.name() != config.db_filename {
+        return Err(AppError::backup_error("Archive is not classified for this database"));
+    }
+    Ok(archive.into_inner())
 }
 
 // ============================================================================
@@ -89,11 +141,11 @@ pub fn create_backup(config: &AppConfig) -> AppResult<BackupInfo> {
     fs::create_dir_all(&backup_dir)?;
 
     // 生成备份文件名
-    let filename = generate_backup_filename();
+    let filename = generate_backup_filename(config);
     let backup_path = backup_dir.join(&filename);
 
     // 创建 ZIP 文件
-    let file = File::create(&backup_path)?;
+    let file = File::options().write(true).create_new(true).open(&backup_path)?;
     let mut zip = ZipWriter::new(file);
 
     // 添加数据库文件到 ZIP
@@ -127,12 +179,9 @@ pub fn create_backup(config: &AppConfig) -> AppResult<BackupInfo> {
 ///
 /// 从 ZIP 文件恢复数据库
 pub fn restore_backup(config: &AppConfig, backup_path: &PathBuf) -> AppResult<()> {
-    if !backup_path.exists() {
-        return Err(AppError::backup_error("备份文件不存在"));
-    }
-
-    // 打开 ZIP 文件
-    let file = File::open(backup_path)?;
+    let name = confined_backup_name(config, backup_path)?;
+    let directory = backup_namespace(config)?;
+    let file = open_classified_backup(config, &directory, name)?;
     let mut archive = ZipArchive::new(file)?;
 
     // 查找数据库文件
@@ -181,30 +230,75 @@ pub fn list_backups(config: &AppConfig) -> AppResult<Vec<BackupInfo>> {
 
     let mut backups = Vec::new();
 
-    for entry in WalkDir::new(&backup_dir).max_depth(1) {
+    let directory = backup_namespace(config)?;
+    for entry in directory.entries()? {
         let entry = entry?;
-        let path = entry.path().to_path_buf();
-
+        let filename = entry.file_name();
+        let Some(name) = filename.to_str() else { continue };
+        if open_classified_backup(config, &directory, name).is_err() {
+            continue;
+        }
+        let path = backup_dir.join(name);
         if let Some(info) = extract_backup_info(&path) {
             backups.push(info);
         }
     }
 
     // 按创建时间降序排序
-    backups.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    backups.sort_by(|a, b| b.created_at.cmp(&a.created_at).then_with(|| b.filename.cmp(&a.filename)));
 
     Ok(backups)
 }
 
 /// 删除备份
-pub fn delete_backup(backup_path: &PathBuf) -> AppResult<()> {
-    if !backup_path.exists() {
-        return Err(AppError::backup_error("备份文件不存在"));
+pub fn delete_backup(config: &AppConfig, backup_path: &PathBuf) -> AppResult<()> {
+    let name = confined_backup_name(config, backup_path)?;
+    let directory = backup_namespace(config)?;
+    // Avoid disturbing known recovery assets; then capture and reclassify the actual entry.
+    // A concurrent replacement of the original name must never turn inspection into an unlink
+    // of unrelated bytes. Private captures containing uncertain bytes are retained on failure.
+    drop(open_classified_backup(config, &directory, name)?);
+    let capture_name = format!(".grain-backup-delete-{}", uuid::Uuid::new_v4());
+    directory.create_dir(&capture_name)?;
+    let capture = directory.open_dir(&capture_name)?;
+    if let Err(error) = directory.rename(name, &capture, name) {
+        let _ = directory.remove_dir(&capture_name);
+        return Err(error.into());
     }
-
-    fs::remove_file(backup_path)?;
+    if let Err(error) = delete_captured_backup(config, &directory, &capture, name) {
+        if !capture.try_exists(name)? {
+            let _ = directory.remove_dir(&capture_name);
+            return Err(error);
+        }
+        return Err(AppError::backup_error(&format!(
+            "{error}; uncertain captured assets remain in {}/{}",
+            config.backup_dir().display(), capture_name,
+        )));
+    }
+    directory.remove_dir(&capture_name)?;
     info!("删除备份: {:?}", backup_path);
     Ok(())
+}
+
+fn delete_captured_backup(config: &AppConfig, directory: &Dir, capture: &Dir, name: &str) -> AppResult<()> {
+    match open_classified_backup(config, capture, name) {
+        Ok(file) => {
+            drop(file);
+            capture.remove_file(name)?;
+            Ok(())
+        }
+        Err(error) => {
+            // Restore regular unidentified archives only with exclusive creation. If a new file
+            // already occupies the original name, or the captured entry is not a regular file,
+            // retain both assets rather than guessing ownership or overwriting the replacement.
+            if capture.symlink_metadata(name)?.file_type().is_file()
+                && capture.hard_link(name, directory, name).is_ok()
+            {
+                capture.remove_file(name)?;
+            }
+            Err(error)
+        }
+    }
 }
 
 /// 清理旧备份（保留最近 N 个）
@@ -219,7 +313,7 @@ pub fn cleanup_old_backups(config: &AppConfig, keep_count: usize) -> AppResult<u
     while backups.len() > keep_count {
         if let Some(oldest) = backups.pop() {
             let path = PathBuf::from(&oldest.path);
-            if let Err(e) = delete_backup(&path) {
+            if let Err(e) = delete_backup(config, &path) {
                 warn!("删除旧备份失败: {} - {}", oldest.filename, e);
             } else {
                 deleted += 1;
@@ -240,11 +334,36 @@ mod tests {
     use super::*;
     use tempfile::tempdir;
 
+    fn write_archive(path: &Path, database: &str) {
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        let mut zip = ZipWriter::new(File::create(path).unwrap());
+        zip.start_file(database, SimpleFileOptions::default()).unwrap();
+        zip.write_all(b"database recovery bytes").unwrap();
+        zip.finish().unwrap();
+    }
+
     #[test]
     fn test_generate_backup_filename() {
-        let filename = generate_backup_filename();
+        let filename = generate_backup_filename(&AppConfig::default());
         assert!(filename.starts_with("grain-backup-"));
         assert!(filename.ends_with(".zip"));
+    }
+
+    #[test]
+    fn backup_timestamp_names_are_single_component_and_database_scoped() {
+        assert!(is_valid_backup_filename("grain-org-index-backup-20240101_120000_001.zip"));
+        for filename in [
+            "grain-backup-../../20240101_120000.zip",
+            "grain-backup-/20240101_120000.zip",
+            "grain-backup-20240101_120000/001.zip",
+            "grain-backup-20240101_120000_abc.zip",
+            "grain-backup-anything.zip",
+        ] {
+            assert!(!is_valid_backup_filename(filename), "{filename}");
+        }
+        let derived = AppConfig::for_tauri_mode(false);
+        assert!(generate_backup_filename(&derived).starts_with("grain-org-index-backup-"));
+        assert!(confined_backup_name(&derived, Path::new("grain-backup-20240101_120000.zip")).is_err());
     }
 
     #[test]
@@ -330,7 +449,7 @@ mod tests {
 
         // 删除备份
         let backup_path = PathBuf::from(&backup_info.path);
-        let result = delete_backup(&backup_path);
+        let result = delete_backup(&config, &backup_path);
         assert!(result.is_ok());
 
         // 验证已删除
@@ -352,10 +471,12 @@ mod tests {
         let db_path = config.db_path();
         fs::write(&db_path, "test").unwrap();
 
-        // 创建多个备份（毫秒精度文件名，短暂等待即可）
-        for _ in 0..5 {
-            create_backup(&config).unwrap();
-            std::thread::sleep(std::time::Duration::from_millis(10));
+        // Fixed archive names avoid sleep-based ordering and exercise the real archive classifier.
+        for day in 1..=5 {
+            write_archive(
+                &config.backup_dir().join(format!("grain-backup-2024010{day}_120000.zip")),
+                &config.db_filename,
+            );
         }
 
         // 验证创建了 5 个备份
@@ -369,5 +490,114 @@ mod tests {
         // 验证剩余数量
         let backups = list_backups(&config).unwrap();
         assert_eq!(backups.len(), 2);
+    }
+
+    #[test]
+    fn deletion_and_restore_reject_ambient_paths_and_traversal() {
+        let root = tempdir().unwrap();
+        let mut config = AppConfig::for_tauri_mode(true);
+        config.data_dir = root.path().join("data");
+        fs::create_dir_all(config.backup_dir()).unwrap();
+        let outside = root.path().join("grain-backup-20240101_120000.zip");
+        write_archive(&outside, &config.db_filename);
+        let original = fs::read(&outside).unwrap();
+        let traversal = config.backup_dir().join("../grain-backup-20240101_120000.zip");
+        assert!(delete_backup(&config, &outside).is_err());
+        assert!(delete_backup(&config, &traversal).is_err());
+        assert!(restore_backup(&config, &outside).is_err());
+        assert!(restore_backup(&config, &traversal).is_err());
+        assert_eq!(fs::read(&outside).unwrap(), original);
+        assert!(!config.db_path().exists());
+    }
+
+    #[test]
+    fn derived_retention_preserves_historical_and_unclassified_archives() {
+        let root = tempdir().unwrap();
+        let mut legacy = AppConfig::for_tauri_mode(true);
+        legacy.data_dir = root.path().to_path_buf();
+        let mut derived = AppConfig::for_tauri_mode(false);
+        derived.data_dir = root.path().to_path_buf();
+        let historical = legacy.backup_dir().join("grain-backup-20240101_120000.zip");
+        write_archive(&historical, &legacy.db_filename);
+        let misnamed_historical = derived.backup_dir().join("grain-org-index-backup-20240101_120000.zip");
+        write_archive(&misnamed_historical, &legacy.db_filename);
+        let unknown = derived.backup_dir().join("grain-org-index-backup-20240102_120000.zip");
+        fs::write(&unknown, b"unclassified recovery bytes").unwrap();
+        let wrong_namespace = derived.backup_dir().join("grain-backup-20240103_120000.zip");
+        write_archive(&wrong_namespace, &derived.db_filename);
+        let classified = derived.backup_dir().join("grain-org-index-backup-20240104_120000.zip");
+        write_archive(&classified, &derived.db_filename);
+
+        assert_eq!(list_backups(&derived).unwrap().len(), 1);
+        assert!(delete_backup(&derived, &historical).is_err());
+        assert!(delete_backup(&derived, &misnamed_historical).is_err());
+        assert!(delete_backup(&derived, &unknown).is_err());
+        assert!(delete_backup(&derived, &wrong_namespace).is_err());
+        assert_eq!(cleanup_old_backups(&derived, 0).unwrap(), 1);
+        for path in [&historical, &misnamed_historical, &unknown, &wrong_namespace] {
+            assert!(path.exists(), "preserve recovery asset {}", path.display());
+        }
+        assert!(!classified.exists());
+        assert_eq!(cleanup_old_backups(&derived, 0).unwrap(), 0);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn backup_operations_reject_symlinks_without_touching_their_targets() {
+        use std::os::unix::fs::symlink;
+        let root = tempdir().unwrap();
+        let mut config = AppConfig::for_tauri_mode(true);
+        config.data_dir = root.path().join("data");
+        fs::create_dir_all(config.backup_dir()).unwrap();
+        let external = root.path().join("external.zip");
+        write_archive(&external, &config.db_filename);
+        let link = config.backup_dir().join("grain-backup-20240101_120000.zip");
+        symlink(&external, &link).unwrap();
+        assert!(delete_backup(&config, &link).is_err());
+        assert!(restore_backup(&config, &link).is_err());
+        assert_eq!(cleanup_old_backups(&config, 0).unwrap(), 0);
+        assert!(external.exists());
+        assert!(fs::symlink_metadata(&link).unwrap().file_type().is_symlink());
+    }
+
+    #[test]
+    fn captured_retention_never_unlinks_a_concurrent_original_name_replacement() {
+        let root = tempdir().unwrap();
+        let mut config = AppConfig::for_tauri_mode(false);
+        config.data_dir = root.path().to_path_buf();
+        let name = "grain-org-index-backup-20240101_120000.zip";
+        let path = config.backup_dir().join(name);
+        write_archive(&path, &config.db_filename);
+        let directory = backup_namespace(&config).unwrap();
+        directory.create_dir("capture").unwrap();
+        let capture = directory.open_dir("capture").unwrap();
+        directory.rename(name, &capture, name).unwrap();
+        write_archive(&path, "grain.db");
+        let replacement = fs::read(&path).unwrap();
+
+        delete_captured_backup(&config, &directory, &capture, name).unwrap();
+        assert_eq!(fs::read(&path).unwrap(), replacement);
+        assert!(!capture.try_exists(name).unwrap());
+    }
+
+    #[test]
+    fn unclassified_captured_archives_restore_exclusively_or_remain_recoverable() {
+        let root = tempdir().unwrap();
+        let mut config = AppConfig::for_tauri_mode(false);
+        config.data_dir = root.path().to_path_buf();
+        fs::create_dir_all(config.backup_dir()).unwrap();
+        let directory = backup_namespace(&config).unwrap();
+        directory.create_dir("capture").unwrap();
+        let capture = directory.open_dir("capture").unwrap();
+        let name = "grain-org-index-backup-20240101_120000.zip";
+        capture.write(name, b"unknown historical bytes").unwrap();
+        assert!(delete_captured_backup(&config, &directory, &capture, name).is_err());
+        assert_eq!(directory.read(name).unwrap(), b"unknown historical bytes");
+        assert!(!capture.try_exists(name).unwrap());
+
+        capture.write(name, b"another historical body").unwrap();
+        assert!(delete_captured_backup(&config, &directory, &capture, name).is_err());
+        assert_eq!(directory.read(name).unwrap(), b"unknown historical bytes");
+        assert_eq!(capture.read(name).unwrap(), b"another historical body");
     }
 }

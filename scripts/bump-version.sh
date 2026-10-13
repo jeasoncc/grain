@@ -262,7 +262,7 @@ main() {
         update_snap_version "$PROJECT_ROOT/snap/snapcraft.yaml" "$NEW_VERSION" >&2
         
         # 9. Flatpak manifest
-        update_flatpak_version "$PROJECT_ROOT/flatpak/com.lotus.NovelEditor.yml" "$NEW_VERSION" >&2
+        update_flatpak_version "$PROJECT_ROOT/flatpak/com.lotus.Grain.yml" "$NEW_VERSION" >&2
         
         # 10. Winget manifests (仅更新版本号，不下载文件)
         update_winget_version "$NEW_VERSION" >&2
@@ -280,7 +280,7 @@ main() {
         update_pkgbuild_version "$PROJECT_ROOT/aur/PKGBUILD" "$NEW_VERSION" >/dev/null 2>&1
         update_pkgbuild_version "$PROJECT_ROOT/aur/PKGBUILD-binary" "$NEW_VERSION" >/dev/null 2>&1
         update_snap_version "$PROJECT_ROOT/snap/snapcraft.yaml" "$NEW_VERSION" >/dev/null 2>&1
-        update_flatpak_version "$PROJECT_ROOT/flatpak/com.lotus.NovelEditor.yml" "$NEW_VERSION" >/dev/null 2>&1
+        update_flatpak_version "$PROJECT_ROOT/flatpak/com.lotus.Grain.yml" "$NEW_VERSION" >/dev/null 2>&1
         update_winget_version "$NEW_VERSION" >/dev/null 2>&1
     fi
     

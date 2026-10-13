@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { usePathname } from "next/navigation";
+import { useDocPathname } from "./hooks/use-doc-pathname";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ function flattenNavItems(items: NavItem[]): NavItem[] {
 }
 
 export function ChapterNavigation() {
-  const pathname = usePathname();
+  const pathname = useDocPathname();
 
   const { prev, next } = useMemo(() => {
     // 在 /docs 路径上不计算

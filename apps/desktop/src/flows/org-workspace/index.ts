@@ -1,34 +1,11 @@
 export {
-	areLegacyMigrationPlansEquivalent,
-	createLegacyMigrationArtifactPayload,
-	executeLegacyMigrationFlow,
-	type LegacyMigrationArtifactHashCause,
-	type LegacyMigrationArtifactPayload,
-	type LegacyMigrationCompletedResult,
-	type LegacyMigrationFlowError,
-	type LegacyMigrationPreparationDependencies,
-	type LegacyMigrationRecoveryCompletedResult,
-	type LegacyMigrationRecoveryDependencies,
-	type LegacyMigrationRecoveryDrillResult,
-	type LegacyMigrationRecoveryMismatchCause,
-	type LegacyMigrationVerificationMismatchCause,
-	type LegacyMigrationWorkspace,
-	migrateLegacyWorkspaceFlow,
-	prepareLegacyMigrationFlow,
-	type RecoveredLegacyContentRow,
-	reconstructLegacyContentsFromBundle,
-	runLegacyMigrationRecoveryDrillFlow,
-	summarizeLegacyMigrationArtifacts,
-	verifyLegacyMigrationRecoveryFlow,
-} from "./legacy-migration.flow"
-export {
 	loadOrgAgendaFlow,
 	ORG_AGENDA_CACHE_MAX_ENTRIES,
 	type OrgAgendaCache,
 	type OrgAgendaCacheEntry,
 	type OrgAgendaFlowError,
-	type OrgAgendaLiveOverlay,
 } from "./org-agenda.flow"
+export type { OrgQueryLiveOverlay } from "./org-query-source.flow"
 export {
 	loadOrgBacklinksFlow,
 	ORG_BACKLINKS_CACHE_MAX_ENTRIES,

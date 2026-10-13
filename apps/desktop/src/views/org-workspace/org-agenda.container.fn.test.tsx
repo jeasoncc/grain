@@ -1,25 +1,35 @@
-import { redoDepth, undoDepth } from "@codemirror/commands"
+import { isolateHistory, redoDepth, undoDepth } from "@codemirror/commands"
 import { EditorState } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react"
+import { act, cleanup, createEvent, fireEvent, screen, within, type RenderResult } from "@testing-library/react"
+import { render } from "@/test/application-providers"
+import { settingsStorageEvent } from "@/test/settings-storage-event"
 import * as E from "fp-ts/Either"
 import { useState } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { useOrgWorkspace, type OrgWorkspaceController } from "@/hooks/use-org-workspace"
 import { orgFileRepository } from "@/io/file/org-file.repository"
-import type { OrgDocumentInterface, OrgWorkspaceInterface } from "@/types/org"
+import type { OrgDocumentInterface, OrgFileError, OrgWorkspaceInterface } from "@/types/org"
 import type { OrgBufferRuntime, OrgBufferWindowHandle } from "@/flows/org-editor-runtime"
-import type { OrgAgendaTodoNoteRequest } from "@/flows/org-command/org-todo-note"
+import type { OrgAgendaTodoNoteRequest, OrgTodoNoteResult } from "@/flows/org-command/org-todo-note"
 import { OrgAgendaContainer } from "./org-agenda.container.fn"
+import { OrgTodoNote } from "../org-editor/org-todo-note.view.fn"
+import { useSettings } from "@/hooks/use-settings"
+import { repairOrgConfigurationStorage } from "@/hooks/use-org-input-configuration"
+import { useApplicationCommandHost, type ApplicationCommandHost } from "@/views/application/application-command-provider"
+import { readOrgSparseClockContext } from "@/io/api/org-clock-context.api"
+import { parseOrgClocks } from "@/pipes/org/org-clock.pipe"
+import * as agendaCommandFlow from "@/flows/org-workspace/org-agenda-command.flow"
 
 // Production container, hook, flows, parser, runtime and CM history; only host/file IO is replaced.
-vi.mock("@tanstack/react-router", () => ({ useBlocker: vi.fn() }))
+vi.mock("@tanstack/react-router", () => ({ useBlocker: vi.fn(), useNavigate: () => vi.fn() }))
 vi.mock("@/io/event/org-window-close.adapter", () => ({
 	registerOrgWindowClose: () => () => undefined,
 }))
 vi.mock("@/io/event/org-workspace-event.adapter", () => ({
 	orgWorkspaceEventAdapter: { listen: async () => () => undefined },
 }))
+vi.mock("@/io/api/org-clock-context.api", () => ({ readOrgSparseClockContext: vi.fn() }))
 vi.mock("@/io/file/org-file.repository", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("@/io/file/org-file.repository")>()
 	const repository = {
@@ -55,10 +65,14 @@ const showEditor = vi.fn()
 let noteCallback: ((request: OrgAgendaTodoNoteRequest) => boolean | void) | undefined
 const disposers: (() => void)[] = []
 let grant = 0
+let commandHost: ApplicationCommandHost
+let nativeEpoch: number
 
-function Harness() {
+function Harness({ loggingTool = false }: { readonly loggingTool?: boolean }) {
 	controller = useOrgWorkspace()
+	commandHost = useApplicationCommandHost()
 	const [visible, setVisible] = useState(true)
+	const [note, setNote] = useState<OrgAgendaTodoNoteRequest | null>(null)
 	hideAgenda = () => setVisible(false)
 	return (
 		<>
@@ -67,10 +81,19 @@ function Harness() {
 				<OrgAgendaContainer
 					controller={controller}
 					onShowEditor={showEditor}
-					onTodoNoteRequest={noteCallback}
+					onTodoNoteRequest={loggingTool ? (request) => {
+						setNote(request)
+						return noteCallback?.(request)
+					} : noteCallback}
 					now={() => new Date(2026, 8, 30, 23, 59)}
 				/>
 			) : null}
+			{note ? <OrgTodoNote
+				request={note}
+				origin={note.origin}
+				closeFence={JSON.stringify([controller.workspace?.capabilityToken, controller.workspaceSessionId])}
+				onClose={() => setNote(null)}
+			/> : null}
 		</>
 	)
 }
@@ -97,8 +120,8 @@ function attach(runtime: OrgBufferRuntime) {
 }
 const live = (path = "tasks.org") =>
 	controller.liveBuffers.find((buffer) => buffer.document.relativePath === path)!
-async function setup() {
-	render(<Harness />)
+async function setup(loggingTool = false) {
+	render(<Harness loggingTool={loggingTool} />)
 	await act(async () => {
 		await controller.openDefaultWorkspace()
 	})
@@ -121,19 +144,29 @@ async function cycleSecondKeyboard() {
 	})
 }
 function expectChangedRows() {
-	const rows = screen
+	const rows = within(screen.getByRole("main", { name: "Org agenda" }))
 		.getAllByRole("button")
 		.filter((button) => button.hasAttribute("data-agenda-open"))
 	expect(within(rows[0]).getByText("NEXT")).toBeInTheDocument()
 	expect(within(rows[1]).getByText("FINISHED")).toBeInTheDocument()
-	expect(screen.getByRole("status")).toHaveTextContent("TODO state changed in working copy")
 }
 
 beforeEach(() => {
 	noteCallback = undefined
 	vi.useFakeTimers()
 	vi.clearAllMocks()
+	nativeEpoch = Date.UTC(2026, 9, 9, 10, 0)
+	vi.mocked(readOrgSparseClockContext).mockImplementation(async calendarTimes => ({
+		nowEpochMs: nativeEpoch, todayStartEpochMs: nativeEpoch - 36000000, todayEndEpochMs: nativeEpoch + 50400000,
+		durationFormat: "gnu-default", includeClockingTask: false, activeClock: null,
+		localTimeToEpochMs: (year, month, day, hour, minute) => {
+			if (!calendarTimes.some(time => time.join(",") === [year, month, day, hour, minute].join(","))) throw new Error("Uncaptured test calendar")
+			return new Date(year, month - 1, day, hour, minute).getTime()
+		},
+	}))
 	window.localStorage.clear()
+	useSettings.setState({ orgAgendaConfigurationJson: "" })
+	repairOrgConfigurationStorage()
 	disk = new Map([
 		[
 			"editor.org",
@@ -172,6 +205,7 @@ beforeEach(() => {
 afterEach(() => {
 	while (disposers.length) disposers.pop()!()
 	cleanup()
+	useSettings.setState({ orgAgendaConfigurationJson: "" })
 	vi.useRealTimers()
 	vi.restoreAllMocks()
 })
@@ -181,10 +215,13 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		await setup()
 		await open("tasks.org")
 		const runtime = live().runtime
-		const original = controller.executeAgendaCommand
-		vi.spyOn(controller, "executeAgendaCommand").mockImplementationOnce((entry, command, signal) =>
-			original(entry, command, signal, {
+		const generation = runtime.revision
+		const original = agendaCommandFlow.runOrgAgendaOperationFlow
+		vi.spyOn(agendaCommandFlow, "runOrgAgendaOperationFlow").mockImplementationOnce((entry, command, ports, signal, options) =>
+			original(entry, command, ports, signal, {
+				...options,
 				onCommitStarted: () => {
+					options?.onCommitStarted?.()
 					throw new Error("precommit observer")
 				},
 			}),
@@ -192,25 +229,27 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		await cycleSecondKeyboard()
 		expect(runtime.source).toBe(source)
 		expect(undoDepth(runtime.state)).toBe(0)
-		expect(screen.getByRole("status")).toHaveTextContent("Cannot change the agenda heading")
+		expect(runtime.revision).toBe(generation)
 		await cycleSecondKeyboard()
 		expect(runtime.source).toBe(changed)
 		expect(undoDepth(runtime.state)).toBe(1)
+		expect(runtime.revision).toBe(generation + 1)
 	})
 
 	it("confirms a committed publication despite an observer throw and drains ownership", async () => {
 		await setup()
 		await open("tasks.org")
 		const runtime = live().runtime
+		const generation = runtime.revision
 		const original = runtime.applyCommandEdits.bind(runtime)
 		vi.spyOn(runtime, "applyCommandEdits").mockImplementationOnce((raw, edits) => {
 			original(raw, edits)
 			throw new Error("observer threw after canonical commit")
 		})
 		await cycleSecondKeyboard()
-		expect(screen.getByRole("status")).toHaveTextContent("TODO state changed")
 		expect(runtime.source).toBe(changed)
 		expect(undoDepth(runtime.state)).toBe(1)
+		expect(runtime.revision).toBe(generation + 1)
 		// A later operation must not inherit the publication or mutation owner.
 		await act(async () => {
 			fireEvent.click(screen.getAllByRole("button", { name: "Cycle TODO for 😀 duplicate" })[0])
@@ -238,14 +277,9 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		expect(callback).toHaveBeenCalledTimes(1)
 		expect(request.validate?.()).toEqual({ kind: "ready" })
 		await act(async () => {
-			expect(await request.execute(" \t\r\n ")).toMatchObject({ kind: "rejected" })
-		})
-		expect(request.validate?.()).toEqual({ kind: "ready" })
-		expect(
-			controller.liveBuffers.some((buffer) => buffer.document.relativePath === "tasks.org"),
-		).toBe(false)
-		await act(async () => {
-			expect(await request.execute("literal note")).toEqual({ kind: "applied" })
+			const accepted = request.execute("literal note")
+			expect(await request.execute("duplicate")).toMatchObject({ kind: "rejected" })
+			expect(await accepted).toEqual({ kind: "applied" })
 		})
 		const runtime = live().runtime
 		expect(runtime.source).toContain("literal note")
@@ -254,6 +288,166 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		expect(undoDepth(runtime.state)).toBe(1)
 		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
 	})
+	it.each(["schedule", "deadline"] as const)("resumes rich %s through a literal logging tool in one canonical history event", async (kind) => {
+		const field = kind === "schedule" ? "SCHEDULED" : "DEADLINE"
+		const raw = `#+STARTUP: ${kind === "schedule" ? "lognotereschedule" : "lognoteredeadline"} logdrawer\r\n` +
+			source.replaceAll("DEADLINE: <2026-07-01 Wed>", `${field}: <2026-07-01 Wed 10:30 +1w>`)
+		disk.set("tasks.org", { relativePath: "tasks.org", content: raw, revision: "tasks-1" })
+		let request!: OrgAgendaTodoNoteRequest
+		noteCallback = (value) => { request = value; return true }
+		await setup(true)
+		const active = controller.activeBufferRuntime
+		const action = screen.getAllByRole("button", { name: `${kind === "schedule" ? "Schedule" : "Deadline"} for 😀 duplicate` })[1]
+		await act(async () => { action.focus(); fireEvent.click(action) })
+		const input = within(screen.getByRole("region", { name: "Minibuffer" })).getByRole("combobox", { name: /date \/ time \/ range \/ repeater \/ warning/ })
+		const selected = "<2026-10-01 08:00-10:30 .+1m --2d>--<2026-10-02 11:00>"
+		await act(async () => { fireEvent.change(input, { target: { value: selected } }); fireEvent.keyDown(input, { key: "Enter" }) })
+		expect(input).not.toBeInTheDocument()
+		expect(controller.liveBuffers.some((buffer) => buffer.document.relativePath === "tasks.org")).toBe(false)
+		expect(request.origin?.isLive()).toBe(true)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+		const tool = screen.getByRole("group", { name: `${kind === "schedule" ? "Schedule" : "Deadline"} logging note` })
+		const note = within(tool).getByRole("textbox") as HTMLTextAreaElement
+		fireEvent.change(note, { target: { value: "literal 😀\r\n* not a heading\u0000" } })
+		note.setSelectionRange(0, note.value.length)
+		const copy = createEvent.keyDown(note, { key: "c", ctrlKey: true })
+		fireEvent(note, copy)
+		expect(copy.defaultPrevented).toBe(false)
+		await act(async () => { fireEvent.click(within(tool).getByRole("button", { name: "Abort note" })) })
+		expect(note).toBeInTheDocument()
+		expect(controller.liveBuffers.some((buffer) => buffer.document.relativePath === "tasks.org")).toBe(false)
+		await act(async () => {
+			fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Keep draft" }))
+		})
+		expect(note).toHaveValue("literal 😀\n* not a heading\u0000")
+		await act(async () => { fireEvent.click(within(tool).getByRole("button", { name: "Finish note" })) })
+		expect(tool).not.toBeInTheDocument()
+		expect(await request.execute("late duplicate")).toMatchObject({ kind: "rejected" })
+		expect(live().runtime.source).toContain(`${field}: ${selected}`)
+		expect(live().runtime.source).toContain("[2026-09-30 Wed 23:59]")
+		expect(live().runtime.source).toContain(
+			`  : ${JSON.stringify("literal 😀\n")}\r\n  : ${JSON.stringify("* not a heading\u0000")}\r\n`,
+		)
+		expect(live().runtime.source.startsWith(raw.slice(0, raw.lastIndexOf("* NEXT")))).toBe(true)
+		expect(undoDepth(live().runtime.state)).toBe(1)
+		expect(live().isDirty).toBe(true)
+		expect(controller.activeBufferRuntime).toBe(active)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+		const runtime = live().runtime
+		const result = runtime.source
+		const editor = attach(runtime)
+		expect(editor.view.state.sliceDoc()).toBe(result)
+		await act(async () => { expect(editor.handle.undo()).toBe(true) })
+		expect(runtime.source).toBe(raw)
+		expect(editor.view.state.sliceDoc()).toBe(raw)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(redoDepth(runtime.state)).toBe(1)
+		await act(async () => { expect(editor.handle.redo()).toBe(true) })
+		expect(runtime.source).toBe(result)
+		expect(editor.view.state.sliceDoc()).toBe(result)
+		expect(undoDepth(runtime.state)).toBe(1)
+		expect(redoDepth(runtime.state)).toBe(0)
+		expect(controller.activeBufferRuntime).toBe(active)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+	it("edits a dirty task through an explicit Agenda scope, cancels then accepts its selected-state note once, and returns Source without touching another dirty buffer", async () => {
+		const raw = source.replace("#+TODO: NEXT | FINISHED\r\n", "#+TODO: NEXT | FINISHED(f@)\r\n")
+		disk.set("tasks.org", { relativePath: "tasks.org", content: raw, revision: "tasks-1" })
+		let request!: OrgAgendaTodoNoteRequest
+		noteCallback = value => { request = value; return true }
+		await setup(true)
+		const other = controller.activeBufferRuntime!
+		const otherEditor = attach(other)
+		await act(async () => { otherEditor.view.dispatch({
+			changes: { from: other.state.doc.length, insert: "unrelated dirty 😀\n" },
+			annotations: isolateHistory.of("full"),
+		}) })
+		const otherBody = other.source
+		const otherHistory = other.state
+		await open("tasks.org")
+		const runtime = live().runtime
+		const taskEditor = attach(runtime)
+		await act(async () => { taskEditor.view.dispatch({
+			changes: { from: runtime.state.doc.length, insert: "task dirty overlay 😀\r\n" },
+			annotations: isolateHistory.of("full"),
+		}) })
+		const dirtyBody = runtime.source
+		const historyDepth = undoDepth(runtime.state)
+		await act(async () => { useSettings.setState({ orgAgendaConfigurationJson: JSON.stringify({
+			version: 1, views: [{
+				id: "tasks", name: "Task states", files: ["tasks.org"], mode: "todo",
+				todo: ["NEXT", "FINISHED"], match: null, window: null, overdue: false, deadlineWarningDays: null,
+			}],
+		}) }) })
+		expect(screen.queryByRole("button", { name: "Cycle TODO for 😀 duplicate" })).not.toBeInTheDocument()
+		await act(async () => { fireEvent.change(screen.getByRole("combobox", { name: "Agenda view" }), { target: { value: "tasks" } }) })
+		for (const accepted of [false, true]) {
+			const row = screen.getByRole("main").querySelectorAll<HTMLButtonElement>("[data-agenda-open]")[1]
+			await act(async () => { row.focus(); await commandHost.registry.execute("org-agenda.todo-state") })
+			const input = within(screen.getByRole("region", { name: "Minibuffer" })).getByRole("combobox", { name: /Agenda TODO state/ })
+			await act(async () => { fireEvent.change(input, { target: { value: "FINISHED" } }); fireEvent.keyDown(input, { key: "Enter" }) })
+			expect(runtime.source).toBe(dirtyBody)
+			const tool = screen.getByRole("group", { name: "TODO state logging note" })
+			if (!accepted) {
+				await act(async () => { fireEvent.click(within(tool).getByRole("button", { name: "Abort note" })) })
+				expect(undoDepth(runtime.state)).toBe(historyDepth)
+				expect(runtime.source).toBe(dirtyBody)
+			} else {
+				fireEvent.change(within(tool).getByRole("textbox"), { target: { value: "selected second task literal 😀" } })
+				await act(async () => { fireEvent.click(within(tool).getByRole("button", { name: "Finish note" })) })
+				expect(await request.execute("duplicate acceptance")).toMatchObject({ kind: "rejected" })
+				expect(undoDepth(runtime.state)).toBe(historyDepth + 1)
+				expect(runtime.source).toContain("selected second task literal 😀")
+				expect(runtime.source).toContain("task dirty overlay 😀")
+				expect(runtime.source.startsWith(dirtyBody.slice(0, dirtyBody.lastIndexOf("* NEXT")))).toBe(true)
+			}
+		}
+		await act(async () => { expect(taskEditor.handle.undo()).toBe(true) })
+		expect(runtime.source).toBe(dirtyBody)
+		expect(undoDepth(runtime.state)).toBe(historyDepth)
+		const selected = screen.getByRole("main").querySelectorAll<HTMLButtonElement>("[data-agenda-open]")[1]
+		await act(async () => { selected.focus(); await commandHost.registry.execute("org-agenda.return-source") })
+		expect(controller.revealTarget).toMatchObject({ relativePath: "tasks.org", line: 5 })
+		expect(showEditor).toHaveBeenCalledOnce()
+		expect(other.source).toBe(otherBody)
+		expect(other.state).toBe(otherHistory)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+
+	it.each(["complete-repeating", "remove-schedule", "remove-deadline"] as const)("executes selected-row %s on canonical ranges and undoes its whole operation once", async (kind) => {
+		const raw = source.replaceAll("DEADLINE: <2026-07-01 Wed>",
+			"SCHEDULED: <2026-07-01 Wed +1w> DEADLINE: <2026-07-02 Thu ++1m>")
+		disk.set("tasks.org", { relativePath: "tasks.org", content: raw, revision: "tasks-1" })
+		render(<Harness />)
+		await act(async () => { await controller.openDefaultWorkspace() })
+		await open("editor.org")
+		const unrelated = controller.activeBufferRuntime
+		const rows = [...screen.getByRole("main").querySelectorAll<HTMLButtonElement>("[data-agenda-open]")]
+		const selected = rows.find(row => row.closest("li")?.dataset.agendaHeading === String(raw.lastIndexOf("* NEXT")))!
+		await act(async () => { selected.focus(); await commandHost.registry.execute(`org-agenda.${kind}`) })
+		const runtime = live().runtime
+		const boundary = raw.lastIndexOf("* NEXT")
+		expect(runtime.source.slice(0, boundary)).toBe(raw.slice(0, boundary))
+		const selectedBody = runtime.source.slice(boundary)
+		if (kind === "complete-repeating") {
+			expect(selectedBody).toContain("* FINISHED 😀 duplicate")
+			expect(selectedBody).toContain("SCHEDULED: <2026-07-01 Wed +0w>")
+			expect(selectedBody).toContain("DEADLINE: <2026-07-02 Thu ++0m>")
+		} else {
+			expect(selectedBody).not.toContain(kind === "remove-schedule" ? "SCHEDULED:" : "DEADLINE:")
+			expect(selectedBody).toContain(kind === "remove-schedule"
+				? "DEADLINE: <2026-07-02 Thu ++1m>" : "SCHEDULED: <2026-07-01 Wed +1w>")
+			expect(selectedBody).toContain("* NEXT 😀 duplicate")
+		}
+		expect(undoDepth(runtime.state)).toBe(1)
+		const editor = attach(runtime)
+		await act(async () => { expect(editor.handle.undo()).toBe(true) })
+		expect(runtime.source).toBe(raw)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(controller.activeBufferRuntime).toBe(unrelated)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+
 	it.each([
 		["shell", "rejected"],
 		["shell", "confirmed"],
@@ -269,11 +463,12 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		})
 		noteCallback = callback
 		await setup()
-		const original = controller.executeAgendaCommand
-		vi.spyOn(controller, "executeAgendaCommand")
+		const original = agendaCommandFlow.runOrgAgendaOperationFlow
+		vi.spyOn(agendaCommandFlow, "runOrgAgendaOperationFlow")
 			.mockImplementationOnce(original)
-			.mockImplementationOnce((entry, command, signal, options) =>
-				original(entry, command, signal, {
+			.mockImplementationOnce((entry, command, ports, signal, options) =>
+				original(entry, command, ports, signal, {
+					...options,
 					onCommitStarted: () => {
 						options?.onCommitStarted?.()
 						if (surface === "shell") request.abort()
@@ -286,13 +481,10 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		await cycleSecondKeyboard()
 		await act(async () => {
 			expect(await request.execute("literal note")).toMatchObject({
-				kind: outcome === "confirmed" ? "applied" : "rejected",
+				kind: outcome === "confirmed" ? "applied" : "aborted",
 			})
 		})
 		expect(request.validate?.()).toMatchObject({ kind: "rejected" })
-		expect(screen.getByRole("status")).toHaveTextContent(
-			outcome === "confirmed" ? "TODO state changed" : "Agenda action cancelled",
-		)
 		expect(live().runtime.source.includes("literal note")).toBe(outcome === "confirmed")
 		expect(undoDepth(live().runtime.state)).toBe(outcome === "confirmed" ? 1 : 0)
 		// Deferred cancellation must release ownership, not leave the old prompt retryable.
@@ -303,38 +495,94 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		act(() => request.abort())
 		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
 	})
-	it("revokes a shell note request on Agenda unmount without allocating", async () => {
+	it.each(["unmount", "new grant"])("retires a real copyable logging note without late mutation: %s", async (mode) => {
 		const raw = source.replace("#+TODO: NEXT | FINISHED\r\n", "#+TODO: NEXT | FINISHED(f@)\r\n")
 		disk.set("tasks.org", { relativePath: "tasks.org", content: raw, revision: "tasks-1" })
 		let request!: OrgAgendaTodoNoteRequest
 		noteCallback = (value) => {
 			request = value
 		}
-		await setup()
+		await setup(true)
 		await cycleSecondKeyboard()
-		act(() => hideAgenda())
+		const tool = screen.getByRole("group", { name: "TODO state logging note" })
+		const note = within(tool).getByRole("textbox") as HTMLTextAreaElement
+		fireEvent.change(note, { target: { value: "copy before closing\n* literal draft" } })
+		await act(async () => {
+			if (mode === "unmount") hideAgenda()
+			else {
+				workspace = { ...workspace, capabilityToken: `new-${++grant}` }
+				await controller.openDefaultWorkspace()
+			}
+		})
+		expect(note).toHaveValue("copy before closing\n* literal draft")
+		expect(note).toHaveAttribute("readonly")
+		expect(request.origin?.isLive()).toBe(false)
+		note.setSelectionRange(0, note.value.length)
+		const copy = createEvent.keyDown(note, { ctrlKey: true, key: "c" })
+		fireEvent(note, copy)
+		expect(copy.defaultPrevented).toBe(false)
 		expect(await request.execute("late")).toMatchObject({ kind: "rejected" })
 		expect(
 			controller.liveBuffers.some((buffer) => buffer.document.relativePath === "tasks.org"),
 		).toBe(false)
 		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+		await act(async () => { fireEvent.click(within(tool).getByRole("button", { name: "Abort note" })) })
+		expect(note).toBeInTheDocument()
+		await act(async () => {
+			fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Keep draft" }))
+		})
+		expect(note).toHaveValue("copy before closing\n* literal draft")
+		await act(async () => { fireEvent.click(within(tool).getByRole("button", { name: "Abort note" })) })
+		await act(async () => {
+			fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Close tool" }))
+		})
+		expect(tool).not.toBeInTheDocument()
+		expect(controller.liveBuffers.some((buffer) => buffer.document.relativePath === "tasks.org")).toBe(false)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
 	})
-	it.each([
-		["#+TODO: NEXT | FINISHED(f@)\r\n", "requires a note"],
-		["#+TODO: NEXT | FINISHED\r\n#+PROPERTY: LOGGING repeat\r\n", "unsupported-logging-policy"],
-	])("renders TODO policy refusal from the production planner (%s)", async (directives, message) => {
-		const raw = source.replace("#+TODO: NEXT | FINISHED\r\n", directives)
+	it("aborts a pending note Source read when the producer source generation changes and retains the literal draft", async () => {
+		const raw = source.replace("#+TODO: NEXT | FINISHED\r\n", "#+TODO: NEXT | FINISHED(f@)\r\n")
+		disk.set("tasks.org", { relativePath: "tasks.org", content: raw, revision: "tasks-1" })
+		let request!: OrgAgendaTodoNoteRequest
+		noteCallback = value => { request = value; return true }
+		await setup(true)
+		const unrelated = controller.activeBufferRuntime!
+		const editor = attach(unrelated)
+		await cycleSecondKeyboard()
+		const draft = within(screen.getByRole("group", { name: "TODO state logging note" })).getByRole("textbox")
+		fireEvent.change(draft, { target: { value: "pending literal note 😀" } })
+		const { promise, resolve } = Promise.withResolvers<E.Either<OrgFileError, OrgDocumentInterface>>()
+		vi.mocked(orgFileRepository.readDocument).mockImplementationOnce(() => () => promise)
+		let accepted!: Promise<OrgTodoNoteResult>
+		act(() => { accepted = request.execute("pending literal note 😀") })
+		await act(async () => { editor.view.dispatch({
+			changes: { from: unrelated.state.doc.length, insert: "new producer generation\n" },
+			annotations: isolateHistory.of("full"),
+		}) })
+		await act(async () => { expect(await accepted).toMatchObject({ kind: "rejected" }) })
+		expect(draft).toHaveValue("pending literal note 😀")
+		expect(draft).toHaveAttribute("readonly")
+		expect(controller.liveBuffers.some(buffer => buffer.document.relativePath === "tasks.org")).toBe(false)
+		await act(async () => { resolve(E.right(disk.get("tasks.org")!)) })
+		expect(controller.liveBuffers.some(buffer => buffer.document.relativePath === "tasks.org")).toBe(false)
+		expect(unrelated.source).toContain("new producer generation")
+		expect(undoDepth(unrelated.state)).toBe(1)
+		expect(disk.get("tasks.org")!.content).toBe(raw)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+
+	it("refuses a note-required transition without a logging tool, without partial source or history", async () => {
+		const raw = source.replace("#+TODO: NEXT | FINISHED\r\n", "#+TODO: NEXT | FINISHED(f@)\r\n")
 		disk.set("tasks.org", { relativePath: "tasks.org", content: raw, revision: "tasks-1" })
 		await setup()
 		await open("tasks.org")
 		const runtime = controller.activeBufferRuntime!
 		await cycleSecondKeyboard()
-		expect(screen.getByRole("status")).toHaveTextContent(message)
 		expect(runtime.source).toBe(raw)
 		expect(undoDepth(runtime.state)).toBe(0)
 		expect(controller.isDirty).toBe(false)
 		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
-		const rows = screen
+		const rows = within(screen.getByRole("main", { name: "Org agenda" }))
 			.getAllByRole("button")
 			.filter((button) => button.hasAttribute("data-agenda-open"))
 		for (const row of rows) expect(within(row).getByText("NEXT")).toBeInTheDocument()
@@ -402,7 +650,6 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		const editor = attach(runtime)
 		const update = vi.spyOn(editor.view, "update")
 		await cycleSecondKeyboard()
-		expect(screen.getByRole("status")).toHaveTextContent("Cannot change TODO state:")
 		expect(runtime.source).toBe(raw)
 		expect(editor.view.state.sliceDoc()).toBe(raw)
 		expect(
@@ -437,11 +684,9 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 				fireEvent.keyDown(originalRow, { key: "s" })
 			}
 		})
-		const input = screen.getByRole("combobox")
-		expect(input).toHaveValue("2026-09-30")
+		const input = within(screen.getByRole("region", { name: "Minibuffer" })).getByRole("combobox", { name: /date \/ time \/ range \/ repeater \/ warning/ })
 		expect(controller.liveBuffers.map((buffer) => buffer.bufferId)).toEqual(before)
 		expect(controller.activeBufferRuntime).toBe(active)
-		expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
 		await act(async () => {
 			fireEvent.change(input, { target: { value: "2026-08-01" } })
 			fireEvent.keyDown(input, { key: "Enter" })
@@ -489,12 +734,12 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 			row.focus()
 			fireEvent.keyDown(row, { key: "d" })
 		})
-		expect(screen.getByRole("combobox")).toHaveValue("2026-07-01")
+		const input = within(screen.getByRole("region", { name: "Minibuffer" })).getByRole("combobox", { name: /date \/ time \/ range \/ repeater \/ warning/ })
 		await act(async () => {
-			fireEvent.keyDown(screen.getByRole("combobox"), { key: "Enter" })
+			fireEvent.change(input, { target: { value: "<2026-07-01 Wed>" } })
+			fireEvent.keyDown(input, { key: "Enter" })
 		})
-		expect(screen.queryByRole("combobox")).not.toBeInTheDocument()
-		expect(screen.getByRole("status")).toHaveTextContent("Deadline unchanged")
+		expect(input).not.toBeInTheDocument()
 		expect(controller.liveBuffers.map((buffer) => buffer.bufferId)).toEqual(before)
 		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
 	})
@@ -593,6 +838,7 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		await setup()
 		const active = controller.activeBufferRuntime
 		const before = controller.liveBuffers.map((buffer) => [buffer.bufferId, buffer.content])
+		const execute = vi.spyOn(controller, "executeAgendaCommand")
 		let settle!: (value: E.Either<never, OrgDocumentInterface>) => void
 		vi.mocked(orgFileRepository.readDocument).mockClear()
 		vi.mocked(orgFileRepository.readDocument).mockReturnValueOnce(
@@ -604,9 +850,11 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		await act(async () => {
 			fireEvent.click(screen.getAllByRole("button", { name: "Cycle TODO for 😀 duplicate" })[1])
 		})
-		expect(controller.isLoading).toBe(true)
+		expect(execute).toHaveBeenCalledOnce()
+		const signal = execute.mock.calls[0][2]!
+		expect(signal.aborted).toBe(false)
 		expect(screen.getByRole("main", { name: "Org agenda" })).toHaveAttribute("aria-busy", "true")
-		for (const button of screen.getAllByRole("button"))
+		for (const button of within(screen.getByRole("main", { name: "Org agenda" })).getAllByRole("button"))
 			expect(button).toHaveAttribute("aria-disabled", "true")
 		await act(async () => {
 			fireEvent.keyDown(screen.getByRole("main", { name: "Org agenda" }), { key: "t" })
@@ -616,7 +864,7 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		await act(async () => {
 			hideAgenda()
 		})
-		expect(controller.isLoading).toBe(false)
+		expect(signal.aborted).toBe(true)
 		await act(async () => {
 			settle(E.right(disk.get("tasks.org")!))
 		})
@@ -710,7 +958,7 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 			expect(document.activeElement).toBe(agenda.querySelector("[data-agenda-open]"))
 		else expect(document.activeElement).toBe(mode === "moved" ? other : agenda)
 		if (mode === "refresh error")
-			expect(screen.getByRole("alert")).toHaveTextContent("refresh failed")
+			expect(within(agenda).getByRole("alert")).toBeInTheDocument()
 	})
 
 	it.each([
@@ -720,6 +968,7 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		"valid",
 	])("guards deferred production open navigation: %s", async (mode) => {
 		await setup()
+		const openAt = vi.spyOn(controller, "openDocumentAt")
 		let settle!: (value: E.Either<never, OrgDocumentInterface>) => void
 		vi.mocked(orgFileRepository.readDocument).mockReturnValueOnce(
 			() =>
@@ -733,6 +982,9 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		await act(async () => {
 			fireEvent.keyDown(rows[0], { key: "Enter" })
 		})
+		expect(openAt).toHaveBeenCalledOnce()
+		const signal = openAt.mock.calls[0][4]!
+		expect(signal.aborted).toBe(false)
 		await act(async () => {
 			if (mode === "unmount") hideAgenda()
 			if (mode === "new grant") {
@@ -742,10 +994,19 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 			if (mode === "superseded") fireEvent.click(rows[1])
 		})
 		const calls = showEditor.mock.calls.length
+		expect(signal.aborted).toBe(mode !== "valid")
+		const active = controller.activeBufferRuntime
+		const before = controller.liveBuffers.map((buffer) => [buffer.bufferId, buffer.content])
+		const reveal = controller.revealTarget
 		await act(async () => {
 			settle(E.right(disk.get("tasks.org")!))
 		})
 		expect(showEditor).toHaveBeenCalledTimes(calls + (mode === "valid" ? 1 : 0))
+		if (mode !== "valid") {
+			expect(controller.activeBufferRuntime).toBe(active)
+			expect(controller.liveBuffers.map((buffer) => [buffer.bufferId, buffer.content])).toEqual(before)
+			expect(controller.revealTarget).toBe(reveal)
+		}
 	})
 
 	it("catches unexpected open rejection and false without navigation", async () => {
@@ -755,16 +1016,19 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 			.mockRejectedValueOnce(new Error("unexpected"))
 		// Mount an independent production container on the real root controller boundary.
 		cleanup()
-		const mounted = render(<OrgAgendaContainer controller={controller} onShowEditor={showEditor} />)
-		await act(async () => {})
+		let mounted!: RenderResult
 		await act(async () => {
-			fireEvent.click(screen.getAllByRole("button")[0])
+			mounted = render(<OrgAgendaContainer controller={controller} onShowEditor={showEditor} />)
+		})
+		await act(async () => {
+			fireEvent.click(screen.getByRole("main", { name: "Org agenda" }).querySelector<HTMLButtonElement>("[data-agenda-open]")!)
 		})
 		expect(openAt).toHaveBeenCalledOnce()
 		expect(showEditor).not.toHaveBeenCalled()
+		expect(screen.getByRole("alert")).toHaveTextContent("Cannot open the selected Agenda Source.")
 		openAt.mockResolvedValueOnce(false)
 		await act(async () => {
-			fireEvent.click(screen.getAllByRole("button")[0])
+			fireEvent.click(screen.getByRole("main", { name: "Org agenda" }).querySelector<HTMLButtonElement>("[data-agenda-open]")!)
 		})
 		expect(showEditor).not.toHaveBeenCalled()
 		mounted.unmount()
@@ -782,7 +1046,7 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		})
 		let settle!: (opened: boolean) => void
 		const openAt = vi
-			.fn()
+			.fn<OrgWorkspaceController["openDocumentAt"]>()
 			.mockImplementationOnce(
 				() =>
 					new Promise<boolean>((resolve) => {
@@ -791,11 +1055,16 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 			)
 			.mockResolvedValueOnce(false)
 		const snapshot = { ...rootController, openDocumentAt: openAt }
-		const mounted = render(<OrgAgendaContainer controller={snapshot} onShowEditor={showEditor} />)
-		await act(async () => {})
+		let mounted!: RenderResult
 		await act(async () => {
-			fireEvent.click(screen.getAllByRole("button")[0])
+			mounted = render(<OrgAgendaContainer controller={snapshot} onShowEditor={showEditor} />)
 		})
+		await act(async () => {
+			fireEvent.click(screen.getByRole("main", { name: "Org agenda" }).querySelector<HTMLButtonElement>("[data-agenda-open]")!)
+		})
+		expect(openAt).toHaveBeenCalledOnce()
+		const signal = openAt.mock.calls[0][4]!
+		expect(signal.aborted).toBe(false)
 		await act(async () => {
 			if (mode === "unmount") mounted.unmount()
 			if (mode === "scope")
@@ -814,6 +1083,7 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 					screen.getByRole("main").querySelectorAll<HTMLButtonElement>("[data-agenda-open]")[1],
 				)
 		})
+		expect(signal.aborted).toBe(true)
 		await act(async () => {
 			settle(true)
 		})
@@ -834,7 +1104,6 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 			return event
 		}
 		for (const init of [
-			{ key: "c", ctrlKey: true },
 			{ key: "t", isComposing: true },
 			{ key: "t", keyCode: 229 },
 		])
@@ -858,5 +1127,370 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		})
 		expect(live().content).toBe(changed)
 		expect(document.activeElement).toBe(rows[1])
+	})
+
+	it("derives agenda rows from real failed-save parked edits without writing or changing canonical history", async () => {
+		await setup()
+		await open("tasks.org")
+		const runtime = live().runtime
+		const editor = attach(runtime)
+		const working = "* TODO Parked agenda source\r\n<2026-10-07 Wed>\r\n😀\0"
+		await act(async () => editor.view.dispatch({
+			changes: { from: 0, to: editor.view.state.doc.length, insert: working },
+		}))
+		vi.mocked(orgFileRepository.writeDocument).mockReturnValueOnce(async () => E.left({
+			type: "ORG_FILE_ERROR", operation: "write", command: "write_org_document",
+			message: "simulated save failure", cause: "denied",
+		}))
+		await act(async () => { await controller.saveDocument() })
+		await open("editor.org")
+		const history = undoDepth(runtime.state)
+		const sourceGeneration = runtime.revision
+		expect(live().runtime).toBe(runtime)
+		const incarnation = live().runtimeIncarnation
+		vi.mocked(orgFileRepository.readDocument).mockClear()
+		vi.mocked(orgFileRepository.writeDocument).mockClear()
+		expect(screen.getByText("Parked agenda source")).toBeInTheDocument()
+		expect(screen.queryByText("😀 duplicate")).not.toBeInTheDocument()
+		expect(disk.get("tasks.org")!.content).toBe(source)
+		expect(runtime.source).toBe(working)
+		expect(runtime.revision).toBe(sourceGeneration)
+		expect(undoDepth(runtime.state)).toBe(history)
+		const undated = "* TODO No dated entry\r\n😀\0"
+		await act(async () => editor.view.dispatch({
+			annotations: isolateHistory.of("full"),
+			changes: { from: 0, to: editor.view.state.doc.length, insert: undated },
+		}))
+		const editedHistory = runtime.state
+		const editedGeneration = runtime.revision
+		expect(runtime.source).toBe(undated)
+		expect(screen.queryByText("Parked agenda source")).not.toBeInTheDocument()
+		expect(screen.queryByText("😀 duplicate")).not.toBeInTheDocument()
+		expect(runtime.state).toBe(editedHistory)
+		expect(runtime.revision).toBe(editedGeneration)
+
+		await act(async () => { expect(editor.handle.undo()).toBe(true) })
+		const undoneHistory = runtime.state
+		const undoneGeneration = runtime.revision
+		expect(runtime.source).toBe(working)
+		expect(screen.getByText("Parked agenda source")).toBeInTheDocument()
+		expect(screen.queryByText("😀 duplicate")).not.toBeInTheDocument()
+		expect(undoDepth(runtime.state)).toBe(history)
+		expect(redoDepth(runtime.state)).toBe(1)
+		expect(runtime.state).toBe(undoneHistory)
+		expect(runtime.revision).toBe(undoneGeneration)
+		await act(async () => { expect(editor.handle.redo()).toBe(true) })
+		const redoneHistory = runtime.state
+		const redoneGeneration = runtime.revision
+		expect(runtime.source).toBe(undated)
+		expect(screen.queryByText("Parked agenda source")).not.toBeInTheDocument()
+		expect(screen.queryByText("😀 duplicate")).not.toBeInTheDocument()
+		expect(runtime.state).toBe(redoneHistory)
+		expect(runtime.revision).toBe(redoneGeneration)
+		expect(live().runtime).toBe(runtime)
+		expect(live().runtimeIncarnation).toBe(incarnation)
+		expect(undoDepth(runtime.state)).toBe(history + 1)
+		expect(redoDepth(runtime.state)).toBe(0)
+		expect(disk.get("tasks.org")!.content).toBe(source)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+		expect(orgFileRepository.readDocument).not.toHaveBeenCalled()
+	})
+
+	it("removes disappeared unopened agenda sources instead of retaining cached rows", async () => {
+		await setup()
+		disk.delete("tasks.org")
+		workspace = { ...workspace, documents: workspace.documents.filter(({ relativePath }) => relativePath !== "tasks.org") }
+		await act(async () => { await controller.refreshWorkspace() })
+		expect(screen.queryByText("😀 duplicate")).not.toBeInTheDocument()
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+
+	it("rejects superseded agenda disk completion after same-root grant replacement", async () => {
+		await setup()
+		let resolve!: (value: E.Either<OrgFileError, OrgDocumentInterface>) => void
+		vi.mocked(orgFileRepository.readDocument).mockImplementationOnce(() => () => new Promise((settle) => { resolve = settle }))
+		workspace = {
+			...workspace,
+			documents: workspace.documents.map((document) => document.relativePath === "tasks.org"
+				? { ...document, revision: "tasks-2" } : document),
+		}
+		await act(async () => { await controller.refreshWorkspace() })
+		workspace = { ...workspace, capabilityToken: `agenda-replacement-${++grant}` }
+		disk.set("tasks.org", { relativePath: "tasks.org", revision: "tasks-2", content: "* TODO Current grant agenda\n<2026-10-07>" })
+		await act(async () => { await controller.openDefaultWorkspace() })
+		expect(screen.queryByText("😀 duplicate")).not.toBeInTheDocument()
+		await open("editor.org")
+		expect(screen.getByText("Current grant agenda")).toBeInTheDocument()
+		await act(async () => { resolve(E.right({ relativePath: "tasks.org", revision: "tasks-2", content: source })) })
+		expect(screen.getByText("Current grant agenda")).toBeInTheDocument()
+		expect(screen.queryByText("😀 duplicate")).not.toBeInTheDocument()
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+
+	it("preserves focused same-session rows during a replacement read without lending them fresh command permission", async () => {
+		await setup()
+		const rows = screen.getByRole("main").querySelectorAll<HTMLButtonElement>("[data-agenda-open]")
+		const focused = rows[1]
+		focused.focus()
+		const original = controller.activeBufferRuntime
+		const { promise, resolve } = Promise.withResolvers<E.Either<OrgFileError, OrgDocumentInterface>>()
+		vi.mocked(orgFileRepository.readDocument).mockImplementationOnce(() => () => promise)
+		workspace = { ...workspace, documents: workspace.documents.map(document =>
+			document.relativePath === "tasks.org" ? { ...document, revision: "tasks-2" } : document) }
+		disk.set("tasks.org", { relativePath: "tasks.org", revision: "tasks-2", content: source.replaceAll("😀 duplicate", "Replacement") })
+		await act(async () => { await controller.refreshWorkspace() })
+		expect(focused).toHaveFocus()
+		expect(screen.getAllByRole("button", { name: "Cycle TODO for 😀 duplicate" })).toHaveLength(2)
+		const reads = vi.mocked(orgFileRepository.readDocument).mock.calls.length
+		await act(async () => {
+			fireEvent.keyDown(focused, { key: "t" })
+			fireEvent.click(screen.getAllByRole("button", { name: "Cycle TODO for 😀 duplicate" })[1])
+		})
+		expect(orgFileRepository.readDocument).toHaveBeenCalledTimes(reads)
+		expect(controller.liveBuffers.some(buffer => buffer.document.relativePath === "tasks.org")).toBe(false)
+		expect(controller.activeBufferRuntime).toBe(original)
+		expect(undoDepth(original!.state)).toBe(0)
+		await act(async () => { resolve(E.right(disk.get("tasks.org")!)) })
+		expect(screen.queryByRole("button", { name: "Cycle TODO for 😀 duplicate" })).not.toBeInTheDocument()
+		expect(screen.getAllByRole("button", { name: "Cycle TODO for Replacement" })).toHaveLength(2)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+
+	it("uses virtual range and undated list rows on exact Source anchors with one canonical undo and real return-to-source", async () => {
+		const raw = "#+TODO: NEXT | FINISHED\r\n* NEXT Range\r\n<2026-09-29 Tue>--<2026-10-01 Thu>\r\n* NEXT Undated\r\nbody\r\n"
+		disk.set("tasks.org", { relativePath: "tasks.org", content: raw, revision: "tasks-1" })
+		const dated = { id: "range", name: "Range", files: ["tasks.org"], mode: "dates", todo: null, match: null, window: { start: "2026-09-30", span: 2 }, overdue: false, deadlineWarningDays: null }
+		const list = { ...dated, id: "pending", name: "Pending", mode: "todo", todo: "pending", match: 'FILE="/notes/tasks.org"/!NEXT', window: null }
+		useSettings.setState({ orgAgendaConfigurationJson: JSON.stringify({ version: 1, views: [dated, list] }) })
+		render(<Harness />)
+		await act(async () => { await controller.openDefaultWorkspace() })
+		expect(screen.queryByRole("button", { name: "Cycle TODO for Range" })).not.toBeInTheDocument()
+		await act(async () => { fireEvent.change(screen.getByRole("combobox", { name: "Agenda view" }), { target: { value: "range" } }) })
+		expect(screen.getAllByRole("button", { name: "Cycle TODO for Range" })).toHaveLength(2)
+		const row = screen.getAllByRole("button", { name: "Cycle TODO for Range" })[1].closest("li")!.querySelector<HTMLButtonElement>("[data-agenda-open]")!
+		await act(async () => { row.focus(); fireEvent.keyDown(row, { key: "Enter" }) })
+		expect(controller.revealTarget).toMatchObject({ relativePath: "tasks.org", line: 3 })
+		expect(showEditor).toHaveBeenCalledOnce()
+		const runtime = live().runtime
+		const editor = attach(runtime)
+		await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: "Cycle TODO for Range" })[1]) })
+		expect(runtime.source).toBe(raw.replace("* NEXT Range", "* FINISHED Range"))
+		expect(editor.view.state.sliceDoc()).toBe(runtime.source)
+		expect(undoDepth(runtime.state)).toBe(1)
+		await act(async () => { expect(editor.handle.undo()).toBe(true) })
+		expect(runtime.source).toBe(raw)
+		await act(async () => { fireEvent.change(screen.getByRole("combobox", { name: "Agenda view" }), { target: { value: "pending" } }) })
+		expect(screen.getAllByRole("button", { name: "Cycle TODO for Range" })).toHaveLength(1)
+		expect(screen.getByRole("button", { name: "Cycle TODO for Undated" })).toBeInTheDocument()
+		await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Cycle TODO for Undated" })) })
+		expect(runtime.source).toBe(raw.replace("* NEXT Undated", "* FINISHED Undated"))
+		expect(undoDepth(runtime.state)).toBe(1)
+		expect(screen.queryByRole("button", { name: "Cycle TODO for Undated" })).not.toBeInTheDocument()
+		await act(async () => { expect(editor.handle.undo()).toBe(true) })
+		expect(runtime.source).toBe(raw)
+		expect(screen.getByRole("button", { name: "Cycle TODO for Undated" })).toBeInTheDocument()
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+
+	it("retires a real action preparation on configuration ABA before its reader can publish", async () => {
+		await setup()
+		await open("tasks.org")
+		const original = controller.prepareAgendaCommand
+		const { promise: gate, resolve: release } = Promise.withResolvers<void>()
+		let signal!: AbortSignal
+		vi.spyOn(controller, "prepareAgendaCommand").mockImplementationOnce(async (entry, kind, abort) => {
+			signal = abort!
+			await gate
+			return original(entry, kind, abort)
+		})
+		await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: "Schedule for 😀 duplicate" })[0]) })
+		await act(async () => {
+			useSettings.setState({ orgAgendaConfigurationJson: "{\"version\":1,\"views\":[]}" })
+			useSettings.setState({ orgAgendaConfigurationJson: "" })
+			release()
+		})
+		expect(signal.aborted).toBe(true)
+		expect(screen.queryByRole("region", { name: "Minibuffer" })).not.toBeInTheDocument()
+		expect(live().runtime.source).toBe(source)
+		expect(undoDepth(live().runtime.state)).toBe(0)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+
+	it.each(["preparation", "navigation"] as const)("synchronously retires %s on a storage-only generation before identical settings hydrate", async (operation) => {
+		await setup()
+		const originalSource = controller.activeBufferRuntime
+		const { promise, resolve } = Promise.withResolvers<E.Either<OrgFileError, OrgDocumentInterface>>()
+		vi.mocked(orgFileRepository.readDocument).mockImplementationOnce(() => () => promise)
+		let signal!: AbortSignal
+		if (operation === "preparation") {
+			const original = controller.prepareAgendaCommand
+			vi.spyOn(controller, "prepareAgendaCommand").mockImplementationOnce((entry, kind, abort) => {
+				signal = abort!
+				return original(entry, kind, abort)
+			})
+			await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: "Schedule for 😀 duplicate" })[1]) })
+		} else {
+			const original = controller.openDocumentAt
+			vi.spyOn(controller, "openDocumentAt").mockImplementationOnce((path, line, revision, current, abort) => {
+				signal = abort!
+				return original(path, line, revision, current, abort)
+			})
+			await act(async () => {
+				const row = screen.getByRole("main").querySelectorAll<HTMLButtonElement>("[data-agenda-open]")[1]
+				row.focus()
+				fireEvent.click(row)
+			})
+		}
+		expect(signal.aborted).toBe(false)
+		const raw = useSettings.getState().orgAgendaConfigurationJson
+		await act(async () => {
+			window.dispatchEvent(settingsStorageEvent(localStorage.getItem("grain-settings")))
+			// No raw JSON change or React retirement effect is needed to abort the old producer.
+			expect(signal.aborted).toBe(true)
+			resolve(E.right(disk.get("tasks.org")!))
+		})
+		expect(useSettings.getState().orgAgendaConfigurationJson).toBe(raw)
+		expect(screen.queryByRole("region", { name: "Minibuffer" })).not.toBeInTheDocument()
+		expect(controller.liveBuffers.some(buffer => buffer.document.relativePath === "tasks.org")).toBe(false)
+		expect(controller.activeBufferRuntime).toBe(originalSource)
+		expect(undoDepth(originalSource!.state)).toBe(0)
+		expect(showEditor).not.toHaveBeenCalled()
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+
+	it("makes a retained real note read-only on configuration ABA without allocating another Source", async () => {
+		const raw = source.replace("#+TODO: NEXT | FINISHED\r\n", "#+TODO: NEXT | FINISHED(f@)\r\n")
+		disk.set("tasks.org", { relativePath: "tasks.org", content: raw, revision: "tasks-1" })
+		let request!: OrgAgendaTodoNoteRequest
+		noteCallback = value => { request = value; return true }
+		await setup()
+		await cycleSecondKeyboard()
+		await act(async () => {
+			useSettings.setState({ orgAgendaConfigurationJson: "{\"version\":1,\"views\":[]}" })
+			useSettings.setState({ orgAgendaConfigurationJson: "" })
+		})
+		expect(request.validate?.()).toMatchObject({ kind: "rejected" })
+		await act(async () => { expect(await request.execute("retained literal note")).toMatchObject({ kind: "rejected" }) })
+		expect(controller.liveBuffers.some(buffer => buffer.document.relativePath === "tasks.org")).toBe(false)
+		expect(disk.get("tasks.org")!.content).toBe(raw)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+
+	it("retires a retained literal note on an identical native storage envelope without reviving it after hydration", async () => {
+		const raw = source.replace("#+TODO: NEXT | FINISHED\r\n", "#+TODO: NEXT | FINISHED(f@)\r\n")
+		disk.set("tasks.org", { relativePath: "tasks.org", content: raw, revision: "tasks-1" })
+		let request!: OrgAgendaTodoNoteRequest
+		noteCallback = value => { request = value; return true }
+		await setup(true)
+		await cycleSecondKeyboard()
+		const tool = screen.getByRole("group", { name: "TODO state logging note" })
+		const draft = within(tool).getByRole("textbox")
+		fireEvent.change(draft, { target: { value: "retained native storage draft 😀" } })
+		const invalidated = vi.fn()
+		const unsubscribe = request.subscribeValidation!(invalidated)
+		await act(async () => {
+			window.dispatchEvent(settingsStorageEvent(localStorage.getItem("grain-settings")))
+			expect(invalidated).toHaveBeenCalled()
+			expect(request.validate?.()).toMatchObject({ kind: "rejected" })
+		})
+		unsubscribe()
+		expect(draft).toHaveValue("retained native storage draft 😀")
+		expect(draft).toHaveAttribute("readonly")
+		await act(async () => { expect(await request.execute("stale acceptance")).toMatchObject({ kind: "rejected" }) })
+		expect(controller.liveBuffers.some(buffer => buffer.document.relativePath === "tasks.org")).toBe(false)
+		expect(disk.get("tasks.org")!.content).toBe(raw)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+
+	it("drains an accepted canonical effect across configuration ABA without phantom cancellation or another undo event", async () => {
+		await setup()
+		await open("tasks.org")
+		const original = agendaCommandFlow.runOrgAgendaOperationFlow
+		let effectSignal!: AbortSignal
+		const { promise: terminal, resolve: release } = Promise.withResolvers<void>()
+		vi.spyOn(agendaCommandFlow, "runOrgAgendaOperationFlow").mockImplementationOnce(async (...args) => {
+			effectSignal = args[3]!
+			const outcome = await original(...args)
+			await terminal
+			return outcome
+		})
+		await cycleSecondKeyboard()
+		const runtime = live().runtime
+		expect(runtime.source).toBe(changed)
+		expect(undoDepth(runtime.state)).toBe(1)
+		await act(async () => {
+			useSettings.setState({ orgAgendaConfigurationJson: "{\"version\":1,\"views\":[]}" })
+			useSettings.setState({ orgAgendaConfigurationJson: "" })
+			expect(effectSignal.aborted).toBe(false)
+			release()
+		})
+		expect(runtime.source).toBe(changed)
+		expect(undoDepth(runtime.state)).toBe(1)
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+
+	it.each(["configuration ABA", "identical storage envelope"] as const)("cancels an old real query on %s before cache/row publication and visibly fails closed for invalid saved JSON", async (transition) => {
+		await setup()
+		const { promise, resolve } = Promise.withResolvers<E.Either<OrgFileError, OrgDocumentInterface>>()
+		vi.mocked(orgFileRepository.readDocument).mockImplementationOnce(() => () => promise)
+		workspace = { ...workspace, documents: workspace.documents.map(document => document.relativePath === "tasks.org" ? { ...document, revision: "tasks-2" } : document) }
+		disk.set("tasks.org", { relativePath: "tasks.org", revision: "tasks-2", content: "* TODO Current\n<2026-09-30 Wed>" })
+		await act(async () => { await controller.refreshWorkspace() })
+		await act(async () => {
+			if (transition === "configuration ABA") {
+				useSettings.setState({ orgAgendaConfigurationJson: "{\"version\":1,\"views\":[]}" })
+				useSettings.setState({ orgAgendaConfigurationJson: "" })
+			} else {
+				window.dispatchEvent(settingsStorageEvent(localStorage.getItem("grain-settings")))
+			}
+		})
+		expect(screen.getByText("Current")).toBeInTheDocument()
+		await act(async () => { resolve(E.right({ relativePath: "tasks.org", revision: "tasks-2", content: source })) })
+		expect(screen.getByText("Current")).toBeInTheDocument()
+		expect(screen.queryByText("😀 duplicate")).not.toBeInTheDocument()
+		vi.mocked(orgFileRepository.readDocument).mockClear()
+		await act(async () => { useSettings.setState({ orgAgendaConfigurationJson: "{" }) })
+		expect(screen.getByRole("alert")).toBeInTheDocument()
+		expect(screen.queryByRole("button", { name: "Cycle TODO for Current" })).not.toBeInTheDocument()
+		expect(orgFileRepository.readDocument).not.toHaveBeenCalled()
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+	})
+
+	it("executes discoverable Agenda Clock against the selected canonical Source, restores epochs through undo and saves that parked buffer", async () => {
+		await setup()
+		const unrelated = controller.activeBufferRuntime
+		const focus = (index: number) => {
+			const rows = screen.getByRole("main", { name: "Org agenda" }).querySelectorAll<HTMLButtonElement>("[data-agenda-open]")
+			rows[index].focus()
+		}
+		await act(async () => { focus(0); expect(await commandHost.execute("org-agenda.clock-in")).toMatchObject({ kind: "success" }) })
+		const runtime = live().runtime
+		const first = runtime.source
+		expect(controller.activeBufferRuntime).toBe(unrelated)
+		expect(undoDepth(runtime.state)).toBe(1)
+		nativeEpoch += 120000
+		await act(async () => { focus(1); expect(await commandHost.execute("org-agenda.clock-in")).toMatchObject({ kind: "success" }) })
+		expect(runtime.source).toContain("=> 0:02")
+		expect(undoDepth(runtime.state)).toBe(2)
+		const projection = attach(runtime)
+		await act(async () => { expect(projection.handle.undo()).toBe(true) })
+		expect(runtime.source).toBe(first)
+		await act(async () => { focus(0); expect(await commandHost.execute("org-agenda.clock-report")).toMatchObject({ kind: "success" }) })
+		const report = screen.getByRole("textbox", { name: "Copy exact Org clock report" })
+		expect(report.textContent).toContain("Known live clock: 0:02 elapsed (native epoch).")
+		expect(undoDepth(runtime.state)).toBe(1)
+		await act(async () => { focus(0); expect(await commandHost.execute("org-agenda.clock-out")).toMatchObject({ kind: "success" }) })
+		const stopped = parseOrgClocks(runtime.source)
+		expect(stopped.kind === "snapshot" && stopped.active).toBeNull()
+		expect(report).toHaveTextContent("Known live clock: 0:02 elapsed (native epoch).")
+		expect(report).toBeInTheDocument()
+		await act(async () => { focus(0); expect(await commandHost.execute("org-agenda.save")).toMatchObject({ kind: "success" }) })
+		expect(vi.mocked(orgFileRepository.writeDocument).mock.calls.at(-1)?.[0].relativePath).toBe("tasks.org")
+		expect(disk.get("tasks.org")!.content).toBe(runtime.source)
+		expect(controller.activeBufferRuntime).toBe(unrelated)
+		await act(async () => { focus(0); expect(await commandHost.execute("org-agenda.clock-in")).toMatchObject({ kind: "success" }) })
+		await act(async () => { focus(0); expect(await commandHost.execute("org-agenda.cancel-clock")).toMatchObject({ kind: "success" }) })
+		const cancelled = parseOrgClocks(runtime.source)
+		expect(cancelled.kind === "snapshot" && cancelled.active).toBeNull()
 	})
 })

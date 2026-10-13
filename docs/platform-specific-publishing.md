@@ -54,7 +54,7 @@ npm run tag:macos:homebrew     # Homebrew (macOS 包管理器)
 - **命令**: `npm run tag:linux:flatpak`
 - **覆盖**: 所有现代 Linux 发行版
 - **特点**: 沙盒应用，统一运行时
-- **用户安装**: `flatpak install flathub com.lotus.NovelEditor`
+- **用户安装**: `flatpak install flathub com.lotus.Grain`
 
 ### 发行版特定仓库
 

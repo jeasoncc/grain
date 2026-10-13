@@ -58,7 +58,7 @@ export default createRule<Options, MessageIds>({
 							max: String(maxLines),
 						},
 						messageId: "maxFileLines",
-						node,
+						node: node.body[0] ?? node,
 					})
 				}
 			},

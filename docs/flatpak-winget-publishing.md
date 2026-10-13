@@ -119,7 +119,7 @@ npm run tag:winget
 
 ### Flatpak 构建失败
 - 检查是否有对应的 GitHub Release
-- 确保 `flatpak/com.lotus.NovelEditor.yml` 文件正确
+- 确保 `flatpak/com.lotus.Grain.yml` 文件正确
 
 ### Winget 发布失败
 - 检查 MSI 文件是否存在于 GitHub Release 中

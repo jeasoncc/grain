@@ -21,7 +21,7 @@ import type {
 	LexicalRootChild,
 	LexicalTagNode,
 	LexicalTextNode,
-} from "../content/content.generate.fn"
+} from "../content/legacy-content.pipe"
 import { type ExportError, parseLexicalContent } from "./export.json.fn"
 
 // ==============================

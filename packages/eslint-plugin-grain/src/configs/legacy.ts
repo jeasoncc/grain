@@ -18,7 +18,6 @@
  */
 
 export const legacyConfig = {
-	plugins: ["grain"],
 	rules: {
 		"grain/boolean-naming": "warn",
 		"grain/chinese-comments": "off", // 语言偏好，关闭

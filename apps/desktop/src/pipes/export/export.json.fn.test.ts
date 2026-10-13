@@ -10,7 +10,7 @@ import {
 	createHeadingNode,
 	createParagraphNode,
 	createTextNode,
-} from "../content/content.generate.fn"
+} from "../content/legacy-content.pipe"
 import {
 	createExportDocument,
 	exportMultipleToJson,

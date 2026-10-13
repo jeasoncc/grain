@@ -64,15 +64,15 @@ export const createTiptapDocumentAdapter = (
       if (content.format === "json") {
         try {
           const json = JSON.parse(content.data);
-          editor.commands.setContent(json);
+          editor.commands.setContent(json, { emitUpdate: false });
         } catch (e) {
           console.warn("[TiptapDocumentAdapter] Failed to parse JSON content:", e);
         }
       } else if (content.format === "html") {
-        editor.commands.setContent(content.data);
+        editor.commands.setContent(content.data, { emitUpdate: false });
       } else if (content.format === "markdown") {
         // Tiptap doesn't natively support markdown, set as plain text
-        editor.commands.setContent(`<p>${content.data}</p>`);
+        editor.commands.setContent(`<p>${content.data}</p>`, { emitUpdate: false });
       }
     },
 

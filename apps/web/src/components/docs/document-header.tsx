@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useDocPathname } from "./hooks/use-doc-pathname";
 import { useMemo } from "react";
 import { docNavItems, type NavItem } from "./doc-nav-data";
 import { cn } from "@/lib/utils";
@@ -22,7 +22,7 @@ function findDocItem(pathname: string): NavItem | null {
 }
 
 export function DocumentHeader() {
-  const pathname = usePathname();
+  const pathname = useDocPathname();
 
   const docItem = useMemo(() => {
     if (pathname === "/docs") return null;

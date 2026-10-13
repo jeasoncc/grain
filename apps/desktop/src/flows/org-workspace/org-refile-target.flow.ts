@@ -29,11 +29,12 @@ const comparable = (path: string) => path.normalize("NFC").toLocaleLowerCase("en
 /** Read-only, capability-qualified snapshot. Absence is established by a fresh scan. */
 export const readOrgRefileTargetFlow =
 	(
-		input: ReadOrgRefileTargetInput,
+		request: ReadOrgRefileTargetInput,
 		repository: OrgFileRepository = orgFileRepository,
-	): TE.TaskEither<OrgRefileTargetFlowError, OrgRefileTargetSnapshot> =>
+	): TE.TaskEither<OrgRefileTargetFlowError, OrgRefileTargetSnapshot> => {
+	const input = Object.freeze({ ...request })
 	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ordered validation and capability-qualified read guards form a single read-only transaction.
-	async () => {
+	return async () => {
 		if (
 			typeof input.sourceRelativePath !== "string" ||
 			typeof input.targetRelativePath !== "string" ||
@@ -111,3 +112,4 @@ export const readOrgRefileTargetFlow =
 			})
 		}
 	}
+}

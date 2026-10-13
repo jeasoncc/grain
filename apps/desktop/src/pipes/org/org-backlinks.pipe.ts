@@ -1,3 +1,6 @@
+import { scanOrgNodeSource } from "./org-node-source.pipe"
+import { scanOrgBracketLinks } from "./org-link-syntax.pipe"
+
 export type OrgLinkTargetKind = "file" | "id" | "custom-id"
 export type OrgHeadingIdentifierKind = "id" | "custom-id"
 
@@ -27,63 +30,8 @@ export interface OrgLinkIndex {
 	readonly links: readonly OrgLinkReference[]
 }
 
-const HEADING = /^(\*+)\s+(.*)$/
-const TITLE = /^\s*#\+title:\s*(.*?)\s*$/i
-const TODO_DIRECTIVE = /^\s*#\+(?:SEQ_)?TODO:\s*(.*)$/i
-const BLOCK_BEGIN = /^\s*#\+begin_\S+/i
-const BLOCK_END = /^\s*#\+end_\S+/i
-const ORDINARY_COMMENT = /^\s*#(?!\+)/
-const DRAWER_BEGIN = /^\s*:PROPERTIES:\s*$/i
-const DRAWER_END = /^\s*:END:\s*$/i
-const PROPERTY = /^\s*:(ID|CUSTOM_ID):\s*(.*?)\s*$/i
-const PLANNING_LINE = /^\s*(?:(?:SCHEDULED|DEADLINE|CLOSED):\s*[<[][^>\]]+[>\]]\s*)+$/i
-const LINK = /\[\[([^\]\r\n]+)\](?:\[([^\]\r\n]*)\])?\]/g
 const PROTOCOL = /^[a-z][a-z0-9+.-]*:/i
 
-const blockLinesFrom = (lines: readonly string[]): readonly boolean[] => {
-	let depth = 0
-	return lines.map((line) => {
-		if (BLOCK_BEGIN.test(line)) {
-			depth += 1
-			return true
-		}
-		if (BLOCK_END.test(line)) {
-			depth = Math.max(0, depth - 1)
-			return true
-		}
-		return depth > 0
-	})
-}
-
-const todoKeywordsFrom = (
-	lines: readonly string[],
-	blockLines: readonly boolean[],
-): ReadonlySet<string> => {
-	const keywords = new Set(["TODO", "DONE"])
-	for (const [index, line] of lines.entries()) {
-		if (blockLines[index] || ORDINARY_COMMENT.test(line)) {
-			continue
-		}
-		const match = line.match(TODO_DIRECTIVE)
-		if (match) {
-			for (const token of match[1].split(/\s+/)) {
-				const keyword = token.replace(/\([^)]*\)$/, "")
-				if (keyword && keyword !== "|") {
-					keywords.add(keyword)
-				}
-			}
-		}
-	}
-	return keywords
-}
-
-const headingText = (raw: string, todoKeywords: ReadonlySet<string>): string => {
-	const firstWord = raw.split(/\s+/, 1)[0]
-	return (todoKeywords.has(firstWord) ? raw.slice(firstWord.length) : raw).trim()
-}
-
-const isCommentHeading = (heading: string): boolean =>
-	heading === "COMMENT" || heading.startsWith("COMMENT ")
 
 /**
  * Resolves a file-link path below the workspace root. Absolute paths, protocols,
@@ -161,121 +109,53 @@ export const parseOrgLinkTarget = (
 	return { kind: "file", relativePath, value: search || null }
 }
 
-interface ScanContext {
-	readonly heading: string | null
-	readonly headingLevel: number
-	readonly commentLevel: number | null
-	readonly ignored: boolean
-}
-
-const nextContext = (
-	line: string,
-	current: ScanContext,
-	todoKeywords: ReadonlySet<string>,
-): ScanContext => {
-	const match = line.match(HEADING)
-	if (!match) {
-		return { ...current, ignored: current.commentLevel !== null }
-	}
-	const level = match[1].length
-	if (current.commentLevel !== null && level > current.commentLevel) {
-		return { ...current, ignored: true }
-	}
-	const heading = headingText(match[2], todoKeywords)
-	if (isCommentHeading(heading)) {
-		return { ...current, commentLevel: level, ignored: true }
-	}
-	return { commentLevel: null, heading, headingLevel: level, ignored: false }
-}
-
-/** Parses heading IDs and links without normalizing or modifying the supplied source. */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one source-order state machine keeps Org context transitions explicit.
+/** Parses file/heading IDs and links using the same lexical boundary as node discovery. */
 export const parseOrgLinkIndex = (relativePath: string, source: string): OrgLinkIndex => {
-	const lines = source.split(/\r\n|\r|\n/)
-	const blockLines = blockLinesFrom(lines)
-	const todoKeywords = todoKeywordsFrom(lines, blockLines)
+	const rows = scanOrgNodeSource(source)
+	const title = rows.find((row) => row.visible && row.heading === null && /^\s*#\+title:/i.test(row.text))?.text.match(/^\s*#\+title:\s*(.*?)\s*$/i)?.[1] ?? null
 	const identifiers: OrgHeadingIdentifier[] = []
 	const links: OrgLinkReference[] = []
-	let title: string | null = null
-	let inPropertyDrawer = false
-	let propertyDrawerEligible = false
-	let propertyHeading: string | null = null
-	let context: ScanContext = {
-		commentLevel: null,
-		heading: null,
-		headingLevel: 0,
-		ignored: false,
+	for (const row of rows) {
+		if (row.property?.value && (row.property.name === "ID" || row.property.name === "CUSTOM_ID")) {
+			identifiers.push({
+				heading: row.heading ?? title ?? relativePath,
+				kind: row.property.name === "ID" ? "id" : "custom-id",
+				line: row.heading === null ? 1 : row.headingLine,
+				value: row.property.value,
+			})
+		}
 	}
-
-	for (const [index, line] of lines.entries()) {
-		if (blockLines[index] || ORDINARY_COMMENT.test(line)) {
-			propertyDrawerEligible = false
-			continue
-		}
-		const previousHeading = context.heading
-		const headingMatch = line.match(HEADING)
-		context = nextContext(line, context, todoKeywords)
-		if (context.heading !== previousHeading || headingMatch) {
-			inPropertyDrawer = false
-			propertyDrawerEligible = true
-			propertyHeading = null
-		}
-		if (context.ignored) {
-			continue
-		}
-
-		const titleMatch = line.match(TITLE)
-		if (title === null && titleMatch) {
-			title = titleMatch[1]
-		}
-		if (context.heading && propertyDrawerEligible && DRAWER_BEGIN.test(line)) {
-			inPropertyDrawer = true
-			propertyHeading = context.heading
-			continue
-		}
-		if (inPropertyDrawer && DRAWER_END.test(line)) {
-			inPropertyDrawer = false
-			continue
-		}
-		if (inPropertyDrawer && propertyHeading) {
-			const property = line.match(PROPERTY)
-			if (property?.[2]) {
-				identifiers.push({
-					heading: propertyHeading,
-					kind: property[1].toUpperCase() === "ID" ? "id" : "custom-id",
-					line: index + 1,
-					value: property[2],
-				})
-			}
-		}
-
-		if (!headingMatch && !PLANNING_LINE.test(line)) {
-			propertyDrawerEligible = false
-		}
-
-		for (const match of line.matchAll(LINK)) {
-			const target = parseOrgLinkTarget(relativePath, match[1])
-			if (!target) {
-				continue
-			}
+	const starts = [0]
+	for (const match of source.matchAll(/\r\n|\r|\n/g)) starts.push(match.index + match[0].length)
+	let sourceLine = 0
+	while (sourceLine < rows.length) {
+		if (!rows[sourceLine].visible) { sourceLine++; continue }
+		const begin = sourceLine
+		let end = begin + 1
+		while (end < rows.length && rows[end].visible) end++
+		const offset = starts[begin]
+		// An unterminated example in an ignored block must not consume a later real link.
+		const visibleSource = source.slice(offset, starts[end] ?? source.length)
+		for (const match of scanOrgBracketLinks(visibleSource)) {
+			const from = offset + match.from
+			while (sourceLine + 1 < end && starts[sourceLine + 1] <= from) sourceLine++
+			const target = parseOrgLinkTarget(relativePath, match.target)
+			if (!target) continue
 			links.push({
-				column: match.index,
-				label: match[2] ?? match[1],
-				line: index + 1,
+				column: from - starts[sourceLine],
+				label: match.description ?? match.target,
+				line: sourceLine + 1,
 				relativePath,
-				sourceHeading: context.heading,
+				sourceHeading: rows[sourceLine].heading,
 				sourceTitle: title,
 				targetKind: target.kind,
 				targetRelativePath: target.relativePath,
 				targetValue: target.value,
 			})
 		}
+		sourceLine = end
 	}
-	return {
-		identifiers,
-		links: links.map((link) => ({ ...link, sourceTitle: title })),
-		title,
-	}
+	return { identifiers, links, title }
 }
 
 export const parseOrgLinks = (relativePath: string, source: string): readonly OrgLinkReference[] =>

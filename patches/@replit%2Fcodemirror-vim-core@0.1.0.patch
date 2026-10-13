@@ -1,0 +1,292 @@
+diff --git a/dist/types.d.ts b/dist/types.d.ts
+index 70566bdfcf9f13e5ae31655df1a931970472e951..c8c62fc6441d964530bd4146226dc80c363dfceb 100644
+--- a/dist/types.d.ts
++++ b/dist/types.d.ts
+@@ -446,7 +446,11 @@ export interface CM5EditorInterface {
+     openNotification(template: Node, options: {
+         bottom?: boolean;
+         duration?: number;
++        /** Outcome classified at the engine cause, never by notification text. */
++        result?: "success" | "error";
+     }): () => void;
++    /** Observes an accepted or uncertain non-document effect attempt. */
++    onVimCommandEffect?: () => void;
+     on(type: string, f: Function): void;
+     off(type: string, f: Function): void;
+     signal(type: string, e: any, handlers?: any): void;
+diff --git a/vim.js b/vim.js
+index 3cafa6bcf0c99f2ae25a5da8936d3f29445f2d6d..81f5a754d6060befd6111ebaf0022680f22545e8 100644
+--- a/vim.js
++++ b/vim.js
+@@ -480,6 +480,7 @@ export function initVim(CM) {
+         value = true;
+       }
+     }
++    cm?.onVimCommandEffect?.();
+     if (option.callback) {
+       if (scope !== 'local') {
+         option.callback(value, undefined);
+@@ -1764,7 +1765,7 @@ export function initVim(CM) {
+         try {
+           updateSearchQuery(cm, query, ignoreCase, smartCase);
+         } catch (e) {
+-          showConfirm(cm, 'Invalid regex: ' + query);
++          showConfirm(cm, 'Invalid regex: ' + query, undefined, undefined, 'error');
+           clearInputState(cm);
+           return;
+         }
+@@ -1879,7 +1880,7 @@ export function initVim(CM) {
+             isKeyword = false;
+           }
+           if (!word) {
+-            showConfirm(cm, 'No word under cursor');
++            showConfirm(cm, 'No word under cursor', undefined, undefined, 'error');
+             clearInputState(cm);
+             return;
+           }
+@@ -2244,7 +2245,7 @@ export function initVim(CM) {
+       var result = findNext(cm, prev/** prev */, query, motionArgs.repeat);
+       if (!result) {
+         showConfirm(cm, 'No match found ' + query +
+-          (getOption('pcre') ? ' (set nopcre to use Vim regexps)' : ''));
++          (getOption('pcre') ? ' (set nopcre to use Vim regexps)' : ''), undefined, undefined, 'error');
+       }
+       return result; 
+     },
+@@ -5295,8 +5296,8 @@ export function initVim(CM) {
+     return n;
+   }
+ 
+-  /** @arg {CodeMirror} cm  @arg {any} template  @arg {boolean} [long] @arg {number} [duration]*/
+-  function showConfirm(cm, template, long, duration) {
++  /** @arg {CodeMirror} cm  @arg {string|HTMLElement} template  @arg {boolean} [long] @arg {number} [duration] @arg {'success'|'error'} [result] */
++  function showConfirm(cm, template, long, duration, result = 'success') {
+     var pre = dom('div', {$color: 'red', $whiteSpace: 'pre', class: 'cm-vim-message'}, template);
+     if (cm.openNotification) {
+       if (long) {
+@@ -5304,9 +5305,9 @@ export function initVim(CM) {
+         if (cm.state.closeVimNotification) {
+           cm.state.closeVimNotification();
+         }
+-        cm.state.closeVimNotification = cm.openNotification(pre, {bottom: true, duration: 0});
++        cm.state.closeVimNotification = cm.openNotification(pre, {bottom: true, duration: 0, result});
+       } else {
+-        cm.openNotification(pre, {bottom: true, duration: duration || 15000});
++        cm.openNotification(pre, {bottom: true, duration: duration || 15000, result});
+       }
+     } else if (!duration) {
+       alert(pre.innerText);
+@@ -5634,7 +5635,7 @@ export function initVim(CM) {
+       try {
+         this.parseInput_(cm, inputStream, params);
+       } catch(e) {
+-        showConfirm(cm, e + "");
++        showConfirm(cm, e + "", undefined, undefined, 'error');
+         return;
+       }
+ 
+@@ -5669,7 +5670,7 @@ export function initVim(CM) {
+         }
+       }
+       if (!commandName) {
+-        showConfirm(cm, 'Not an editor command ":' + input + '"');
++        showConfirm(cm, 'Not an editor command ":' + input + '"', undefined, undefined, 'error');
+         return;
+       }
+       try {
+@@ -5681,7 +5682,7 @@ export function initVim(CM) {
+           params.callback();
+         }
+       } catch(e) {
+-        showConfirm(cm, e + "");
++        showConfirm(cm, e + "", undefined, undefined, 'error');
+         throw e;
+       }
+     }
+@@ -5922,10 +5923,11 @@ export function initVim(CM) {
+       var mapArgs = params.args;
+       if (!mapArgs || mapArgs.length < 2) {
+         if (cm) {
+-          showConfirm(cm, 'Invalid mapping: ' + params.input);
++          showConfirm(cm, 'Invalid mapping: ' + params.input, undefined, undefined, 'error');
+         }
+         return;
+       }
++      cm?.onVimCommandEffect?.();
+       exCommandDispatcher.map(mapArgs[0], mapArgs[1], ctx, defaultOnly);
+     },
+     /** @arg {CodeMirrorV} cm @arg {ExParams} params*/
+@@ -5951,7 +5953,7 @@ export function initVim(CM) {
+       var mapArgs = params.args;
+       if (!mapArgs || mapArgs.length < 1 || !exCommandDispatcher.unmap(mapArgs[0], ctx)) {
+         if (cm) {
+-          showConfirm(cm, 'No such mapping: ' + params.input);
++          showConfirm(cm, 'No such mapping: ' + params.input, undefined, undefined, 'error');
+         }
+       }
+     },
+@@ -5983,7 +5985,7 @@ export function initVim(CM) {
+       var setCfg = params.setCfg || {};
+       if (!setArgs || setArgs.length < 1) {
+         if (cm) {
+-          showConfirm(cm, 'Invalid mapping: ' + params.input);
++          showConfirm(cm, 'Invalid mapping: ' + params.input, undefined, undefined, 'error');
+         }
+         return;
+       }
+@@ -6023,7 +6025,7 @@ export function initVim(CM) {
+       if (!optionIsBoolean && value === undefined || forceGet) {
+         var oldValue = getOption(optionName, cm, setCfg);
+         if (oldValue instanceof Error) {
+-          showConfirm(cm, oldValue.message);
++          showConfirm(cm, oldValue.message, undefined, undefined, 'error');
+         } else if (oldValue === true || oldValue === false) {
+           showConfirm(cm, ' ' + (oldValue ? '' : 'no') + optionName);
+         } else {
+@@ -6032,7 +6034,7 @@ export function initVim(CM) {
+       } else {
+         var setOptionReturn = setOption(optionName, value, cm, setCfg);
+         if (setOptionReturn instanceof Error) {
+-          showConfirm(cm, setOptionReturn.message);
++          showConfirm(cm, setOptionReturn.message, undefined, undefined, 'error');
+         }
+       }
+     },
+@@ -6125,7 +6127,7 @@ export function initVim(CM) {
+       }
+       var err = parseArgs();
+       if (err) {
+-        showConfirm(cm, err + ': ' + params.argString);
++        showConfirm(cm, err + ': ' + params.argString, undefined, undefined, 'error');
+         return;
+       }
+       var lineStart = params.line || cm.firstLine();
+@@ -6211,7 +6213,7 @@ export function initVim(CM) {
+       }
+       argString = argString.trimStart();
+       if (!argString) {
+-        showConfirm(cm, 'Argument is required.');
++        showConfirm(cm, 'Argument is required.', undefined, undefined, 'error');
+         return;
+       }
+       var line = params.line;
+@@ -6238,7 +6240,7 @@ export function initVim(CM) {
+       // argString holds the string /pattern/[cmd]
+       var argString = params.argString;
+       if (!argString) {
+-        showConfirm(cm, 'Regular Expression missing from global');
++        showConfirm(cm, 'Regular Expression missing from global', undefined, undefined, 'error');
+         return;
+       }
+       var inverted = params.commandName[0] === 'v';
+@@ -6263,7 +6265,7 @@ export function initVim(CM) {
+           updateSearchQuery(cm, regexPart, true /** ignoreCase */,
+             true /** smartCase */);
+         } catch (e) {
+-          showConfirm(cm, 'Invalid regex: ' + regexPart);
++          showConfirm(cm, 'Invalid regex: ' + regexPart, undefined, undefined, 'error');
+           return;
+         }
+       }
+@@ -6335,7 +6337,7 @@ export function initVim(CM) {
+         // only if the string starts with a '/'
+         if (argString && argString.length) {
+           showConfirm(cm, 'Substitutions should be of the form ' +
+-              ':s/pattern/replace/');
++              ':s/pattern/replace/', undefined, undefined, 'error');
+           return;
+         }
+       }
+@@ -6365,13 +6367,13 @@ export function initVim(CM) {
+           updateSearchQuery(cm, regexPart, true /** ignoreCase */,
+             true /** smartCase */);
+         } catch (e) {
+-          showConfirm(cm, 'Invalid regex: ' + regexPart);
++          showConfirm(cm, 'Invalid regex: ' + regexPart, undefined, undefined, 'error');
+           return;
+         }
+       }
+       replacePart = replacePart || vimGlobalState.lastSubstituteReplacePart;
+       if (replacePart === undefined) {
+-        showConfirm(cm, 'No previous substitute regular expression');
++        showConfirm(cm, 'No previous substitute regular expression', undefined, undefined, 'error');
+         return;
+       }
+       var state = getSearchState(cm);
+@@ -6462,7 +6464,7 @@ export function initVim(CM) {
+     /** @arg {CodeMirrorV} cm @arg {ExParams} params*/
+     delmarks: function(cm, params) {
+       if (!params.argString || !trim(params.argString)) {
+-        showConfirm(cm, 'Argument required');
++        showConfirm(cm, 'Argument required', undefined, undefined, 'error');
+         return;
+       }
+ 
+@@ -6476,7 +6478,7 @@ export function initVim(CM) {
+         var count = stream.pos;
+ 
+         if (!stream.match(/[a-zA-Z]/, false)) {
+-          showConfirm(cm, 'Invalid argument: ' + params.argString.substring(count));
++          showConfirm(cm, 'Invalid argument: ' + params.argString.substring(count), undefined, undefined, 'error');
+           return;
+         }
+ 
+@@ -6487,7 +6489,7 @@ export function initVim(CM) {
+ 
+           // The range must terminate at an alphabetic character.
+           if (!stream.match(/[a-zA-Z]/, false)) {
+-            showConfirm(cm, 'Invalid argument: ' + params.argString.substring(count));
++            showConfirm(cm, 'Invalid argument: ' + params.argString.substring(count), undefined, undefined, 'error');
+             return;
+           }
+ 
+@@ -6499,7 +6501,7 @@ export function initVim(CM) {
+             var start = startMark.charCodeAt(0);
+             var finish = finishMark.charCodeAt(0);
+             if (start >= finish) {
+-              showConfirm(cm, 'Invalid argument: ' + params.argString.substring(count));
++              showConfirm(cm, 'Invalid argument: ' + params.argString.substring(count), undefined, undefined, 'error');
+               return;
+             }
+ 
+@@ -6508,14 +6510,16 @@ export function initVim(CM) {
+             // their char codes to iterate through the defined range.
+             for (var j = 0; j <= finish - start; j++) {
+               var mark = String.fromCharCode(start + j);
++              cm.onVimCommandEffect?.();
+               delete state.marks[mark];
+             }
+           } else {
+-            showConfirm(cm, 'Invalid argument: ' + startMark + '-');
++            showConfirm(cm, 'Invalid argument: ' + startMark + '-', undefined, undefined, 'error');
+             return;
+           }
+         } else if (sym) {
+           // This symbol is a valid mark, and is not part of a range.
++          cm.onVimCommandEffect?.();
+           delete state.marks[sym];
+         }
+       }
+@@ -6621,10 +6625,11 @@ export function initVim(CM) {
+       }
+       if (callback) { callback(); }
+       else if (done) {
+-        showConfirm(cm, 
++        showConfirm(cm,
+           (matches ? 'Found ' + matches + ' matches' : 'No matches found') +
+           ' for pattern: ' + query +
+-          (getOption('pcre') ? ' (set nopcre to use Vim regexps)' : '')
++          (getOption('pcre') ? ' (set nopcre to use Vim regexps)' : ''),
++          undefined, undefined, matches ? 'success' : 'error'
+         );
+       }
+     }
+@@ -6663,7 +6668,7 @@ export function initVim(CM) {
+     // Actually do replace.
+     next();
+     if (done) {
+-      showConfirm(cm, 'No matches for ' + query +  (getOption('pcre') ? ' (set nopcre to use vim regexps)' : ''));
++      showConfirm(cm, 'No matches for ' + query +  (getOption('pcre') ? ' (set nopcre to use vim regexps)' : ''), undefined, undefined, 'error');
+       return;
+     }
+     if (!confirm) {

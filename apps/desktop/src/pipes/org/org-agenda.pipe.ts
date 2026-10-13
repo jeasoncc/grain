@@ -1,5 +1,6 @@
 import { isSafeRelativeOrgPath } from "./org-subtree-refile.pipe"
 import { eligibleOrgSourceLines, parseOrgTodoKeywords } from "./org-text.pipe"
+import { isOrgCalendarISO, readOrgStoredTimestamp, type OrgTimestampValue } from "./org-date-reader.pipe"
 
 /** Display snapshot metadata. Commands require the complete OrgAgendaActionOrigin below. */
 export interface OrgAgendaSourceMetadata {
@@ -44,7 +45,7 @@ export const hasOrgAgendaActionOrigin = (
 		nonempty(origin.diskRevision) &&
 		nonempty(origin.relativePath) &&
 		(origin.capabilityToken === undefined || nonempty(origin.capabilityToken)) &&
-		validAnchor(origin.timestamp) &&
+		(origin.timestamp === null || validAnchor(origin.timestamp)) &&
 		validAnchor(origin.heading) &&
 		(origin.source === "disk" ||
 			(nonempty(origin.runtimeIncarnation) &&
@@ -53,7 +54,7 @@ export const hasOrgAgendaActionOrigin = (
 	)
 }
 
-export type OrgAgendaEntryKind = "deadline" | "scheduled" | "timestamp"
+export type OrgAgendaEntryKind = "deadline" | "scheduled" | "timestamp" | "todo"
 
 /** Half-open UTF-16 offsets into verbatim source, never normalized editor text. */
 export interface OrgAgendaSourceAnchor {
@@ -64,7 +65,7 @@ export interface OrgAgendaSourceAnchor {
 
 export interface OrgAgendaOrigin extends OrgAgendaSourceMetadata {
 	readonly relativePath: string
-	readonly timestamp: OrgAgendaSourceAnchor
+	readonly timestamp: OrgAgendaSourceAnchor | null
 	readonly heading: OrgAgendaSourceAnchor | null
 	readonly source: "parser" | "disk" | "live"
 	readonly workspaceRoot?: string
@@ -74,17 +75,22 @@ export interface OrgAgendaOrigin extends OrgAgendaSourceMetadata {
 	readonly diskRevision?: string
 }
 
-/** A dated item extracted from Org source. Lines are one-based; columns are zero-based. */
+/** Source-backed item. A null date/timestamp denotes a genuine heading-list row. */
 export interface OrgAgendaEntry {
 	readonly relativePath: string
 	readonly line: number
 	readonly column: number
-	readonly date: string
+	readonly date: string | null
 	readonly kind: OrgAgendaEntryKind
 	readonly heading: string | null
 	readonly level: number
 	readonly todo: string | null
-	/** Optional only for legacy/manual display rows. Parser and flow rows always carry it. */
+	/** Source-order ordinal within a heading/kind; virtual dates never renumber it. */
+	readonly sourceOrdinal?: number
+	readonly pending?: boolean
+	readonly timestampValue?: OrgTimestampValue
+	readonly occurrence?: "source" | "range" | "repeat" | "overdue" | "warning" | "expired"
+	/** Parser/flow rows carry exact provenance; manually supplied display rows need not. */
 	readonly origin?: OrgAgendaOrigin
 }
 
@@ -96,33 +102,30 @@ export interface OrgAgendaActionEntry extends OrgAgendaEntry {
 	readonly origin: OrgAgendaActionOrigin
 }
 
-const ACTIVE_TIMESTAMP = /<(\d{4}-\d{2}-\d{2})(?:\s[^>\r\n]*)?>/g
-const PLANNING_TIMESTAMP = /\b(SCHEDULED|DEADLINE):\s*(<(\d{4}-\d{2}-\d{2})(?:\s[^>\r\n]*)?>)/g
+/** Default parser calls remain dated; list projection explicitly requests heading rows. */
+export interface DatedOrgAgendaEntry extends AnchoredOrgAgendaEntry {
+	readonly date: string
+	readonly kind: Exclude<OrgAgendaEntryKind, "todo">
+	readonly origin: OrgAgendaOrigin & { readonly timestamp: OrgAgendaSourceAnchor }
+}
+const STAMP = String.raw`<\d{4}-\d{2}-\d{2}(?:[ \t][^>\r\n]*)?>`
+const ACTIVE_TIMESTAMP = new RegExp(`${STAMP}(?:--${STAMP})?`, "g")
+const PLANNING_TIMESTAMP = new RegExp(String.raw`\b(SCHEDULED|DEADLINE):\s*(${STAMP}(?:--${STAMP})?)`, "g")
 const HEADING = /^(\*+)[ \t]+(.*)$/
-
 const compareText = (left: string, right: string): number =>
 	left < right ? -1 : left > right ? 1 : 0
-
-const isCalendarDate = (date: string): boolean => {
-	const [year, month, day] = date.split("-").map(Number)
-	if (month < 1 || month > 12 || day < 1) {
-		return false
-	}
-	const parsed = new Date(0)
-	parsed.setUTCHours(0, 0, 0, 0)
-	parsed.setUTCFullYear(year, month - 1, day)
-	return parsed.toISOString().slice(0, 10) === date
-}
 
 const anchor = (from: number, text: string): OrgAgendaSourceAnchor =>
 	Object.freeze({ from, text, to: from + text.length })
 
 /** Extracts immutable anchors using the same eligibility grammar as Org structural editing. */
-export const parseOrgAgenda = (
+export function parseOrgAgenda(relativePath: string, source: string): readonly DatedOrgAgendaEntry[]
+export function parseOrgAgenda(relativePath: string, source: string, includeHeadings: true): readonly AnchoredOrgAgendaEntry[]
+export function parseOrgAgenda(
 	relativePath: string,
 	source: string,
-	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: one source-order pass retains heading and planning adjacency in raw coordinates.
-): readonly AnchoredOrgAgendaEntry[] => {
+	includeHeadings = false,
+): readonly AnchoredOrgAgendaEntry[] {
 	if (
 		typeof relativePath !== "string" ||
 		!isSafeRelativeOrgPath(relativePath) ||
@@ -136,12 +139,14 @@ export const parseOrgAgenda = (
 	}
 	const keywords = parseOrgTodoKeywords(source)
 	const states = new Set([...keywords.todo, ...keywords.done])
+	const pendingStates = new Set(keywords.todo)
 	const entries: AnchoredOrgAgendaEntry[] = []
 	let heading: string | null = null
 	let headingAnchor: OrgAgendaSourceAnchor | null = null
 	let headingBreakTo = -1
 	let level = 0
 	let todo: string | null = null
+	const sourceOrdinals: Record<OrgAgendaEntryKind, number> = { deadline: 0, scheduled: 0, timestamp: 0, todo: 0 }
 	// Offsets and physical line numbers include excluded source and every raw line ending.
 	const lineNumbers = new Map<number, number>([[0, 1]])
 	let lineNumber = 1
@@ -162,11 +167,29 @@ export const parseOrgAgenda = (
 			level = headingMatch[1].length
 			headingAnchor = anchor(line.from, line.text)
 			headingBreakTo = line.breakTo
+			sourceOrdinals.deadline = sourceOrdinals.scheduled = sourceOrdinals.timestamp = 0
+			if (includeHeadings) entries.push(Object.freeze({
+				relativePath, line: lineNumbers.get(line.from) ?? 1, column: 0,
+				sourceOrdinal: 0,
+				date: null, kind: "todo", heading, level, todo,
+				pending: todo !== null && pendingStates.has(todo),
+				origin: Object.freeze({ relativePath, source: "parser", heading: headingAnchor, timestamp: null }),
+			}))
 		}
-		const addEntry = (column: number, text: string, date: string, kind: OrgAgendaEntryKind) => {
-			if (!isCalendarDate(date)) {
-				return
+		const addEntry = (column: number, text: string, kind: OrgAgendaEntryKind) => {
+			const parsed = readOrgStoredTimestamp(text)
+			if (parsed.kind !== "date" || !isOrgCalendarISO(parsed.date)) return
+			const timestampValue: OrgTimestampValue = parsed.timestamp ?? { date: parsed.date }
+			if (timestampValue.repeater) {
+				if (timestampValue.repeater.maximum) Object.freeze(timestampValue.repeater.maximum)
+				Object.freeze(timestampValue.repeater)
 			}
+			if (timestampValue.endRepeater) {
+				if (timestampValue.endRepeater.maximum) Object.freeze(timestampValue.endRepeater.maximum)
+				Object.freeze(timestampValue.endRepeater)
+			}
+			if (timestampValue.warning) Object.freeze(timestampValue.warning)
+			if (timestampValue.endWarning) Object.freeze(timestampValue.endWarning)
 			const origin: OrgAgendaOrigin = Object.freeze({
 				heading: headingAnchor,
 				relativePath,
@@ -176,7 +199,7 @@ export const parseOrgAgenda = (
 			entries.push(
 				Object.freeze({
 					column,
-					date,
+					date: parsed.date,
 					heading,
 					kind,
 					level,
@@ -184,20 +207,23 @@ export const parseOrgAgenda = (
 					origin,
 					relativePath,
 					todo,
+					sourceOrdinal: sourceOrdinals[kind]++,
+					pending: todo !== null && pendingStates.has(todo),
+					timestampValue: Object.freeze(timestampValue),
 				}),
 			)
 		}
-		const planningRanges: Array<readonly [number, number]> = []
-		if (!headingMatch && line.from === headingBreakTo) {
+		const planningStarts = !headingMatch && line.from === headingBreakTo ? new Set<number>() : null
+		if (planningStarts) {
 			for (const match of line.text.matchAll(PLANNING_TIMESTAMP)) {
 				const column = match.index + match[0].indexOf(match[2])
-				planningRanges.push([column, column + match[2].length])
-				addEntry(column, match[2], match[3], match[1] === "DEADLINE" ? "deadline" : "scheduled")
+				planningStarts.add(column)
+				addEntry(column, match[2], match[1] === "DEADLINE" ? "deadline" : "scheduled")
 			}
 		}
 		for (const match of line.text.matchAll(ACTIVE_TIMESTAMP)) {
-			if (!planningRanges.some(([from, to]) => match.index >= from && match.index < to)) {
-				addEntry(match.index, match[0], match[1], "timestamp")
+			if (!planningStarts?.has(match.index)) {
+				addEntry(match.index, match[0], "timestamp")
 			}
 		}
 	}
@@ -210,7 +236,7 @@ export const sortOrgAgendaEntries = <T extends OrgAgendaEntry>(
 ): readonly T[] =>
 	[...entries].sort(
 		(left, right) =>
-			compareText(left.date, right.date) ||
+			compareText(left.date ?? "", right.date ?? "") ||
 			compareText(left.kind, right.kind) ||
 			compareText(left.relativePath, right.relativePath) ||
 			left.line - right.line ||
@@ -258,13 +284,15 @@ export const validateOrgAgendaOrigin = (
 				left.from === right.from &&
 				left.to === right.to &&
 				left.text === right.text
-	const matched = parseOrgAgenda(entry.relativePath, source).find(
+	const matched = parseOrgAgenda(entry.relativePath, source, true).find(
 		(candidate) =>
 			entry.origin.relativePath === entry.relativePath &&
 			sameAnchor(entry.origin.timestamp, candidate.origin.timestamp) &&
 			sameAnchor(entry.origin.heading, candidate.origin.heading) &&
 			entry.kind === candidate.kind &&
-			entry.date === candidate.date &&
+			(entry.sourceOrdinal === undefined || entry.sourceOrdinal === candidate.sourceOrdinal) &&
+			(entry.kind === "todo" ? entry.date === null && entry.origin.timestamp === null :
+				entry.origin.timestamp !== null && (entry.occurrence && entry.occurrence !== "source" ? isOrgCalendarISO(entry.date) : entry.date === candidate.date)) &&
 			entry.todo === candidate.todo &&
 			entry.heading === candidate.heading &&
 			entry.line === candidate.line &&

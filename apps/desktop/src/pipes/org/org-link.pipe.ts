@@ -1,16 +1,14 @@
 import { type ParsedOrgLinkTarget, parseOrgLinkTarget } from "./org-backlinks.pipe"
+import { scanOrgBracketLinks } from "./org-link-syntax.pipe"
 
 /** A safe, normalized navigation target found under a source position. */
 export type OrgLinkClickTarget = ParsedOrgLinkTarget
 
-const LINK = /\[\[([^\]\r\n]+)\](?:\[([^\]\r\n]*)\])?\]/g
 
 const linkTextAt = (content: string, position: number): string | null => {
-	for (const match of content.matchAll(LINK)) {
-		const from = match.index
-		const to = from + match[0].length
-		if (position >= from && position < to) {
-			return match[1]
+	for (const link of scanOrgBracketLinks(content)) {
+		if (position >= link.from && position < link.to) {
+			return link.target
 		}
 	}
 	return null

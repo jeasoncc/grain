@@ -4,13 +4,13 @@
 //! Callers cannot use absolute paths, parent traversal, non-Org files, or symlinks to escape it.
 
 use cap_std::ambient_authority;
-use cap_std::fs::{Dir, OpenOptions};
+use cap_std::fs::{Dir, OpenOptions, Permissions};
 #[cfg(unix)]
-use cap_std::fs::{MetadataExt, OpenOptionsExt, Permissions, PermissionsExt};
+use cap_std::fs::{MetadataExt, OpenOptionsExt, PermissionsExt};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::ffi::CString;
 use std::ffi::{OsStr, OsString};
 #[cfg(test)]
@@ -19,9 +19,23 @@ use std::io::{self, Read, Write};
 use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, MutexGuard};
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::{os::fd::AsRawFd, os::unix::ffi::OsStrExt};
 use thiserror::Error;
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[path = "org_document_write.rs"]
+mod document_write;
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+use document_write::{
+    capture_org_write, finish_org_write, prepare_org_write, publish_org_write, quarantine_org_document,
+    scan_retained_original,
+};
+#[cfg(all(test, any(target_os = "linux", target_os = "macos")))]
+pub(crate) use document_write::prepare_interrupted_org_write;
+
+#[path = "org_export.rs"]
+pub(crate) mod export;
 
 #[derive(Debug, Error)]
 pub enum OrgFilesystemError {
@@ -31,12 +45,20 @@ pub enum OrgFilesystemError {
     OutsideWorkspace(String),
     #[error("Org document not found: {0}")]
     NotFound(String),
+    /// Authorized no-symlink observation found no terminal entry or parent.
+    #[error("Org document path is absent: {0}")]
+    ProvenAbsent(String),
     #[error("target already exists: {0}")]
     TargetExists(String),
+    /// The terminal entry was occupied before any write transaction or stage existed.
+    #[error("creation target already exists before publication: {0}")]
+    CreationCollision(String),
     #[error("operation is not supported on this platform: {0}")]
     UnsupportedPlatform(String),
     #[error("Org document is not valid UTF-8: {0}")]
     InvalidUtf8(String),
+    #[error("Org file changed while its observed bytes were being inspected: {0}")]
+    InspectionChanged(String),
     #[error("invalid migration manifest: {0}")]
     InvalidManifest(String),
     #[error("Org migration recovery file exceeds its byte limit: {0}")]
@@ -47,6 +69,8 @@ pub enum OrgFilesystemError {
         expected: String,
         actual: String,
     },
+    #[error("ambiguous interrupted Org write; recovery artifacts retained: {0}")]
+    WriteRecoveryConflict(String),
     #[error("filesystem error: {0}")]
     Io(#[from] io::Error),
 }
@@ -82,6 +106,33 @@ pub struct OrgDocumentEntry {
 pub struct OrgWorkspaceSnapshot {
     pub documents: Vec<OrgDocumentEntry>,
     pub directories: Vec<String>,
+    pub original_recoveries: Vec<OrgOriginalRecoveryEntry>,
+}
+
+/// A mutable retained recovery object; never an immutable snapshot or canonical body owner.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OrgOriginalRecoveryEntry {
+    pub relative_path: String,
+    pub source_relative_path: String,
+    pub kind: OrgOriginalRecoveryKind,
+    pub object: OrgRecoveryObjectKind,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum OrgOriginalRecoveryKind {
+    Save,
+    Delete,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum OrgRecoveryObjectKind {
+    Original,
+    Staged,
+    Journal,
+    PublicationProbe,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -97,6 +148,7 @@ pub struct OrgDocument {
 pub struct OrgWriteResult {
     pub relative_path: String,
     pub revision: String,
+    pub original_recovery: Option<OrgOriginalRecoveryEntry>,
 }
 
 /// One file produced by an Org workspace migration.
@@ -146,7 +198,7 @@ pub struct OrgMigrationVerificationMismatch {
 
 /// A raw legacy content record recovered from a migration bundle.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct OrgMigrationRecoveryBackup {
     pub path: String,
     pub content_id: String,
@@ -158,26 +210,76 @@ pub struct OrgMigrationRecoveryBackup {
     pub content: String,
 }
 
-/// The lossless data needed to recover legacy content without touching SQLite.
+fn required_nullable_text<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<String>, D::Error> {
+    Option::<String>::deserialize(deserializer)
+}
+
+/// Exact selected legacy workspace and node tuples. Integer columns are canonical i64 decimals.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, sea_orm::FromQueryResult)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct LegacyRecoveryWorkspace {
+    pub id: String,
+    pub name: String,
+    #[serde(deserialize_with = "required_nullable_text")]
+    pub description: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, sea_orm::FromQueryResult)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct LegacyRecoveryNode {
+    pub id: String,
+    pub workspace_id: String,
+    #[serde(deserialize_with = "required_nullable_text")]
+    pub parent_id: Option<String>,
+    pub title: String,
+    pub node_type: String,
+    pub is_collapsed: String,
+    pub sort_order: String,
+    #[serde(deserialize_with = "required_nullable_text")]
+    pub tags: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct LegacyRecoveryGraph {
+    pub workspace: LegacyRecoveryWorkspace,
+    pub nodes: Vec<LegacyRecoveryNode>,
+}
+
+/// Lossless selected-workspace recovery, not a backup of unrelated database tables.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct OrgMigrationRecoveryBundle {
     pub manifest: String,
+    pub graph: LegacyRecoveryGraph,
     pub raw_backups: Vec<OrgMigrationRecoveryBackup>,
-    pub recovery_sql: Option<String>,
+    pub recovery_sql: String,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct OrgMigrationRecoveryManifest {
+    version: serde_json::Number,
     root_directory: String,
+    graph: LegacyRecoveryGraph,
     raw_backups: Vec<OrgMigrationRecoveryBackupMetadata>,
-    #[serde(default)]
-    recovery_sql_path: Option<String>,
+    recovery_sql_path: String,
+    #[serde(rename = "directories")]
+    _directories: Vec<serde::de::IgnoredAny>,
+    #[serde(rename = "documents")]
+    _documents: Vec<serde::de::IgnoredAny>,
+    #[serde(rename = "nodes")]
+    _nodes: Vec<serde::de::IgnoredAny>,
+    #[serde(rename = "warnings")]
+    _warnings: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct OrgMigrationRecoveryBackupMetadata {
     path: String,
     content_id: String,
@@ -197,26 +299,25 @@ struct OrgMigrationVerificationManifest {
 const MIGRATION_VERIFICATION_FILE: &str = "migration-verification.json";
 const MIGRATION_MANIFEST_FILE: &str = "migration-manifest.json";
 const MIGRATION_RAW_BACKUP_DIRECTORY: &str = "_migration-raw-backups";
-const MIGRATION_RECOVERY_SQL_FILE: &str = "legacy-contents-recovery.sql";
+const MIGRATION_RECOVERY_SQL_FILE: &str = "legacy-workspace-recovery.sql";
 const MAX_MIGRATION_MANIFEST_BYTES: u64 = 1024 * 1024;
 const MAX_MIGRATION_BACKUP_BYTES: u64 = 16 * 1024 * 1024;
 const MAX_MIGRATION_RECOVERY_TOTAL_BYTES: u64 = 64 * 1024 * 1024;
 const MAX_MIGRATION_RECOVERY_SQL_BYTES: u64 = 160 * 1024 * 1024;
 
 #[cfg(unix)]
-struct CreatedMigrationDirectory {
-    parent: Dir,
-    name: OsString,
-    identity: UnixIdentity,
-}
-
-#[cfg(unix)]
-struct StagedMigrationArtifact {
+struct StagedMigrationArtifact<'a> {
     parent: Dir,
     target_name: OsString,
     temporary_name: OsString,
     file: cap_std::fs::File,
     display_path: String,
+    below_root: PathBuf,
+    expected_byte_length: u64,
+    expected_revision: &'a str,
+    observed: cap_std::fs::Metadata,
+    installed_file: Option<cap_std::fs::File>,
+    installed_observed: Option<cap_std::fs::Metadata>,
 }
 
 /// Recursively lists the workspace's regular `*.org` files and non-symlink directories.
@@ -237,13 +338,16 @@ pub fn scan_org_workspace(
 pub fn scan_org_workspace_with_capability(root: &Dir) -> OrgFilesystemResult<OrgWorkspaceSnapshot> {
     let mut documents = Vec::new();
     let mut directories = Vec::new();
-    scan_directory_capability(root, Path::new(""), &mut documents, &mut directories)?;
+    let mut original_recoveries = Vec::new();
+    scan_directory_capability(root, Path::new(""), &mut documents, &mut directories, &mut original_recoveries)?;
 
     documents.sort_by(|a, b| a.relative_path.cmp(&b.relative_path));
     directories.sort();
+    original_recoveries.sort_by(|a, b| a.relative_path.cmp(&b.relative_path));
     Ok(OrgWorkspaceSnapshot {
         documents,
         directories,
+        original_recoveries,
     })
 }
 
@@ -252,6 +356,7 @@ fn scan_directory_capability(
     relative_directory: &Path,
     documents: &mut Vec<OrgDocumentEntry>,
     directories: &mut Vec<String>,
+    original_recoveries: &mut Vec<OrgOriginalRecoveryEntry>,
 ) -> OrgFilesystemResult<()> {
     for entry in directory.entries()? {
         let entry = entry?;
@@ -265,13 +370,17 @@ fn scan_directory_capability(
         if entry_name.to_string_lossy().starts_with(".grain-")
             && entry_name.to_string_lossy().ends_with(".tmp")
         {
+            #[cfg(any(target_os = "linux", target_os = "macos"))]
+            if file_type.is_dir() {
+                original_recoveries.extend(scan_retained_original(directory, &entry_name, relative_directory)?);
+            }
             continue;
         }
-        let relative = relative_directory.join(entry_name);
+        let relative = relative_directory.join(&entry_name);
         if file_type.is_dir() {
             directories.push(portable_relative_path(&relative)?);
             let child = entry.open_dir()?;
-            scan_directory_capability(&child, &relative, documents, directories)?;
+            scan_directory_capability(&child, &relative, documents, directories, original_recoveries)?;
         } else if file_type.is_file()
             && relative
                 .extension()
@@ -279,11 +388,15 @@ fn scan_directory_capability(
                 == Some("org")
         {
             let display_path = portable_relative_path(&relative)?;
-            let content = read_open_file_utf8(entry.open()?, &display_path)?;
-            documents.push(OrgDocumentEntry {
-                relative_path: display_path,
-                revision: revision(content.as_bytes()),
-            });
+            let mut options = OpenOptions::new();
+            options.read(true);
+            #[cfg(unix)]
+            options.custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK);
+            let mut file = directory.open_with(&entry_name, &options)?;
+            let observed = file.metadata()?;
+            let revision = read_open_file_revision_utf8(&mut file, &display_path)?;
+            require_unchanged_file(&observed, &directory.symlink_metadata(&entry_name)?, &display_path)?;
+            documents.push(OrgDocumentEntry { relative_path: display_path, revision });
         }
     }
     Ok(())
@@ -312,23 +425,35 @@ pub fn read_org_document_with_capability(
 ) -> OrgFilesystemResult<OrgDocument> {
     let relative = validate_relative_org_path(relative_path.as_ref())?;
     let display_path = portable_relative_path(&relative)?;
-    let (parent, file_name) = resolve_document_parent(root, &relative, &display_path)?;
-    let metadata = parent
-        .symlink_metadata(&file_name)
-        .map_err(|error| map_not_found(error, &display_path))?;
+    let (parent, file_name) = resolve_no_symlink_parent(root, &relative, &display_path)
+        .map_err(|error| match error {
+            #[cfg(unix)]
+            OrgFilesystemError::NotFound(path) => OrgFilesystemError::ProvenAbsent(path),
+            other => other,
+        })?;
+    let metadata = parent.symlink_metadata(&file_name).map_err(|error| {
+        #[cfg(unix)]
+        if error.kind() == io::ErrorKind::NotFound {
+            return OrgFilesystemError::ProvenAbsent(display_path.clone());
+        }
+        OrgFilesystemError::Io(error)
+    })?;
     if metadata.file_type().is_symlink() {
         return Err(OrgFilesystemError::OutsideWorkspace(display_path));
     }
     if !metadata.is_file() {
-        return Err(OrgFilesystemError::NotFound(display_path));
+        return Err(OrgFilesystemError::InvalidPath(display_path));
     }
 
-    let content = read_open_file_utf8(
-        parent
-            .open(&file_name)
-            .map_err(|error| map_not_found(error, &display_path))?,
-        &display_path,
-    )?;
+    let mut options = OpenOptions::new();
+    options.read(true);
+    #[cfg(unix)]
+    options.custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK);
+    let file = parent.open_with(&file_name, &options)
+        .map_err(|error| map_not_found(error, &display_path))?;
+    require_unchanged_file(&metadata, &file.metadata()?, &display_path)?;
+    let content = read_open_file_utf8(file, &display_path)?;
+    require_unchanged_file(&metadata, &parent.symlink_metadata(&file_name)?, &display_path)?;
     Ok(OrgDocument {
         relative_path: display_path,
         revision: revision(content.as_bytes()),
@@ -336,10 +461,70 @@ pub fn read_org_document_with_capability(
     })
 }
 
-/// Reads a legacy migration manifest and its raw backups through a retained capability.
-///
-/// The manifest text is returned byte-for-byte (after UTF-8 validation), and backup order is the
-/// manifest order. This read-only flow never opens or writes the application database.
+fn canonical_i64(value: &str) -> bool {
+    value.parse::<i64>().is_ok_and(|parsed| parsed.to_string() == value)
+}
+
+fn validate_recovery_graph(graph: &LegacyRecoveryGraph) -> OrgFilesystemResult<()> {
+    let workspace = &graph.workspace;
+    let mut ids = HashSet::new();
+    if !canonical_i64(&workspace.created_at) || !canonical_i64(&workspace.updated_at)
+        || graph.nodes.iter().any(|node| {
+            node.workspace_id != workspace.id || !ids.insert(&node.id)
+                || !canonical_i64(&node.is_collapsed) || !canonical_i64(&node.sort_order)
+                || !canonical_i64(&node.created_at) || !canonical_i64(&node.updated_at)
+        })
+    {
+        return Err(OrgFilesystemError::InvalidManifest("invalid lossless workspace graph".to_owned()));
+    }
+    // Missing parents and cycles are historical data, not grounds to fabricate or discard rows.
+    Ok(())
+}
+
+fn workspace_recovery_sql(graph: &LegacyRecoveryGraph, backups: &[OrgMigrationRecoveryBackup]) -> String {
+    use std::fmt::Write;
+    struct SqlText<'a>(Option<&'a str>);
+    impl std::fmt::Display for SqlText<'_> {
+        fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let Some(value) = self.0 else { return formatter.write_str("NULL"); };
+            formatter.write_str("CAST(X'")?;
+            for byte in value.as_bytes() {
+                write!(formatter, "{byte:02x}")?;
+            }
+            formatter.write_str("' AS TEXT)")
+        }
+    }
+    fn text(value: &str) -> SqlText<'_> { SqlText(Some(value)) }
+    fn nullable(value: &Option<String>) -> SqlText<'_> { SqlText(value.as_deref()) }
+    let mut sql = concat!(
+        "-- Selected legacy workspace graph and raw contents only; not a whole-database backup.\n",
+        "PRAGMA foreign_keys=OFF;\nBEGIN IMMEDIATE;\n",
+        "CREATE TABLE workspaces (id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL, description TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);\n",
+        "CREATE TABLE nodes (id TEXT PRIMARY KEY NOT NULL, workspace_id TEXT NOT NULL, parent_id TEXT, title TEXT NOT NULL, node_type TEXT NOT NULL, is_collapsed INTEGER NOT NULL, sort_order INTEGER NOT NULL, tags TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);\n",
+        "CREATE INDEX idx_nodes_workspace ON nodes(workspace_id);\nCREATE INDEX idx_nodes_parent ON nodes(parent_id);\n",
+        "CREATE TABLE contents (id TEXT PRIMARY KEY NOT NULL, node_id TEXT NOT NULL, content TEXT NOT NULL, version INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);\n",
+        "CREATE INDEX idx_contents_node ON contents(node_id);\n",
+        "CREATE TABLE grain_recovery_content_types (content_id TEXT PRIMARY KEY NOT NULL, content_type TEXT NOT NULL);\n",
+    ).to_owned();
+    let workspace = &graph.workspace;
+    writeln!(&mut sql, "INSERT INTO workspaces (id,name,description,created_at,updated_at) VALUES ({},{},{},{},{});",
+        text(&workspace.id), text(&workspace.name), nullable(&workspace.description), workspace.created_at, workspace.updated_at).unwrap();
+    for node in &graph.nodes {
+        writeln!(&mut sql, "INSERT INTO nodes (id,workspace_id,parent_id,title,node_type,is_collapsed,sort_order,tags,created_at,updated_at) VALUES ({},{},{},{},{},{},{},{},{},{});",
+            text(&node.id), text(&node.workspace_id), nullable(&node.parent_id), text(&node.title), text(&node.node_type),
+            node.is_collapsed, node.sort_order, nullable(&node.tags), node.created_at, node.updated_at).unwrap();
+    }
+    for backup in backups {
+        writeln!(&mut sql, "INSERT INTO contents (id,node_id,content,version,created_at,updated_at) VALUES ({},{},{},{},{},{});",
+            text(&backup.content_id), text(&backup.node_id), text(&backup.content), backup.version, backup.created_at, backup.updated_at).unwrap();
+        writeln!(&mut sql, "INSERT INTO grain_recovery_content_types (content_id,content_type) VALUES ({},{});",
+            text(&backup.content_id), text(&backup.content_type)).unwrap();
+    }
+    sql.push_str("COMMIT;\n");
+    sql
+}
+
+/// Capability-read version-2 graph/raw bundle, with exact tuple/SQL agreement.
 pub fn read_org_migration_recovery_bundle_with_capability(
     root: &Dir,
     manifest_relative_path: impl AsRef<Path>,
@@ -359,6 +544,10 @@ pub fn read_org_migration_recovery_bundle_with_capability(
     )?;
     let parsed: OrgMigrationRecoveryManifest = serde_json::from_str(&manifest)
         .map_err(|error| OrgFilesystemError::InvalidManifest(error.to_string()))?;
+    if parsed.version.as_f64() != Some(2.0) {
+        return Err(OrgFilesystemError::InvalidManifest("unsupported migration format".to_owned()));
+    }
+    validate_recovery_graph(&parsed.graph)?;
 
     let root_directory = validate_portable_relative_path(Path::new(&parsed.root_directory))?;
     if manifest_path.parent() != Some(root_directory.as_path()) {
@@ -368,33 +557,22 @@ pub fn read_org_migration_recovery_bundle_with_capability(
     }
     let backup_root = root_directory.join(MIGRATION_RAW_BACKUP_DIRECTORY);
     let mut seen = HashSet::new();
-    let mut prepared = Vec::with_capacity(parsed.raw_backups.len());
-    for metadata in parsed.raw_backups {
-        let valid_version = metadata
-            .version
-            .parse::<i32>()
-            .is_ok_and(|value| value.to_string() == metadata.version);
-        let valid_created_at = metadata
-            .created_at
-            .parse::<i64>()
-            .is_ok_and(|value| value.to_string() == metadata.created_at);
-        let valid_updated_at = metadata
-            .updated_at
-            .parse::<i64>()
-            .is_ok_and(|value| value.to_string() == metadata.updated_at);
-        if !valid_version
-            || !valid_created_at
-            || !valid_updated_at
-            || !matches!(
-                metadata.content_type.as_str(),
-                "lexical" | "excalidraw" | "text"
-            )
+    let mut content_ids = HashSet::with_capacity(parsed.raw_backups.len());
+    for metadata in &parsed.raw_backups {
+        if !canonical_i64(&metadata.version)
+            || !canonical_i64(&metadata.created_at)
+            || !canonical_i64(&metadata.updated_at)
+            || !content_ids.insert(&metadata.content_id)
         {
             return Err(OrgFilesystemError::InvalidManifest(format!(
                 "invalid raw backup metadata for content {}",
                 metadata.content_id
             )));
         }
+    }
+    drop(content_ids);
+    let mut prepared = Vec::with_capacity(parsed.raw_backups.len());
+    for metadata in parsed.raw_backups {
         let path = validate_portable_relative_path(Path::new(&metadata.path))?;
         if path.parent().is_none()
             || !path.starts_with(&backup_root)
@@ -435,36 +613,32 @@ pub fn read_org_migration_recovery_bundle_with_capability(
         });
     }
 
-    let recovery_sql = if let Some(sql_path) = parsed.recovery_sql_path {
-        let path = validate_portable_relative_path(Path::new(&sql_path))?;
-        let expected_path = root_directory.join(MIGRATION_RECOVERY_SQL_FILE);
-        if path != expected_path {
-            return Err(OrgFilesystemError::InvalidManifest(
-                "recoverySqlPath must identify the recovery SQL beside the manifest".to_owned(),
-            ));
-        }
-        let display = portable_relative_path(&path)?;
-        Some(read_capability_file_utf8_limited(
-            root,
-            &path,
-            &display,
-            MAX_MIGRATION_RECOVERY_SQL_BYTES,
-        )?)
-    } else {
-        None
-    };
+    let path = validate_portable_relative_path(Path::new(&parsed.recovery_sql_path))?;
+    if path != root_directory.join(MIGRATION_RECOVERY_SQL_FILE) {
+        return Err(OrgFilesystemError::InvalidManifest(
+            "recoverySqlPath must identify the recovery SQL beside the manifest".to_owned(),
+        ));
+    }
+    let display = portable_relative_path(&path)?;
+    let recovery_sql = read_capability_file_utf8_limited(
+        root, &path, &display, MAX_MIGRATION_RECOVERY_SQL_BYTES,
+    )?;
+    if recovery_sql != workspace_recovery_sql(&parsed.graph, &raw_backups) {
+        return Err(OrgFilesystemError::InvalidManifest("recovery SQL differs from lossless tuples".to_owned()));
+    }
 
     Ok(OrgMigrationRecoveryBundle {
         manifest,
+        graph: parsed.graph,
         raw_backups,
         recovery_sql,
     })
 }
 
-/// Atomically writes one Org document after optionally checking its current revision.
+/// Durably writes one Org document after optionally checking its current revision.
 ///
-/// The temporary file is created through the destination directory capability, synced, and
-/// installed with a no-clobber hard link.
+/// A synced identity-bound journal precedes capture of the old entry. Publication is no-clobber,
+/// and interrupted transactions are reconciled on the next approved workspace open.
 pub fn write_org_document(
     workspace_root: impl AsRef<Path>,
     relative_path: impl AsRef<Path>,
@@ -482,118 +656,102 @@ pub fn write_org_document_with_capability(
     content: &str,
     expected_revision: Option<&str>,
 ) -> OrgFilesystemResult<OrgWriteResult> {
-    let _mutation_guard = lock_org_mutations()?;
-    let relative = validate_relative_org_path(relative_path.as_ref())?;
-    let display_path = portable_relative_path(&relative)?;
-    let (parent, file_name) = resolve_document_parent(&root, &relative, &display_path)?;
-
-    let (current_revision, _) = current_file_state(&parent, &file_name, &display_path)?;
-    if let Some(expected) = expected_revision {
-        let actual = current_revision.as_deref().unwrap_or("<missing>");
-        if expected != actual {
-            return Err(OrgFilesystemError::RevisionConflict {
-                path: display_path,
-                expected: expected.to_owned(),
-                actual: actual.to_owned(),
-            });
-        }
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    {
+        let _mutation_guard = lock_org_mutations()?;
+        let transaction = prepare_org_write(root, relative_path.as_ref(), content, expected_revision)?;
+        capture_org_write(&transaction)?;
+        publish_org_write(&transaction)?;
+        let staged = transaction.journal.staged.as_ref()
+            .ok_or_else(|| OrgFilesystemError::WriteRecoveryConflict(transaction.display_path.clone()))?;
+        // finish_org_write owns the final observations and durable terminal resolution. No
+        // rejecting revalidation may follow it: successful retentions permit later external edits.
+        let original_recovery = finish_org_write(&transaction)?;
+        Ok(OrgWriteResult {
+            relative_path: transaction.display_path,
+            revision: staged.revision.clone(),
+            original_recovery,
+        })
     }
-
-    let new_revision = revision(content.as_bytes());
-    let (temporary_name, mut temporary) = create_temporary_file(&parent)?;
-    if let Err(error) = (|| -> io::Result<()> {
-        temporary.write_all(content.as_bytes())?;
-        temporary.flush()?;
-        temporary.sync_all()
-    })() {
-        let _ = parent.remove_file(&temporary_name);
-        return Err(error.into());
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    {
+        let _ = (root, relative_path, content, expected_revision);
+        Err(OrgFilesystemError::UnsupportedPlatform(
+            "durable no-clobber Org writes".to_owned(),
+        ))
     }
+}
 
-    // Capture the old directory entry relative to the already-open parent. Parent path renames or
-    // symlink swaps cannot redirect any operation performed through this capability.
-    let captured_name = if current_revision.is_some() {
-        let tombstone = match vacant_temporary_name(&parent) {
-            Ok(name) => name,
-            Err(error) => {
-                let _ = parent.remove_file(&temporary_name);
-                return Err(error.into());
-            }
-        };
-        if let Err(error) = parent.rename(&file_name, &parent, &tombstone) {
-            let _ = parent.remove_file(&temporary_name);
-            return Err(error.into());
+/// Reconciles manifested ordinary saves before scanning an approved workspace.
+///
+/// Unidentified older temporary files are never removed. Foreign identities or changed bytes
+/// fail closed and retain the journal and all surviving objects for explicit human recovery.
+pub fn recover_org_document_writes_with_capability(root: &Dir) -> OrgFilesystemResult<()> {
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    {
+        let _mutation_guard = lock_org_mutations()?;
+        document_write::recover_directory(root)
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    {
+        reject_unrecoverable_org_write_journals(root)
+    }
+}
+
+#[cfg(any(test, not(any(target_os = "linux", target_os = "macos"))))]
+fn reject_unrecoverable_org_write_journals(root: &Dir) -> OrgFilesystemResult<()> {
+    for entry in root.entries()? {
+        let entry = entry?;
+        let name = entry.file_name();
+        let name = name.to_string_lossy();
+        if name.starts_with(".grain-retaining-") && name.ends_with(".tmp") {
+            return Err(OrgFilesystemError::UnsupportedPlatform(
+                "unresolved retained Org write requires explicit recovery".to_owned(),
+            ));
         }
-        let (captured_revision, captured_permissions) =
-            match current_file_state(&parent, &tombstone, &display_path) {
-                Ok(state) => state,
-                Err(error) => {
-                    restore_captured_file(&parent, &tombstone, &parent, &file_name)?;
-                    let _ = parent.remove_file(&temporary_name);
-                    return Err(error);
+        if name.starts_with(".grain-resolved-") {
+            return Err(OrgFilesystemError::UnsupportedPlatform(
+                "resolved Org retention requires directory-identity validation".to_owned(),
+            ));
+        }
+        let kind = entry.file_type()?;
+        let active = name.starts_with(".grain-write-") && name.ends_with(".tmp");
+        if active && (!kind.is_dir() || kind.is_symlink()) {
+            return Err(OrgFilesystemError::UnsupportedPlatform(
+                "active Org write marker no longer identifies its journal directory".to_owned(),
+            ));
+        }
+        if !kind.is_dir() || kind.is_symlink() {
+            continue;
+        }
+        let directory = entry.open_dir()?;
+        if active {
+            for journal in ["journal.json", "journal.gc"] {
+                match directory.symlink_metadata(journal) {
+                    Ok(_) => {
+                        return Err(OrgFilesystemError::UnsupportedPlatform(
+                            "interrupted Org write requires safe no-clobber recovery primitives"
+                                .to_owned(),
+                        ));
+                    }
+                    Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+                    Err(error) => return Err(error.into()),
                 }
-            };
-        if captured_revision != current_revision {
-            restore_captured_file(&parent, &tombstone, &parent, &file_name)?;
-            let _ = parent.remove_file(&temporary_name);
-            return Err(OrgFilesystemError::RevisionConflict {
-                path: display_path,
-                expected: current_revision.unwrap_or_else(|| "<missing>".to_owned()),
-                actual: captured_revision.unwrap_or_else(|| "<missing>".to_owned()),
-            });
-        }
-        if let Some(permissions) = captured_permissions {
-            if let Err(error) = temporary.set_permissions(permissions) {
-                restore_captured_file(&parent, &tombstone, &parent, &file_name)?;
-                let _ = parent.remove_file(&temporary_name);
-                return Err(error.into());
-            }
-            if let Err(error) = temporary.sync_all() {
-                restore_captured_file(&parent, &tombstone, &parent, &file_name)?;
-                let _ = parent.remove_file(&temporary_name);
-                return Err(error.into());
-            }
-        }
-        Some(tombstone)
-    } else {
-        None
-    };
-
-    if let Err(error) = parent.hard_link(&temporary_name, &parent, &file_name) {
-        if let Some(captured) = captured_name.as_deref() {
-            restore_captured_file(&parent, captured, &parent, &file_name)?;
-        }
-        let _ = parent.remove_file(&temporary_name);
-        let (actual_revision, _) = current_file_state(&parent, &file_name, &display_path)?;
-        return Err(if error.kind() == io::ErrorKind::AlreadyExists {
-            OrgFilesystemError::RevisionConflict {
-                path: display_path,
-                expected: current_revision.unwrap_or_else(|| "<missing>".to_owned()),
-                actual: actual_revision.unwrap_or_else(|| "<missing>".to_owned()),
             }
         } else {
-            OrgFilesystemError::Io(error)
-        });
+            reject_unrecoverable_org_write_journals(&directory)?;
+        }
     }
-    parent.remove_file(&temporary_name)?;
-    sync_directory(&parent)?;
-    if let Some(captured) = captured_name {
-        parent.remove_file(captured)?;
-        sync_directory(&parent)?;
-    }
-
-    Ok(OrgWriteResult {
-        relative_path: portable_relative_path(&relative)?,
-        revision: new_revision,
-    })
+    Ok(())
 }
 
 /// Installs a batch of migration artifacts relative to an already-approved workspace.
 ///
-/// The operation validates the complete target graph, creates requested directories through
-/// retained directory handles, stages and syncs every file, and uses hard links for no-clobber
-/// installation. Until the entire batch is durable, rollback removes only entries whose Unix
-/// device/inode identity still matches an object created by this call; replacements are retained.
+/// The operation validates the complete target graph, creates owner-only directories through
+/// retained handles, and syncs staged files. Linux publishes held file descriptors by no-clobber
+/// links; Darwin copies held descriptors into fresh no-clobber targets. Expected bytes, entry
+/// identities and the reachable tree are observed before acknowledgement, not atomically locked.
+/// Stages, installed links and uncertain published trees are retained; no destructive rollback.
 pub fn write_org_migration_with_capability(
     root: &Dir,
     directories: Vec<String>,
@@ -708,19 +866,16 @@ fn write_org_migration_unix_atomic(
     }
     let staging_name = vacant_temporary_name(root)?;
 
-    let mut created_directories = Vec::new();
+    // Retain every stage and uncertain installed object: identity checks cannot authorize
+    // a later unlink, rmdir, overwriting rename, or reverse publication.
+    let verification_revision = revision(prepared_artifacts.last().unwrap().2.as_bytes());
+    let expected_revisions: HashMap<_, _> = artifact_summaries
+        .iter()
+        .map(|summary| (summary.relative_path.as_str(), summary.revision.as_str()))
+        .chain(std::iter::once((verification_path.as_str(), verification_revision.as_str())))
+        .collect();
+    let migration_dir = create_migration_directory(root, &staging_name, &root_display)?;
     let mut staged_artifacts = Vec::new();
-    let mut installed_artifacts = 0;
-    let operation = (|| -> OrgFilesystemResult<OrgMigrationWriteResult> {
-        // mkdir is the authority on vacancy. The helper captures the new entry's identity before
-        // opening, cloning, chmodding, syncing, or recording it, and safely cleans up if any of
-        // those steps fail.
-        let migration_dir = create_migration_directory(
-            root,
-            &staging_name,
-            &root_display,
-            &mut created_directories,
-        )?;
 
         let mut nested_paths = BTreeSet::new();
         for directory in &directory_paths {
@@ -751,8 +906,7 @@ fn write_org_migration_unix_atomic(
                 )
             })?;
             let display = format!("{root_display}/{}", portable_relative_path(&relative)?);
-            let directory =
-                create_migration_directory(parent, name, &display, &mut created_directories)?;
+            let directory = create_migration_directory(parent, name, &display)?;
             directory_handles.insert(relative, directory);
         }
 
@@ -778,61 +932,57 @@ fn write_org_migration_unix_atomic(
             }
 
             let (temporary_name, mut temporary) = create_temporary_file(&parent)?;
-            let write_result = (|| -> io::Result<()> {
-                set_migration_file_permissions(&temporary)?;
-                temporary.write_all(content.as_bytes())?;
-                temporary.flush()?;
-                temporary.sync_all()
-            })();
+            set_migration_file_permissions(&temporary)?;
+            temporary.write_all(content.as_bytes())?;
+            temporary.flush()?;
+            temporary.sync_all()?;
+            let observed = temporary.metadata()?;
             staged_artifacts.push(StagedMigrationArtifact {
                 parent,
                 target_name: target_name.to_os_string(),
                 temporary_name,
                 file: temporary,
                 display_path: display_path.clone(),
+                below_root: below_root.to_path_buf(),
+                expected_byte_length: content.len() as u64,
+                expected_revision: expected_revisions[display_path.as_str()],
+                observed,
+                installed_file: None,
+                installed_observed: None,
             });
-            write_result?;
+            #[cfg(test)]
+            migration_race(MigrationRacePoint::AfterStage, &staged_artifacts.last().unwrap().parent,
+                &staged_artifacts.last().unwrap().temporary_name)?;
         }
 
-        for staged in &staged_artifacts {
-            if let Err(error) =
-                staged
-                    .parent
-                    .hard_link(&staged.temporary_name, &staged.parent, &staged.target_name)
-            {
-                return Err(if error.kind() == io::ErrorKind::AlreadyExists {
-                    OrgFilesystemError::TargetExists(staged.display_path.clone())
-                } else {
-                    OrgFilesystemError::Io(error)
-                });
-            }
-            installed_artifacts += 1;
-        }
-
-        // Directory syncs are part of the transaction: a sync failure still removes every link.
-        for staged in &staged_artifacts {
+        for staged in &mut staged_artifacts {
+            #[cfg(test)]
+            migration_race(MigrationRacePoint::BeforeFilePublication, &staged.parent, &staged.temporary_name)?;
+            require_migration_stage(staged)?;
+            publish_migration_artifact(staged).map_err(|error| match error {
+                OrgFilesystemError::Io(error) if error.kind() == io::ErrorKind::AlreadyExists =>
+                    OrgFilesystemError::TargetExists(staged.display_path.clone()),
+                other => other,
+            })?;
+            #[cfg(test)]
+            migration_race(MigrationRacePoint::AfterFilePublication, &staged.parent, &staged.temporary_name)?;
+            require_migration_artifact(staged)?;
             sync_directory(&staged.parent)?;
         }
-        for staged in &staged_artifacts {
-            if !remove_file_if_identity(
-                &staged.parent,
-                &staged.temporary_name,
-                file_identity(&staged.file)?,
-            )? {
-                return Err(io::Error::other(format!(
-                    "staged migration file was replaced: {}",
-                    staged.display_path
-                ))
-                .into());
-            }
+        for directory in directory_handles.values() {
+            sync_directory(directory)?;
         }
-        for staged in &staged_artifacts {
-            sync_directory(&staged.parent)?;
-        }
+        require_migration_tree(root, &staging_name, &migration_dir, &directory_handles, &mut staged_artifacts)?;
+        #[cfg(test)]
+        migration_race(MigrationRacePoint::BeforeRootPublication, root, &staging_name)?;
+        // A held directory cannot be renamed by descriptor. Check its named source and then
+        // the installed tree against that same held directory before acknowledging.
+        require_migration_root(root, &staging_name, &migration_dir)?;
+        #[cfg(test)]
+        migration_race(MigrationRacePoint::AfterRootSourceCheck, root, &staging_name)?;
 
-        // Publish the complete tree with one atomic no-clobber namespace operation. A crash before
-        // this point leaves only an ignored .grain-*.tmp staging directory; readers can never see
-        // a partially populated final migration root.
+        // One no-clobber operation publishes the tree. The installed entry remains untrusted
+        // until its identity, reachable parents, and held-file bytes have been observed again.
         rename_noreplace(root, &staging_name, root, root_name).map_err(|error| {
             if error.raw_os_error() == Some(libc::EEXIST) {
                 OrgFilesystemError::TargetExists(root_display.clone())
@@ -840,17 +990,16 @@ fn write_org_migration_unix_atomic(
                 OrgFilesystemError::Io(error)
             }
         })?;
-        if let Err(sync_error) = sync_directory(root) {
-            return Err(
-                match rename_noreplace(root, root_name, root, &staging_name) {
-                    Ok(()) => OrgFilesystemError::Io(sync_error),
-                    Err(rollback_error) => OrgFilesystemError::Io(io::Error::other(format!(
-                        "{sync_error}; published migration root rollback failed: {rollback_error}"
-                    ))),
-                },
-            );
-        }
-
+        #[cfg(test)]
+        migration_race(MigrationRacePoint::BeforeRootSync, root, root_name)?;
+        sync_directory(root)?;
+        #[cfg(test)]
+        migration_race(MigrationRacePoint::BeforeAcknowledgement, root, root_name)?;
+        require_migration_tree(root, root_name, &migration_dir, &directory_handles, &mut staged_artifacts)?;
+        // These are bounded observations, not an atomic snapshot or CAS against an already-open
+        // writer. A physical change after the final observation remains possible.
+        drop(staged_artifacts);
+        drop(expected_revisions);
         Ok(OrgMigrationWriteResult {
             written_paths: prepared_artifacts
                 .iter()
@@ -859,22 +1008,6 @@ fn write_org_migration_unix_atomic(
             verification_path,
             artifacts: artifact_summaries,
         })
-    })();
-
-    match operation {
-        Ok(result) => Ok(result),
-        Err(operation_error) => {
-            if let Err(rollback_error) =
-                rollback_migration(&staged_artifacts, installed_artifacts, &created_directories)
-            {
-                Err(OrgFilesystemError::Io(io::Error::other(format!(
-                    "{operation_error}; migration rollback failed: {rollback_error}"
-                ))))
-            } else {
-                Err(operation_error)
-            }
-        }
-    }
 }
 
 /// Verifies migration artifacts against a generated verification sidecar.
@@ -900,9 +1033,13 @@ pub fn verify_org_migration_with_capability(
         ));
     }
     let verification_display = portable_relative_path(&verification_relative)?;
-    let manifest_bytes =
-        read_required_regular_file(root, &verification_relative, &verification_display)?;
-    let manifest: OrgMigrationVerificationManifest = serde_json::from_slice(&manifest_bytes)
+    // The generated sidecar's bound scales with the caller's exact expected metadata; it does
+    // not impose an artifact-count or Org-body limit.
+    let manifest_limit = verification_manifest_byte_limit(&expected_artifacts)?;
+    let manifest_text = read_capability_file_utf8_limited(
+        root, &verification_relative, &verification_display, manifest_limit,
+    )?;
+    let manifest: OrgMigrationVerificationManifest = serde_json::from_str(&manifest_text)
         .map_err(|error| OrgFilesystemError::InvalidManifest(error.to_string()))?;
     if manifest.artifacts != expected_artifacts {
         return Err(OrgFilesystemError::InvalidManifest(
@@ -949,7 +1086,7 @@ pub fn verify_org_migration_with_capability(
         let path = Path::new(&artifact.relative_path);
         let actual = read_optional_regular_file(root, path, &artifact.relative_path)?;
         let (actual_byte_length, actual_revision) = match actual {
-            Some(bytes) => (Some(bytes.len() as u64), Some(revision(&bytes))),
+            Some((length, revision)) => (Some(length), Some(revision)),
             None => (None, None),
         };
         if actual_byte_length != Some(artifact.byte_length)
@@ -971,21 +1108,36 @@ pub fn verify_org_migration_with_capability(
     })
 }
 
-fn read_required_regular_file(
-    root: &Dir,
-    relative: &Path,
-    display_path: &str,
-) -> OrgFilesystemResult<Vec<u8>> {
-    read_optional_regular_file(root, relative, display_path)?
-        .ok_or_else(|| OrgFilesystemError::NotFound(display_path.to_owned()))
+fn verification_manifest_byte_limit(
+    artifacts: &[OrgMigrationArtifactSummary],
+) -> OrgFilesystemResult<u64> {
+    #[derive(Serialize)]
+    struct ExpectedManifest<'a> {
+        artifacts: &'a [OrgMigrationArtifactSummary],
+    }
+    struct ByteCount(u64);
+    impl Write for ByteCount {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            self.0 = self.0.checked_add(bytes.len() as u64)
+                .ok_or_else(|| io::Error::other("verification metadata length overflow"))?;
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> io::Result<()> { Ok(()) }
+    }
+    let mut count = ByteCount(0);
+    serde_json::to_writer_pretty(&mut count, &ExpectedManifest { artifacts })
+        .map_err(|error| OrgFilesystemError::InvalidManifest(error.to_string()))?;
+    // write_org_migration appends exactly one newline to the pretty JSON.
+    count.0.checked_add(1)
+        .ok_or_else(|| OrgFilesystemError::InvalidManifest("verification metadata length overflow".to_owned()))
 }
 
 fn read_optional_regular_file(
     root: &Dir,
     relative: &Path,
     display_path: &str,
-) -> OrgFilesystemResult<Option<Vec<u8>>> {
-    let (parent, file_name) = match resolve_document_parent(root, relative, display_path) {
+) -> OrgFilesystemResult<Option<(u64, String)>> {
+    let (parent, file_name) = match resolve_no_symlink_parent(root, relative, display_path) {
         Ok(resolved) => resolved,
         Err(OrgFilesystemError::NotFound(_)) => return Ok(None),
         Err(error) => return Err(error),
@@ -996,29 +1148,61 @@ fn read_optional_regular_file(
         Err(error) => return Err(error.into()),
     };
     if metadata.file_type().is_symlink() {
-        return Err(OrgFilesystemError::OutsideWorkspace(
-            display_path.to_owned(),
-        ));
+        return Err(OrgFilesystemError::OutsideWorkspace(display_path.to_owned()));
     }
     if !metadata.is_file() {
         return Err(OrgFilesystemError::InvalidManifest(format!(
             "listed artifact is not a regular file: {display_path}"
         )));
     }
-    let mut file = match parent.open(&file_name) {
+    let mut file = match acquire_observed_regular_file(&parent, &file_name, &metadata, display_path) {
         Ok(file) => file,
-        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
-        Err(error) => return Err(error.into()),
+        Err(OrgFilesystemError::NotFound(_)) => return Ok(None),
+        Err(error) => return Err(error),
     };
+    let summary = observe_open_file_raw(&mut file, display_path)?;
+    require_unchanged_file(&metadata, &file.metadata()?, display_path)?;
+    require_current_regular_entry(&parent, &file_name, &metadata, display_path)?;
+    Ok(Some(summary))
+}
+
+fn acquire_observed_regular_file(
+    parent: &Dir,
+    file_name: &OsStr,
+    before: &cap_std::fs::Metadata,
+    display_path: &str,
+) -> OrgFilesystemResult<cap_std::fs::File> {
+    #[cfg(not(unix))]
+    return Err(OrgFilesystemError::UnsupportedPlatform(
+        "nonblocking no-symlink regular-file observation requires Unix".to_owned(),
+    ));
     #[cfg(unix)]
-    if metadata_identity(&metadata) != metadata_identity(&file.metadata()?) {
-        return Err(OrgFilesystemError::Io(io::Error::other(format!(
-            "file changed while being opened: {display_path}"
-        ))));
+    {
+        #[cfg(test)]
+        tests::run_acquisition_hook();
+        let mut options = OpenOptions::new();
+        options.read(true).custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK);
+        let file = parent.open_with(file_name, &options)
+            .map_err(|error| map_not_found(error, display_path))?;
+        // Reject a FIFO, device, symlink, or foreign inode before reading any bytes.
+        require_unchanged_file(before, &file.metadata()?, display_path)?;
+        require_current_regular_entry(parent, file_name, before, display_path)?;
+        Ok(file)
     }
-    let mut bytes = Vec::new();
-    file.read_to_end(&mut bytes)?;
-    Ok(Some(bytes))
+}
+
+fn require_current_regular_entry(
+    parent: &Dir,
+    file_name: &OsStr,
+    before: &cap_std::fs::Metadata,
+    display_path: &str,
+) -> OrgFilesystemResult<()> {
+    let current = parent.symlink_metadata(file_name)
+        .map_err(|error| map_not_found(error, display_path))?;
+    if current.file_type().is_symlink() {
+        return Err(OrgFilesystemError::OutsideWorkspace(display_path.to_owned()));
+    }
+    require_unchanged_file(before, &current, display_path)
 }
 
 fn validate_migration_targets(
@@ -1098,98 +1282,43 @@ fn validate_migration_targets(
     ))
 }
 
-#[cfg(unix)]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 fn create_migration_directory(
     parent: &Dir,
     name: &OsStr,
     display_path: &str,
-    created: &mut Vec<CreatedMigrationDirectory>,
 ) -> OrgFilesystemResult<Dir> {
-    parent.create_dir(name).map_err(|error| {
-        if error.kind() == io::ErrorKind::AlreadyExists {
+    let native_name = CString::new(name.as_bytes())
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "directory contains NUL"))?;
+    // Set mode at creation, never chmod a pathname-reopened replacement. mkdirat returns no
+    // descriptor: the initial identity capture is an observation, not an atomic snapshot.
+    if unsafe { libc::mkdirat(parent.as_raw_fd(), native_name.as_ptr(), 0o700) } != 0 {
+        let error = io::Error::last_os_error();
+        return Err(if error.kind() == io::ErrorKind::AlreadyExists {
             OrgFilesystemError::TargetExists(display_path.to_owned())
         } else {
-            OrgFilesystemError::Io(error)
-        }
-    })?;
-
-    // Capture from the pathname immediately after mkdir. If even this metadata read fails there is
-    // no identity with which to authorize removal, so the entry is deliberately preserved.
-    let identity = entry_identity(parent, name)?.ok_or_else(|| {
-        OrgFilesystemError::Io(io::Error::new(
-            io::ErrorKind::NotFound,
-            format!("new migration directory disappeared: {display_path}"),
-        ))
-    })?;
-
-    let setup = (|| -> io::Result<(Dir, CreatedMigrationDirectory)> {
-        let directory = parent.open_dir(name)?;
-        if metadata_identity(&directory.dir_metadata()?) != identity {
-            return Err(io::Error::other(format!(
-                "new migration directory was replaced: {display_path}"
-            )));
-        }
-        let parent = parent.try_clone()?;
-        set_migration_directory_permissions(&directory)?;
-        sync_directory(&parent)?;
-        Ok((
-            directory,
-            CreatedMigrationDirectory {
-                parent,
-                name: name.to_os_string(),
-                identity,
-            },
-        ))
-    })();
-
-    match setup {
-        Ok((directory, record)) => {
-            created.push(record);
-            Ok(directory)
-        }
-        Err(operation_error) => match rollback_created_directory(parent, name, identity) {
-            Ok(()) => Err(operation_error.into()),
-            Err(rollback_error) => Err(OrgFilesystemError::Io(io::Error::other(format!(
-                "{operation_error}; directory rollback failed: {rollback_error}"
-            )))),
-        },
+            error.into()
+        });
     }
+    #[cfg(test)]
+    migration_race(MigrationRacePoint::AfterDirectoryCreation, parent, name)?;
+    let metadata = parent.symlink_metadata(name)?;
+    if !metadata.is_dir() || metadata.file_type().is_symlink() {
+        return Err(OrgFilesystemError::InspectionChanged(display_path.to_owned()));
+    }
+    let mut options = OpenOptions::new();
+    options.read(true).custom_flags(libc::O_DIRECTORY | libc::O_NOFOLLOW);
+    let directory = Dir::from_std_file(parent.open_with(name, &options)?.into_std());
+    if metadata_identity(&metadata) != metadata_identity(&directory.dir_metadata()?)
+        || entry_identity(parent, name)? != Some(metadata_identity(&metadata)) {
+        return Err(OrgFilesystemError::InspectionChanged(display_path.to_owned()));
+    }
+    sync_directory(parent)?;
+    Ok(directory)
 }
 
 #[cfg(unix)]
-fn rollback_migration(
-    staged: &[StagedMigrationArtifact],
-    installed_artifacts: usize,
-    created_directories: &[CreatedMigrationDirectory],
-) -> io::Result<()> {
-    let mut first_error = None;
-    for artifact in staged[..installed_artifacts].iter().rev() {
-        record_rollback_error(remove_installed_artifact(artifact), &mut first_error);
-    }
-    for artifact in staged.iter().rev() {
-        let identity = match file_identity(&artifact.file) {
-            Ok(identity) => identity,
-            Err(error) => {
-                record_rollback_error(Err(error), &mut first_error);
-                continue;
-            }
-        };
-        record_rollback_error(
-            remove_file_if_identity(&artifact.parent, &artifact.temporary_name, identity)
-                .map(|_| ()),
-            &mut first_error,
-        );
-        record_rollback_error(sync_directory(&artifact.parent), &mut first_error);
-    }
-    for directory in created_directories.iter().rev() {
-        record_rollback_error(remove_directory_if_identity(directory), &mut first_error);
-        record_rollback_error(sync_directory(&directory.parent), &mut first_error);
-    }
-    first_error.map_or(Ok(()), Err)
-}
-
-#[cfg(unix)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct UnixIdentity {
     device: u64,
     inode: u64,
@@ -1217,106 +1346,199 @@ fn entry_identity(parent: &Dir, name: &OsStr) -> io::Result<Option<UnixIdentity>
     }
 }
 
-#[cfg(unix)]
-fn remove_installed_artifact(artifact: &StagedMigrationArtifact) -> io::Result<()> {
-    remove_file_if_identity(
-        &artifact.parent,
-        &artifact.target_name,
-        file_identity(&artifact.file)?,
-    )
-    .map(|_| ())
-}
-
-/// Atomically captures a pathname and only unlinks the captured entry after its Unix identity has
-/// been checked again. A replacement is restored with a no-clobber hard link.
-#[cfg(unix)]
-fn remove_file_if_identity(parent: &Dir, name: &OsStr, expected: UnixIdentity) -> io::Result<bool> {
-    if entry_identity(parent, name)? != Some(expected) {
-        return Ok(false);
-    }
-    let captured_name = vacant_temporary_name(parent)?;
-    match parent.rename(name, parent, &captured_name) {
-        Ok(()) => {}
-        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(false),
-        Err(error) => return Err(error),
-    }
-    if entry_identity(parent, &captured_name)? == Some(expected) {
-        parent.remove_file(&captured_name)?;
-        Ok(true)
-    } else {
-        // If the original name was concurrently occupied, hard_link fails without replacing it.
-        // Even after a successful restore, retain the captured link: its inode is a replacement,
-        // not one created by this transaction, so rollback must never unlink that pathname.
-        parent.hard_link(&captured_name, parent, name)?;
-        Ok(false)
-    }
-}
-
-#[cfg(unix)]
-fn remove_directory_if_identity(directory: &CreatedMigrationDirectory) -> io::Result<()> {
-    remove_directory_entry_if_identity(&directory.parent, &directory.name, directory.identity)
-}
-
-#[cfg(unix)]
-fn rollback_created_directory(
-    parent: &Dir,
-    name: &OsStr,
-    expected: UnixIdentity,
-) -> io::Result<()> {
-    let mut first_error = None;
-    record_rollback_error(
-        remove_directory_entry_if_identity(parent, name, expected),
-        &mut first_error,
-    );
-    record_rollback_error(sync_directory(parent), &mut first_error);
-    first_error.map_or(Ok(()), Err)
-}
-
-#[cfg(unix)]
-fn remove_directory_entry_if_identity(
-    parent: &Dir,
-    name: &OsStr,
-    expected: UnixIdentity,
-) -> io::Result<()> {
-    if entry_identity(parent, name)? != Some(expected) {
-        return Ok(());
-    }
-    let captured_name = vacant_temporary_name(parent)?;
-    match parent.rename(name, parent, &captured_name) {
-        Ok(()) => {}
-        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(()),
-        Err(error) => return Err(error),
-    }
-    if entry_identity(parent, &captured_name)? == Some(expected) {
-        parent.remove_dir(&captured_name)
-    } else {
-        // Directory hard links are unavailable. Restore only while the original name is vacant;
-        // otherwise retain the captured replacement under its private name.
-        if entry_identity(parent, name)?.is_none() {
-            parent.rename(&captured_name, parent, name)?;
-        }
-        Ok(())
-    }
-}
-
-#[cfg(unix)]
-fn set_migration_directory_permissions(directory: &Dir) -> io::Result<()> {
-    directory.set_permissions(".", Permissions::from_mode(0o700))
-}
 
 #[cfg(unix)]
 fn set_migration_file_permissions(file: &cap_std::fs::File) -> io::Result<()> {
     file.set_permissions(Permissions::from_mode(0o600))
 }
 
-#[cfg(unix)]
-fn record_rollback_error(result: io::Result<()>, first_error: &mut Option<io::Error>) {
-    if let Err(error) = result {
-        if first_error.is_none() {
-            *first_error = Some(error);
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn require_migration_stage(staged: &mut StagedMigrationArtifact<'_>) -> OrgFilesystemResult<()> {
+    require_unchanged_file(&staged.observed, &staged.file.metadata()?, &staged.display_path)?;
+    let named = staged.parent.symlink_metadata(&staged.temporary_name)?;
+    require_unchanged_file(&staged.observed, &named, &staged.display_path)?;
+    require_migration_bytes(&mut staged.file, staged.expected_byte_length, staged.expected_revision, &staged.display_path)?;
+    require_unchanged_file(&named, &staged.parent.symlink_metadata(&staged.temporary_name)?, &staged.display_path)?;
+    require_unchanged_file(&staged.observed, &staged.file.metadata()?, &staged.display_path)
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn require_migration_bytes(
+    file: &mut cap_std::fs::File,
+    expected_length: u64,
+    expected_revision: &str,
+    path: &str,
+) -> OrgFilesystemResult<()> {
+    let (length, revision) = observe_open_file_raw(file, path)?;
+    if length != expected_length || revision != expected_revision {
+        return Err(OrgFilesystemError::InspectionChanged(path.to_owned()));
+    }
+    Ok(())
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn publish_migration_artifact(staged: &mut StagedMigrationArtifact<'_>) -> OrgFilesystemResult<()> {
+    #[cfg(test)]
+    migration_race(MigrationRacePoint::BeforeDescriptorPublication, &staged.parent, &staged.temporary_name)?;
+    #[cfg(target_os = "linux")]
+    {
+        #[cfg(test)]
+        if MIGRATION_COPY_PUBLICATION.with(|copy| copy.get()) {
+            return copy_migration_artifact(staged);
         }
+        document_write::link_open_file(&staged.file, &staged.parent, &staged.temporary_name,
+            &staged.parent, &staged.target_name)?;
+        // linkat necessarily changes ctime; establish a new observed baseline, but require the
+        // expected bytes and installed identity before accepting it. No source pathname is used.
+        staged.observed = staged.file.metadata()?;
+        staged.installed_observed = Some(staged.observed.clone());
+        Ok(())
+    }
+    #[cfg(target_os = "macos")]
+    {
+        copy_migration_artifact(staged)
     }
 }
+
+// Darwin lacks a qualified descriptor hard-link primitive. Copy from the retained descriptor
+// into a fresh no-clobber target, then retain and inspect that target descriptor. The copy is
+// bounded by the staged length and does not allocate an artifact-sized buffer.
+#[cfg(any(target_os = "macos", all(test, target_os = "linux")))]
+fn copy_migration_artifact(staged: &mut StagedMigrationArtifact<'_>) -> OrgFilesystemResult<()> {
+    use std::io::{Seek, SeekFrom};
+    let mut options = OpenOptions::new();
+    options.read(true).write(true).create_new(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK).mode(0o600);
+    let mut target = staged.parent.open_with(&staged.target_name, &options)?;
+    staged.file.seek(SeekFrom::Start(0))?;
+    let copied = io::copy(&mut Read::by_ref(&mut staged.file).take(staged.expected_byte_length), &mut target)?;
+    let mut extra = [0u8; 1];
+    if copied != staged.expected_byte_length || staged.file.read(&mut extra)? != 0 {
+        return Err(OrgFilesystemError::InspectionChanged(staged.display_path.clone()));
+    }
+    target.flush()?;
+    target.sync_all()?;
+    require_migration_stage(staged)?;
+    require_migration_bytes(&mut target, staged.expected_byte_length, staged.expected_revision, &staged.display_path)?;
+    staged.installed_observed = Some(target.metadata()?);
+    staged.installed_file = Some(target);
+    Ok(())
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn require_migration_artifact(staged: &mut StagedMigrationArtifact<'_>) -> OrgFilesystemResult<()> {
+    require_migration_stage(staged)?;
+    let observed = staged.installed_observed.as_ref()
+        .ok_or_else(|| OrgFilesystemError::InspectionChanged(staged.display_path.clone()))?;
+    let separate_copy = staged.installed_file.is_some();
+    let file = staged.installed_file.as_mut().unwrap_or(&mut staged.file);
+    require_unchanged_file(observed, &file.metadata()?, &staged.display_path)?;
+    let named = staged.parent.symlink_metadata(&staged.target_name)?;
+    require_unchanged_file(observed, &named, &staged.display_path)?;
+    // Linux's installed link names the already-inspected stage fd; only Darwin's separate
+    // target inode needs a second byte observation.
+    if separate_copy {
+        require_migration_bytes(file, staged.expected_byte_length, staged.expected_revision, &staged.display_path)?;
+    }
+    require_unchanged_file(observed, &file.metadata()?, &staged.display_path)?;
+    require_unchanged_file(&named, &staged.parent.symlink_metadata(&staged.target_name)?, &staged.display_path)
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn require_migration_root(root: &Dir, name: &OsStr, held: &Dir) -> OrgFilesystemResult<()> {
+    let metadata = root.symlink_metadata(name)?;
+    if !metadata.is_dir() || metadata.file_type().is_symlink()
+        || metadata_identity(&metadata) != metadata_identity(&held.dir_metadata()?) {
+        return Err(OrgFilesystemError::InspectionChanged(name.to_string_lossy().into_owned()));
+    }
+    let mut options = OpenOptions::new();
+    options.read(true).custom_flags(libc::O_DIRECTORY | libc::O_NOFOLLOW);
+    let named = root.open_with(name, &options)?;
+    if file_identity(&named)? != metadata_identity(&held.dir_metadata()?) {
+        return Err(OrgFilesystemError::InspectionChanged(name.to_string_lossy().into_owned()));
+    }
+    Ok(())
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn require_migration_tree(
+    root: &Dir,
+    root_name: &OsStr,
+    migration_dir: &Dir,
+    directory_handles: &std::collections::HashMap<PathBuf, Dir>,
+    staged: &mut [StagedMigrationArtifact<'_>],
+) -> OrgFilesystemResult<()> {
+    require_migration_root(root, root_name, migration_dir)?;
+    for (relative, held) in directory_handles {
+        // Resolving the parent of a sentinel traverses every directory component with nofollow.
+        let (reachable, _) = resolve_no_symlink_parent(migration_dir, &relative.join("_"), "migration directory")?;
+        if metadata_identity(&reachable.dir_metadata()?) != metadata_identity(&held.dir_metadata()?) {
+            return Err(OrgFilesystemError::InspectionChanged(relative.display().to_string()));
+        }
+    }
+    for artifact in staged {
+        let (reachable, _) = resolve_no_symlink_parent(migration_dir, &artifact.below_root, &artifact.display_path)?;
+        if metadata_identity(&reachable.dir_metadata()?) != metadata_identity(&artifact.parent.dir_metadata()?) {
+            return Err(OrgFilesystemError::InspectionChanged(artifact.display_path.clone()));
+        }
+        require_migration_artifact(artifact)?;
+        let (reachable_after, _) = resolve_no_symlink_parent(migration_dir, &artifact.below_root, &artifact.display_path)?;
+        if metadata_identity(&reachable_after.dir_metadata()?) != metadata_identity(&artifact.parent.dir_metadata()?) {
+            return Err(OrgFilesystemError::InspectionChanged(artifact.display_path.clone()));
+        }
+    }
+    require_migration_root(root, root_name, migration_dir)
+}
+
+#[cfg(all(test, any(target_os = "linux", target_os = "macos")))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum MigrationRacePoint {
+    AfterDirectoryCreation,
+    AfterStage,
+    BeforeFilePublication,
+    BeforeDescriptorPublication,
+    AfterFilePublication,
+    BeforeRootPublication,
+    AfterRootSourceCheck,
+    BeforeRootSync,
+    BeforeAcknowledgement,
+}
+
+#[cfg(all(test, any(target_os = "linux", target_os = "macos")))]
+type MigrationRaceHook = Box<dyn FnMut(MigrationRacePoint, &Dir, &OsStr) -> io::Result<()>>;
+
+#[cfg(all(test, any(target_os = "linux", target_os = "macos")))]
+thread_local! {
+    static MIGRATION_RACE_HOOK: std::cell::RefCell<Option<MigrationRaceHook>> = const { std::cell::RefCell::new(None) };
+    static MIGRATION_COPY_PUBLICATION: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+#[cfg(all(test, any(target_os = "linux", target_os = "macos")))]
+fn migration_race(point: MigrationRacePoint, parent: &Dir, name: &OsStr) -> io::Result<()> {
+    MIGRATION_RACE_HOOK.with(|hook| match hook.borrow_mut().as_mut() {
+        Some(hook) => hook(point, parent, name),
+        None => Ok(()),
+    })
+}
+
+#[cfg(all(test, any(target_os = "linux", target_os = "macos")))]
+fn with_migration_race<T>(hook: MigrationRaceHook, copy_publication: bool, operation: impl FnOnce() -> T) -> T {
+    struct Reset;
+    impl Drop for Reset {
+        fn drop(&mut self) {
+            MIGRATION_RACE_HOOK.with(|hook| *hook.borrow_mut() = None);
+            MIGRATION_COPY_PUBLICATION.with(|copy| copy.set(false));
+        }
+    }
+    MIGRATION_RACE_HOOK.with(|slot| {
+        assert!(slot.borrow().is_none());
+        *slot.borrow_mut() = Some(hook);
+    });
+    MIGRATION_COPY_PUBLICATION.with(|copy| copy.set(copy_publication));
+    let _reset = Reset;
+    operation()
+}
+
 
 /// Creates a directory (and any missing ancestors) below the workspace root.
 ///
@@ -1506,6 +1728,7 @@ fn move_org_document_linux(
     Ok(OrgWriteResult {
         relative_path: target_display,
         revision: moved,
+        original_recovery: None,
     })
 }
 
@@ -1535,60 +1758,35 @@ pub fn delete_org_document(
     workspace_root: impl AsRef<Path>,
     relative_path: impl AsRef<Path>,
     expected_revision: &str,
-) -> OrgFilesystemResult<()> {
+) -> OrgFilesystemResult<OrgOriginalRecoveryEntry> {
     let root = open_workspace_capability(workspace_root.as_ref())?;
     delete_org_document_with_capability(&root, relative_path, expected_revision)
 }
 
-/// Deletes one Org document relative to an already-approved workspace capability.
+/// Removes the live pathname while durably retaining the original inode for manual recovery.
 pub fn delete_org_document_with_capability(
     root: &Dir,
     relative_path: impl AsRef<Path>,
     expected_revision: &str,
-) -> OrgFilesystemResult<()> {
-    let _mutation_guard = lock_org_mutations()?;
-    let relative = validate_relative_org_path(relative_path.as_ref())?;
-    let display_path = portable_relative_path(&relative)?;
-    let (parent, target_name) = resolve_document_parent(&root, &relative, &display_path)?;
-    let (current_revision, _) = current_file_state(&parent, &target_name, &display_path)?;
-    let actual =
-        current_revision.ok_or_else(|| OrgFilesystemError::NotFound(display_path.clone()))?;
-    if expected_revision != actual {
-        return Err(OrgFilesystemError::RevisionConflict {
-            path: display_path,
-            expected: expected_revision.to_owned(),
-            actual,
-        });
+) -> OrgFilesystemResult<OrgOriginalRecoveryEntry> {
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    {
+        let _mutation_guard = lock_org_mutations()?;
+        quarantine_org_document(root, relative_path.as_ref(), expected_revision)
     }
-
-    let tombstone_name = vacant_temporary_name(&parent)?;
-    parent.rename(&target_name, &parent, &tombstone_name)?;
-    let (captured_revision, _) = match current_file_state(&parent, &tombstone_name, &display_path) {
-        Ok(state) => state,
-        Err(error) => {
-            restore_captured_file(&parent, &tombstone_name, &parent, &target_name)?;
-            return Err(error);
-        }
-    };
-    let captured = captured_revision.unwrap_or_else(|| "<missing>".to_owned());
-    if captured != expected_revision {
-        restore_captured_file(&parent, &tombstone_name, &parent, &target_name)?;
-        return Err(OrgFilesystemError::RevisionConflict {
-            path: display_path,
-            expected: expected_revision.to_owned(),
-            actual: captured,
-        });
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    {
+        let _ = (root, relative_path, expected_revision);
+        Err(OrgFilesystemError::UnsupportedPlatform(
+            "durable no-clobber Org deletion quarantine".to_owned(),
+        ))
     }
-
-    parent.remove_file(tombstone_name)?;
-    sync_directory(&parent)?;
-    Ok(())
 }
 
 fn create_temporary_file(parent: &Dir) -> io::Result<(OsString, cap_std::fs::File)> {
     loop {
         let name = random_temporary_name();
-        let options = OpenOptions::new().write(true).create_new(true).clone();
+        let options = OpenOptions::new().read(true).write(true).create_new(true).clone();
         match parent.open_with(&name, &options) {
             Ok(file) => return Ok((name, file)),
             Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
@@ -1612,17 +1810,6 @@ fn random_temporary_name() -> OsString {
     OsString::from(format!(".grain-{}.tmp", uuid::Uuid::new_v4()))
 }
 
-/// Restores a captured inode without replacing an entry created concurrently at `target`.
-fn restore_captured_file(
-    captured_dir: &Dir,
-    captured: &OsStr,
-    target_dir: &Dir,
-    target: &OsStr,
-) -> OrgFilesystemResult<()> {
-    captured_dir.hard_link(captured, target_dir, target)?;
-    captured_dir.remove_file(captured)?;
-    Ok(())
-}
 
 fn lock_org_mutations() -> OrgFilesystemResult<OrgMutationGuard> {
     let guard = ORG_WRITE_LOCK
@@ -1655,28 +1842,22 @@ fn read_capability_file_utf8_limited(
         return Err(OrgFilesystemError::NotFound(display_path.to_owned()));
     }
 
-    let mut options = OpenOptions::new();
-    options.read(true);
-    #[cfg(unix)]
-    options.custom_flags(libc::O_NOFOLLOW);
-    let mut file = parent
-        .open_with(&file_name, &options)
-        .map_err(|error| map_not_found(error, display_path))?;
+    let mut file = acquire_observed_regular_file(&parent, &file_name, &metadata, display_path)?;
     let opened_metadata = file.metadata()?;
-    if !opened_metadata.is_file() {
-        return Err(OrgFilesystemError::InvalidPath(display_path.to_owned()));
-    }
     if opened_metadata.len() > byte_limit {
         return Err(OrgFilesystemError::FileTooLarge(display_path.to_owned()));
     }
 
-    let mut bytes = Vec::with_capacity(opened_metadata.len() as usize);
-    Read::by_ref(&mut file)
-        .take(byte_limit.saturating_add(1))
-        .read_to_end(&mut bytes)?;
-    if bytes.len() as u64 > byte_limit {
-        return Err(OrgFilesystemError::FileTooLarge(display_path.to_owned()));
+    let capacity = usize::try_from(opened_metadata.len())
+        .map_err(|_| OrgFilesystemError::FileTooLarge(display_path.to_owned()))?;
+    let mut bytes = Vec::with_capacity(capacity);
+    Read::by_ref(&mut file).take(opened_metadata.len()).read_to_end(&mut bytes)?;
+    let mut extra = [0u8; 1];
+    if bytes.len() as u64 != opened_metadata.len() || file.read(&mut extra)? != 0 {
+        return Err(OrgFilesystemError::InspectionChanged(display_path.to_owned()));
     }
+    require_unchanged_file(&metadata, &file.metadata()?, display_path)?;
+    require_current_regular_entry(&parent, &file_name, &metadata, display_path)?;
     String::from_utf8(bytes).map_err(|_| OrgFilesystemError::InvalidUtf8(display_path.to_owned()))
 }
 
@@ -1778,10 +1959,16 @@ fn current_file_state(
             if !metadata.is_file() {
                 return Err(OrgFilesystemError::InvalidPath(display_path.to_owned()));
             }
-            let bytes = parent.read(target)?;
-            std::str::from_utf8(&bytes)
-                .map_err(|_| OrgFilesystemError::InvalidUtf8(display_path.to_owned()))?;
-            Ok((Some(revision(&bytes)), Some(metadata.permissions())))
+            let mut options = OpenOptions::new();
+            options.read(true);
+            #[cfg(unix)]
+            options.custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK);
+            let mut file = parent.open_with(target, &options)?;
+            let opened = file.metadata()?;
+            require_unchanged_file(&metadata, &opened, display_path)?;
+            let revision = read_open_file_revision_utf8(&mut file, display_path)?;
+            require_unchanged_file(&opened, &parent.symlink_metadata(target)?, display_path)?;
+            Ok((Some(revision), Some(opened.permissions())))
         }
         Err(error) if error.kind() == io::ErrorKind::NotFound => Ok((None, None)),
         Err(error) => Err(error.into()),
@@ -1828,6 +2015,7 @@ fn validate_relative_directory_path(path: &Path) -> OrgFilesystemResult<PathBuf>
         || display
             .split('/')
             .any(|component| component.is_empty() || component == "." || component == "..")
+        || display.split('/').any(|component| component.starts_with(".grain-") && component.ends_with(".tmp"))
         || path.is_absolute()
         || path
             .components()
@@ -1846,9 +2034,116 @@ fn read_open_file_utf8(
     mut file: cap_std::fs::File,
     relative_path: &str,
 ) -> OrgFilesystemResult<String> {
+    let before = file.metadata()?;
+    if !before.is_file() {
+        return Err(OrgFilesystemError::InvalidPath(relative_path.to_owned()));
+    }
     let mut bytes = Vec::new();
-    file.read_to_end(&mut bytes)?;
+    Read::by_ref(&mut file).take(before.len()).read_to_end(&mut bytes)?;
+    let mut extra = [0u8; 1];
+    if bytes.len() as u64 != before.len() || file.read(&mut extra)? != 0 {
+        return Err(OrgFilesystemError::InspectionChanged(relative_path.to_owned()));
+    }
+    require_unchanged_file(&before, &file.metadata()?, relative_path)?;
     String::from_utf8(bytes).map_err(|_| OrgFilesystemError::InvalidUtf8(relative_path.to_owned()))
+}
+
+fn require_unchanged_file(
+    before: &cap_std::fs::Metadata,
+    after: &cap_std::fs::Metadata,
+    path: &str,
+) -> OrgFilesystemResult<()> {
+    let unchanged = before.is_file() && after.is_file() && before.len() == after.len()
+        && before.modified()? == after.modified()?;
+    #[cfg(unix)]
+    let unchanged = unchanged && before.dev() == after.dev() && before.ino() == after.ino()
+        && before.mtime() == after.mtime() && before.mtime_nsec() == after.mtime_nsec()
+        && before.ctime() == after.ctime() && before.ctime_nsec() == after.ctime_nsec();
+    if !unchanged { return Err(OrgFilesystemError::InspectionChanged(path.to_owned())); }
+    Ok(())
+}
+
+/// Observes a retained regular fd from offset zero with fixed storage and a finite read horizon.
+/// No pathname authority is implied: callers must separately validate any installed entry.
+/// Metadata/hash observations detect changes but cannot provide an atomic filesystem snapshot.
+fn observe_open_file_raw(
+    file: &mut cap_std::fs::File,
+    path: &str,
+) -> OrgFilesystemResult<(u64, String)> {
+    std::io::Seek::seek(file, std::io::SeekFrom::Start(0))?;
+    let before = file.metadata()?;
+    if !before.is_file() {
+        return Err(OrgFilesystemError::InvalidPath(path.to_owned()));
+    }
+    let revision = hash_observed_raw(file, before.len(), path)?;
+    require_unchanged_file(&before, &file.metadata()?, path)?;
+    Ok((before.len(), revision))
+}
+
+fn hash_observed_raw(
+    reader: &mut impl Read,
+    observed_length: u64,
+    path: &str,
+) -> OrgFilesystemResult<String> {
+    let mut hash = Sha256::new();
+    let mut buffer = [0u8; 64 * 1024];
+    let mut remaining = observed_length;
+    while remaining != 0 {
+        let limit = remaining.min(buffer.len() as u64) as usize;
+        let count = reader.read(&mut buffer[..limit])?;
+        if count == 0 {
+            return Err(OrgFilesystemError::InspectionChanged(path.to_owned()));
+        }
+        hash.update(&buffer[..count]);
+        remaining -= count as u64;
+        #[cfg(test)]
+        tests::run_raw_read_hook();
+    }
+    let mut extra = [0u8; 1];
+    if reader.read(&mut extra)? != 0 {
+        return Err(OrgFilesystemError::InspectionChanged(path.to_owned()));
+    }
+    Ok(hex::encode(hash.finalize()))
+}
+
+/// Revision-only reads use fixed storage and at most the captured length plus one growth byte.
+/// Metadata/hash checks detect observed changes; they are not a kernel snapshot or atomic CAS.
+fn read_open_file_revision_utf8(file: &mut cap_std::fs::File, path: &str) -> OrgFilesystemResult<String> {
+    let before = file.metadata()?;
+    if !before.is_file() { return Err(OrgFilesystemError::InvalidPath(path.to_owned())); }
+    let revision = hash_observed_utf8(file, before.len(), path)?;
+    require_unchanged_file(&before, &file.metadata()?, path)?;
+    Ok(revision)
+}
+
+fn hash_observed_utf8(reader: &mut impl Read, observed_length: u64, path: &str) -> OrgFilesystemResult<String> {
+    let mut hash = Sha256::new();
+    let mut buffer = [0u8; 64 * 1024 + 3];
+    let mut pending = 0;
+    let mut remaining = observed_length;
+    while remaining != 0 {
+        let limit = remaining.min(64 * 1024) as usize;
+        let count = reader.read(&mut buffer[pending..pending + limit])?;
+        if count == 0 { return Err(OrgFilesystemError::InspectionChanged(path.to_owned())); }
+        hash.update(&buffer[pending..pending + count]);
+        remaining -= count as u64;
+        let length = pending + count;
+        pending = match std::str::from_utf8(&buffer[..length]) {
+            Ok(_) => 0,
+            Err(error) if error.error_len().is_none() => {
+                let valid = error.valid_up_to();
+                buffer.copy_within(valid..length, 0);
+                length - valid
+            }
+            Err(_) => return Err(OrgFilesystemError::InvalidUtf8(path.to_owned())),
+        };
+    }
+    let mut extra = [0u8; 1];
+    if reader.read(&mut extra)? != 0 {
+        return Err(OrgFilesystemError::InspectionChanged(path.to_owned()));
+    }
+    if pending != 0 { return Err(OrgFilesystemError::InvalidUtf8(path.to_owned())); }
+    Ok(hex::encode(hash.finalize()))
 }
 
 fn revision(bytes: &[u8]) -> String {
@@ -1881,6 +2176,199 @@ mod tests {
     use super::*;
     use tempfile::tempdir;
 
+    thread_local! {
+        static ACQUISITION_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> =
+            std::cell::RefCell::new(None);
+        static RAW_READ_HOOK: std::cell::RefCell<Option<Box<dyn FnOnce()>>> =
+            std::cell::RefCell::new(None);
+    }
+
+    pub(super) fn run_acquisition_hook() {
+        let hook = ACQUISITION_HOOK.with(|slot| slot.borrow_mut().take());
+        if let Some(hook) = hook { hook(); }
+    }
+
+    pub(super) fn run_raw_read_hook() {
+        let hook = RAW_READ_HOOK.with(|slot| slot.borrow_mut().take());
+        if let Some(hook) = hook { hook(); }
+    }
+
+    #[test]
+    fn unsupported_platform_recovery_rejects_regular_retention_markers() {
+        for marker in [
+            ".grain-write-substituted.tmp",
+            ".grain-retaining-substituted.tmp",
+            ".grain-resolved-original-1-2-substituted.tmp",
+        ] {
+            let workspace = tempdir().unwrap();
+            let root = open_workspace_capability(workspace.path()).unwrap();
+            root.write("notes.org", "raw\r\n\0body😀").unwrap();
+            root.write(marker, b"retained-marker-evidence").unwrap();
+
+            assert!(matches!(
+                reject_unrecoverable_org_write_journals(&root),
+                Err(OrgFilesystemError::UnsupportedPlatform(_))
+            ), "reserved regular-file marker was skipped: {marker}");
+            assert_eq!(root.read(marker).unwrap(), b"retained-marker-evidence");
+            assert_eq!(
+                read_org_document_with_capability(&root, "notes.org").unwrap().content,
+                "raw\r\n\0body😀"
+            );
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn unsupported_platform_recovery_rejects_symlink_retention_markers() {
+        for marker in [
+            ".grain-write-substituted.tmp",
+            ".grain-retaining-substituted.tmp",
+            ".grain-resolved-original-1-2-substituted.tmp",
+        ] {
+            let workspace = tempdir().unwrap();
+            let root = open_workspace_capability(workspace.path()).unwrap();
+            root.write("notes.org", "raw\r\n\0body😀").unwrap();
+            root.create_dir(".grain-aside-evidence.tmp").unwrap();
+            let evidence = root.open_dir(".grain-aside-evidence.tmp").unwrap();
+            evidence.write("journal.json", b"retained-journal").unwrap();
+            root.symlink(".grain-aside-evidence.tmp", marker).unwrap();
+
+            assert!(matches!(
+                reject_unrecoverable_org_write_journals(&root),
+                Err(OrgFilesystemError::UnsupportedPlatform(_))
+            ), "reserved symlink marker was skipped: {marker}");
+            assert!(root.symlink_metadata(marker).unwrap().file_type().is_symlink());
+            assert_eq!(evidence.read("journal.json").unwrap(), b"retained-journal");
+            assert_eq!(
+                read_org_document_with_capability(&root, "notes.org").unwrap().content,
+                "raw\r\n\0body😀"
+            );
+        }
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    #[test]
+    fn unsupported_write_platform_can_reopen_workspaces_without_manifests() {
+        let workspace = tempdir().unwrap();
+        fs::write(workspace.path().join("notes.org"), "raw\r\n\0body").unwrap();
+        fs::write(workspace.path().join(".grain-older.tmp"), "unidentified").unwrap();
+        let root = open_workspace_capability(workspace.path()).unwrap();
+        recover_org_document_writes_with_capability(&root).unwrap();
+        assert_eq!(read_org_document_with_capability(&root, "notes.org").unwrap().content, "raw\r\n\0body");
+        assert_eq!(scan_org_workspace_with_capability(&root).unwrap().documents.len(), 1);
+        assert!(matches!(write_org_document_with_capability(&root, "notes.org", "new", None), Err(OrgFilesystemError::UnsupportedPlatform(_))));
+        assert_eq!(root.read("notes.org").unwrap(), b"raw\r\n\0body");
+    }
+
+    #[test]
+    fn streaming_revision_validates_utf8_across_chunk_and_short_read_boundaries() {
+        struct ShortReads<R>(R);
+        impl<R: Read> Read for ShortReads<R> {
+            fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
+                let limit = buffer.len().min(1);
+                self.0.read(&mut buffer[..limit])
+            }
+        }
+        for prefix in (64 * 1024 - 3)..=(64 * 1024) {
+            let content = format!("{}é古🦀\r\n\0tail", "a".repeat(prefix));
+            let expected = revision(content.as_bytes());
+            assert_eq!(hash_observed_utf8(&mut io::Cursor::new(content.as_bytes()), content.len() as u64, "notes.org").unwrap(), expected);
+            assert_eq!(hash_observed_utf8(&mut ShortReads(io::Cursor::new(content.as_bytes())), content.len() as u64, "notes.org").unwrap(), expected);
+        }
+        for bytes in [b"valid\xff".as_slice(), b"valid\xe2\x82".as_slice(), b"\xf0\x80\x80\x80".as_slice()] {
+            assert!(matches!(hash_observed_utf8(&mut io::Cursor::new(bytes), bytes.len() as u64, "notes.org"), Err(OrgFilesystemError::InvalidUtf8(_))));
+        }
+        assert_eq!(hash_observed_utf8(&mut io::Cursor::new([]), 0, "notes.org").unwrap(), revision(b""));
+    }
+
+    #[test]
+    fn streaming_revision_stops_at_observed_length_even_when_every_read_grows_the_file() {
+        struct GrowingFile {
+            reader: fs::File,
+            writer: fs::File,
+            bytes_read: u64,
+            calls: usize,
+        }
+        impl Read for GrowingFile {
+            fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
+                self.writer.write_all(&[b'x'; 1024])?;
+                self.writer.sync_all()?;
+                self.calls += 1;
+                let count = self.reader.read(buffer)?;
+                self.bytes_read += count as u64;
+                Ok(count)
+            }
+        }
+        let workspace = tempdir().unwrap();
+        let path = workspace.path().join("growing.org");
+        let observed = 2 * 64 * 1024 + 7;
+        fs::write(&path, vec![b'a'; observed]).unwrap();
+        let mut reader = GrowingFile {
+            reader: fs::File::open(&path).unwrap(),
+            writer: fs::OpenOptions::new().append(true).open(&path).unwrap(),
+            bytes_read: 0, calls: 0,
+        };
+        assert!(matches!(hash_observed_utf8(&mut reader, observed as u64, "growing.org"), Err(OrgFilesystemError::InspectionChanged(_))));
+        assert_eq!(reader.bytes_read, observed as u64 + 1);
+        assert!(reader.calls >= 4);
+        assert_eq!(fs::metadata(&path).unwrap().len(), observed as u64 + reader.calls as u64 * 1024);
+        assert!(matches!(hash_observed_utf8(&mut io::Cursor::new(b"short"), 10, "notes.org"), Err(OrgFilesystemError::InspectionChanged(_))));
+    }
+
+    #[test]
+    fn revision_inspection_detects_observed_length_change_without_imposing_a_document_limit() {
+        let workspace = tempdir().unwrap();
+        let root = open_workspace_capability(workspace.path()).unwrap();
+        let mut options = OpenOptions::new();
+        options.read(true).write(true).create_new(true);
+        let mut file = root.open_with("large.org", &options).unwrap();
+        let length = 17 * 1024 * 1024;
+        file.set_len(length).unwrap();
+        let mut expected = Sha256::new();
+        let zeros = [0u8; 64 * 1024];
+        for _ in 0..(length / (64 * 1024)) { expected.update(&zeros); }
+        assert_eq!(read_open_file_revision_utf8(&mut file, "large.org").unwrap(), hex::encode(expected.finalize()));
+        let before = file.metadata().unwrap();
+        file.set_len(length + 1).unwrap();
+        assert!(matches!(require_unchanged_file(&before, &file.metadata().unwrap(), "large.org"), Err(OrgFilesystemError::InspectionChanged(_))));
+        let snapshot = scan_org_workspace_with_capability(&root).unwrap();
+        assert_eq!(snapshot.documents.len(), 1);
+        assert_eq!(snapshot.documents[0].relative_path, "large.org");
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    #[test]
+    fn unsupported_write_platform_retains_manifested_interrupted_writes() {
+        let workspace = tempdir().unwrap();
+        let root = open_workspace_capability(workspace.path()).unwrap();
+        root.create_dir(".grain-write-pending.tmp").unwrap();
+        let pending = root.open_dir(".grain-write-pending.tmp").unwrap();
+        pending.write("journal.json", "manifest").unwrap();
+        pending.write("old", "old\r\n").unwrap();
+        assert!(matches!(recover_org_document_writes_with_capability(&root), Err(OrgFilesystemError::UnsupportedPlatform(_))));
+        assert_eq!(pending.read("journal.json").unwrap(), b"manifest");
+        assert_eq!(pending.read("old").unwrap(), b"old\r\n");
+    }
+
+    fn recovery_graph_fixture() -> LegacyRecoveryGraph {
+        LegacyRecoveryGraph {
+            workspace: LegacyRecoveryWorkspace {
+                id: "workspace".into(), name: "Book\0目录".into(), description: Some("原始 description\0".into()),
+                created_at: i64::MAX.to_string(), updated_at: i64::MIN.to_string(),
+            },
+            nodes: [
+                ("folder", Some("child"), "folder", "9007199254740993"),
+                ("child", Some("folder"), "file", "-9007199254740993"),
+                ("orphan", Some("unexported-parent"), "unknown-node-kind", "0"),
+            ].into_iter().map(|(id, parent, kind, order)| LegacyRecoveryNode {
+                id: id.into(), workspace_id: "workspace".into(), parent_id: parent.map(str::to_owned),
+                title: format!("原始 {id}\0"), node_type: kind.into(), is_collapsed: "9007199254740993".into(),
+                sort_order: order.into(), tags: Some("[ \"原始\" ]".into()),
+                created_at: i64::MAX.to_string(), updated_at: i64::MIN.to_string(),
+            }).collect(),
+        }
+    }
+
     fn recovery_manifest(root: &str, mut backups: serde_json::Value) -> String {
         if let Some(items) = backups.as_array_mut() {
             for item in items {
@@ -1902,65 +2390,147 @@ mod tests {
             serde_json::to_string_pretty(&serde_json::json!({
                 "rootDirectory": root,
                 "rawBackups": backups,
-                "version": 1,
-                "ignored": { "largeSchemaNotRequired": true }
+                "version": 2,
+                "graph": recovery_graph_fixture(),
+                "recoverySqlPath": format!("{root}/{MIGRATION_RECOVERY_SQL_FILE}"),
+                "directories": [], "documents": [], "nodes": [], "warnings": []
             }))
             .unwrap()
         )
     }
 
+    #[tokio::test]
+    async fn verified_recovery_restores_exact_workspace_graph_and_raw_rows_after_restart() {
+        use sea_orm::{ConnectionTrait, Database, FromQueryResult, Statement};
+        let workspace = tempdir().unwrap();
+        let graph = recovery_graph_fixture();
+        let backups = vec![
+            OrgMigrationRecoveryBackup {
+                path: "Book/_migration-raw-backups/empty.txt".into(),
+                content_id: "empty".into(), content_type: "unknown/content-type".into(),
+                node_id: "folder".into(), content: "".into(), version: "9007199254740993".into(),
+                created_at: i64::MAX.to_string(), updated_at: i64::MIN.to_string(),
+            },
+            OrgMigrationRecoveryBackup {
+                path: "Book/_migration-raw-backups/unicode.txt".into(),
+                content_id: "unicode".into(), content_type: "text".into(),
+                node_id: "missing-node".into(), content: "quote '\0你好📚".into(), version: "7".into(),
+                created_at: "11".into(), updated_at: "13".into(),
+            },
+            OrgMigrationRecoveryBackup {
+                path: "Book/_migration-raw-backups/duplicate.txt".into(),
+                content_id: "duplicate".into(), content_type: "excalidraw".into(),
+                node_id: "folder".into(), content: "secondary raw".into(), version: "1".into(),
+                created_at: "1".into(), updated_at: "2".into(),
+            },
+            OrgMigrationRecoveryBackup {
+                path: "Book/_migration-raw-backups/child.txt".into(),
+                content_id: "child-content".into(), content_type: "text".into(),
+                node_id: "child".into(), content: "文件 body\0📚".into(), version: i64::MAX.to_string(),
+                created_at: i64::MIN.to_string(), updated_at: i64::MAX.to_string(),
+            },
+        ];
+        let metadata: Vec<_> = backups.iter().map(|backup| {
+            let mut value = serde_json::to_value(backup).unwrap();
+            value.as_object_mut().unwrap().remove("content");
+            value
+        }).collect();
+        let manifest = recovery_manifest("Book", serde_json::json!(metadata));
+        let sql = workspace_recovery_sql(&graph, &backups);
+        let capability = open_workspace_capability(workspace.path()).unwrap();
+        let mut artifacts: Vec<_> = backups.iter().map(|backup| OrgMigrationArtifact {
+            relative_path: backup.path.clone(), content: backup.content.clone(),
+        }).collect();
+        artifacts.push(OrgMigrationArtifact { relative_path: "Book/migration-manifest.json".into(), content: manifest.clone() });
+        artifacts.push(OrgMigrationArtifact { relative_path: format!("Book/{MIGRATION_RECOVERY_SQL_FILE}"), content: sql });
+        let write = write_org_migration_with_capability(
+            &capability, vec!["Book".into(), "Book/_migration-raw-backups".into()], artifacts,
+        ).unwrap();
+        let verified = verify_org_migration_with_capability(
+            &capability, &write.verification_path, write.artifacts.clone(),
+        ).unwrap();
+        assert!(verified.mismatches.is_empty());
+        let bundle = read_org_migration_recovery_bundle_with_capability(&capability, "Book/migration-manifest.json").unwrap();
+        assert_eq!(bundle.graph, graph);
+        assert_eq!(bundle.raw_backups, backups);
+        let restored_path = workspace.path().join("owned-restored.sqlite");
+        let url = format!("sqlite://{}?mode=rwc", restored_path.display());
+        let db = Database::connect(&url).await.unwrap();
+        for statement in bundle.recovery_sql.split_once('\n').unwrap().1.split(';').filter(|sql| !sql.trim().is_empty()) {
+            db.execute_raw(Statement::from_string(db.get_database_backend(), statement.to_owned())).await.unwrap();
+        }
+        db.close().await.unwrap();
+        // Reopen both SQLite and the directory capability before checking every recovered tuple.
+        let db = Database::connect(&url).await.unwrap();
+        let restored_workspace = LegacyRecoveryWorkspace::find_by_statement(Statement::from_string(db.get_database_backend(),
+            "SELECT id,name,description,CAST(created_at AS TEXT) AS created_at,CAST(updated_at AS TEXT) AS updated_at FROM workspaces".to_owned(),
+        )).one(&db).await.unwrap().unwrap();
+        assert_eq!(restored_workspace, graph.workspace);
+        let restored_nodes = LegacyRecoveryNode::find_by_statement(Statement::from_string(db.get_database_backend(),
+            "SELECT id,workspace_id,parent_id,title,node_type,CAST(is_collapsed AS TEXT) AS is_collapsed,CAST(sort_order AS TEXT) AS sort_order,tags,CAST(created_at AS TEXT) AS created_at,CAST(updated_at AS TEXT) AS updated_at FROM nodes ORDER BY id".to_owned(),
+        )).all(&db).await.unwrap();
+        let mut expected_nodes = graph.nodes.clone();
+        expected_nodes.sort_by(|left, right| left.id.cmp(&right.id));
+        assert_eq!(restored_nodes, expected_nodes);
+        #[derive(Debug, PartialEq, Eq, sea_orm::FromQueryResult)]
+        struct ContentTuple {
+            id: String, node_id: String, content: String, content_type: String,
+            version: String, created_at: String, updated_at: String,
+        }
+        let restored_contents = ContentTuple::find_by_statement(Statement::from_string(db.get_database_backend(),
+            "SELECT c.id,c.node_id,c.content,t.content_type,CAST(c.version AS TEXT) AS version,CAST(c.created_at AS TEXT) AS created_at,CAST(c.updated_at AS TEXT) AS updated_at FROM contents c JOIN grain_recovery_content_types t ON t.content_id=c.id ORDER BY c.id".to_owned(),
+        )).all(&db).await.unwrap();
+        let mut expected_contents: Vec<_> = backups.iter().map(|backup| ContentTuple {
+            id: backup.content_id.clone(), node_id: backup.node_id.clone(), content: backup.content.clone(),
+            content_type: backup.content_type.clone(), version: backup.version.clone(),
+            created_at: backup.created_at.clone(), updated_at: backup.updated_at.clone(),
+        }).collect();
+        expected_contents.sort_by(|left, right| left.id.cmp(&right.id));
+        assert_eq!(restored_contents, expected_contents);
+        db.close().await.unwrap();
+        drop(capability);
+        let reopened = open_workspace_capability(workspace.path()).unwrap();
+        assert!(verify_org_migration_with_capability(&reopened, &write.verification_path, write.artifacts).unwrap().mismatches.is_empty());
+        assert_eq!(read_org_migration_recovery_bundle_with_capability(&reopened, "Book/migration-manifest.json").unwrap(), bundle);
+    }
+
     #[test]
-    fn recovery_bundle_preserves_manifest_order_and_exact_empty_content() {
+    fn recovery_bundle_rejects_old_optional_fabricated_and_corrupt_graph_receipts() {
         let workspace = tempdir().unwrap();
         let migration_root = workspace.path().join("Book");
-        let backup_root = migration_root.join(MIGRATION_RAW_BACKUP_DIRECTORY);
-        fs::create_dir_all(&backup_root).unwrap();
-        fs::write(backup_root.join("empty.text.txt"), "").unwrap();
-        fs::write(backup_root.join("drawing.json"), "{\n  \"x\": 1\n}\n").unwrap();
-        let manifest_without_sql = recovery_manifest(
-            "Book",
-            serde_json::json!([
-                {
-                    "path": "Book/_migration-raw-backups/empty.text.txt",
-                    "contentId": "empty",
-                    "contentType": "text",
-                    "nodeId": "node-2"
-                },
-                {
-                    "path": "Book/_migration-raw-backups/drawing.json",
-                    "contentId": "drawing",
-                    "contentType": "excalidraw",
-                    "nodeId": "node-1"
-                }
-            ]),
-        );
-        let mut manifest_value: serde_json::Value =
-            serde_json::from_str(&manifest_without_sql).unwrap();
-        manifest_value["recoverySqlPath"] = serde_json::json!("Book/legacy-contents-recovery.sql");
-        let manifest = format!(
-            "{}\n",
-            serde_json::to_string_pretty(&manifest_value).unwrap()
-        );
-        fs::write(migration_root.join(MIGRATION_MANIFEST_FILE), &manifest).unwrap();
-        fs::write(
-            migration_root.join("legacy-contents-recovery.sql"),
-            "BEGIN;\nCOMMIT;\n",
-        )
-        .unwrap();
+        fs::create_dir(&migration_root).unwrap();
+        let manifest_path = migration_root.join(MIGRATION_MANIFEST_FILE);
+        let sql_path = migration_root.join(MIGRATION_RECOVERY_SQL_FILE);
+        let valid: serde_json::Value = serde_json::from_str(&recovery_manifest("Book", serde_json::json!([]))).unwrap();
+        fs::write(&sql_path, workspace_recovery_sql(&recovery_graph_fixture(), &[])).unwrap();
         let capability = open_workspace_capability(workspace.path()).unwrap();
-
-        let bundle = read_org_migration_recovery_bundle_with_capability(
-            &capability,
-            "Book/migration-manifest.json",
-        )
-        .unwrap();
-
-        assert_eq!(bundle.manifest, manifest);
-        assert_eq!(bundle.raw_backups.len(), 2);
-        assert_eq!(bundle.raw_backups[0].content_id, "empty");
-        assert_eq!(bundle.raw_backups[0].content, "");
-        assert_eq!(bundle.raw_backups[1].content, "{\n  \"x\": 1\n}\n");
-        assert_eq!(bundle.recovery_sql.as_deref(), Some("BEGIN;\nCOMMIT;\n"));
+        for mutation in 0..11 {
+            let mut invalid = valid.clone();
+            match mutation {
+                0 => { invalid.as_object_mut().unwrap().remove("graph"); }
+                1 => { invalid["graph"] = serde_json::Value::Null; }
+                2 => { invalid["version"] = serde_json::json!(1); }
+                3 => { invalid["graph"]["workspace"]["createdAt"] = serde_json::json!("9223372036854775808"); }
+                4 => { invalid["graph"]["nodes"][0]["sortOrder"] = serde_json::json!("01"); }
+                5 => { invalid["graph"]["nodes"][0]["workspaceId"] = serde_json::json!("unrelated"); }
+                6 => { invalid["graph"]["nodes"][1]["id"] = invalid["graph"]["nodes"][0]["id"].clone(); }
+                7 => { invalid["graph"]["workspace"].as_object_mut().unwrap().remove("description"); }
+                8 => { invalid["graph"]["nodes"][0].as_object_mut().unwrap().remove("parentId"); }
+                9 => { invalid["graph"]["nodes"][0].as_object_mut().unwrap().remove("tags"); }
+                _ => { invalid["oldAlias"] = serde_json::json!(true); }
+            }
+            fs::write(&manifest_path, serde_json::to_string(&invalid).unwrap()).unwrap();
+            assert!(matches!(
+                read_org_migration_recovery_bundle_with_capability(&capability, "Book/migration-manifest.json"),
+                Err(OrgFilesystemError::InvalidManifest(_))
+            ));
+        }
+        fs::write(&manifest_path, serde_json::to_string(&valid).unwrap()).unwrap();
+        fs::write(&sql_path, "DROP TABLE nodes;").unwrap();
+        assert!(matches!(
+            read_org_migration_recovery_bundle_with_capability(&capability, "Book/migration-manifest.json"),
+            Err(OrgFilesystemError::InvalidManifest(_))
+        ));
     }
 
     #[test]
@@ -2126,6 +2696,7 @@ mod tests {
         ));
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn roundtrip_preserves_raw_content_and_revision() {
         let workspace = tempdir().unwrap();
@@ -2139,6 +2710,7 @@ mod tests {
         assert_eq!(read.revision, written.revision);
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn unknown_org_syntax_is_preserved() {
         let workspace = tempdir().unwrap();
@@ -2147,6 +2719,28 @@ mod tests {
 
         let document = read_org_document(workspace.path(), "unknown.org").unwrap();
         assert_eq!(document.content.as_bytes(), content.as_bytes());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn read_absence_proof_never_describes_directory_symlink_or_unknown_bytes() {
+        let workspace = tempdir().unwrap();
+        for path in ["missing.org", "missing-parent/note.org"] {
+            assert!(matches!(
+                &read_org_document(workspace.path(), path),
+                Err(OrgFilesystemError::ProvenAbsent(observed)) if observed == path
+            ));
+        }
+        fs::create_dir(workspace.path().join("directory.org")).unwrap();
+        fs::write(workspace.path().join("invalid.org"), [0xff]).unwrap();
+        std::os::unix::fs::symlink("missing.org", workspace.path().join("dangling.org")).unwrap();
+        std::os::unix::fs::symlink("directory.org", workspace.path().join("linked-parent")).unwrap();
+        assert!(matches!(read_org_document(workspace.path(), "directory.org"), Err(OrgFilesystemError::InvalidPath(_))));
+        assert!(matches!(read_org_document(workspace.path(), "invalid.org"), Err(OrgFilesystemError::InvalidUtf8(_))));
+        assert!(matches!(read_org_document(workspace.path(), "dangling.org"), Err(OrgFilesystemError::OutsideWorkspace(_))));
+        assert!(matches!(read_org_document(workspace.path(), "linked-parent/missing.org"), Err(OrgFilesystemError::OutsideWorkspace(_))));
+        fs::write(workspace.path().join("missing.org"), "new owner\r\n\0😀").unwrap();
+        assert_eq!(read_org_document(workspace.path(), "missing.org").unwrap().content, "new owner\r\n\0😀");
     }
 
     #[test]
@@ -2190,6 +2784,7 @@ mod tests {
         ));
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn stale_revision_causes_conflict_without_changing_file() {
         let workspace = tempdir().unwrap();
@@ -2219,6 +2814,7 @@ mod tests {
         );
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn concurrent_writes_with_same_revision_allow_only_one_commit() {
         use std::sync::{Arc, Barrier};
@@ -2317,6 +2913,7 @@ mod tests {
         assert_eq!(snapshot.directories, ["real", "real/nested"]);
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn lifecycle_operations_create_move_and_delete() {
         let workspace = tempdir().unwrap();
@@ -2345,6 +2942,7 @@ mod tests {
         assert!(!workspace.path().join("projects/notes.org").exists());
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn lifecycle_operations_reject_stale_revisions() {
         let workspace = tempdir().unwrap();
@@ -2378,6 +2976,7 @@ mod tests {
         );
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn lifecycle_operations_reject_traversal() {
         let workspace = tempdir().unwrap();
@@ -2402,6 +3001,7 @@ mod tests {
         ));
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn move_does_not_overwrite_an_existing_target() {
         let workspace = tempdir().unwrap();
@@ -2453,12 +3053,12 @@ mod tests {
                 .content,
             "original"
         );
-        write_org_document_with_capability(&capability, "created.org", "safe", None).unwrap();
-        assert_eq!(
-            fs::read_to_string(retained.join("created.org")).unwrap(),
-            "safe"
-        );
-        assert!(!selected.join("created.org").exists());
+        #[cfg(target_os = "linux")]
+        {
+            write_org_document_with_capability(&capability, "created.org", "safe", None).unwrap();
+            assert_eq!(fs::read_to_string(retained.join("created.org")).unwrap(), "safe");
+            assert!(!selected.join("created.org").exists());
+        }
     }
 
     #[cfg(unix)]
@@ -2642,6 +3242,7 @@ mod tests {
         ));
     }
 
+    #[cfg(unix)]
     #[test]
     fn migration_verification_rejects_malformed_and_escaping_manifests() {
         let workspace = tempdir().unwrap();
@@ -2865,96 +3466,307 @@ mod tests {
         );
     }
 
-    #[cfg(unix)]
-    #[test]
-    fn migration_rollback_does_not_delete_a_replaced_target() {
-        let workspace = tempdir().unwrap();
-        let parent = open_workspace_capability(workspace.path()).unwrap();
-        let (temporary_name, mut temporary) = create_temporary_file(&parent).unwrap();
-        temporary.write_all(b"staged").unwrap();
-        temporary.sync_all().unwrap();
-        parent
-            .hard_link(&temporary_name, &parent, "target.json")
-            .unwrap();
-
-        parent.remove_file("target.json").unwrap();
-        parent.write("target.json", b"replacement").unwrap();
-        let staged = vec![StagedMigrationArtifact {
-            parent,
-            target_name: OsString::from("target.json"),
-            temporary_name,
-            file: temporary,
-            display_path: "target.json".to_owned(),
-        }];
-
-        rollback_migration(&staged, 1, &[]).unwrap();
-        assert_eq!(
-            fs::read_to_string(workspace.path().join("target.json")).unwrap(),
-            "replacement"
-        );
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    fn migration_publication_fixture(root: &Dir) -> OrgFilesystemResult<OrgMigrationWriteResult> {
+        write_org_migration_with_capability(
+            root,
+            vec!["migration".into(), "migration/alpha/deep".into(), "migration/beta".into()],
+            vec![
+                OrgMigrationArtifact { relative_path: "migration/alpha/deep/one.org".into(), content: "* One\r\n\0😀".into() },
+                OrgMigrationArtifact { relative_path: "migration/beta/two.org".into(), content: "* Two\n".into() },
+                OrgMigrationArtifact { relative_path: "migration/root.org".into(), content: "* Root\n".into() },
+            ],
+        )
     }
 
-    #[cfg(unix)]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     #[test]
-    fn migration_rollback_does_not_delete_a_replaced_directory() {
-        let workspace = tempdir().unwrap();
-        let parent = open_workspace_capability(workspace.path()).unwrap();
-        parent.create_dir("migration").unwrap();
-        let identity = entry_identity(&parent, OsStr::new("migration"))
-            .unwrap()
-            .unwrap();
-        let directories = vec![CreatedMigrationDirectory {
-            parent: parent.try_clone().unwrap(),
-            name: OsString::from("migration"),
-            identity,
-        }];
-
-        parent.rename("migration", &parent, "original").unwrap();
-        parent.create_dir("migration").unwrap();
-        parent
-            .open_dir("migration")
-            .unwrap()
-            .write("replacement.txt", b"keep")
-            .unwrap();
-
-        rollback_migration(&[], 0, &directories).unwrap();
-        assert_eq!(
-            fs::read_to_string(workspace.path().join("migration/replacement.txt")).unwrap(),
-            "keep"
-        );
-        assert!(workspace.path().join("original").is_dir());
+    fn migration_multidirectory_publication_keeps_expected_visible_bytes_and_verifies() {
+        for copy in [false, true] {
+            let workspace = tempdir().unwrap();
+            let root = open_workspace_capability(workspace.path()).unwrap();
+            let result = with_migration_race(Box::new(|_, _, _| Ok(())), copy,
+                || migration_publication_fixture(&root)).unwrap();
+            assert_eq!(root.read("migration/alpha/deep/one.org").unwrap(), b"* One\r\n\0\xf0\x9f\x98\x80");
+            assert_eq!(root.read("migration/beta/two.org").unwrap(), b"* Two\n");
+            assert_eq!(root.read("migration/root.org").unwrap(), b"* Root\n");
+            assert_eq!(result.written_paths.len(), 4);
+            let verification = verify_org_migration_with_capability(&root, &result.verification_path, result.artifacts).unwrap();
+            assert!(verification.mismatches.is_empty());
+            let scan = scan_org_workspace_with_capability(&root).unwrap();
+            assert_eq!(scan.documents.len(), 3);
+            assert!(scan.documents.iter().all(|document| !document.relative_path.contains(".grain-")));
+        }
     }
 
-    #[cfg(unix)]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     #[test]
-    fn created_directory_helper_removes_only_the_captured_identity() {
+    fn migration_failure_preserves_foreign_temporary_and_original_stage_entries() {
         let workspace = tempdir().unwrap();
-        let parent = open_workspace_capability(workspace.path()).unwrap();
-        parent.create_dir("matching").unwrap();
-        let matching_identity = entry_identity(&parent, OsStr::new("matching"))
-            .unwrap()
-            .unwrap();
+        let root = open_workspace_capability(workspace.path()).unwrap();
+        let evidence = std::rc::Rc::new(std::cell::RefCell::new(None));
+        let recorded = evidence.clone();
+        let mut changed = false;
+        let result = with_migration_race(Box::new(move |point, parent, name| {
+            if point == MigrationRacePoint::BeforeFilePublication && !changed {
+                changed = true;
+                parent.rename(name, parent, ".grain-held-stage.tmp")?;
+                parent.write(name, b"foreign-stage")?;
+                *recorded.borrow_mut() = Some((parent.try_clone()?, name.to_os_string()));
+            }
+            Ok(())
+        }), false, || migration_publication_fixture(&root));
+        assert!(matches!(result, Err(OrgFilesystemError::InspectionChanged(_))));
+        let evidence = evidence.borrow();
+        let (parent, name) = evidence.as_ref().unwrap();
+        assert_eq!(parent.read(name).unwrap(), b"foreign-stage");
+        assert_eq!(parent.read(".grain-held-stage.tmp").unwrap(), b"* One\r\n\0\xf0\x9f\x98\x80");
+        assert!(root.symlink_metadata("migration").is_err());
+    }
 
-        rollback_created_directory(&parent, OsStr::new("matching"), matching_identity).unwrap();
-        assert!(!workspace.path().join("matching").exists());
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn migration_failure_preserves_foreign_installed_entry_and_complete_held_stage() {
+        for copy in [false, true] {
+            let workspace = tempdir().unwrap();
+            let root = open_workspace_capability(workspace.path()).unwrap();
+            let evidence = std::rc::Rc::new(std::cell::RefCell::new(None));
+            let recorded = evidence.clone();
+            let mut changed = false;
+            let result = with_migration_race(Box::new(move |point, parent, name| {
+                if point == MigrationRacePoint::AfterFilePublication && !changed {
+                    changed = true;
+                    parent.rename("one.org", parent, ".grain-held-installed.tmp")?;
+                    parent.write("one.org", b"foreign-installed")?;
+                    *recorded.borrow_mut() = Some((parent.try_clone()?, name.to_os_string()));
+                }
+                Ok(())
+            }), copy, || migration_publication_fixture(&root));
+            assert!(matches!(result, Err(OrgFilesystemError::InspectionChanged(_))));
+            let evidence = evidence.borrow();
+            let (parent, name) = evidence.as_ref().unwrap();
+            assert_eq!(parent.read("one.org").unwrap(), b"foreign-installed");
+            assert_eq!(parent.read(".grain-held-installed.tmp").unwrap(), b"* One\r\n\0\xf0\x9f\x98\x80");
+            assert_eq!(parent.read(name).unwrap(), b"* One\r\n\0\xf0\x9f\x98\x80");
+        }
+    }
 
-        parent.create_dir("replacement").unwrap();
-        let old_identity = entry_identity(&parent, OsStr::new("replacement"))
-            .unwrap()
-            .unwrap();
-        parent.rename("replacement", &parent, "old").unwrap();
-        parent.create_dir("replacement").unwrap();
-        parent
-            .open_dir("replacement")
-            .unwrap()
-            .write("keep.txt", b"keep")
-            .unwrap();
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn migration_refuses_substituted_root_before_publication_and_before_acknowledgement() {
+        for boundary in [MigrationRacePoint::BeforeRootPublication, MigrationRacePoint::AfterRootSourceCheck, MigrationRacePoint::BeforeRootSync] {
+            let workspace = tempdir().unwrap();
+            let root = open_workspace_capability(workspace.path()).unwrap();
+            let replaced_name = std::rc::Rc::new(std::cell::RefCell::new(None));
+            let recorded = replaced_name.clone();
+            let result = with_migration_race(Box::new(move |point, parent, name| {
+                if point == boundary {
+                    parent.rename(name, parent, ".grain-held-root.tmp")?;
+                    parent.create_dir(name)?;
+                    parent.open_dir(name)?.write("foreign.txt", b"foreign-root")?;
+                    *recorded.borrow_mut() = Some(if boundary == MigrationRacePoint::AfterRootSourceCheck {
+                        OsString::from("migration")
+                    } else {
+                        name.to_os_string()
+                    });
+                }
+                Ok(())
+            }), false, || migration_publication_fixture(&root));
+            assert!(matches!(result, Err(OrgFilesystemError::InspectionChanged(_))));
+            let name = replaced_name.borrow();
+            assert_eq!(root.open_dir(name.as_ref().unwrap()).unwrap().read("foreign.txt").unwrap(), b"foreign-root");
+            let held = root.open_dir(".grain-held-root.tmp").unwrap();
+            assert_eq!(held.read("alpha/deep/one.org").unwrap(), b"* One\r\n\0\xf0\x9f\x98\x80");
+            assert_eq!(held.read("beta/two.org").unwrap(), b"* Two\n");
+            assert_eq!(held.read("root.org").unwrap(), b"* Root\n");
+            assert!(held.read(MIGRATION_VERIFICATION_FILE).unwrap().len() > 0);
+        }
+    }
 
-        rollback_created_directory(&parent, OsStr::new("replacement"), old_identity).unwrap();
-        assert_eq!(
-            fs::read_to_string(workspace.path().join("replacement/keep.txt")).unwrap(),
-            "keep"
-        );
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn migration_refuses_same_inode_bytes_changed_during_later_staging() {
+        for copy in [false, true] {
+            let workspace = tempdir().unwrap();
+            let root = open_workspace_capability(workspace.path()).unwrap();
+            let evidence = std::rc::Rc::new(std::cell::RefCell::new(None::<(Dir, OsString, UnixIdentity)>));
+            let recorded = evidence.clone();
+            let mut count = 0;
+            let result = with_migration_race(Box::new(move |point, parent, name| {
+                if point == MigrationRacePoint::AfterStage {
+                    count += 1;
+                    if count == 1 {
+                        *recorded.borrow_mut() = Some((parent.try_clone()?, name.to_os_string(), entry_identity(parent, name)?.unwrap()));
+                    } else if count == 2 {
+                        let evidence = recorded.borrow();
+                        let (parent, name, _) = evidence.as_ref().unwrap();
+                        parent.write(name, b"changed-body")?;
+                    }
+                }
+                Ok(())
+            }), copy, || migration_publication_fixture(&root));
+            assert!(matches!(result, Err(OrgFilesystemError::InspectionChanged(_))));
+            let evidence = evidence.borrow();
+            let (parent, name, identity) = evidence.as_ref().unwrap();
+            assert_eq!(entry_identity(parent, name).unwrap(), Some(*identity));
+            assert_eq!(parent.read(name).unwrap(), b"changed-body");
+            assert!(root.symlink_metadata("migration").is_err());
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn migration_refuses_observed_named_source_swap_restore_without_publishing_foreign_bytes() {
+        let workspace = tempdir().unwrap();
+        let root = open_workspace_capability(workspace.path()).unwrap();
+        let evidence = std::rc::Rc::new(std::cell::RefCell::new(None));
+        let recorded = evidence.clone();
+        let mut changed = false;
+        let result = with_migration_race(Box::new(move |point, parent, name| {
+            if point == MigrationRacePoint::BeforeDescriptorPublication && !changed {
+                changed = true;
+                parent.rename(name, parent, ".grain-held-stage.tmp")?;
+                parent.write(name, b"foreign-transient")?;
+                *recorded.borrow_mut() = Some((parent.try_clone()?, name.to_os_string()));
+            } else if point == MigrationRacePoint::AfterFilePublication && changed {
+                parent.rename(name, parent, ".grain-foreign-stage.tmp")?;
+                parent.rename(".grain-held-stage.tmp", parent, name)?;
+            }
+            Ok(())
+        }), false, || migration_publication_fixture(&root));
+        assert!(matches!(result, Err(OrgFilesystemError::InspectionChanged(_))));
+        let evidence = evidence.borrow();
+        let (parent, name) = evidence.as_ref().unwrap();
+        assert_eq!(parent.read(name).unwrap(), b"* One\r\n\0\xf0\x9f\x98\x80");
+        assert_eq!(parent.read(".grain-foreign-stage.tmp").unwrap(), b"foreign-transient");
+        assert_eq!(parent.read("one.org").unwrap(), b"* One\r\n\0\xf0\x9f\x98\x80");
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn migration_root_sync_boundary_failure_retains_published_tree_and_foreign_replacement() {
+        for replace in [false, true] {
+            let workspace = tempdir().unwrap();
+            let root = open_workspace_capability(workspace.path()).unwrap();
+            let result = with_migration_race(Box::new(move |point, parent, name| {
+                if point == MigrationRacePoint::BeforeRootSync {
+                    if replace {
+                        parent.rename(name, parent, ".grain-held-root.tmp")?;
+                        parent.create_dir(name)?;
+                        parent.open_dir(name)?.write("foreign.txt", b"foreign-after-publish")?;
+                    }
+                    return Err(io::Error::other("injected root durability failure"));
+                }
+                Ok(())
+            }), false, || migration_publication_fixture(&root));
+            assert!(result.is_err(), "a failed durability boundary must not receive a migration ACK");
+            let held_name = if replace { ".grain-held-root.tmp" } else { "migration" };
+            let held = root.open_dir(held_name).unwrap();
+            assert_eq!(held.read("alpha/deep/one.org").unwrap(), b"* One\r\n\0\xf0\x9f\x98\x80");
+            assert_eq!(held.read("beta/two.org").unwrap(), b"* Two\n");
+            assert_eq!(held.read("root.org").unwrap(), b"* Root\n");
+            let manifest: OrgMigrationVerificationManifest =
+                serde_json::from_slice(&held.read(MIGRATION_VERIFICATION_FILE).unwrap()).unwrap();
+            let expected = [
+                ("migration/alpha/deep/one.org", &b"* One\r\n\0\xf0\x9f\x98\x80"[..]),
+                ("migration/beta/two.org", &b"* Two\n"[..]),
+                ("migration/root.org", &b"* Root\n"[..]),
+            ].map(|(path, bytes)| OrgMigrationArtifactSummary {
+                relative_path: path.to_owned(),
+                byte_length: bytes.len() as u64,
+                revision: revision(bytes),
+            });
+            assert_eq!(manifest.artifacts, expected);
+            if replace {
+                assert_eq!(root.read("migration/foreign.txt").unwrap(), b"foreign-after-publish");
+            }
+        }
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn migration_directory_creation_never_chmods_or_follows_a_substituted_symlink() {
+        use std::os::unix::fs::PermissionsExt as _;
+        let workspace = tempdir().unwrap();
+        let outside = tempdir().unwrap();
+        fs::set_permissions(outside.path(), fs::Permissions::from_mode(0o755)).unwrap();
+        fs::write(outside.path().join("evidence.txt"), b"outside-evidence").unwrap();
+        let outside_path = outside.path().to_path_buf();
+        let workspace_path = workspace.path().to_path_buf();
+        let root = open_workspace_capability(workspace.path()).unwrap();
+        let replaced_name = std::rc::Rc::new(std::cell::RefCell::new(None));
+        let recorded = replaced_name.clone();
+        let result = with_migration_race(Box::new(move |point, parent, name| {
+            if point == MigrationRacePoint::AfterDirectoryCreation {
+                parent.rename(name, parent, ".grain-original-directory.tmp")?;
+                std::os::unix::fs::symlink(&outside_path, workspace_path.join(name))?;
+                *recorded.borrow_mut() = Some(name.to_os_string());
+            }
+            Ok(())
+        }), false, || migration_publication_fixture(&root));
+        assert!(result.is_err(), "a substituted directory must not receive a migration ACK");
+        assert_eq!(fs::metadata(outside.path()).unwrap().permissions().mode() & 0o777, 0o755);
+        assert_eq!(fs::read(outside.path().join("evidence.txt")).unwrap(), b"outside-evidence");
+        assert!(root.symlink_metadata(replaced_name.borrow().as_ref().unwrap()).unwrap().file_type().is_symlink());
+        assert!(root.open_dir(".grain-original-directory.tmp").unwrap().entries().unwrap().next().is_none());
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn migration_darwin_copy_path_reads_retained_fd_and_preserves_swapped_source() {
+        let workspace = tempdir().unwrap();
+        let root = open_workspace_capability(workspace.path()).unwrap();
+        let evidence = std::rc::Rc::new(std::cell::RefCell::new(None));
+        let recorded = evidence.clone();
+        let mut changed = false;
+        let result = with_migration_race(Box::new(move |point, parent, name| {
+            if point == MigrationRacePoint::BeforeDescriptorPublication && !changed {
+                changed = true;
+                parent.rename(name, parent, ".grain-held-stage.tmp")?;
+                parent.write(name, b"foreign-source")?;
+                *recorded.borrow_mut() = Some((parent.try_clone()?, name.to_os_string()));
+            }
+            Ok(())
+        }), true, || migration_publication_fixture(&root));
+        assert!(matches!(result, Err(OrgFilesystemError::InspectionChanged(_))));
+        let evidence = evidence.borrow();
+        let (parent, name) = evidence.as_ref().unwrap();
+        assert_eq!(parent.read(name).unwrap(), b"foreign-source");
+        assert_eq!(parent.read(".grain-held-stage.tmp").unwrap(), b"* One\r\n\0\xf0\x9f\x98\x80");
+        assert_eq!(parent.read("one.org").unwrap(), b"* One\r\n\0\xf0\x9f\x98\x80");
+        assert!(root.symlink_metadata("migration").is_err());
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn migration_final_acknowledgement_refuses_changed_bytes_and_unreachable_held_directory() {
+        for replace_directory in [false, true] {
+            let workspace = tempdir().unwrap();
+            let root = open_workspace_capability(workspace.path()).unwrap();
+            let result = with_migration_race(Box::new(move |point, parent, name| {
+                if point == MigrationRacePoint::BeforeAcknowledgement {
+                    let published = parent.open_dir(name)?;
+                    if replace_directory {
+                        let alpha = published.open_dir("alpha")?;
+                        alpha.rename("deep", &alpha, ".grain-held-directory.tmp")?;
+                        alpha.create_dir("deep")?;
+                        alpha.open_dir("deep")?.write("one.org", b"foreign-directory-body")?;
+                    } else {
+                        published.write("root.org", b"edited-published-body")?;
+                    }
+                }
+                Ok(())
+            }), false, || migration_publication_fixture(&root));
+            assert!(matches!(result, Err(OrgFilesystemError::InspectionChanged(_))));
+            if replace_directory {
+                assert_eq!(root.read("migration/alpha/deep/one.org").unwrap(), b"foreign-directory-body");
+                assert_eq!(root.read("migration/alpha/.grain-held-directory.tmp/one.org").unwrap(), b"* One\r\n\0\xf0\x9f\x98\x80");
+            } else {
+                assert_eq!(root.read("migration/root.org").unwrap(), b"edited-published-body");
+            }
+            assert_eq!(root.read("migration/beta/two.org").unwrap(), b"* Two\n");
+            assert!(root.read("migration/migration-verification.json").unwrap().len() > 0);
+        }
     }
 
     #[cfg(unix)]
@@ -3055,5 +3867,287 @@ mod tests {
             Err(OrgFilesystemError::OutsideWorkspace(_))
         ));
         assert!(scan_org_documents(workspace.path()).unwrap().is_empty());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn migration_readers_reject_fifo_swapped_at_acquisition_without_waiting_for_a_writer() {
+        use std::os::unix::ffi::OsStrExt as _;
+        use std::sync::mpsc;
+        use std::time::Duration;
+
+        for limited in [false, true] {
+            let workspace = tempdir().unwrap();
+            fs::write(workspace.path().join("artifact"), b"original").unwrap();
+            let path = workspace.path().to_path_buf();
+            let root = open_workspace_capability(&path).unwrap();
+            let (sender, receiver) = mpsc::channel();
+            let worker = std::thread::spawn(move || {
+                ACQUISITION_HOOK.with(|slot| {
+                    *slot.borrow_mut() = Some(Box::new(move || {
+                        fs::rename(path.join("artifact"), path.join("original")).unwrap();
+                        let fifo = std::ffi::CString::new(path.join("artifact").as_os_str().as_bytes()).unwrap();
+                        assert_eq!(unsafe { libc::mkfifo(fifo.as_ptr(), 0o600) }, 0);
+                    }));
+                });
+                let rejected = if limited {
+                    read_capability_file_utf8_limited(&root, Path::new("artifact"), "artifact", 1024).is_err()
+                } else {
+                    read_optional_regular_file(&root, Path::new("artifact"), "artifact").is_err()
+                };
+                sender.send(rejected).unwrap();
+            });
+            assert!(receiver.recv_timeout(Duration::from_secs(2))
+                .expect("regular-file acquisition blocked on a replacement FIFO"));
+            worker.join().unwrap();
+            assert_eq!(fs::read(workspace.path().join("original")).unwrap(), b"original");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn migration_readers_refuse_symlink_and_foreign_inode_acquisition_swaps() {
+        for limited in [false, true] {
+            for symlink in [false, true] {
+                let workspace = tempdir().unwrap();
+                fs::write(workspace.path().join("artifact"), b"original").unwrap();
+                fs::write(workspace.path().join("foreign"), b"\xffforeign-body").unwrap();
+                let root = open_workspace_capability(workspace.path()).unwrap();
+                let path = workspace.path().to_path_buf();
+                ACQUISITION_HOOK.with(|slot| {
+                    *slot.borrow_mut() = Some(Box::new(move || {
+                        fs::rename(path.join("artifact"), path.join("original")).unwrap();
+                        if symlink {
+                            std::os::unix::fs::symlink("foreign", path.join("artifact")).unwrap();
+                        } else {
+                            fs::rename(path.join("foreign"), path.join("artifact")).unwrap();
+                        }
+                    }));
+                });
+                let error = if limited {
+                    read_capability_file_utf8_limited(&root, Path::new("artifact"), "artifact", 1024).unwrap_err()
+                } else {
+                    read_optional_regular_file(&root, Path::new("artifact"), "artifact").unwrap_err()
+                };
+                if !symlink {
+                    assert!(matches!(error, OrgFilesystemError::InspectionChanged(_)));
+                } else {
+                    assert!(!matches!(error, OrgFilesystemError::InvalidUtf8(_)));
+                }
+                assert_eq!(fs::read(workspace.path().join("original")).unwrap(), b"original");
+            }
+        }
+    }
+
+    #[test]
+    fn raw_hash_has_a_fixed_buffer_and_finite_growth_horizon() {
+        struct GrowingReader { consumed: u64, maximum_request: usize }
+        impl Read for GrowingReader {
+            fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
+                self.maximum_request = self.maximum_request.max(buffer.len());
+                buffer.fill(0xff);
+                self.consumed += buffer.len() as u64;
+                Ok(buffer.len())
+            }
+        }
+        let observed_length = 200_000;
+        let mut reader = GrowingReader { consumed: 0, maximum_request: 0 };
+        assert!(matches!(
+            hash_observed_raw(&mut reader, observed_length, "growing"),
+            Err(OrgFilesystemError::InspectionChanged(_))
+        ));
+        assert_eq!(reader.consumed, observed_length + 1);
+        assert_eq!(reader.maximum_request, 64 * 1024);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn raw_fd_observation_rejects_same_inode_growth_shrink_and_overwrite() {
+        use std::os::unix::fs::FileExt as _;
+        use std::time::{Duration, SystemTime};
+
+        for mutation in ["grow", "shrink", "overwrite"] {
+            let workspace = tempdir().unwrap();
+            let path = workspace.path().join("artifact");
+            fs::write(&path, vec![b'a'; 192 * 1024]).unwrap();
+            let root = open_workspace_capability(workspace.path()).unwrap();
+            let mut file = root.open("artifact").unwrap();
+            let original_identity = file_identity(&file).unwrap();
+            RAW_READ_HOOK.with(|slot| {
+                *slot.borrow_mut() = Some(Box::new(move || {
+                    let writer = fs::OpenOptions::new().write(true).open(path).unwrap();
+                    match mutation {
+                        "grow" => writer.set_len(256 * 1024).unwrap(),
+                        "shrink" => writer.set_len(32 * 1024).unwrap(),
+                        "overwrite" => writer.write_all_at(b"changed!", 0).unwrap(),
+                        _ => unreachable!(),
+                    }
+                    writer.set_modified(SystemTime::UNIX_EPOCH + Duration::from_secs(1)).unwrap();
+                }));
+            });
+            assert!(matches!(
+                observe_open_file_raw(&mut file, "artifact"),
+                Err(OrgFilesystemError::InspectionChanged(_))
+            ));
+            assert_eq!(file_identity(&file).unwrap(), original_identity);
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn migration_verification_streams_large_sparse_binary_mismatch_with_actual_summary() {
+        let workspace = tempdir().unwrap();
+        let root = open_workspace_capability(workspace.path()).unwrap();
+        let written = write_org_migration_with_capability(
+            &root, vec!["migration".to_owned()],
+            vec![OrgMigrationArtifact {
+                relative_path: "migration/artifact.org".to_owned(),
+                content: "original".to_owned(),
+            }],
+        ).unwrap();
+        let path = workspace.path().join("migration/artifact.org");
+        let original_identity = fs::metadata(&path).unwrap();
+        let length = 32 * 1024 * 1024 + 1;
+        let mut file = fs::OpenOptions::new().write(true).truncate(true).open(&path).unwrap();
+        file.set_len(length).unwrap();
+        std::io::Seek::seek(&mut file, std::io::SeekFrom::Start(length - 1)).unwrap();
+        file.write_all(&[0xff]).unwrap();
+        use std::os::unix::fs::MetadataExt as _;
+        assert_eq!(fs::metadata(&path).unwrap().ino(), original_identity.ino());
+
+        let mut expected_hash = Sha256::new();
+        let zeros = [0u8; 64 * 1024];
+        for _ in 0..512 { expected_hash.update(&zeros); }
+        expected_hash.update([0xff]);
+        let result = verify_org_migration_with_capability(
+            &root, &written.verification_path, written.artifacts,
+        ).unwrap();
+        assert_eq!(result.checked_count, 1);
+        assert_eq!(result.mismatches.len(), 1);
+        assert_eq!(result.mismatches[0].actual_byte_length, Some(length));
+        assert_eq!(result.mismatches[0].actual_revision, Some(hex::encode(expected_hash.finalize())));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn migration_verification_accepts_raw_binary_and_utf8_artifact_hashes() {
+        let workspace = tempdir().unwrap();
+        let root = open_workspace_capability(workspace.path()).unwrap();
+        root.create_dir("migration").unwrap();
+        let mut artifacts = Vec::new();
+        for (name, bytes) in [
+            ("binary.org", b"\xff\xfe\0\r\n".as_slice()),
+            ("utf8.org", "* UTF8 😀\r\n\0body".as_bytes()),
+        ] {
+            let relative_path = format!("migration/{name}");
+            root.write(&relative_path, bytes).unwrap();
+            artifacts.push(OrgMigrationArtifactSummary {
+                relative_path, byte_length: bytes.len() as u64, revision: revision(bytes),
+            });
+        }
+        let manifest = serde_json::to_vec(&OrgMigrationVerificationManifest { artifacts: artifacts.clone() }).unwrap();
+        root.write("migration/migration-verification.json", manifest).unwrap();
+        let result = verify_org_migration_with_capability(
+            &root, "migration/migration-verification.json", artifacts,
+        ).unwrap();
+        assert_eq!(result.checked_count, 2);
+        assert!(result.mismatches.is_empty());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn verification_sidecar_bound_scales_past_recovery_manifest_limit() {
+        let artifacts: Vec<_> = (0..10_000).map(|index| OrgMigrationArtifactSummary {
+            relative_path: format!("migration/{index:05}-arbitrary-artifact.org"),
+            byte_length: index,
+            revision: revision(b""),
+        }).collect();
+        let mut generated = serde_json::to_vec_pretty(&OrgMigrationVerificationManifest {
+            artifacts: artifacts.clone(),
+        }).unwrap();
+        generated.push(b'\n');
+        let limit = verification_manifest_byte_limit(&artifacts).unwrap();
+        assert_eq!(limit, generated.len() as u64);
+        assert!(limit > MAX_MIGRATION_MANIFEST_BYTES);
+        let workspace = tempdir().unwrap();
+        let root = open_workspace_capability(workspace.path()).unwrap();
+        root.create_dir("migration").unwrap();
+        root.write("migration/migration-verification.json", generated).unwrap();
+        let result = verify_org_migration_with_capability(
+            &root, "migration/migration-verification.json", artifacts,
+        ).unwrap();
+        assert_eq!(result.checked_count, 10_000);
+        assert_eq!(result.mismatches.len(), 10_000);
+        assert!(result.mismatches.iter().all(|mismatch|
+            mismatch.actual_byte_length.is_none() && mismatch.actual_revision.is_none()));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn migration_verification_rejects_sidecar_above_expected_metadata_bound() {
+        let workspace = tempdir().unwrap();
+        let root = open_workspace_capability(workspace.path()).unwrap();
+        root.create_dir("migration").unwrap();
+        let limit = verification_manifest_byte_limit(&[]).unwrap();
+        root.write("migration/migration-verification.json", vec![b' '; limit as usize + 1]).unwrap();
+        assert!(matches!(
+            verify_org_migration_with_capability(&root, "migration/migration-verification.json", vec![]),
+            Err(OrgFilesystemError::FileTooLarge(_))
+        ));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn raw_fd_observation_rewinds_retained_file_and_does_not_follow_replacement_path() {
+        let workspace = tempdir().unwrap();
+        let root = open_workspace_capability(workspace.path()).unwrap();
+        root.write("artifact", b"\xffheld-body").unwrap();
+        let mut file = root.open("artifact").unwrap();
+        let expected = (10, revision(b"\xffheld-body"));
+        assert_eq!(observe_open_file_raw(&mut file, "artifact").unwrap(), expected);
+        assert_eq!(observe_open_file_raw(&mut file, "artifact").unwrap(), expected);
+        root.rename("artifact", &root, "retained").unwrap();
+        root.write("artifact", b"foreign-body").unwrap();
+        // Pathname authority is deliberately outside the retained-fd summary.
+        assert_eq!(observe_open_file_raw(&mut file, "artifact").unwrap(), expected);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn limited_recovery_reader_preserves_utf8_and_existing_size_limit() {
+        let workspace = tempdir().unwrap();
+        let root = open_workspace_capability(workspace.path()).unwrap();
+        let content = "raw\r\n\0😀";
+        root.write("artifact", content).unwrap();
+        assert_eq!(
+            read_capability_file_utf8_limited(&root, Path::new("artifact"), "artifact", content.len() as u64).unwrap(),
+            content,
+        );
+        assert!(matches!(
+            read_capability_file_utf8_limited(&root, Path::new("artifact"), "artifact", content.len() as u64 - 1),
+            Err(OrgFilesystemError::FileTooLarge(_))
+        ));
+        root.write("artifact", b"\xff").unwrap();
+        assert!(matches!(
+            read_capability_file_utf8_limited(&root, Path::new("artifact"), "artifact", 1),
+            Err(OrgFilesystemError::InvalidUtf8(_))
+        ));
+    }
+
+    #[cfg(not(unix))]
+    #[test]
+    fn migration_readers_fail_closed_without_modifying_regular_file_evidence() {
+        let workspace = tempdir().unwrap();
+        let root = open_workspace_capability(workspace.path()).unwrap();
+        root.write("artifact", b"retained evidence").unwrap();
+        assert!(matches!(
+            read_optional_regular_file(&root, Path::new("artifact"), "artifact"),
+            Err(OrgFilesystemError::UnsupportedPlatform(_))
+        ));
+        assert!(matches!(
+            read_capability_file_utf8_limited(&root, Path::new("artifact"), "artifact", 1024),
+            Err(OrgFilesystemError::UnsupportedPlatform(_))
+        ));
+        assert_eq!(root.read("artifact").unwrap(), b"retained evidence");
     }
 }

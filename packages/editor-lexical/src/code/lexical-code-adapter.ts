@@ -5,7 +5,8 @@
 
 import type { CodeEditorAdapter, SupportedLanguage } from "@grain/editor-core";
 import type { LexicalEditor } from "lexical";
-import { $getRoot, $getSelection, $isRangeSelection, COMMAND_PRIORITY_NORMAL, KEY_ENTER_COMMAND } from "lexical";
+import { $createTextNode, $getRoot, $getSelection, $isRangeSelection, COMMAND_PRIORITY_NORMAL, KEY_DOWN_COMMAND } from "lexical";
+import { $createCodeNode, $isCodeNode } from "@lexical/code";
 
 /**
  * Configuration for creating a LexicalCodeAdapter
@@ -53,9 +54,9 @@ export const createLexicalCodeAdapter = (
 
   // Register keyboard listener for save (Ctrl+S)
   const removeSaveListener = editor.registerCommand(
-    KEY_ENTER_COMMAND,
+    KEY_DOWN_COMMAND,
     (event) => {
-      if (event && (event.ctrlKey || event.metaKey) && event.key === "s") {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
         event.preventDefault();
         for (const callback of saveCallbacks) {
           callback();
@@ -85,11 +86,10 @@ export const createLexicalCodeAdapter = (
       editor.update(() => {
         const root = $getRoot();
         root.clear();
-        const { $createTextNode, $createParagraphNode } = require("lexical");
-        const paragraph = $createParagraphNode();
-        paragraph.append($createTextNode(content));
-        root.append(paragraph);
-      });
+        const code = $createCodeNode(currentLanguage);
+        code.append($createTextNode(content));
+        root.append(code);
+      }, { discrete: true });
     },
 
     // ============================================
@@ -102,8 +102,11 @@ export const createLexicalCodeAdapter = (
 
     setLanguage(language: SupportedLanguage): void {
       currentLanguage = language;
-      // Lexical code highlighting is handled by CodeHighlightPlugin
-      // Language change would need to trigger re-highlighting
+      editor.update(() => {
+        for (const node of $getRoot().getChildren()) {
+          if ($isCodeNode(node)) node.setLanguage(language);
+        }
+      }, { discrete: true });
     },
 
     // ============================================

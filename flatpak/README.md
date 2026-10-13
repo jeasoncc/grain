@@ -50,23 +50,28 @@ Professional novel writing application with advanced project management and worl
 
 ## Installation
 
+The build uses Freedesktop 25.08 with the Node 24 and Rust stable SDK extensions.
+The project requires Node `^22.22.2 || ^24.15.0 || >=26.0.0` and Rust >= 1.94.
+Freedesktop 24.08's Rust extension is frozen at 1.89 and cannot build the updated dependencies.
+
+
 ### From Flathub (Recommended)
 ```bash
-flatpak install flathub com.lotus.NovelEditor
+flatpak install flathub com.lotus.Grain
 ```
 
 ### From Release File
 ```bash
 # Download the .flatpak file from GitHub Releases
-flatpak install --user novel-editor-VERSION.flatpak
+flatpak install --user grain-VERSION.flatpak
 ```
 
 ### Development Build
 ```bash
 # Clone and build locally
-git clone https://github.com/jeasoncc/novel-editor.git
-cd novel-editor
-flatpak-builder --user --install build-dir flatpak/com.lotus.NovelEditor.yml
+git clone https://github.com/jeasoncc/grain.git
+cd grain
+flatpak-builder --user --install build-dir flatpak/com.lotus.Grain.yml
 ```
 
 ## Running
@@ -76,18 +81,18 @@ Launch from your application menu or activities overview.
 
 ### From Command Line
 ```bash
-flatpak run com.lotus.NovelEditor
+flatpak run com.lotus.Grain
 ```
 
 ### With File Association
 ```bash
-flatpak run com.lotus.NovelEditor /path/to/document.md
+flatpak run com.lotus.Grain /path/to/document.org
 ```
 
 ## System Requirements
 
 - **OS**: Linux with Flatpak support
-- **Runtime**: org.freedesktop.Platform 23.08
+- **Runtime**: org.freedesktop.Platform 25.08
 - **Architecture**: x86_64, aarch64
 - **RAM**: 4GB recommended
 - **Storage**: 500MB free space
@@ -151,31 +156,31 @@ Perfect for:
 ### Application Won't Start
 ```bash
 # Check Flatpak installation
-flatpak list | grep NovelEditor
+flatpak list | grep Grain
 
 # Reinstall if needed
-flatpak uninstall com.lotus.NovelEditor
-flatpak install flathub com.lotus.NovelEditor
+flatpak uninstall com.lotus.Grain
+flatpak install flathub com.lotus.Grain
 ```
 
 ### File Access Issues
 ```bash
 # Grant additional file system access
-flatpak override --user --filesystem=/path/to/documents com.lotus.NovelEditor
+flatpak override --user --filesystem=/path/to/documents com.lotus.Grain
 ```
 
 ### Performance Issues
 ```bash
 # Check system resources
-flatpak run --command=sh com.lotus.NovelEditor
+flatpak run --command=sh com.lotus.Grain
 # Inside container: top, free -h
 ```
 
 ### Reset Application Data
 ```bash
 # Clear application data (WARNING: This deletes all projects!)
-flatpak run --command=sh com.lotus.NovelEditor
-rm -rf ~/.var/app/com.lotus.NovelEditor/
+flatpak run --command=sh com.lotus.Grain
+rm -rf ~/.var/app/com.lotus.Grain/
 ```
 
 ## Development
@@ -186,22 +191,22 @@ rm -rf ~/.var/app/com.lotus.NovelEditor/
 sudo apt install flatpak-builder
 
 # Install required runtimes
-flatpak install flathub org.freedesktop.Platform//23.08
-flatpak install flathub org.freedesktop.Sdk//23.08
-flatpak install flathub org.freedesktop.Sdk.Extension.node18//23.08
-flatpak install flathub org.freedesktop.Sdk.Extension.rust-stable//23.08
+flatpak install flathub org.freedesktop.Platform//25.08
+flatpak install flathub org.freedesktop.Sdk//25.08
+flatpak install flathub org.freedesktop.Sdk.Extension.node24//25.08
+flatpak install flathub org.freedesktop.Sdk.Extension.rust-stable//25.08
 
 # Build
-flatpak-builder --user --install build-dir flatpak/com.lotus.NovelEditor.yml
+flatpak-builder --user --install build-dir flatpak/com.lotus.Grain.yml
 ```
 
 ### Testing Changes
 ```bash
 # Run development build
-flatpak run com.lotus.NovelEditor
+flatpak run com.lotus.Grain
 
 # Debug mode
-flatpak run --devel com.lotus.NovelEditor
+flatpak run --devel com.lotus.Grain
 ```
 
 ## Support
@@ -209,7 +214,7 @@ flatpak run --devel com.lotus.NovelEditor
 - **Homepage**: https://github.com/jeasoncc/novel-editor
 - **Issues**: https://github.com/jeasoncc/novel-editor/issues
 - **Discussions**: https://github.com/jeasoncc/novel-editor/discussions
-- **Flathub**: https://flathub.org/apps/com.lotus.NovelEditor
+- **Flathub**: https://flathub.org/apps/com.lotus.Grain
 
 ## Contributing
 

@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 import type { OrgOpenBufferSummary } from "@/hooks/use-org-workspace"
-import { OrgNavigationPicker } from "./org-navigation-picker.view.fn"
+import { useOrgNavigationParameter } from "@/hooks/use-org-navigation-parameter"
 
 export interface OrgBufferSwitchProps {
 	readonly buffers: readonly OrgOpenBufferSummary[]
@@ -36,15 +36,9 @@ export const OrgBufferSwitch = ({ buffers, activeBufferId, ...props }: OrgBuffer
 			})),
 		[buffers, activeBufferId],
 	)
-	return (
-		<OrgNavigationPicker
-			{...props}
-			candidates={candidates}
-			label="Buffer Switch"
-			inputLabel="Search open buffers"
-			placeholder="Switch buffer…"
-			emptyMessage="No matching buffers."
-			errorMessage="Could not switch buffer."
-		/>
-	)
+	useOrgNavigationParameter({
+		...props, candidates, label: "Buffer Switch", inputLabel: "Search open buffers",
+		emptyMessage: "No matching buffers.", errorMessage: "Could not switch buffer.",
+	})
+	return null
 }

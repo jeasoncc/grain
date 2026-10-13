@@ -19,7 +19,7 @@
 //!
 //! // 通过宏生成 Warp 路由
 //! let routes = warp_routes!(db,
-//!     GetWorkspaces => GET "/api/workspaces",
+//!     GetWorkspaces => get ("api" / "workspaces"),
 //! );
 //! ```
 

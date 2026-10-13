@@ -1,0 +1,2141 @@
+{
+  "cases": [
+    {
+      "id": "empty-open-malformed",
+      "source": "* TODO Empty\n* TODO Open\nCLOCK: [2026-10-10 Sat 09:00]\nCLOCK: [2026-10-10 Sat 10:00]\n* TODO Bad\nCLOCK: [nonsense]--[nonsense] => 9:00\nCLOCK: [2026-10-10 Sat 10:00]--[2026-10-10 Sat 09:00] => 1:00\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "timestamp-authority-hierarchy",
+      "source": "* TODO Parent\nCLOCK: [2026-10-09 Fri 23:30]--[2026-10-10 Sat 00:30] => 9:59\n** TODO Child\n:LOGBOOK:\nCLOCK: [2026-10-10 Sat 01:00]--[2026-10-10 Sat 02:10] => 0:01\n:END:\n*** DONE Grandchild\nCLOCK: [2026-10-11 Sun 03:00]--[2026-10-11 Sun 04:00]\n* TODO Other\nCLOCK: [2026-10-10 Sat 08:00]--[2026-10-10 Sat 08:00] => 0:00\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": "/owned/full/α tasks.org",
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "unicode-mixed-eol-nul",
+      "source": "Preamble 😀\u0000\r\n* TODO α\rCLOCK: [2026-10-10 Sat 01:00]--[2026-10-10 Sat 02:00] => 7:00\n** TODO 🦊\r\nCLOCK: => 1:99\r* DONE End\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": "/owned/😀.org",
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "eligibility",
+      "source": "* TODO Parent\n** COMMENT Hidden\nCLOCK: [2026-10-10 Sat 01:00]--[2026-10-10 Sat 02:00] => 1:00\n** TODO Archived :ARCHIVE:\nCLOCK: [2026-10-10 Sat 02:00]--[2026-10-10 Sat 03:00] => 1:00\n** TODO Literal\n#+begin_src text\n*** TODO Fake\nCLOCK: [2026-10-10 Sat 03:00]--[2026-10-10 Sat 04:00] => 1:00\nCLOCK: => 0:07\n#+end_src\n:PROPERTIES:\n:VALUE: t\nCLOCK: [2026-10-10 Sat 04:00]--[2026-10-10 Sat 05:00] => 1:00\n:END:\n:OTHER:\nCLOCK: [2026-10-10 Sat 05:00]--[2026-10-10 Sat 06:00] => 1:00\n:END:\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "date-only-rollover",
+      "source": "* TODO Dates\nCLOCK: [2026-10-09]--[2026-10-11]\nCLOCK: [2026-02-30 Mon 01:00]--[2026-03-03 Tue 01:00]\nCLOCK: [2026-10-10 Sat 29:00]--[2026-10-11 Sun 07:00] => 2:00\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "naked-duration",
+      "source": "* TODO Naked\nCLOCK: => 25:70\n#+begin_example\nCLOCK: => 0:05\n#+end_example\n* TODO Lowercase\nclock: [2026-10-10 Sat 01:00]--[2026-10-10 Sat 02:00] => 1:00\nCLOCK: [2026-10-10 Sat 01:00]---[2026-10-10 Sat 02:00] => 8:00\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "duration-gnu-default",
+      "source": "* TODO Days\nCLOCK: => 49:01\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "duration-h:mm",
+      "source": "* TODO Days\nCLOCK: => 49:01\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "h:mm",
+      "activeClock": null
+    },
+    {
+      "id": "duration-h:mm:ss",
+      "source": "* TODO Days\nCLOCK: => 49:01\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "h:mm:ss",
+      "activeClock": null
+    },
+    {
+      "id": "dependency-False",
+      "source": "* TODO Parent\n:PROPERTIES:\n:ORDERED: t\n:END:\n** TODO First\n*** TODO Descendant\n** TODO Second\n*** TODO Grandchild\n** DONE Completed\n** TODO Bypass\n:PROPERTIES:\n:NOBLOCKING: nil\n:END:\n* TODO Clear\n** DONE Done\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "dependency-True",
+      "source": "* TODO Parent\n:PROPERTIES:\n:ORDERED: t\n:END:\n** TODO First\n*** TODO Descendant\n** TODO Second\n*** TODO Grandchild\n** DONE Completed\n** TODO Bypass\n:PROPERTIES:\n:NOBLOCKING: nil\n:END:\n* TODO Clear\n** DONE Done\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": true,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "ordered-nil-and-noblocking",
+      "source": "* TODO Parent\n:PROPERTIES:\n:ORDERED: nil\n:END:\n** TODO A\n** TODO B\n* TODO NoBlock\n:PROPERTIES:\n:NOBLOCKING:\n:END:\n** TODO Child\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": true,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "checkboxes",
+      "source": "* TODO Pending\n- [ ] open\n* TODO Partial\n1. [-] partial\n* TODO Checked\n- [X] done\n* TODO Literal\n#+begin_example\n- [ ] not a list\n#+end_example\n* TODO Child scope\n** TODO Child\n- [ ] child\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": true,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "dst-2026-03-08",
+      "source": "* TODO DST\nCLOCK: [2026-03-08 Sun 01:30]--[2026-03-08 Sun 03:30] => 2:00\n",
+      "zone": "America/New_York",
+      "today": "2026-03-08",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "dst-2026-11-01",
+      "source": "* TODO DST\nCLOCK: [2026-11-01 Sun 00:30]--[2026-11-01 Sun 02:30] => 2:00\n",
+      "zone": "America/New_York",
+      "today": "2026-11-01",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "active-clock-scope",
+      "source": "* TODO Active\nCLOCK: [2026-10-10 Sat 09:00]\n* TODO Other open\nCLOCK: [2026-10-10 Sat 10:00]\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": true,
+      "durationFormat": "gnu-default",
+      "activeClock": {
+        "headingStart": 0,
+        "startedAtEpochMs": 1791622800000
+      }
+    },
+    {
+      "id": "active-before-today",
+      "source": "* TODO Active\nCLOCK: [2026-10-09 Fri 23:30]\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": true,
+      "durationFormat": "gnu-default",
+      "activeClock": {
+        "headingStart": 0,
+        "startedAtEpochMs": 1791588600000
+      }
+    },
+    {
+      "id": "valid-block-kinds",
+      "source": "* TODO Blocks\n#+begin_src text\nCLOCK: [2026-10-10 Sat 01:00]--[2026-10-10 Sat 02:00] => 1:00\n#+end_src\n#+begin_example\nCLOCK: [2026-10-10 Sat 02:00]--[2026-10-10 Sat 03:00] => 1:00\n#+end_example\n#+begin_quote\nCLOCK: [2026-10-10 Sat 03:00]--[2026-10-10 Sat 04:00] => 1:00\n#+end_quote\n#+begin_center\nCLOCK: [2026-10-10 Sat 04:00]--[2026-10-10 Sat 05:00] => 1:00\n#+end_center\n#+begin_verse\nCLOCK: [2026-10-10 Sat 05:00]--[2026-10-10 Sat 06:00] => 1:00\n#+end_verse\n#+begin_custom\nCLOCK: [2026-10-10 Sat 06:00]--[2026-10-10 Sat 07:00] => 1:00\n#+end_custom\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "dependency-literals-comments",
+      "source": "* TODO Parent\n** TODO COMMENT Hidden\n** DONE Closed\n#+begin_src text\n*** TODO Literal\n#+end_src\n** TODO Clear\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": true,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "property-globals-placements",
+      "source": "#+PROPERTY: ORDERED t\n* TODO Parent\n** TODO A\n** TODO B\n* TODO Blank bypass\n\n:PROPERTIES:\n:NOBLOCKING: t\n:END:\n** TODO Child\n* TODO Planned bypass\nSCHEDULED: <2026-10-10 Sat>\n:PROPERTIES:\n:NOBLOCKING: t\n:END:\n** TODO Child\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": true,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "clock-missing-end-time",
+      "source": "* TODO Missing clocks\nCLOCK: [2026-10-10 Sat 01:00]--[2026-10-11]\nCLOCK: [2026-10-10bad 01:00]--[2026-10-10 Sat 03:00]\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "active-nested",
+      "source": "* TODO Parent\n** TODO Active\nCLOCK: [2026-10-10 Sat 09:00]\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": true,
+      "durationFormat": "gnu-default",
+      "activeClock": {
+        "headingStart": 14,
+        "startedAtEpochMs": 1791622800000
+      }
+    },
+    {
+      "id": "active-future",
+      "source": "* TODO Earlier\nCLOCK: => 1:00\n* TODO Future\nCLOCK: [2026-10-10 Sat 14:00]\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": true,
+      "durationFormat": "gnu-default",
+      "activeClock": {
+        "headingStart": 30,
+        "startedAtEpochMs": 1791640800000
+      }
+    },
+    {
+      "id": "nested-container-literal",
+      "source": "* TODO Nested\n#+begin_quote\nCLOCK: [2026-10-10 Sat 01:00]--[2026-10-10 Sat 02:00] => 1:00\n#+begin_src text\nCLOCK: [2026-10-10 Sat 02:00]--[2026-10-10 Sat 03:00] => 1:00\n#+end_src\n#+end_quote\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "dst-ambiguous-fall",
+      "source": "* TODO Ambiguous\nCLOCK: [2026-11-01 Sun 01:15]--[2026-11-01 Sun 02:15] => 1:00\n",
+      "zone": "America/New_York",
+      "today": "2026-11-01",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "clock-literal-in-drawer",
+      "source": "* TODO Drawer\n:LOGBOOK:\n#+begin_src text\nCLOCK: [2026-10-10 Sat 01:00]--[2026-10-10 Sat 02:00] => 1:00\n#+end_src\nCLOCK: [2026-10-10 Sat 02:00]--[2026-10-10 Sat 03:00] => 1:00\n:END:\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "dst-spring-gap",
+      "source": "* TODO Gap\nCLOCK: [2026-03-08 Sun 02:15]--[2026-03-08 Sun 03:15] => 1:00\n",
+      "zone": "America/New_York",
+      "today": "2026-03-08",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "dst-dublin-fold",
+      "source": "* TODO Fold\nCLOCK: [2026-10-25 Sun 01:15]--[2026-10-25 Sun 02:15] => 1:00\n",
+      "zone": "Europe/Dublin",
+      "today": "2026-10-25",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "dst-dublin-gap",
+      "source": "* TODO Gap\nCLOCK: [2026-03-29 Sun 01:15]--[2026-03-29 Sun 02:15] => 1:00\n",
+      "zone": "Europe/Dublin",
+      "today": "2026-03-29",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "clock-timestamp-time-ranges",
+      "source": "* TODO Ranges\nCLOCK: [2026-10-10 Sat 09:00-10:00]--[2026-10-11]\nCLOCK: [2026-10-10 Sat 11:00-12:00]---[2026-10-12 Sat 15:00]\nCLOCK: [2026-10-10 Sat 13:00-14:00]-[nonsense]\nCLOCK: [2026-10-10 Sat 15:00-16:00]--[nonsense]\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "checkbox-tabs-counters",
+      "source": "* TODO Tabs\n-\t[ ] open\n* TODO Counter\n1) [@start:4] [-] partial\n* TODO No letter defaults\na. [ ] not configured\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": true,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "dependency-duplicate-and-nil-appends",
+      "source": "* TODO Parent\n:PROPERTIES:\n:ORDERED: t\n:ORDERED: nil\n:END:\n** TODO A\n** TODO B\n* TODO Nil append\n:PROPERTIES:\n:NOBLOCKING: nil\n:NOBLOCKING+: nil\n:END:\n** TODO Child\n* TODO Nil with true append\n:PROPERTIES:\n:NOBLOCKING: nil\n:NOBLOCKING+: t\n:END:\n** TODO Child\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": true,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    },
+    {
+      "id": "invalid-outer-valid-inner",
+      "source": "* TODO Parent\n#+begin_src text\n** TODO Native boundary\nCLOCK: [2026-10-10 Sat 01:00]--[2026-10-10 Sat 02:00] => 1:00\n#+begin_example\nCLOCK: [2026-10-10 Sat 02:00]--[2026-10-10 Sat 03:00] => 1:00\n#+end_example\n#+end_src\n",
+      "zone": "UTC",
+      "today": "2026-10-10",
+      "nowEpochMs": 1791633600000,
+      "fileName": null,
+      "todoDependencies": false,
+      "checkboxDependencies": false,
+      "includeClockingTask": false,
+      "durationFormat": "gnu-default",
+      "activeClock": null
+    }
+  ],
+  "native": {
+    "emacsVersion": "31.1",
+    "orgVersion": "9.8.7",
+    "rows": [
+      {
+        "id": "empty-open-malformed",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              9,
+              0
+            ],
+            "epochMs": 1791622800000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              9,
+              0
+            ],
+            "epochMs": 1791622800000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              10,
+              0
+            ],
+            "epochMs": 1791626400000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              10,
+              0
+            ],
+            "epochMs": 1791626400000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              10,
+              0
+            ],
+            "epochMs": 1791626400000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              9,
+              0
+            ],
+            "epochMs": 1791622800000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 13,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 85,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          }
+        ]
+      },
+      {
+        "id": "timestamp-authority-hierarchy",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              10,
+              9,
+              23,
+              30
+            ],
+            "epochMs": 1791588600000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              0,
+              30
+            ],
+            "epochMs": 1791592200000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              1,
+              0
+            ],
+            "epochMs": 1791594000000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              2,
+              10
+            ],
+            "epochMs": 1791598200000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              11,
+              3,
+              0
+            ],
+            "epochMs": 1791687600000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              11,
+              4,
+              0
+            ],
+            "epochMs": 1791691200000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              8,
+              0
+            ],
+            "epochMs": 1791619200000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              8,
+              0
+            ],
+            "epochMs": 1791619200000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": "/owned/full/α tasks.org",
+            "BLOCKED": "",
+            "CLOCKSUM": "3:10",
+            "CLOCKSUM_T": "1:40"
+          },
+          {
+            "headingStart": 76,
+            "FILE": "/owned/full/α tasks.org",
+            "BLOCKED": "",
+            "CLOCKSUM": "2:10",
+            "CLOCKSUM_T": "1:10"
+          },
+          {
+            "headingStart": 168,
+            "FILE": "/owned/full/α tasks.org",
+            "BLOCKED": "",
+            "CLOCKSUM": "1:00",
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 242,
+            "FILE": "/owned/full/α tasks.org",
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          }
+        ]
+      },
+      {
+        "id": "unicode-mixed-eol-nul",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              1,
+              0
+            ],
+            "epochMs": 1791594000000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              2,
+              0
+            ],
+            "epochMs": 1791597600000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 14,
+            "FILE": "/owned/😀.org",
+            "BLOCKED": "",
+            "CLOCKSUM": "3:39",
+            "CLOCKSUM_T": "3:39"
+          },
+          {
+            "headingStart": 85,
+            "FILE": "/owned/😀.org",
+            "BLOCKED": "",
+            "CLOCKSUM": "2:39",
+            "CLOCKSUM_T": "2:39"
+          },
+          {
+            "headingStart": 112,
+            "FILE": "/owned/😀.org",
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          }
+        ]
+      },
+      {
+        "id": "eligibility",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              1,
+              0
+            ],
+            "epochMs": 1791594000000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              2,
+              0
+            ],
+            "epochMs": 1791597600000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              2,
+              0
+            ],
+            "epochMs": 1791597600000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              3,
+              0
+            ],
+            "epochMs": 1791601200000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              3,
+              0
+            ],
+            "epochMs": 1791601200000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              4,
+              0
+            ],
+            "epochMs": 1791604800000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              4,
+              0
+            ],
+            "epochMs": 1791604800000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              5,
+              0
+            ],
+            "epochMs": 1791608400000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              5,
+              0
+            ],
+            "epochMs": 1791608400000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              6,
+              0
+            ],
+            "epochMs": 1791612000000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "5:07",
+            "CLOCKSUM_T": "5:07"
+          },
+          {
+            "headingStart": 14,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "1:00",
+            "CLOCKSUM_T": "1:00"
+          },
+          {
+            "headingStart": 94,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "1:00",
+            "CLOCKSUM_T": "1:00"
+          },
+          {
+            "headingStart": 183,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "3:07",
+            "CLOCKSUM_T": "3:07"
+          },
+          {
+            "headingStart": 216,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "3:07",
+            "CLOCKSUM_T": "3:07"
+          }
+        ]
+      },
+      {
+        "id": "date-only-rollover",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              2,
+              30,
+              1,
+              0
+            ],
+            "epochMs": 1772413200000.0
+          },
+          {
+            "fields": [
+              2026,
+              3,
+              3,
+              1,
+              0
+            ],
+            "epochMs": 1772499600000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              29,
+              0
+            ],
+            "epochMs": 1791694800000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              11,
+              7,
+              0
+            ],
+            "epochMs": 1791702000000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "1d 2:00",
+            "CLOCKSUM_T": null
+          }
+        ]
+      },
+      {
+        "id": "naked-duration",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              1,
+              0
+            ],
+            "epochMs": 1791594000000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              2,
+              0
+            ],
+            "epochMs": 1791597600000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "1d 2:15",
+            "CLOCKSUM_T": "1d 2:15"
+          },
+          {
+            "headingStart": 74,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "1:00",
+            "CLOCKSUM_T": "1:00"
+          }
+        ]
+      },
+      {
+        "id": "duration-gnu-default",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "2d 1:01",
+            "CLOCKSUM_T": "2d 1:01"
+          }
+        ]
+      },
+      {
+        "id": "duration-h:mm",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "49:01",
+            "CLOCKSUM_T": "49:01"
+          }
+        ]
+      },
+      {
+        "id": "duration-h:mm:ss",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "49:01:00",
+            "CLOCKSUM_T": "49:01:00"
+          }
+        ]
+      },
+      {
+        "id": "dependency-False",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 45,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 59,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 79,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 94,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 114,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 132,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 183,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 196,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          }
+        ]
+      },
+      {
+        "id": "dependency-True",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "t",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 45,
+            "FILE": null,
+            "BLOCKED": "t",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 59,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 79,
+            "FILE": null,
+            "BLOCKED": "t",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 94,
+            "FILE": null,
+            "BLOCKED": "t",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 114,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 132,
+            "FILE": null,
+            "BLOCKED": "t",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 183,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 196,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          }
+        ]
+      },
+      {
+        "id": "ordered-nil-and-noblocking",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "t",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 47,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 57,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 67,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 114,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          }
+        ]
+      },
+      {
+        "id": "checkboxes",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "t",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 26,
+            "FILE": null,
+            "BLOCKED": "t",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 56,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 82,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 144,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 163,
+            "FILE": null,
+            "BLOCKED": "t",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          }
+        ]
+      },
+      {
+        "id": "dst-2026-03-08",
+        "todayStartEpochMs": 1772946000000.0,
+        "todayEndEpochMs": 1773028800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              3,
+              8,
+              1,
+              30
+            ],
+            "epochMs": 1772951400000.0
+          },
+          {
+            "fields": [
+              2026,
+              3,
+              8,
+              3,
+              30
+            ],
+            "epochMs": 1772955000000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "1:00",
+            "CLOCKSUM_T": "1:00"
+          }
+        ]
+      },
+      {
+        "id": "dst-2026-11-01",
+        "todayStartEpochMs": 1793505600000.0,
+        "todayEndEpochMs": 1793595600000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              11,
+              1,
+              0,
+              30
+            ],
+            "epochMs": 1793507400000.0
+          },
+          {
+            "fields": [
+              2026,
+              11,
+              1,
+              2,
+              30
+            ],
+            "epochMs": 1793518200000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "3:00",
+            "CLOCKSUM_T": "3:00"
+          }
+        ]
+      },
+      {
+        "id": "active-clock-scope",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              9,
+              0
+            ],
+            "epochMs": 1791622800000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              9,
+              0
+            ],
+            "epochMs": 1791622800000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              10,
+              0
+            ],
+            "epochMs": 1791626400000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              10,
+              0
+            ],
+            "epochMs": 1791626400000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": "3:00"
+          },
+          {
+            "headingStart": 44,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          }
+        ]
+      },
+      {
+        "id": "active-before-today",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              10,
+              9,
+              23,
+              30
+            ],
+            "epochMs": 1791588600000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              9,
+              23,
+              30
+            ],
+            "epochMs": 1791588600000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          }
+        ]
+      },
+      {
+        "id": "valid-block-kinds",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              3,
+              0
+            ],
+            "epochMs": 1791601200000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              4,
+              0
+            ],
+            "epochMs": 1791604800000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              4,
+              0
+            ],
+            "epochMs": 1791604800000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              5,
+              0
+            ],
+            "epochMs": 1791608400000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              6,
+              0
+            ],
+            "epochMs": 1791612000000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              7,
+              0
+            ],
+            "epochMs": 1791615600000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "3:00",
+            "CLOCKSUM_T": "3:00"
+          }
+        ]
+      },
+      {
+        "id": "dependency-literals-comments",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "t",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 14,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 37,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 69,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 96,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          }
+        ]
+      },
+      {
+        "id": "property-globals-placements",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [],
+        "values": [
+          {
+            "headingStart": 22,
+            "FILE": null,
+            "BLOCKED": "t",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 36,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 46,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 56,
+            "FILE": null,
+            "BLOCKED": "t",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 111,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 125,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 209,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          }
+        ]
+      },
+      {
+        "id": "clock-missing-end-time",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              1,
+              0
+            ],
+            "epochMs": 1791594000000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              11,
+              1,
+              0
+            ],
+            "epochMs": 1791680400000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "1d 0:00",
+            "CLOCKSUM_T": "23:00"
+          }
+        ]
+      },
+      {
+        "id": "active-nested",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              9,
+              0
+            ],
+            "epochMs": 1791622800000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              9,
+              0
+            ],
+            "epochMs": 1791622800000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": "3:00"
+          },
+          {
+            "headingStart": 14,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": "3:00"
+          }
+        ]
+      },
+      {
+        "id": "active-future",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              14,
+              0
+            ],
+            "epochMs": 1791640800000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              14,
+              0
+            ],
+            "epochMs": 1791640800000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "1:00",
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 30,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          }
+        ]
+      },
+      {
+        "id": "nested-container-literal",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              1,
+              0
+            ],
+            "epochMs": 1791594000000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              2,
+              0
+            ],
+            "epochMs": 1791597600000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "1:00",
+            "CLOCKSUM_T": "1:00"
+          }
+        ]
+      },
+      {
+        "id": "dst-ambiguous-fall",
+        "todayStartEpochMs": 1793505600000.0,
+        "todayEndEpochMs": 1793595600000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              11,
+              1,
+              1,
+              15
+            ],
+            "epochMs": 1793513700000.0
+          },
+          {
+            "fields": [
+              2026,
+              11,
+              1,
+              2,
+              15
+            ],
+            "epochMs": 1793517300000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "1:00",
+            "CLOCKSUM_T": "1:00"
+          }
+        ]
+      },
+      {
+        "id": "clock-literal-in-drawer",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              2,
+              0
+            ],
+            "epochMs": 1791597600000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              3,
+              0
+            ],
+            "epochMs": 1791601200000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "1:00",
+            "CLOCKSUM_T": "1:00"
+          }
+        ]
+      },
+      {
+        "id": "dst-spring-gap",
+        "todayStartEpochMs": 1772946000000.0,
+        "todayEndEpochMs": 1773028800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              3,
+              8,
+              2,
+              15
+            ],
+            "epochMs": 1772954100000.0
+          },
+          {
+            "fields": [
+              2026,
+              3,
+              8,
+              3,
+              15
+            ],
+            "epochMs": 1772954100000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          }
+        ]
+      },
+      {
+        "id": "dst-dublin-fold",
+        "todayStartEpochMs": 1792882800000.0,
+        "todayEndEpochMs": 1792972800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              10,
+              25,
+              1,
+              15
+            ],
+            "epochMs": 1792890900000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              25,
+              2,
+              15
+            ],
+            "epochMs": 1792894500000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "1:00",
+            "CLOCKSUM_T": "1:00"
+          }
+        ]
+      },
+      {
+        "id": "dst-dublin-gap",
+        "todayStartEpochMs": 1774742400000.0,
+        "todayEndEpochMs": 1774825200000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              3,
+              29,
+              1,
+              15
+            ],
+            "epochMs": 1774743300000.0
+          },
+          {
+            "fields": [
+              2026,
+              3,
+              29,
+              2,
+              15
+            ],
+            "epochMs": 1774746900000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "1:00",
+            "CLOCKSUM_T": "1:00"
+          }
+        ]
+      },
+      {
+        "id": "clock-timestamp-time-ranges",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              9,
+              0
+            ],
+            "epochMs": 1791622800000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              11,
+              10,
+              0
+            ],
+            "epochMs": 1791712800000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              11,
+              0
+            ],
+            "epochMs": 1791630000000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              12,
+              0
+            ],
+            "epochMs": 1791633600000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              13,
+              0
+            ],
+            "epochMs": 1791637200000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              14,
+              0
+            ],
+            "epochMs": 1791640800000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              15,
+              0
+            ],
+            "epochMs": 1791644400000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              16,
+              0
+            ],
+            "epochMs": 1791648000000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "1d 4:00",
+            "CLOCKSUM_T": "18:00"
+          }
+        ]
+      },
+      {
+        "id": "checkbox-tabs-counters",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "t",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 23,
+            "FILE": null,
+            "BLOCKED": "t",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 64,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          }
+        ]
+      },
+      {
+        "id": "dependency-duplicate-and-nil-appends",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "t",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 59,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 69,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 79,
+            "FILE": null,
+            "BLOCKED": "t",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 151,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 165,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          },
+          {
+            "headingStart": 245,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": null,
+            "CLOCKSUM_T": null
+          }
+        ]
+      },
+      {
+        "id": "invalid-outer-valid-inner",
+        "todayStartEpochMs": 1791590400000.0,
+        "todayEndEpochMs": 1791676800000.0,
+        "localTimes": [
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              1,
+              0
+            ],
+            "epochMs": 1791594000000.0
+          },
+          {
+            "fields": [
+              2026,
+              10,
+              10,
+              2,
+              0
+            ],
+            "epochMs": 1791597600000.0
+          }
+        ],
+        "values": [
+          {
+            "headingStart": 0,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "1:00",
+            "CLOCKSUM_T": "1:00"
+          },
+          {
+            "headingStart": 31,
+            "FILE": null,
+            "BLOCKED": "",
+            "CLOCKSUM": "1:00",
+            "CLOCKSUM_T": "1:00"
+          }
+        ]
+      }
+    ]
+  }
+}

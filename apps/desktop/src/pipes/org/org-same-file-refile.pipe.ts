@@ -4,7 +4,7 @@ import {
 	planOrgRefileInsertion,
 	type OrgRefileHeadingTarget,
 } from "./org-refile-target.pipe"
-import { extractOrgSubtreeAt, removeOrgSubtree } from "./org-subtree-refile.pipe"
+import { planOrgRefilePayload, removeOrgSubtree, type OrgRefileLoggingIntent } from "./org-subtree-refile.pipe"
 import type { OrgTextEditBatch } from "./org-text.pipe"
 
 export type OrgSameFileRefilePlan =
@@ -18,11 +18,14 @@ export const planOrgSameFileRefile = (
 	cursor: number,
 	expectedSource: string,
 	target?: Pick<OrgRefileHeadingTarget, "from" | "heading">,
+	logging?: OrgRefileLoggingIntent,
 ): OrgSameFileRefilePlan => {
 	const reject = (message: string): OrgSameFileRefilePlan => ({ kind: "rejected", message })
 	if (source !== expectedSource) return reject("The source changed. Cancel and reopen refile.")
-	const moved = extractOrgSubtreeAt(source, cursor)
-	if (!moved) return reject("Place the cursor on a real heading line.")
+	const payload = planOrgRefilePayload(source, cursor, logging)
+	if (payload.kind === "rejected") return payload
+	if (payload.kind === "needs-note") return reject("Collect the required Refile note before planning the move.")
+	const moved = payload.moved
 	if (target) {
 		const heading = enumerateOrgRefileHeadings(source).find((entry) => entry.from === target.from)
 		if (!heading || heading.heading !== target.heading) return reject("The target heading changed.")
@@ -36,7 +39,7 @@ export const planOrgSameFileRefile = (
 				from: target.from >= moved.to ? target.from - (moved.to - moved.from) : target.from,
 			}
 		: undefined
-	const insertion = planOrgRefileInsertion(remainder, moved.text, mapped)
+	const insertion = planOrgRefileInsertion(remainder, payload.payload, mapped)
 	if (E.isLeft(insertion)) return reject(insertion.left.message)
 	if (insertion.right.content === source)
 		return {

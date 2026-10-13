@@ -74,6 +74,29 @@ history, alter the source separator, or remove the runtime source compartment.
 - The engine neither destroys nor recreates views. The caller owns their lifecycle.
   Recovery/replacement of a failed view happens outside the synchronous callback.
 
+## Workspace owner lifetime
+
+The session owner binds logical buffers, parked mirrors and mounted window leases to
+the exact approved grant object and session. Runtime incarnation and source generation
+remain distinct freshness guards: equal raw bytes after edit/undo do not revive a
+captured query, navigation result or parameter target.
+
+Parking publishes synchronously before activation finishes. Live-buffer snapshots
+expose the active runtime rather than its transient parked mirror, so subscribers
+receive at most one canonical source per path throughout the handoff.
+
+Disposal revokes window registrations, runtimes and effect claims before releasing the
+grant. Late reads/writes cannot publish source, navigate, start another batch member,
+or release a successor's effect claim. A parked save receipt may retire the owner from
+its notification: that already-confirmed ACK is retained, but subsequent UI effects
+and writes stop.
+
+Save All keeps origin-scoped runtime/baseline references only for outcome reporting
+after retirement. Closed runtimes retain their last raw source/history, allowing
+`remainingDirtyPaths` to distinguish unsaved input from confirmed captured bodies
+without consulting a replacement grant or restoring edit authority.
+
+
 ## Verification
 
 From `apps/desktop`:

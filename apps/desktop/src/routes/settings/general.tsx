@@ -34,6 +34,8 @@ function GeneralSettings() {
 	} = useSettings()
 
 	const { tabPosition, setTabPosition } = useUIStore()
+	const invalidAutoSaveInterval = !Number.isFinite(autoSaveInterval) ||
+		autoSaveInterval < 1 || autoSaveInterval > 60
 
 	return (
 		<div className="space-y-6 max-w-3xl">
@@ -125,30 +127,39 @@ function GeneralSettings() {
 										<Save className="size-4" />
 									</div>
 									<div className="space-y-0.5">
-										<Label className="text-base font-normal">Auto Save</Label>
-										<p className="text-sm text-muted-foreground">
-											Automatically save your work periodically.
+										<Label htmlFor="auto-save" className="text-base font-normal">Auto Save</Label>
+										<p id="auto-save-help" className="text-sm text-muted-foreground">
+											Save dirty active and parked buffers after the quiet interval. Turning this off cancels queued saves; already accepted saves still finish.
 										</p>
 									</div>
 								</div>
-								<Switch checked={autoSave} onCheckedChange={(c) => setAutoSave(!!c)} />
+								<Switch id="auto-save" aria-describedby="auto-save-help" checked={autoSave} onCheckedChange={(c) => setAutoSave(!!c)} />
 							</div>
+
+							{invalidAutoSaveInterval && (
+								<p id="auto-save-error" role="alert" className="text-sm text-destructive">
+									Auto Save is paused: the saved interval must be a finite number from 1 to 60 seconds. Enable Auto Save to enter a valid interval.
+								</p>
+							)}
 
 							{autoSave && (
 								<div className="ml-12 p-4 rounded-lg bg-muted/30 border flex items-center justify-between animate-in slide-in-from-top-2 duration-200">
 									<div className="flex items-center gap-3">
 										<Clock className="size-4 text-muted-foreground" />
 										<div className="space-y-0.5">
-											<Label className="text-sm font-normal">Save Interval</Label>
-											<p className="text-xs text-muted-foreground">
-												How often to save (in seconds).
+											<Label htmlFor="auto-save-interval" className="text-sm font-normal">Save Interval</Label>
+											<p id="auto-save-interval-help" className="text-xs text-muted-foreground">
+												Seconds without a Source edit before saving each dirty buffer.
 											</p>
 										</div>
 									</div>
 									<div className="flex items-center gap-2">
 										<Input
+											id="auto-save-interval"
+											aria-describedby={invalidAutoSaveInterval ? "auto-save-interval-help auto-save-error" : "auto-save-interval-help"}
+											aria-invalid={invalidAutoSaveInterval || undefined}
 											type="number"
-											value={autoSaveInterval}
+											value={Number.isFinite(autoSaveInterval) ? autoSaveInterval : ""}
 											onChange={(e) => setAutoSaveInterval(Number(e.target.value))}
 											min={1}
 											max={60}

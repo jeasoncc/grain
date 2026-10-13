@@ -247,7 +247,7 @@ async fn delete_workspace_rows(
         "org_index_agenda",
     ] {
         transaction
-            .execute(Statement::from_sql_and_values(
+            .execute_raw(Statement::from_sql_and_values(
                 transaction.get_database_backend(),
                 format!("DELETE FROM {table} WHERE workspace_root = ?"),
                 [workspace_root.into()],
@@ -265,7 +265,7 @@ async fn insert_payload(
     let backend = transaction.get_database_backend();
     for document in payload.documents {
         transaction
-            .execute(Statement::from_sql_and_values(
+            .execute_raw(Statement::from_sql_and_values(
                 backend,
                 "INSERT INTO org_index_documents (workspace_root, relative_path, revision, title) VALUES (?, ?, ?, ?)",
                 vec![
@@ -279,7 +279,7 @@ async fn insert_payload(
     }
     for heading in payload.headings {
         transaction
-            .execute(Statement::from_sql_and_values(
+            .execute_raw(Statement::from_sql_and_values(
                 backend,
                 "INSERT INTO org_index_headings (workspace_root, relative_path, line, level, title, todo_keyword, org_id, custom_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 vec![
@@ -297,7 +297,7 @@ async fn insert_payload(
     }
     for link in payload.links {
         transaction
-            .execute(Statement::from_sql_and_values(
+            .execute_raw(Statement::from_sql_and_values(
                 backend,
                 "INSERT INTO org_index_links (workspace_root, source_relative_path, line, column, target_kind, target_relative_path, target_value, label) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 vec![
@@ -315,7 +315,7 @@ async fn insert_payload(
     }
     for agenda in payload.agenda {
         transaction
-            .execute(Statement::from_sql_and_values(
+            .execute_raw(Statement::from_sql_and_values(
                 backend,
                 "INSERT INTO org_index_agenda (workspace_root, relative_path, line, column, kind, date, heading, todo_keyword) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 vec![
@@ -467,7 +467,7 @@ async fn count_rows(
     workspace_root: &str,
 ) -> Result<u64, String> {
     let row: QueryResult = transaction
-        .query_one(Statement::from_sql_and_values(
+        .query_one_raw(Statement::from_sql_and_values(
             transaction.get_database_backend(),
             format!("SELECT COUNT(*) AS row_count FROM {table} WHERE workspace_root = ?"),
             [workspace_root.into()],

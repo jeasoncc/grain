@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { FileText, Github, Mail, MessageSquare, Code } from "lucide-react";
+import { FileText, Mail, MessageSquare, Code } from "lucide-react";
+import { GitHubIcon } from "@/components/ui/github-icon";
 import { OpenSourceBadges } from "@/components/ui/open-source-badges";
 
 const footerLinks = {
@@ -55,7 +56,7 @@ export function Footer() {
                 className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition"
                 aria-label="GitHub"
               >
-                <Github className="w-5 h-5" />
+                <GitHubIcon className="w-5 h-5" />
               </a>
               <a
                 href="mailto:support@grain.app"

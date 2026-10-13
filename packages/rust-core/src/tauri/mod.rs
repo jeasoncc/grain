@@ -10,11 +10,15 @@
 //! - 所有 Tauri commands 的实现
 
 mod commands;
+mod desktop_mode;
+mod org_execution;
 
 pub use commands::*;
+pub use desktop_mode::get_desktop_mode;
 
 use crate::db::connection::DbConnection;
 use crate::AppConfig;
+use crate::types::config::DesktopMode;
 use tauri::Manager;
 use tracing::{error, info, warn};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
@@ -59,24 +63,24 @@ async fn init_database(config: &AppConfig) -> Result<sea_orm::DatabaseConnection
 pub fn create_builder() -> tauri::Builder<tauri::Wry> {
     info!("启动 Grain Desktop 应用...");
 
-    // Normal Org startup gets a separate disposable database. The historical grain.db is only
-    // selected by an explicit process-level opt-in, never merely because that file already exists.
-    let legacy_mode = AppConfig::tauri_legacy_mode_enabled();
-    let config = AppConfig::for_tauri_mode(legacy_mode);
-    info!("数据目录: {:?}", config.data_dir);
-    if legacy_mode {
-        warn!("GRAIN_TAURI_LEGACY_MODE is enabled; the desktop will open the historical database");
-    } else {
-        info!("Org 派生索引数据库: {:?}", config.db_path());
+    // Both process modes retain the disposable Org index; historical Source is never the
+    // ordinary managed DatabaseConnection consumed by CRUD/backup/index commands.
+    let mode = DesktopMode::from_startup_environment();
+    let config = AppConfig::for_tauri_mode(false);
+    info!("Org 派生索引数据库: {:?}", config.db_path());
+    if mode.is_legacy() {
+        warn!("GRAIN_TAURI_LEGACY_MODE enables read-only historical listing and migration snapshots only");
     }
 
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .manage(OrgWorkspaceRegistry::default())
+        .manage(OrgDetachedWindowRegistry::default())
+        .manage(org_execution::OrgExecutionRegistry::default())
+        .manage(mode)
         .setup(move |app| {
             let config_clone = config.clone();
 
@@ -90,22 +94,59 @@ pub fn create_builder() -> tauri::Builder<tauri::Wry> {
                 }
                 Err(e) => {
                     error!("应用初始化失败: {}", e);
-                    #[cfg(debug_assertions)]
-                    panic!("数据库初始化失败: {}", e);
+                    return Err(std::io::Error::other(e).into());
                 }
+            }
+            if mode.is_legacy() {
+                let legacy_config = AppConfig::for_tauri_mode(true);
+                let source = tauri::async_runtime::block_on(
+                    DbConnection::connect_legacy_readonly(&legacy_config),
+                ).map_err(|error| error.to_string());
+                // Missing, invalid, encrypted and unsafe-live states are reported by the
+                // read-only commands rather than preventing the Org workspace from opening.
+                app.manage(LegacyMigrationSource(source));
             }
 
             Ok(())
-        })
-        .invoke_handler(tauri::generate_handler![
+        });
+
+    #[cfg(target_os = "linux")]
+    let builder = builder.plugin(
+        tauri::plugin::Builder::<tauri::Wry>::new("grain-native-input")
+            .on_webview_ready(|webview| {
+                use webkit2gtk::{InputMethodContextExt, WebViewExt};
+
+                // Wry disables client preedit. Source/readers need real composition
+                // ownership before command routing, independently in every native view.
+                if let Err(error) = webview.with_webview(|native| {
+                    if let Some(context) = native.inner().input_method_context() {
+                        context.set_enable_preedit(true);
+                    } else {
+                        error!("Native WebKit input context is missing; IME ownership unavailable");
+                    }
+                }) {
+                    error!(webview = webview.label(), %error, "Could not enable native IME preedit");
+                }
+            })
+            .build(),
+    );
+
+    let handler: fn(tauri::ipc::Invoke<tauri::Wry>) -> bool = tauri::generate_handler![
+            desktop_mode::get_desktop_mode,
+            create_org_detached_window,
+            post_org_window_intent,
+            post_org_window_projection,
+            close_org_detached_window,
+            set_org_main_window_visible,
+            focus_org_detached_window,
             // 文件系统命令
             select_directory,
-            save_file,
             get_downloads_dir,
             get_home_dir,
-            ensure_directory_and_save,
             // Org 文档命令
             open_default_org_workspace,
+            collate_org_match_strings,
+            capture_org_match_clock_context,
             reopen_default_org_workspace,
             select_org_workspace,
             watch_org_workspace,
@@ -120,6 +161,12 @@ pub fn create_builder() -> tauri::Builder<tauri::Wry> {
             create_org_directory,
             move_org_document,
             delete_org_document,
+            save_org_export,
+            get_org_execution_enabled,
+            set_org_execution_enabled,
+            execute_org_external,
+            read_org_execution_output,
+            release_org_execution_output,
             replace_org_derived_index,
             clear_org_derived_index,
             get_org_derived_index_stats,
@@ -146,6 +193,7 @@ pub fn create_builder() -> tauri::Builder<tauri::Wry> {
             reorder_nodes,
             duplicate_node,
             // 只读旧数据迁移快照命令
+            list_legacy_workspaces,
             get_legacy_migration_snapshot,
             // 内容命令
             get_all_contents,
@@ -212,5 +260,16 @@ pub fn create_builder() -> tauri::Builder<tauri::Wry> {
             clear_all_logs,
             check_needs_migration,
             mark_migration_complete,
-        ])
+        ];
+    builder.invoke_handler(move |invoke| {
+        if let Err(error) = authorize_org_window_command(invoke.message.webview_ref(), invoke.message.command()) {
+            invoke.resolver.reject(error);
+            return true;
+        }
+        if let Err(error) = mode.authorize_command(invoke.message.command()) {
+            invoke.resolver.reject(error);
+            return true;
+        }
+        handler(invoke)
+    })
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useDocPathname } from "./hooks/use-doc-pathname";
 import { useMemo } from "react";
 import Link from "next/link";
 import { docNavItems, type NavItem } from "./doc-nav-data";
@@ -27,7 +27,7 @@ function findPathToItem(
 }
 
 export function Breadcrumb() {
-  const pathname = usePathname();
+  const pathname = useDocPathname();
   
   const breadcrumbItems = useMemo(() => {
     if (pathname === "/docs") {

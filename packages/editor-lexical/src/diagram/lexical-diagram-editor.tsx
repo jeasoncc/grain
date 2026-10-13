@@ -6,15 +6,17 @@
 
 import type React from "react";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { LexicalComposer } from "@lexical/react/LexicalComposer";
+import { LexicalExtensionComposer } from "@lexical/react/LexicalExtensionComposer";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
-import type { EditorState } from "lexical";
+import { $createParagraphNode, $createTextNode, $getRoot, defineExtension, type EditorState, type LexicalEditor } from "lexical";
+import mermaid from "mermaid";
 
 import type { DiagramType } from "@grain/editor-core";
+import EditorLifecyclePlugin from "../components/EditorLifecyclePlugin";
 
 /**
  * Props for LexicalDiagramEditor component
@@ -94,6 +96,8 @@ Alice -> Bob: Hello
 Bob --> Alice: Hi there
 @enduml`;
 
+type DiagramView = "source" | "preview" | "split";
+
 /**
  * LexicalDiagramEditor component
  * 
@@ -120,43 +124,79 @@ const LexicalDiagramEditor = forwardRef<LexicalDiagramEditorHandle, LexicalDiagr
       initialSource ?? (diagramType === "mermaid" ? DEFAULT_MERMAID_SOURCE : DEFAULT_PLANTUML_SOURCE)
     );
     const diagramTypeRef = useRef<DiagramType>(diagramType);
+    const previousDiagramTypePropRef = useRef(diagramType);
+    const editorRef = useRef<LexicalEditor | null>(null);
     const previewRef = useRef<HTMLDivElement>(null);
+    const renderVersionRef = useRef(0);
+    const mountedRef = useRef(false);
+    const renderContainersRef = useRef(new Set<HTMLDivElement>());
+    const [activeDiagramType, setActiveDiagramType] = useState(diagramType);
+    const [view, setView] = useState<DiagramView>("split");
     const [renderedSvg, setRenderedSvg] = useState<string>("");
     const [renderError, setRenderError] = useState<Error | null>(null);
+
+    useEffect(() => {
+      mountedRef.current = true;
+      return () => {
+        mountedRef.current = false;
+        ++renderVersionRef.current;
+        for (const container of renderContainersRef.current) container.remove();
+        renderContainersRef.current.clear();
+      };
+    }, []);
 
     /**
      * Render the diagram using Mermaid
      */
     const renderDiagram = useCallback(async (source: string): Promise<string> => {
-      if (diagramTypeRef.current === "plantuml") {
-        // PlantUML requires server-side rendering
-        console.warn("[LexicalDiagramEditor] PlantUML rendering not implemented");
-        return "";
-      }
+      const renderVersion = ++renderVersionRef.current;
+      const isCurrent = () => mountedRef.current && renderVersion === renderVersionRef.current;
+      let renderContainer: HTMLDivElement | undefined;
 
       try {
-        // Dynamic import of mermaid to avoid bundling issues
-        const mermaid = await import("mermaid");
-        mermaid.default.initialize({
+        if (!isCurrent()) return "";
+        if (diagramTypeRef.current === "plantuml") {
+          throw new Error("PlantUML preview is unavailable. A server-side renderer is required.");
+        }
+        mermaid.initialize({
           startOnLoad: false,
           theme: "default",
+          layout: "dagre",
+          look: "classic",
           securityLevel: "loose",
         });
 
-        const { svg } = await mermaid.default.render(
-          `mermaid-${Date.now()}`,
-          source
+        // Mermaid leaves its error SVG behind when parsing fails. Keep every
+        // temporary node inside this request's measurable, off-screen container.
+        renderContainer = document.createElement("div");
+        renderContainer.setAttribute("aria-hidden", "true");
+        renderContainer.style.cssText = "position:fixed;left:-10000px;top:0;visibility:hidden;pointer-events:none";
+        document.body.append(renderContainer);
+        renderContainersRef.current.add(renderContainer);
+        const { svg } = await mermaid.render(
+          `mermaid-${crypto.randomUUID()}`,
+          source,
+          renderContainer
         );
-        
-        setRenderedSvg(svg);
-        setRenderError(null);
-        onRenderComplete?.(svg);
+
+        if (isCurrent()) {
+          setRenderedSvg(svg);
+          setRenderError(null);
+          onRenderComplete?.(svg);
+        }
         return svg;
       } catch (error) {
+        if (!isCurrent()) return "";
         const err = error instanceof Error ? error : new Error(String(error));
+        setRenderedSvg("");
         setRenderError(err);
         onRenderError?.(err);
         return "";
+      } finally {
+        if (renderContainer) {
+          renderContainer.remove();
+          renderContainersRef.current.delete(renderContainer);
+        }
       }
     }, [onRenderComplete, onRenderError]);
 
@@ -166,79 +206,114 @@ const LexicalDiagramEditor = forwardRef<LexicalDiagramEditorHandle, LexicalDiagr
     const handleChange = useCallback(
       (editorState: EditorState) => {
         editorState.read(() => {
-          const { $getRoot } = require("lexical");
           const root = $getRoot();
           const source = root.getTextContent();
           latestSourceRef.current = source;
           onChange?.(source);
           
-          // Debounced render
           renderDiagram(source);
         });
       },
       [onChange, renderDiagram]
     );
 
-    // Initial render
     useEffect(() => {
-      if (latestSourceRef.current) {
-        renderDiagram(latestSourceRef.current);
+      if (previousDiagramTypePropRef.current !== diagramType) {
+        previousDiagramTypePropRef.current = diagramType;
+        diagramTypeRef.current = diagramType;
+        setActiveDiagramType(diagramType);
       }
-    }, [renderDiagram]);
+      renderDiagram(latestSourceRef.current);
+    }, [diagramType, renderDiagram]);
 
     useImperativeHandle(
       ref,
       () => ({
         getSource: () => latestSourceRef.current,
         setSource: (source: string) => {
+          editorRef.current?.update(() => {
+            const root = $getRoot();
+            root.clear();
+            root.append($createParagraphNode().append($createTextNode(source)));
+          }, { discrete: true });
           latestSourceRef.current = source;
           renderDiagram(source);
         },
         getDiagramType: () => diagramTypeRef.current,
         setDiagramType: (type: DiagramType) => {
           diagramTypeRef.current = type;
+          setActiveDiagramType(type);
+          renderDiagram(latestSourceRef.current);
         },
         render: () => renderDiagram(latestSourceRef.current),
         getPreviewElement: () => previewRef.current,
-        focus: () => {
-          // Would need editor ref
-        },
-        blur: () => {
-          // Would need editor ref
-        },
+        focus: () => editorRef.current?.focus(),
+        blur: () => editorRef.current?.blur(),
       }),
       [renderDiagram]
     );
 
-    const initialConfig = {
+    const [extension] = useState(() => defineExtension({
+      name: "@grain/editor-lexical/diagram",
       namespace,
       theme: diagramEditorTheme,
-      nodes: [],
       editable: !readOnly,
       onError,
-      editorState: latestSourceRef.current
-        ? () => {
-            const { $getRoot, $createTextNode, $createParagraphNode } = require("lexical");
-            const root = $getRoot();
-            const paragraph = $createParagraphNode();
-            paragraph.append($createTextNode(latestSourceRef.current));
-            root.append(paragraph);
-          }
-        : undefined,
-    };
+      $initialEditorState: () => {
+        $getRoot().append($createParagraphNode().append($createTextNode(latestSourceRef.current)));
+      },
+    }));
+
+    const supportsPreview = activeDiagramType === "mermaid";
+    const previewVisible = showPreview && supportsPreview && view !== "source";
+    const sourceVisible = !showPreview || !supportsPreview || view !== "preview";
+    const split = sourceVisible && previewVisible;
 
     return (
-      <div className="flex h-full">
-        {/* Editor Panel */}
-        <div className={`flex flex-col ${showPreview ? "w-1/2 border-r" : "w-full"}`}>
-          <div className="px-3 py-2 border-b bg-muted/50 text-sm font-medium">
-            {diagramType === "mermaid" ? "Mermaid" : "PlantUML"} Source
+      <div className="flex h-full min-h-0 flex-col bg-background text-foreground">
+        <div className="flex min-h-10 shrink-0 items-center gap-3 border-b border-border px-3">
+          <span className="text-xs font-medium">
+            {activeDiagramType === "mermaid" ? "Mermaid" : "PlantUML"}
+          </span>
+          {readOnly && <span className="text-xs text-muted-foreground">Read-only</span>}
+          {showPreview && supportsPreview && (
+            <div role="group" aria-label="Diagram view" className="ml-auto flex items-center gap-1">
+              {(["source", "preview", "split"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  aria-pressed={view === mode}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => setView(mode)}
+                  className={`h-8 rounded-md px-3 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                    view === mode
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {mode === "source" ? "Source" : mode === "preview" ? "Preview" : "Split"}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {showPreview && !supportsPreview && (
+          <div ref={previewRef} role="status" className="border-b border-border px-3 py-2 text-xs text-muted-foreground">
+            PlantUML preview is unavailable. A server-side renderer is required.
           </div>
-          <div className="flex-1 overflow-auto">
-            <LexicalComposer initialConfig={initialConfig}>
+        )}
+        <div className="flex min-h-0 flex-1">
+        <div
+          hidden={!sourceVisible}
+          className={`${sourceVisible ? "flex" : "hidden"} min-h-0 min-w-0 flex-col ${split ? "w-1/2 border-r border-border" : "w-full"}`}
+        >
+          <div className="relative min-h-0 flex-1 overflow-auto">
+            <LexicalExtensionComposer extension={extension} contentEditable={null}>
               <PlainTextPlugin
                 contentEditable={
                   <ContentEditable
+                    aria-label={`${activeDiagramType === "mermaid" ? "Mermaid" : "PlantUML"} source`}
+                    aria-readonly={readOnly}
                     className="min-h-full outline-none p-4 text-sm leading-relaxed font-mono"
                     style={{ caretColor: "var(--primary)" }}
                   />
@@ -258,23 +333,24 @@ const LexicalDiagramEditor = forwardRef<LexicalDiagramEditorHandle, LexicalDiagr
                 }
               />
               <HistoryPlugin />
-              {onChange && <OnChangePlugin onChange={handleChange} ignoreSelectionChange />}
-            </LexicalComposer>
+              <OnChangePlugin onChange={handleChange} ignoreSelectionChange />
+              <EditorLifecyclePlugin editorRef={editorRef} readOnly={readOnly} />
+            </LexicalExtensionComposer>
           </div>
         </div>
 
-        {/* Preview Panel */}
-        {showPreview && (
-          <div className="w-1/2 flex flex-col">
-            <div className="px-3 py-2 border-b bg-muted/50 text-sm font-medium">
-              Preview
-            </div>
+        {showPreview && supportsPreview && (
+          <div
+            hidden={!previewVisible}
+            className={`${previewVisible ? "flex" : "hidden"} min-h-0 min-w-0 flex-col ${split ? "w-1/2" : "w-full"}`}
+          >
             <div
               ref={previewRef}
-              className="flex-1 overflow-auto p-4 flex items-center justify-center"
+              aria-label="Diagram preview"
+              className="flex min-h-0 flex-1 items-center justify-center overflow-auto p-4"
             >
               {renderError ? (
-                <div className="text-destructive text-sm p-4 bg-destructive/10 rounded-md">
+                <div role="alert" className="max-w-full rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-foreground [overflow-wrap:anywhere]">
                   <div className="font-medium mb-1">Render Error</div>
                   <div className="font-mono text-xs">{renderError.message}</div>
                 </div>
@@ -292,6 +368,7 @@ const LexicalDiagramEditor = forwardRef<LexicalDiagramEditorHandle, LexicalDiagr
             </div>
           </div>
         )}
+        </div>
       </div>
     );
   }

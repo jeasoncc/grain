@@ -4,11 +4,11 @@
 
 ## 技术栈
 
-- **运行环境**: Bun
-- **Web 框架**: Elysia
+- **运行环境**: Bun 1.4.2
+- **Web 框架**: Elysia 1.4
 - **数据库**: PostgreSQL
-- **ORM**: Drizzle ORM
-- **API 文档**: Swagger (自动生成)
+- **ORM**: Drizzle ORM 0.45 / Drizzle Kit 0.31
+- **API 文档**: `@elysia/openapi`，保留 `/swagger` UI 和 `/swagger/json` OpenAPI 3.0.3
 
 ## 项目结构
 
@@ -65,8 +65,9 @@ PORT=4001
 ### 安装依赖
 
 ```bash
+# 仓库根目录；所有 workspace 共用根 bun.lock
+bun install --frozen-lockfile
 cd apps/api
-bun install
 ```
 
 ### 数据库迁移
@@ -213,11 +214,15 @@ Swagger API 文档
 - `timestamp_idx`: 时间戳索引
 - `visited_at_idx`: 访问时间索引
 
+Drizzle 新版使用索引数组回调，以上索引名、列和 btree 类型不变；
+此 API 迁移本身不要求修改数据库结构。生成迁移不连接数据库，执行
+`db:migrate` / `db:push` 才会修改配置的 PostgreSQL。
+
 ## 特性
 
 - ✅ 类型安全的 API（使用 Elysia 类型系统）
 - ✅ 类型安全的数据库操作（使用 Drizzle ORM）
-- ✅ 自动生成的 Swagger 文档
+- ✅ 自动生成的 OpenAPI 文档（兼容原 `/swagger` 路径）
 - ✅ CORS 支持
 - ✅ 数据库迁移支持
 - ✅ 高性能（Bun 运行时 + PostgreSQL）

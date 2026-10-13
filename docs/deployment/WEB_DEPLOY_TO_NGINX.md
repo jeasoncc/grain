@@ -49,7 +49,7 @@ bash /home/lotus/project/book2/novel-editor/scripts/deploy-web-to-nginx.sh
 
    ```bash
    cd /home/lotus/project/book2/novel-editor
-   bun web:build:prod
+   bun run build:prod:web
    # 或
    cd apps/web
    bun run build
@@ -93,23 +93,21 @@ bash /home/lotus/project/book2/novel-editor/scripts/deploy-web-to-nginx.sh
 
 ### 方式 2: 反向代理
 
-运行 Next.js 服务器，nginx 作为反向代理。
-
-**优点**：
-- ✅ 支持服务端渲染 (SSR)
-- ✅ 支持 API 路由
-- ✅ 更灵活
+当前 `output: "export"` 仍生成 `out/`。`bun run start` 用 `serve` 预览静态文件，
+不是 Next 服务，不支持 SSR 或 API 路由；nginx 可直接服务 `out/`，也可反代该预览服务。
+若另行采用 SSR，必须先移除静态导出配置并使用对应的 Next 服务启动命令，
+不能把本仓库的静态启动脚本当作 SSR 部署。
 
 **步骤**：
 
-1. **构建项目（标准模式）**
+1. **构建静态导出**
 
    ```bash
    cd /home/lotus/project/book2/novel-editor/apps/web
    bun run build
    ```
 
-2. **启动 Next.js 服务器**
+2. **启动静态预览服务**
 
    ```bash
    cd /home/lotus/project/book2/novel-editor/apps/web
@@ -118,7 +116,7 @@ bash /home/lotus/project/book2/novel-editor/scripts/deploy-web-to-nginx.sh
    NODE_ENV=production bun start
    ```
 
-   Next.js 会在 `http://localhost:3000` 运行。
+   `serve out --listen 3000` 会在 `http://localhost:3000` 提供静态文件。
 
 3. **配置 nginx 反向代理**
 
@@ -182,7 +180,7 @@ cd /home/lotus/project/book2/novel-editor
 bun install
 
 # 构建 web 项目
-bun web:build:prod
+bun run build:prod:web
 # 或
 cd apps/web
 NODE_ENV=production bun run build
@@ -238,7 +236,6 @@ curl -k https://localhost
 ## 📝 配置文件位置
 
 - **Next.js 配置**: `apps/web/next.config.ts`
-- **静态导出配置**: `apps/web/next.config.export.ts`
 - **Nginx 配置**: `/etc/nginx/nginx.conf`
 - **部署目录**: `/home/lotus/test-site`（根据你的 nginx 配置修改）
 

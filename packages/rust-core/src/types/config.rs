@@ -10,6 +10,32 @@ pub const ORG_DERIVED_DB_FILENAME: &str = "grain-org-index.db";
 /// Deliberate opt-in required before Tauri may open the historical database.
 pub const TAURI_LEGACY_MODE_ENV: &str = "GRAIN_TAURI_LEGACY_MODE";
 
+/// Process startup authority. This value is captured once, never re-read by an IPC handler.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DesktopMode {
+    Org,
+    Legacy,
+}
+
+impl DesktopMode {
+    pub fn from_opt_in(value: Option<&str>) -> Self {
+        if value.is_some_and(|value| value == "1" || value.eq_ignore_ascii_case("true")) {
+            Self::Legacy
+        } else {
+            Self::Org
+        }
+    }
+
+    pub fn from_startup_environment() -> Self {
+        Self::from_opt_in(std::env::var(TAURI_LEGACY_MODE_ENV).ok().as_deref())
+    }
+
+    pub fn is_legacy(self) -> bool {
+        self == Self::Legacy
+    }
+}
+
 /// 应用配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
@@ -37,14 +63,6 @@ impl Default for AppConfig {
 }
 
 impl AppConfig {
-    /// Build the desktop configuration without granting ambient access to the historical DB.
-    ///
-    /// The ordinary Org desktop only needs a disposable derived index. Opening `grain.db`
-    /// requires the process-level `GRAIN_TAURI_LEGACY_MODE=1` opt-in.
-    pub fn for_tauri() -> Self {
-        Self::for_tauri_mode(Self::tauri_legacy_mode_enabled())
-    }
-
     /// Build a desktop configuration for an already-decided startup mode.
     ///
     /// Kept separate from environment access so the safety-critical filename choice is easy to
@@ -57,14 +75,11 @@ impl AppConfig {
             ORG_DERIVED_DB_FILENAME
         }
         .to_string();
+        if !legacy_mode {
+            // Never share retention or deletion namespaces with historical archives.
+            config.backup_dirname = "org-index-backups".to_owned();
+        }
         config
-    }
-
-    /// Whether this Tauri process was explicitly authorized to open the historical database.
-    pub fn tauri_legacy_mode_enabled() -> bool {
-        std::env::var(TAURI_LEGACY_MODE_ENV)
-            .map(|value| value == "1" || value.eq_ignore_ascii_case("true"))
-            .unwrap_or(false)
     }
 
     /// 获取数据库文件完整路径
@@ -116,6 +131,7 @@ mod tests {
 
         assert_eq!(config.db_filename, ORG_DERIVED_DB_FILENAME);
         assert_ne!(config.db_filename, LEGACY_DB_FILENAME);
+        assert_ne!(config.backup_dir(), AppConfig::for_tauri_mode(true).backup_dir());
     }
 
     #[test]
@@ -123,5 +139,18 @@ mod tests {
         let config = AppConfig::for_tauri_mode(true);
 
         assert_eq!(config.db_filename, LEGACY_DB_FILENAME);
+        assert_eq!(config.backup_dirname, "backups");
+    }
+
+    #[test]
+    fn desktop_mode_opt_in_is_explicit_and_serializes_as_ipc_strings() {
+        for value in [None, Some(""), Some("0"), Some("false"), Some("legacy"), Some(" true")] {
+            assert_eq!(DesktopMode::from_opt_in(value), DesktopMode::Org);
+        }
+        for value in [Some("1"), Some("true"), Some("TRUE")] {
+            assert_eq!(DesktopMode::from_opt_in(value), DesktopMode::Legacy);
+        }
+        assert_eq!(serde_json::to_string(&DesktopMode::Org).unwrap(), "\"org\"");
+        assert_eq!(serde_json::to_string(&DesktopMode::Legacy).unwrap(), "\"legacy\"");
     }
 }

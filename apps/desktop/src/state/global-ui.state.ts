@@ -3,7 +3,7 @@
  * @description Global UI 状态管理
  *
  * Zustand store for managing global UI components state.
- * Handles command palette, global search, buffer switcher, and export dialog.
+ * Handles global search, buffer switcher, and export dialog.
  *
  * 依赖规则：state/ 只能依赖 types/
  */
@@ -37,13 +37,6 @@ export const useGlobalUIStore = create<GlobalUIStore>()((set) => ({
 		}))
 	},
 
-	closeCommandPalette: () => {
-		set((state) => ({
-			...state,
-			commandPaletteOpen: false,
-		}))
-	},
-
 	closeExportDialog: () => {
 		set((state) => ({
 			...state,
@@ -67,17 +60,6 @@ export const useGlobalUIStore = create<GlobalUIStore>()((set) => ({
 			...state,
 			bufferSwitcherDirection: direction,
 			bufferSwitcherOpen: true,
-		}))
-	},
-
-	// ==============================
-	// Command Palette Actions
-	// ==============================
-
-	openCommandPalette: () => {
-		set((state) => ({
-			...state,
-			commandPaletteOpen: true,
 		}))
 	},
 
@@ -110,13 +92,6 @@ export const useGlobalUIStore = create<GlobalUIStore>()((set) => ({
 		}))
 	},
 
-	toggleCommandPalette: () => {
-		set((state) => ({
-			...state,
-			commandPaletteOpen: !state.commandPaletteOpen,
-		}))
-	},
-
 	toggleExportDialog: () => {
 		set((state) => ({
 			...state,
@@ -136,9 +111,6 @@ export const useGlobalUIStore = create<GlobalUIStore>()((set) => ({
 // Selector Hooks
 // ==============================
 
-/** Select command palette open state */
-export const useCommandPaletteOpen = () => useGlobalUIStore((s) => s.commandPaletteOpen)
-
 /** Select global search open state */
 export const useGlobalSearchOpen = () => useGlobalUIStore((s) => s.globalSearchOpen)
 
@@ -154,13 +126,6 @@ export const useExportDialogOpen = () => useGlobalUIStore((s) => s.exportDialogO
 // ==============================
 // Action Hooks
 // ==============================
-
-/** Get command palette actions */
-export const useCommandPaletteActions = () => ({
-	close: useGlobalUIStore((s) => s.closeCommandPalette),
-	open: useGlobalUIStore((s) => s.openCommandPalette),
-	toggle: useGlobalUIStore((s) => s.toggleCommandPalette),
-})
 
 /** Get global search actions */
 export const useGlobalSearchActions = () => ({
@@ -186,7 +151,6 @@ export const useExportDialogActions = () => ({
 /** Get all global UI actions */
 export const useGlobalUIActions = () => ({
 	bufferSwitcher: useBufferSwitcherActions(),
-	commandPalette: useCommandPaletteActions(),
 	exportDialog: useExportDialogActions(),
 	globalSearch: useGlobalSearchActions(),
 })

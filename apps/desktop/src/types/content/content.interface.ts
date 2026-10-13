@@ -47,23 +47,3 @@ export interface ContentInterface {
 	readonly legacyUpdatedAt?: string
 }
 
-/**
- * 内容创建输入类型
- * 创建新内容记录时使用
- * id 和 lastEdit 自动生成
- */
-export interface ContentCreateInput {
-	readonly nodeId: UUID
-	readonly content?: string
-	readonly contentType?: ContentType
-}
-
-/**
- * 内容更新输入类型
- * 更新现有内容记录时使用
- * 只有 content 和 contentType 可以更新
- */
-export interface ContentUpdateInput {
-	readonly content?: string
-	readonly contentType?: ContentType
-}

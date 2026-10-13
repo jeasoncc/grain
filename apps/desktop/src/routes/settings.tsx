@@ -106,7 +106,7 @@ function SettingsLayout() {
 	)
 
 	return (
-		<div className="h-screen bg-background flex flex-col overflow-hidden">
+		<div className="h-full bg-background flex flex-col overflow-hidden">
 			{/* Header - Fixed at top */}
 			<header className="shrink-0 z-20 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
 				<div className="container flex h-14 max-w-screen-2xl items-center pl-8">

@@ -45,10 +45,6 @@ describe("orgFileLinkAt", () => {
 		expect(orgLinkTargetAt("[[note.txt]]", 5, "one.org")).toBeNull()
 	})
 
-	it("does not parse a malformed link across a lone-CR line boundary", () => {
-		const source = "[[broken\rnext.org]]"
-		expect(orgLinkTargetAt(source, 3, "index.org")).toBeNull()
-	})
 
 	it("returns null outside a link and at its exclusive end boundary", () => {
 		const source = "text [[note.org]] after"

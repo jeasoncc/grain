@@ -3,47 +3,19 @@
 ## 问题
 `SyntaxError: export 'TypeSystemPolicy' not found in '@sinclair/typebox/system'`
 
-## 原因
-根目录 node_modules 中有 TypeBox 0.27.8，但新版本的 Elysia 需要更新的版本。
+## 当前依赖约束
 
-## 解决方案
+Elysia 1.4 使用 TypeBox 0.34。API workspace 直接声明 `@sinclair/typebox`，
+根 `overrides` 将所有消费者统一到 `^0.34.52`；不要继续使用 0.27/0.32
+或降级到 Elysia 1.1，也不要保留 workspace 局部 `resolutions`。
 
-### 方法 1: 在根目录添加 TypeBox（推荐）
+从仓库根目录使用 Bun 1.4.2 的唯一锁文件安装：
 
-在根目录 `package.json` 中添加：
-
-```json
-{
-  "resolutions": {
-    "@sinclair/typebox": "^0.32.35"
-  }
-}
-```
-
-然后运行：
 ```bash
-cd /home/lotus/project/book2/novel-editor
-rm -rf node_modules bun.lockb
-bun install
+bun install --frozen-lockfile
+bun run --filter api typecheck
 ```
 
-### 方法 2: 在 api 项目中添加 resolutions
-
-在 `apps/api/package.json` 中添加：
-
-```json
-{
-  "resolutions": {
-    "@sinclair/typebox": "^0.32.35"
-  }
-}
-```
-
-### 方法 3: 使用工作区覆盖
-
-在根目录 `package.json` 中添加 `overrides` 字段。
-
-## 临时解决方案
-
-使用旧版本的 Elysia (1.1.22) 来匹配 TypeBox 0.27.8，但这限制了功能。
-
+Bun 的隔离链接按 workspace 解析依赖。遇到该错误时先核对根锁文件与
+API 的直接声明，避免从历史目录或旧安装树启动。不要删除根 `bun.lock`
+或创建单独的 API 锁文件来绕过冲突。

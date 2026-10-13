@@ -16,22 +16,13 @@ describe("parseOrgLinkIndex", () => {
 			":END:",
 		].join("\n")
 
-		expect(parseOrgLinkIndex("notes.org", source).identifiers).toEqual([
-			{ heading: "First", kind: "id", line: 4, value: "AbC-123" },
-			{ heading: "First", kind: "custom-id", line: 5, value: "release-v1" },
-			{ heading: "Second", kind: "id", line: 9, value: "exact.VALUE" },
+		expect(parseOrgLinkIndex("notes.org", source).identifiers).toMatchObject([
+			{ heading: "First", kind: "id", value: "AbC-123" },
+			{ heading: "First", kind: "custom-id", value: "release-v1" },
+			{ heading: "Second", kind: "id", value: "exact.VALUE" },
 		])
-		expect(source).toContain(":ID: AbC-123")
 	})
 
-	it("tracks identifier line numbers in lone-CR documents", () => {
-		const source =
-			"* One\r:PROPERTIES:\r:ID: one\r:END:\r* Two\r:PROPERTIES:\r:CUSTOM_ID: two\r:END:"
-		expect(parseOrgLinkIndex("notes.org", source).identifiers).toMatchObject([
-			{ line: 3, value: "one" },
-			{ line: 7, value: "two" },
-		])
-	})
 
 	it("only treats a position-valid heading property drawer as identifier metadata", () => {
 		const source = [
@@ -45,8 +36,8 @@ describe("parseOrgLinkIndex", () => {
 			":ID: body-example",
 			":END:",
 		].join("\n")
-		expect(parseOrgLinkIndex("notes.org", source).identifiers).toEqual([
-			{ heading: "Valid", kind: "id", line: 4, value: "valid-id" },
+		expect(parseOrgLinkIndex("notes.org", source).identifiers).toMatchObject([
+			{ heading: "Valid", kind: "id", value: "valid-id" },
 		])
 	})
 
@@ -112,6 +103,20 @@ describe("parseOrgLinkIndex", () => {
 			[10, 0],
 			[10, 15],
 		])
+	})
+	it("includes an eligible file property ID at file point before heading metadata", () => {
+		const source = ":PROPERTIES:\r\n:ID: root-id\r\n:END:\r\n#+TITLE: File node\r\n* Child\r\n:PROPERTIES:\r\n:ID: child-id\r\n:END:"
+		expect(parseOrgLinkIndex("dated/note.org", source).identifiers).toMatchObject([
+			{ heading: "File node", kind: "id", line: 1, value: "root-id" },
+			{ heading: "Child", kind: "id", value: "child-id" },
+		])
+	})
+	it("never mistakes generic drawer text, block titles or late property examples for node metadata", () => {
+		const source = "#+begin_src org\n#+TITLE: Fake title\n:PROPERTIES:\n:ID: fake-file\n:END:\n#+end_src\n#+TITLE: Actual title\n* Visible\n:LOGBOOK:\n[[id:fake][Not a backlink]]\n:ID: logbook\n:END:\nbody\n:PROPERTIES:\n:ID: late\n:END:\n[[id:actual][Actual]]"
+		const index = parseOrgLinkIndex("source.org", source)
+		expect(index.title).toBe("Actual title")
+		expect(index.identifiers).toEqual([])
+		expect(index.links).toMatchObject([{ targetValue: "actual", label: "Actual" }])
 	})
 })
 

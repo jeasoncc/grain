@@ -200,6 +200,9 @@ describe("Property 11: Security Pattern Detection", () => {
 						fc.constant('console.log("API Key:", apiKey)'),
 						fc.constant("logger.debug({ secret, value })"),
 						fc.constant("console.log({ authorization })"),
+						fc.constant("console.log({ hasAuth: token })"),
+						fc.constant("console.log(token)"),
+						fc.constant("logger.info({ authorization: user.authorization })"),
 					),
 					(code) => {
 						const errors = runLint(code, { "grain/no-sensitive-logging": "error" })

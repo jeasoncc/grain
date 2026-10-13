@@ -66,10 +66,10 @@ export const createTiptapCodeAdapter = (
           {
             type: "codeBlock",
             attrs: { language: currentLanguage },
-            content: [{ type: "text", text: content }],
+            content: content ? [{ type: "text", text: content }] : [],
           },
         ],
-      });
+      }, { emitUpdate: false });
     },
 
     // ============================================

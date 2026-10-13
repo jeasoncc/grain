@@ -12,9 +12,11 @@
 //!
 //! ```rust,ignore
 //! // Warp 服务器
-//! let routes = warp_routes!(db,
-//!     GetWorkspaces => GET "/api/workspaces",
-//!     CreateWorkspace => POST "/api/workspaces",
+//! let routes = warp_routes!(db.clone(),
+//!     GetWorkspaces => get ("api" / "workspaces"),
+//! );
+//! let create_route = warp_route_with_body!(
+//!     db, CreateWorkspace, post, ("api" / "workspaces")
 //! );
 //!
 //! // Tauri 应用
@@ -72,9 +74,7 @@ pub fn query_params<T: serde::de::DeserializeOwned + Send + 'static>(
 ///
 /// ```rust,ignore
 /// warp_routes!(db,
-///     EndpointType => METHOD "path",
-///     EndpointType => METHOD "path" with body,
-///     EndpointType => METHOD "path" with query,
+///     EndpointType => get ("api" / "resource"),
 /// );
 /// ```
 ///
@@ -82,26 +82,27 @@ pub fn query_params<T: serde::de::DeserializeOwned + Send + 'static>(
 ///
 /// - `db`: DatabaseConnection 实例
 /// - `EndpointType`: 实现 ApiEndpoint trait 的类型
-/// - `METHOD`: HTTP 方法 (GET, POST, PUT, DELETE)
-/// - `"path"`: URL 路径
-/// - `with body`: 从 JSON body 提取输入（可选）
-/// - `with query`: 从 query string 提取输入（可选）
+/// - `METHOD`: Warp 方法函数名 (`get`, `post`, `put`, `delete`)
+/// - `("path" / "segments")`: 静态路径分段，使用 Warp 的 `path!` 语法
+/// - 有输入的端点使用 `warp_route_with_body!` 或 `warp_route_with_query!`
 ///
 /// ## 示例
 ///
 /// ```rust,ignore
-/// let routes = warp_routes!(db,
-///     GetWorkspaces => GET "/api/workspaces",
-///     GetWorkspace => GET "/api/workspaces" / String with query,
-///     CreateWorkspace => POST "/api/workspaces" with body,
-///     UpdateWorkspace => PUT "/api/workspaces" / String with body,
-///     DeleteWorkspace => DELETE "/api/workspaces" / String,
+/// let routes = warp_routes!(db.clone(),
+///     GetWorkspaces => get ("api" / "workspaces"),
+/// );
+/// let create_route = warp_route_with_body!(
+///     db.clone(), CreateWorkspace, post, ("api" / "workspaces")
+/// );
+/// let workspace_route = warp_route_with_query!(
+///     db, GetWorkspace, get, ("api" / "workspace")
 /// );
 /// ```
 #[macro_export]
 macro_rules! warp_routes {
     // 基础路由（无输入）
-    ($db:expr, $($endpoint:ty => $method:ident $path:literal),* $(,)?) => {{
+    ($db:expr, $($endpoint:ty => $method:ident ($($path:tt)+)),* $(,)?) => {{
         use warp::Filter;
         use $crate::api::ApiEndpoint;
         use $crate::macros::{with_db, handle_rejection, AppRejection};
@@ -115,7 +116,7 @@ macro_rules! warp_routes {
 
         $(
             let db_clone = db.clone();
-            let route = warp::path!($path)
+            let route = warp::path!($($path)+)
                 .and(warp::$method())
                 .and(with_db(db_clone))
                 .and_then(|db: Arc<sea_orm::DatabaseConnection>| async move {
@@ -135,14 +136,14 @@ macro_rules! warp_routes {
 /// 生成带 JSON body 的 Warp 路由
 #[macro_export]
 macro_rules! warp_route_with_body {
-    ($db:expr, $endpoint:ty, $method:ident, $path:literal) => {{
+    ($db:expr, $endpoint:ty, $method:ident, ($($path:tt)+)) => {{
         use std::sync::Arc;
         use warp::Filter;
         use $crate::api::ApiEndpoint;
         use $crate::macros::{json_body, with_db, AppRejection};
 
         let db = Arc::new($db);
-        warp::path!($path)
+        warp::path!($($path)+)
                     .and(warp::$method())
                     .and(with_db(db))
                     .and(json_body::<<$endpoint as ApiEndpoint>::Input>())
@@ -161,14 +162,14 @@ macro_rules! warp_route_with_body {
 /// 生成带 query 参数的 Warp 路由
 #[macro_export]
 macro_rules! warp_route_with_query {
-    ($db:expr, $endpoint:ty, $method:ident, $path:literal) => {{
+    ($db:expr, $endpoint:ty, $method:ident, ($($path:tt)+)) => {{
         use std::sync::Arc;
         use warp::Filter;
         use $crate::api::ApiEndpoint;
         use $crate::macros::{query_params, with_db, AppRejection};
 
         let db = Arc::new($db);
-        warp::path!($path)
+        warp::path!($($path)+)
                     .and(warp::$method())
                     .and(with_db(db))
                     .and(query_params::<<$endpoint as ApiEndpoint>::Input>())
@@ -269,4 +270,80 @@ macro_rules! tauri_command_no_input {
                 .map_err(|e| e.to_string())
         }
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::api::{CreateWorkspace, GetWorkspace, GetWorkspaces};
+    use crate::{AppConfig, DbConnection};
+
+    #[tokio::test]
+    async fn generated_http_filters_preserve_json_query_and_rejections() {
+        let directory = tempfile::tempdir().unwrap();
+        let config = AppConfig {
+            data_dir: directory.path().to_path_buf(),
+            db_filename: "macro-smoke.db".to_owned(),
+            backup_dirname: "backups".to_owned(),
+            enable_encryption: false,
+        };
+        let db = DbConnection::connect(&config).await.unwrap();
+        let list = warp_routes!(db.clone(),
+            GetWorkspaces => get ("api" / "workspaces"),
+        );
+        let response = warp::test::request()
+            .path("/api/workspaces")
+            .reply(&list)
+            .await;
+        assert_eq!(response.status(), warp::http::StatusCode::OK);
+        assert_eq!(response.body().as_ref(), b"[]");
+
+        let create = warp_route_with_body!(
+            db.clone(), CreateWorkspace, post, ("api" / "workspaces")
+        )
+        .recover(handle_rejection);
+        let response = warp::test::request()
+            .method("POST")
+            .path("/api/workspaces")
+            .json(&serde_json::json!({"title": "Warp 0.4 macro"}))
+            .reply(&create)
+            .await;
+        assert_eq!(response.status(), warp::http::StatusCode::OK);
+        let workspace: serde_json::Value = serde_json::from_slice(response.body()).unwrap();
+        assert_eq!(workspace["title"], "Warp 0.4 macro");
+        let id = workspace["id"].as_str().unwrap();
+
+        let get = warp_route_with_query!(
+            db.clone(), GetWorkspace, get, ("api" / "workspace")
+        )
+        .recover(handle_rejection);
+        let response = warp::test::request()
+            .path(&format!("/api/workspace?id={id}"))
+            .reply(&get)
+            .await;
+        assert_eq!(response.status(), warp::http::StatusCode::OK);
+        let fetched: serde_json::Value = serde_json::from_slice(response.body()).unwrap();
+        assert_eq!(fetched, workspace);
+
+        let malformed = warp::test::request()
+            .method("POST")
+            .path("/api/workspaces")
+            .header("content-type", "application/json")
+            .body("{")
+            .reply(&create)
+            .await;
+        assert_eq!(malformed.status(), warp::http::StatusCode::BAD_REQUEST);
+        let wrong_method = warp::test::request()
+            .method("DELETE")
+            .path("/api/workspaces")
+            .reply(&list)
+            .await;
+        assert_eq!(wrong_method.status(), warp::http::StatusCode::METHOD_NOT_ALLOWED);
+        let extra_segment = warp::test::request()
+            .path("/api/workspaces/extra")
+            .reply(&list)
+            .await;
+        assert_eq!(extra_segment.status(), warp::http::StatusCode::NOT_FOUND);
+        db.close().await.unwrap();
+    }
 }

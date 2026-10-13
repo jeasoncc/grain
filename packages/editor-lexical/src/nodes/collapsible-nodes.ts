@@ -32,7 +32,7 @@ type SerializedCollapsibleContainerNode = Spread<
 export class CollapsibleContainerNode extends ElementNode {
   __open: boolean;
 
-  constructor(open: boolean, key?: NodeKey) {
+  constructor(open = true, key?: NodeKey) {
     super(key);
     this.__open = open;
   }
@@ -79,7 +79,7 @@ export class CollapsibleContainerNode extends ElementNode {
   }
 
   static importJSON(json: SerializedCollapsibleContainerNode): CollapsibleContainerNode {
-    return $createCollapsibleContainerNode(json.open);
+    return $createCollapsibleContainerNode(json.open).updateFromJSON(json);
   }
 
   exportDOM(): DOMExportOutput {
@@ -162,8 +162,8 @@ export class CollapsibleTitleNode extends ElementNode {
     };
   }
 
-  static importJSON(): CollapsibleTitleNode {
-    return $createCollapsibleTitleNode();
+  static importJSON(json: SerializedCollapsibleTitleNode): CollapsibleTitleNode {
+    return $createCollapsibleTitleNode().updateFromJSON(json);
   }
 
   exportDOM(): DOMExportOutput {
@@ -234,8 +234,8 @@ export class CollapsibleContentNode extends ElementNode {
     return {};
   }
 
-  static importJSON(): CollapsibleContentNode {
-    return $createCollapsibleContentNode();
+  static importJSON(json: SerializedCollapsibleContentNode): CollapsibleContentNode {
+    return $createCollapsibleContentNode().updateFromJSON(json);
   }
 
   exportDOM(): DOMExportOutput {

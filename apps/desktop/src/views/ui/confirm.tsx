@@ -1,5 +1,5 @@
 import type React from "react"
-import { createContext, useCallback, useContext, useMemo, useState } from "react"
+import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/views/ui/button"
 import {
 	Dialog,
@@ -15,60 +15,138 @@ export interface ConfirmOptions {
 	description?: string
 	confirmText?: string
 	cancelText?: string
+	readonly signal?: AbortSignal
 }
 
 interface ConfirmContextValue {
 	confirm: (options: ConfirmOptions) => Promise<boolean>
 }
 
+interface PendingConfirmation {
+	readonly options: ConfirmOptions
+	readonly origin: HTMLElement | null
+	readonly selection: {
+		readonly anchor: Node
+		readonly anchorOffset: number
+		readonly anchorValue: string | null
+		readonly focus: Node
+		readonly focusOffset: number
+		readonly focusValue: string | null
+	} | null
+	accepted: boolean
+	readonly resolve: (value: boolean) => void
+	readonly onAbort: () => void
+}
+
 const ConfirmContext = createContext<ConfirmContextValue | null>(null)
 
 export function ConfirmProvider({ children }: { children: React.ReactNode }) {
-	const [open, setOpen] = useState(false)
-	const [resolver, setResolver] = useState<((v: boolean) => void) | null>(null)
-	const [opts, setOpts] = useState<ConfirmOptions>({})
+	const active = useRef(true)
+	const pending = useRef<PendingConfirmation | null>(null)
+	const closed = useRef<PendingConfirmation | null>(null)
+	const [request, setRequest] = useState<PendingConfirmation | null>(null)
 
-	const confirm = useCallback((options: ConfirmOptions) => {
-		setOpts(options)
-		setOpen(true)
-		return new Promise<boolean>((resolve) => setResolver(() => resolve))
+	const settle = useCallback((current: PendingConfirmation, accepted: boolean) => {
+		if (pending.current !== current) {
+			return
+		}
+		pending.current = null
+		current.accepted = accepted
+		closed.current = current
+		current.options.signal?.removeEventListener("abort", current.onAbort)
+		current.resolve(accepted)
+		if (active.current) {
+			setRequest(null)
+		}
 	}, [])
 
-	const onClose = useCallback(() => {
-		setOpen(false)
-		setOpts({})
-		setResolver(null)
-	}, [])
+	const confirm = useCallback(
+		(options: ConfirmOptions) => {
+			if (!active.current || pending.current || options.signal?.aborted) {
+				return Promise.resolve(false)
+			}
+			const { promise, resolve } = Promise.withResolvers<boolean>()
+			const focused = document.activeElement
+			const origin = focused instanceof HTMLElement
+				? focused.closest('[data-org-confirm-dialog]') ? closed.current?.origin ?? null : focused
+				: null
+			const selection = document.getSelection()
+			const anchor = selection?.anchorNode
+			const focus = selection?.focusNode
+			const savedSelection = focused?.closest("[data-org-confirm-dialog]") ? closed.current?.selection ?? null
+				: anchor && focus ? {
+					anchor, anchorOffset: selection!.anchorOffset, anchorValue: anchor.nodeValue,
+					focus, focusOffset: selection!.focusOffset, focusValue: focus.nodeValue,
+				} : null
+			const current: PendingConfirmation = {
+				onAbort: () => settle(current, false),
+				options,
+				origin,
+				selection: savedSelection,
+				accepted: false,
+				resolve,
+			}
+			pending.current = current
+			options.signal?.addEventListener("abort", current.onAbort, { once: true })
+			setRequest(current)
+			return promise
+		},
+		[settle],
+	)
+
+	useLayoutEffect(() => {
+		active.current = true
+		return () => {
+			active.current = false
+			if (pending.current) {
+				settle(pending.current, false)
+			}
+		}
+	}, [settle])
 
 	const value = useMemo(() => ({ confirm }), [confirm])
 
 	return (
 		<ConfirmContext.Provider value={value}>
 			{children}
-			<Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-				<DialogContent>
+			<Dialog
+				open={request !== null}
+				onOpenChange={(open) => !open && request && settle(request, false)}
+			>
+				<DialogContent data-org-confirm-dialog="" onCloseAutoFocus={(event) => {
+					event.preventDefault()
+					const previous = closed.current
+					closed.current = null
+					if (!previous || pending.current || !active.current || previous.options.signal?.aborted ||
+						!previous.origin?.isConnected) return
+					const focused = document.activeElement
+					if (focused && focused !== document.body && !focused.closest('[data-org-confirm-dialog]')) return
+					previous.origin.focus({ preventScroll: true })
+					const saved = previous.selection
+					if (!previous.accepted && saved?.anchor.isConnected && saved.focus.isConnected &&
+						saved.anchor.nodeValue === saved.anchorValue && saved.focus.nodeValue === saved.focusValue &&
+						saved.anchorOffset <= (saved.anchorValue?.length ?? saved.anchor.childNodes.length) &&
+						saved.focusOffset <= (saved.focusValue?.length ?? saved.focus.childNodes.length))
+						document.getSelection()?.setBaseAndExtent(saved.anchor, saved.anchorOffset, saved.focus, saved.focusOffset)
+				}}>
 					<DialogHeader>
-						<DialogTitle>{opts.title ?? "请确认"}</DialogTitle>
-						{opts.description ? <DialogDescription>{opts.description}</DialogDescription> : null}
+						<DialogTitle>{request?.options.title ?? "请确认"}</DialogTitle>
+						{request?.options.description ? (
+							<DialogDescription>{request.options.description}</DialogDescription>
+						) : null}
 					</DialogHeader>
 					<DialogFooter>
 						<Button
 							variant="outline"
-							onClick={() => {
-								resolver?.(false)
-								onClose()
-							}}
+							onClick={() => request && settle(request, false)}
 						>
-							{opts.cancelText ?? "取消"}
+							{request?.options.cancelText ?? "取消"}
 						</Button>
 						<Button
 							variant="destructive"
-							onClick={() => {
-								resolver?.(true)
-								onClose()
-							}}
+							onClick={() => request && settle(request, true)}
 						>
-							{opts.confirmText ?? "确认"}
+							{request?.options.confirmText ?? "确认"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

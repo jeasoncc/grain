@@ -12,7 +12,7 @@ const createRule = ESLintUtils.RuleCreator(
 
 export default createRule({
 	create(context) {
-		const filename = context.getFilename()
+		const filename = context.filename
 		const currentLayer = getArchitectureLayer(filename)
 
 		// Only apply to pure layers

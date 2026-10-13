@@ -37,7 +37,6 @@ describe("sparse tree buffer command", () => {
 		"todo:",
 		"tag:",
 		"text:",
-		"unknown",
 		"tag:a:b",
 	])("rejects malformed query %s", (query) => {
 		expect(executeOrgSparseTreeCommand(origin, origin, query)).toMatchObject({

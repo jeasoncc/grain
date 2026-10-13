@@ -12,14 +12,14 @@
  * - TagPickerPlugin - #标签 (自定义)
  *
  * 历史记录隔离说明 (Requirements 6.3):
- * - 每个 Editor 组件创建独立的 LexicalComposer 实例
- * - HistoryPlugin 在每个 LexicalComposer 上下文中创建独立的历史状态
+ * - 每个 Editor 组件创建独立的 LexicalExtensionComposer 实例
+ * - HistoryPlugin 在每个编辑器上下文中创建独立的历史状态
  * - 这确保了每个编辑器标签页的 undo/redo 操作相互独立
  *
  * @see https://github.com/facebook/lexical/tree/main/packages/lexical-playground
  */
 
-import { LexicalComposer } from "@lexical/react/LexicalComposer";
+import { LexicalExtensionComposer } from "@lexical/react/LexicalExtensionComposer";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
@@ -35,17 +35,18 @@ import { AutoLinkPlugin } from "@lexical/react/LexicalAutoLinkPlugin";
 import { ClearEditorPlugin } from "@lexical/react/LexicalClearEditorPlugin";
 import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
 import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
-import { HorizontalRulePlugin } from "@lexical/react/LexicalHorizontalRulePlugin";
+import { HorizontalRuleExtension } from "@lexical/extension";
+import { CodePrismExtension } from "@lexical/code-prism";
 import { TRANSFORMERS, CHECK_LIST } from "@lexical/markdown";
-import type { EditorState, SerializedEditorState } from "lexical";
+import { $createParagraphNode, $getRoot, defineExtension, type EditorState, type LexicalEditor, type SerializedEditorState } from "lexical";
 import type React from "react";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 
 import { EditorNodes } from "../nodes";
 import MentionsPlugin, { type MentionEntry } from "../plugins/mentions-plugin";
 import MentionTooltipPlugin, { type MentionTooltipPluginProps } from "../plugins/mention-tooltip-plugin";
 import TagTransformPlugin from "../plugins/tag-transform-plugin";
-import CodeHighlightPlugin from "../plugins/code-highlight-plugin";
+import EditorLifecyclePlugin from "./EditorLifecyclePlugin";
 import CodeBlockShortcutPlugin from "../plugins/code-block-shortcut-plugin";
 import PrismLanguagesPlugin from "../plugins/prism-languages-plugin";
 import ChecklistShortcutPlugin from "../plugins/checklist-shortcut-plugin";
@@ -81,6 +82,8 @@ export interface EditorProps {
   WikiHoverPreview?: MentionTooltipPluginProps["WikiHoverPreview"];
   /** 标题折叠图标风格 */
   foldIconStyle?: FoldIconStyle;
+  /** Mount-scoped editor binding for the document adapter. */
+  editorRef?: React.RefObject<LexicalEditor | null>;
 }
 
 /**
@@ -144,6 +147,7 @@ export default function Editor({
   useWikiHoverPreview,
   WikiHoverPreview,
   foldIconStyle,
+  editorRef,
 }: EditorProps): React.ReactElement {
   // Support both new and deprecated prop names
   const entries = mentionEntries ?? wikiEntries;
@@ -159,18 +163,22 @@ export default function Editor({
     [onChange]
   );
 
-  // Initial configuration
-  const initialConfig = {
+  // A new extension reference recreates the editor, so keep it mount-scoped.
+  const [extension] = useState(() => defineExtension({
+    name: "@grain/editor-lexical/document",
     namespace,
     theme,
     nodes: EditorNodes,
+    dependencies: [CodePrismExtension, HorizontalRuleExtension],
     editable: !readOnly,
     onError,
-    editorState: initialState || undefined,
-  };
+    $initialEditorState: initialState || (() => {
+      $getRoot().append($createParagraphNode());
+    }),
+  }));
 
   return (
-    <LexicalComposer initialConfig={initialConfig}>
+    <LexicalExtensionComposer extension={extension} contentEditable={null}>
       <div className="relative flex flex-col h-full">
         {/* Editor body */}
         <div className="relative flex-1 overflow-auto">
@@ -200,7 +208,7 @@ export default function Editor({
         {/* Built-in plugins */}
         {/* 
           HistoryPlugin - Undo/Redo functionality
-          Each LexicalComposer instance has independent history state,
+          Each LexicalExtensionComposer instance has independent history state,
           ensuring undo/redo operations are isolated between tabs.
           @see Requirements 6.3
         */}
@@ -211,7 +219,7 @@ export default function Editor({
         <LinkPlugin />
         <ClickableLinkPlugin />
         <AutoLinkPlugin matchers={MATCHERS} />
-        <HorizontalRulePlugin />
+        <EditorLifecyclePlugin editorRef={editorRef} readOnly={readOnly} />
         <TablePlugin />
         <ClearEditorPlugin />
         <MarkdownShortcutPlugin transformers={[...TRANSFORMERS, CHECK_LIST]} />
@@ -232,7 +240,6 @@ export default function Editor({
           />
         )}
         <TagTransformPlugin />
-        <CodeHighlightPlugin />
         <CodeBlockShortcutPlugin />
         <PrismLanguagesPlugin />
         <ChecklistShortcutPlugin />
@@ -243,6 +250,6 @@ export default function Editor({
         <CollapsiblePlugin />
         <HeadingFoldPlugin foldIconStyle={foldIconStyle} />
       </div>
-    </LexicalComposer>
+    </LexicalExtensionComposer>
   );
 }

@@ -117,7 +117,9 @@ export default createRule({
 							if (
 								prop.type === "Property" &&
 								prop.key.type === "Identifier" &&
-								containsSensitiveKeyword(prop.key.name)
+								containsSensitiveKeyword(prop.key.name) &&
+								// Negation exposes only a boolean, not the credential value.
+								!(prop.value.type === "UnaryExpression" && prop.value.operator === "!")
 							) {
 								context.report({
 									messageId: "sensitiveLogging",

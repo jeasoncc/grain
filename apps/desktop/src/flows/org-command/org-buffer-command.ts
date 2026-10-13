@@ -1,4 +1,5 @@
-import { headingPositionAt, orgBlockRanges, type OrgTextEdit } from "@/pipes/org/org-text.pipe"
+import { headingPositionAt, orgBlockRanges, type OrgTextEdit, type OrgTextEditBatch } from "@/pipes/org/org-text.pipe"
+import type { OrgLoggingNoteRequest } from "@/pipes/org/org-todo-logging.pipe"
 
 export interface OrgBufferCommandContext {
 	readonly relativePath: string
@@ -21,10 +22,14 @@ export type OrgBufferCommandPreparation =
 export interface OrgBufferViewPayload {
 	readonly kind: "sparse-tree"
 	readonly query: string | null
+	/** Captured data-only locale comparison; never a Source or file-effect authority. */
+	readonly nativeContext?: import("@/pipes/org/org-sparse-tree.pipe").OrgSparseTreeNativeContext
 }
 export type OrgBufferCommandResult =
 	| { readonly kind: "view"; readonly view: OrgBufferViewPayload }
 	| { readonly kind: "edit"; readonly edit: OrgTextEdit }
+	| { readonly kind: "batch"; readonly batch: OrgTextEditBatch }
+	| { readonly kind: "needs-note"; readonly request: OrgLoggingNoteRequest }
 	| { readonly kind: "no-change"; readonly reason: string }
 	| OrgBufferCommandRejected
 
@@ -44,19 +49,32 @@ export interface OrgBufferCommand {
 	) => OrgBufferCommandResult
 }
 
+const headingGuards = new WeakMap<OrgBufferCommandContext, {
+	readonly content: string
+	readonly cursor: number
+	readonly result: OrgBufferCommandRejected | null
+}>()
+const rememberHeadingGuard = (context: OrgBufferCommandContext, result: OrgBufferCommandRejected | null) => {
+	const captured = result ? Object.freeze(result) : null
+	headingGuards.set(context, { content: context.content, cursor: context.cursor, result: captured })
+	return captured
+}
+
 export const guardOrgHeadingCommand = (
 	context: OrgBufferCommandContext,
 ): OrgBufferCommandRejected | null => {
+	const cached = headingGuards.get(context)
+	if (cached && cached.content === context.content && cached.cursor === context.cursor) return cached.result
 	if (
 		!Number.isInteger(context.cursor) ||
 		context.cursor < 0 ||
 		context.cursor > context.content.length
 	) {
-		return {
+		return rememberHeadingGuard(context, {
 			kind: "rejected",
 			reason: "invalid-cursor",
 			message: "The cursor is outside the Org document.",
-		}
+		})
 	}
 	if (
 		orgBlockRanges(context.content).some(
@@ -65,20 +83,20 @@ export const guardOrgHeadingCommand = (
 				(context.cursor < block.to || (!block.closed && context.cursor === block.to)),
 		)
 	) {
-		return {
+		return rememberHeadingGuard(context, {
 			kind: "rejected",
 			reason: "inside-block",
 			message: "This heading command is unavailable inside an Org block.",
-		}
+		})
 	}
 	if (!headingPositionAt(context.content, context.cursor)) {
-		return {
+		return rememberHeadingGuard(context, {
 			kind: "rejected",
 			reason: "no-heading",
 			message: "The cursor does not belong to an Org heading.",
-		}
+		})
 	}
-	return null
+	return rememberHeadingGuard(context, null)
 }
 
 export const guardOrgCommandOrigin = (

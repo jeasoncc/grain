@@ -1,81 +1,100 @@
-import { useBlocker } from "@tanstack/react-router"
+import { useBlocker, useNavigate } from "@tanstack/react-router"
 import * as E from "fp-ts/Either"
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react"
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react"
+import { useConfirm } from "@/views/ui/confirm"
 import {
-	archiveOrgSubtreeFlow,
-	areLegacyMigrationPlansEquivalent,
 	captureOrgTodoFlow,
-	captureOrgEntryFlow,
-	clearOrgDerivedIndexFlow,
 	createOrgDirectoryFlow,
 	deleteOrgDocumentFlow,
-	executeLegacyMigrationFlow,
 	moveOrgDocumentFlow,
 	openDefaultOrgWorkspaceFlow,
 	openOrgDocumentFlow,
-	prepareLegacyMigrationFlow,
-	rebuildOrgDerivedIndexFlow,
-	refileOrgSubtreeFlow,
-	readOrgRefileTargetFlow,
 	reopenDefaultOrgWorkspaceFlow,
-	resolveOrgLinkTargetFlow,
-	runLegacyMigrationRecoveryDrillFlow,
 	saveOrgDocumentFlow,
 	scanOrgWorkspaceFlow,
 	selectOrgWorkspaceFlow,
-	verifyLegacyMigrationRecoveryFlow,
-} from "@/flows/org-workspace"
+} from "@/flows/org-workspace/org-workspace.flow"
+import { captureOrgEntryFlow, readOrgCaptureTargetFlow } from "@/flows/org-workspace/org-capture-entry.flow"
+import { createOrgFreshDocumentFlow } from "@/flows/org-workspace/org-fresh-document-create.flow"
+import type { OrgDiaryOutcome } from "@/pipes/org/org-diary.pipe"
+import { planOrgDiary } from "@/pipes/org/org-diary.pipe"
+import { orgNoteSource, validateOrgRoamNoteCapture } from "@/pipes/org/org-note.pipe"
+import type { OrgNoteOutcome, OrgRoamNotePlan } from "@/pipes/org/org-note.pipe"
+import type { OrgFreshDocumentOutcome, OrgFreshDocumentPlan } from "@/types/org/org-fresh-document.types"
+import {
+	clearOrgDerivedIndexFlow,
+	rebuildOrgDerivedIndexFlow,
+} from "@/flows/org-workspace/org-derived-index.flow"
+import {
+	archiveOrgSubtreeFlow,
+	refileOrgSubtreeFlow,
+} from "@/flows/org-workspace/org-subtree-refile.flow"
+import { readOrgRefileTargetFlow } from "@/flows/org-workspace/org-refile-target.flow"
+import { resolveOrgLinkTargetFlow } from "@/flows/org-workspace/org-link-target.flow"
 import {
 	saveAllOrgDocumentsFlow,
 	type OrgSaveAllCapture,
 } from "@/flows/org-workspace/org-save-all.flow"
 import { saveOrgWorkingCopyFlow } from "@/flows/org-workspace/org-save-working-copy.flow"
+import { runOrgRemarkMutationFlow } from "@/flows/org-workspace/org-remark.flow"
+import { orgRemarkNotesPath } from "@/pipes/org/org-remark.pipe"
+import type { OrgRemarkAction } from "@/pipes/org/org-remark.types"
+import type {
+	OrgRemarkActionOutcome,
+	OrgRemarkNotesContext,
+	OrgRemarkReadOutcome,
+	OrgRemarkSourceCapture,
+} from "@/types/org/org-remark-workflow.types"
 import type { OrgBufferRuntime } from "@/flows/org-editor-runtime"
-import {
-	createOrgParkedWorkingCopyReservoir,
-	type OrgParkedWorkingCopy,
-} from "@/flows/org-editor-runtime/org-parked-working-copy-reservoir"
-import { createOrgBufferIdentityRegistry } from "@/flows/org-editor-runtime/org-buffer-identity-registry"
-import type { OrgWorkspaceRuntimePorts } from "@/flows/org-editor-runtime/org-workspace-runtime-registry"
+import { createOrgRemarkTracker } from "@/flows/org-editor-runtime/org-remark-tracker"
+import { createOrgWorkspaceEffectOwner } from "@/flows/org-editor-runtime/org-workspace-effect-owner"
+import { createOrgWorkspaceSessionOwner, type OrgWorkspaceFileCapture } from "@/flows/org-editor-runtime/org-workspace-session-owner"
+import type { OrgFileDiskState, OrgFileReview, OrgFileReviewChoice, OrgFileReviewOutcome } from "@/flows/org-editor-runtime/org-file-review.types"
 import { formatOrgLocalTimestamp } from "@/pipes/org/org-todo-logging.pipe"
+import { createOrgClockOwner, type OrgClockOwner } from "@/flows/org-workspace/org-clock-owner"
 import type { OrgAgendaEntry } from "@/pipes/org/org-agenda.pipe"
 import type {
 	OrgAgendaActionOutcome,
 	OrgAgendaCommand,
-	OrgAgendaPlanningPreparation,
+	OrgAgendaPreparation,
 	OrgAgendaExecutionOptions,
 	OrgAgendaOperation,
 } from "@/types/org/org-agenda-command.types"
 import { runOrgAgendaOperationFlow } from "@/flows/org-workspace/org-agenda-command.flow"
-import { createOrgWorkspaceRuntimeRegistry } from "@/flows/org-editor-runtime/org-workspace-runtime-registry"
 import { orgWorkspaceEventAdapter } from "@/io/event/org-workspace-event.adapter"
 import {
+	isAuthorizedOrgPathAbsent,
 	releaseOrgWorkspace,
 	unwatchOrgWorkspace,
 	watchOrgWorkspace,
 } from "@/io/file/org-file.repository"
 import {
 	guardOrgWorkingCopyBaseline,
-	planOrgWorkingCopyAck,
 } from "@/pipes/editor/org-working-copy-ack.pipe"
-import type { OrgRuntimeCommitContext } from "@/types/editor/org-runtime-owner.interface"
-import type { OrgLinkClickTarget } from "@/pipes/org"
+import { validateOrgCaptureInput, validateOrgCaptureTarget, type OrgLinkClickTarget } from "@/pipes/org"
 import type {
 	OrgRefileTargetSnapshot,
 	OrgRefileHeadingTarget,
 } from "@/pipes/org/org-refile-target.pipe"
-import { deriveOrgArchivePath, isSafeRelativeOrgPath } from "@/pipes/org/org-subtree-refile.pipe"
+import { deriveOrgArchivePath, isSafeRelativeOrgPath, type OrgRefileLoggingIntent } from "@/pipes/org/org-subtree-refile.pipe"
 import type {
 	OrgDocumentEntryInterface,
 	OrgDocumentInterface,
 	OrgWorkspaceInterface,
+	OrgDocumentWriteResultInterface,
+	OrgOriginalRecoveryEntryInterface,
 } from "@/types/org"
-import type { WorkspaceInterface } from "@/types/workspace"
+import type { LegacyMigrationWorkspace } from "@/flows/org-workspace/legacy-migration.flow"
 import { createDebouncedOrgWorkspaceRefresh, matchesOrgWorkspaceWatch } from "./org-workspace-watch"
 import { useOrgWindowClose } from "./use-org-window-close"
+import { orgQuerySourcesFromController } from "./org-query-sources"
+import type { OrgCaptureTarget, OrgCaptureTargetPreview, OrgCaptureRequest } from "@/types/editor/org-capture.interface"
+import { type OrgNativeWindowSnapshot, type OrgNativeWindowCoordinator, createOrgNativeWindowCoordinator } from "@/flows/org-native-window/org-native-window-coordinator"
+import { isTauri } from "@tauri-apps/api/core"
+import { useApplicationTools } from "@/views/application/application-tool-provider"
+import { useSettings } from "./use-settings"
 
 export const ORG_WORKSPACE_PREFERENCE_KEY = "grain:org-workspace-preference"
-export const ORG_AUTOSAVE_DELAY_MS = 1000
 const DEFAULT_ORG_WORKSPACE_PREFERENCE = "default"
 
 export interface OrgWorkspacePreferenceStorage {
@@ -120,19 +139,43 @@ export type OrgCaptureOutcome = {
 	readonly message?: string
 }
 
+export type OrgCaptureTargetOutcome =
+	| { readonly kind: "ready"; readonly target: OrgCaptureTarget; readonly expectedRevision: string; readonly preview: OrgCaptureTargetPreview }
+	| { readonly kind: "rejected"; readonly message: string }
+
 export type OrgRefileTargetOutcome =
 	| { readonly kind: "ready"; readonly snapshot: OrgRefileTargetSnapshot }
 	| { readonly kind: "rejected"; readonly message: string }
 
 export interface OrgRefileTargetSelection {
-	readonly expectedTargetRevision: string
+	readonly snapshot: OrgRefileTargetSnapshot
 	readonly targetHeading?: Pick<OrgRefileHeadingTarget, "from" | "heading">
+	readonly logging?: OrgRefileLoggingIntent
 }
 
 export type OrgSubtreeTransferOutcome =
 	| { readonly kind: "success"; readonly message?: string }
 	| { readonly kind: "rejected"; readonly message: string }
 	| { readonly kind: "partial"; readonly message: string }
+
+export interface OrgCapturedBufferTransfer {
+	readonly readRefileTarget: (path: string, signal?: AbortSignal) => Promise<OrgRefileTargetOutcome>
+	readonly refileSubtree: (cursor: number, path: string, selection?: OrgRefileTargetSelection) => Promise<OrgSubtreeTransferOutcome>
+	readonly archiveSubtree: (cursor: number) => Promise<OrgSubtreeTransferOutcome>
+}
+export interface OrgCapturedBufferNavigation {
+	readonly openOrgLink: (target: OrgLinkClickTarget) => Promise<boolean>
+	readonly createDiary: () => Promise<OrgDiaryOutcome>
+	readonly openDocumentAt: (relativePath: string, line: number, expectedRevision?: string | null,
+		isTargetCurrent?: (phase: "before" | "after") => boolean, signal?: AbortSignal) => Promise<boolean>
+}
+interface OrgTransferSource {
+	readonly capture: OrgWorkspaceFileCapture
+	readonly isCurrent: () => boolean
+}
+interface OrgNavigationSource extends OrgTransferSource {
+	readonly navigate: (bufferId: string, line: number) => Promise<boolean>
+}
 
 export type OrgSaveAllOutcome =
 	| {
@@ -176,11 +219,19 @@ export interface OrgLiveBuffer {
 export type {
 	OrgAgendaActionOutcome,
 	OrgAgendaCommand,
-	OrgAgendaPlanningPreparation,
+	OrgAgendaPreparation,
 	OrgAgendaExecutionOptions,
 } from "@/types/org/org-agenda-command.types"
 
+export interface OrgBufferEffectState {
+	readonly busy: boolean
+	readonly loading: boolean
+	readonly saving: boolean
+	readonly readOnly: boolean
+}
+
 export interface OrgWorkspaceController {
+	readonly clock: OrgClockOwner
 	readonly executeAgendaCommand: (
 		entry: OrgAgendaEntry,
 		command: OrgAgendaCommand,
@@ -188,26 +239,26 @@ export interface OrgWorkspaceController {
 		options?: OrgAgendaExecutionOptions,
 	) => Promise<OrgAgendaActionOutcome>
 	/** Revalidates the current target without allocating a buffer or changing provenance. */
-	readonly prepareAgendaPlanning: (
+	readonly prepareAgendaCommand: (
 		entry: OrgAgendaEntry,
-		kind: "schedule" | "deadline",
+		kind: "schedule" | "deadline" | "todo-state",
 		signal?: AbortSignal,
-	) => Promise<OrgAgendaPlanningPreparation>
-	readonly actOnAgendaEntry: (
-		entry: OrgAgendaEntry,
-		signal?: AbortSignal,
-	) => Promise<OrgAgendaActionOutcome>
+	) => Promise<OrgAgendaPreparation>
 	/** Live working-copy views; .org refresh/watch/CAS remains the disk authority. */
 	readonly liveBuffers: readonly OrgLiveBuffer[]
 	/** Mounted view lease permitting exact-source edits to its parked canonical runtime. */
 	readonly registerBufferWindow: (windowId: string, bufferId: string) => () => void
 	/** Opaque exact-registration authority; replacement with the same IDs cannot revive it. */
 	readonly captureBufferWindowPermit: (windowId: string, bufferId: string) => () => boolean
-	/**
-	 * Synchronous memory-only context handoff, preserving canonical history.
-	 * Returns false during file effects: callers must defer cross-buffer focus/commands
-	 * and visibly lock the non-current view until the captured effect owner settles.
-	 */
+	/** File effect owner captured independently of later buffer/window focus. */
+	readonly captureBufferSave: (bufferId: string) => (() => Promise<boolean>) | null
+	/** Captures the exact mounted file/window before palette focus changes. Read-only until an explicit choice. */
+	readonly captureFileReview: (bufferId: string, windowId: string, relativePath?: string) => ((signal?: AbortSignal) => Promise<OrgFileReviewOutcome>) | null
+	readonly protectedPaths: readonly string[]
+	readonly acceptFileReview: (review: OrgFileReview, choice: OrgFileReviewChoice, discardConsent?: boolean, signal?: AbortSignal) => Promise<OrgFileReviewOutcome>
+	readonly cancelFileReview: (review: OrgFileReview) => void
+	readonly isFileReviewCurrent: (review: OrgFileReview) => boolean
+	/** Memory-only handoff; disjoint file effects do not block focus or invalidate their ACKs. */
 	readonly activateOpenBuffer: (bufferId: string) => boolean
 	readonly workspaceSessionId: string | null
 	readonly activeBufferId: string | null
@@ -223,6 +274,17 @@ export interface OrgWorkspaceController {
 	/** Ordinary/batch saves capture source without disabling typing or composition. */
 	readonly isEditorReadOnly: boolean
 	readonly isSaving: boolean
+	/** Aggregate IO state, for application exit and workspace replacement. */
+	readonly isWorkspaceBusy: boolean
+	/** Exclusive workspace barrier, not an unrelated file's save. */
+	readonly isWorkspaceBlocked: boolean
+	readonly getBufferEffectState: (bufferId: string) => OrgBufferEffectState | null
+	readonly nativeWindowsAvailable: boolean
+	readonly nativeWindows: OrgNativeWindowSnapshot["windows"]
+	readonly detachBuffer: (bufferId: string, originWindowId?: string) => Promise<string | null>
+	readonly attachNativeWindow: (label: string, generation: number, targetWindowId?: string) => Promise<boolean>
+	readonly rebindNativeWindow: (label: string, generation: number, bufferId: string) => Promise<boolean>
+	readonly closeNativeWindow: (label: string, generation: number) => Promise<boolean>
 	readonly error: string | null
 	readonly migrationStatus: string | null
 	readonly derivedIndexStatus: string | null
@@ -244,13 +306,29 @@ export interface OrgWorkspaceController {
 		relativePath: string,
 		line: number,
 		expectedRevision?: string | null,
+		isTargetCurrent?: (phase: "before" | "after") => boolean,
+		signal?: AbortSignal,
 	) => Promise<boolean>
 	readonly openOrgLink: (target: OrgLinkClickTarget) => Promise<boolean>
 	readonly createDocument: (relativePath: string) => Promise<void>
-	readonly captureEntry: (
-		entrySource: string,
-		targetRelativePath: string,
-	) => Promise<OrgCaptureOutcome>
+	readonly createDiary: () => Promise<OrgDiaryOutcome>
+	readonly createRoamNote: (
+		plan: OrgRoamNotePlan,
+		options?: { readonly open?: boolean },
+	) => Promise<OrgNoteOutcome>
+	readonly readRemarkNotes: (
+		source: OrgRemarkSourceCapture,
+		signal?: AbortSignal,
+		options?: { readonly mount?: boolean },
+	) => Promise<OrgRemarkReadOutcome>
+	readonly executeRemarkMutation: (
+		source: OrgRemarkSourceCapture,
+		notes: OrgRemarkNotesContext,
+		action: OrgRemarkAction,
+	) => Promise<OrgRemarkActionOutcome>
+	readonly saveRemarkNotes: (notes: OrgRemarkNotesContext) => Promise<OrgRemarkActionOutcome>
+	readonly readCaptureTarget: (target: OrgCaptureTarget, signal?: AbortSignal) => Promise<OrgCaptureTargetOutcome>
+	readonly captureEntry: (request: OrgCaptureRequest) => Promise<OrgCaptureOutcome>
 	readonly setTransientDirty: (id: string, dirty: boolean) => boolean
 	readonly captureTodo: (title: string, targetRelativePath?: string) => Promise<void>
 	readonly readRefileTarget: (path: string, signal?: AbortSignal) => Promise<OrgRefileTargetOutcome>
@@ -260,24 +338,28 @@ export interface OrgWorkspaceController {
 		target?: OrgRefileTargetSelection,
 	) => Promise<OrgSubtreeTransferOutcome>
 	readonly archiveSubtree: (cursor: number) => Promise<OrgSubtreeTransferOutcome>
+	readonly captureBufferTransfer: (bufferId: string, windowId: string, isCurrent: () => boolean) => OrgCapturedBufferTransfer | null
+	readonly captureBufferNavigation: (bufferId: string, windowId: string, isCurrent: () => boolean,
+		navigate: (bufferId: string, line: number) => Promise<boolean>) => OrgCapturedBufferNavigation | null
 	readonly createDirectory: (relativePath: string) => Promise<void>
 	readonly moveActiveDocument: (targetRelativePath: string) => Promise<void>
 	readonly deleteActiveDocument: () => Promise<void>
-	readonly migrateLegacyWorkspace: (legacyWorkspace: WorkspaceInterface) => Promise<void>
-	readonly verifyLegacyMigration: (legacyWorkspace: WorkspaceInterface) => Promise<void>
-	readonly runLegacyRecoveryDrill: (legacyWorkspace: WorkspaceInterface) => Promise<void>
+	readonly migrateLegacyWorkspace: (legacyWorkspace: LegacyMigrationWorkspace) => Promise<void>
+	readonly verifyLegacyMigration: (legacyWorkspace: LegacyMigrationWorkspace) => Promise<void>
+	readonly runLegacyRecoveryDrill: (legacyWorkspace: LegacyMigrationWorkspace) => Promise<void>
 	readonly rebuildDerivedIndex: () => Promise<void>
 	readonly clearDerivedIndex: () => Promise<void>
 	readonly updateContent: (content: string) => void
-	readonly saveDocument: () => Promise<void>
+	readonly saveDocument: () => Promise<boolean>
 	readonly saveAllDocuments: () => Promise<OrgSaveAllOutcome>
 	readonly closeActiveDocument: () => Promise<boolean>
 }
 
 const initialOrgContent = (relativePath: string): string => {
+	if (relativePath.endsWith("-notes.org")) return ""
 	const filename = relativePath.split("/").at(-1) ?? relativePath
 	const title = filename.replace(/\.org$/i, "")
-	return `#+title: ${title}\n\n`
+	return orgNoteSource(new Date(), crypto.randomUUID(), title)
 }
 
 const directoryAndAncestors = (relativePath: string): readonly string[] => {
@@ -302,6 +384,7 @@ const canRefreshWorkspace = (
 export const updateWorkspaceDocument = (
 	workspace: OrgWorkspaceInterface,
 	document: OrgDocumentInterface,
+	originalRecovery = document.originalRecovery,
 ): OrgWorkspaceInterface => {
 	const entry = { relativePath: document.relativePath, revision: document.revision }
 	const exists = workspace.documents.some(
@@ -309,6 +392,9 @@ export const updateWorkspaceDocument = (
 	)
 	return {
 		...workspace,
+		...(originalRecovery ? {
+			originalRecoveries: [...(workspace.originalRecoveries ?? []).filter((entry) => entry.relativePath !== originalRecovery.relativePath), originalRecovery],
+		} : {}),
 		documents: (exists
 			? workspace.documents.map((current) =>
 					current.relativePath === document.relativePath ? entry : current,
@@ -326,324 +412,315 @@ export const isDirtyCaptureTarget = (
 
 /** Runtime state for the file-authoritative Org workspace. */
 export const useOrgWorkspace = (): OrgWorkspaceController => {
-	const [workspace, setWorkspace] = useState<OrgWorkspaceInterface | null>(null)
-	const [activeDocument, setActiveDocument] = useState<OrgDocumentInterface | null>(null)
-	const [content, setContent] = useState("")
-	const latestContentRef = useRef("")
-	const [isDirty, setDirty] = useState(false)
-	const [isLoading, setLoadingState] = useState(false)
-	const loadingRef = useRef(false)
-	const setLoading = (value: boolean) => {
-		loadingRef.current = value
-		setLoadingState(value)
+	const confirm = useConfirm()
+	const autoSave = useSettings((state) => state.autoSave)
+	const autoSaveInterval = useSettings((state) => state.autoSaveInterval)
+	const autoSaveDelay = Number.isFinite(autoSaveInterval) ? autoSaveInterval * 1000 : Number.NaN
+	const navigate = useNavigate()
+	const { registry: toolRegistry, tools: applicationTools } = useApplicationTools()
+	const pendingTool = () => toolRegistry.getSnapshot().some((tool) => tool.state.pending)
+	const captureToolDiscardPermit = () => {
+		const captured = toolRegistry.getSnapshot().filter((tool) => tool.open)
+		return () => {
+			const current = toolRegistry.getSnapshot().filter((tool) => tool.open)
+			return current.length === captured.length && captured.every((tool) => current.some((next) =>
+				next.lease === tool.lease && next.windowId === tool.windowId &&
+				next.state.fence === tool.state.fence && next.state.dirty === tool.state.dirty && !next.state.pending,
+			))
+		}
 	}
-	const [isSaving, setSaving] = useState(false)
+	const confirmationLifetime = useRef<AbortController | null>(null)
+	if (!confirmationLifetime.current) confirmationLifetime.current = new AbortController()
+	const [workspace, setWorkspace] = useState<OrgWorkspaceInterface | null>(null)
 	const [error, setError] = useState<string | null>(null)
 	const [migrationStatus, setMigrationStatus] = useState<string | null>(null)
 	const [derivedIndexStatus, setDerivedIndexStatus] = useState<string | null>(null)
 	const [revealTarget, setRevealTarget] = useState<OrgWorkspaceRevealTarget | null>(null)
 	const revealRequestRef = useRef(0)
 	const linkRequestRef = useRef(0)
+	const linkAbortRef = useRef<AbortController | null>(null)
 	const refileTargetRequestRef = useRef(0)
-	const liveWorkspaceRef = useRef(workspace)
-	liveWorkspaceRef.current = workspace
+	const [refileTargets] = useState(() => new WeakMap<OrgRefileTargetSnapshot, {
+		readonly source: OrgWorkspaceFileCapture
+		readonly target: OrgWorkspaceFileCapture
+	}>())
+	const captureTargetRequestRef = useRef(0)
 	const openRequestRef = useRef(0)
-	const mutationInProgressRef = useRef(false)
-	const mutationOwnerRef = useRef<symbol | null>(null)
-	const agendaCommandOwnerRef = useRef<symbol | null>(null)
-	const rootApprovalOwnerRef = useRef<symbol | null>(null)
-	const finishMutation = (owner: symbol) => {
-		if (mutationOwnerRef.current !== owner) return
-		mutationOwnerRef.current = null
-		mutationInProgressRef.current = false
-		setSaving(false)
-		setLoading(false)
-	}
+	const [effects] = useState(() => createOrgWorkspaceEffectOwner({ emitError: setError }))
+	const effectSnapshot = useSyncExternalStore(effects.subscribe, effects.getSnapshot, effects.getSnapshot)
+	const finishMutation = effects.finish
 	const refreshWorkspaceRef = useRef<() => Promise<void>>(async () => undefined)
-	const saveAllOwnerRef = useRef<symbol | null>(null)
-	const saveInFlightRef = useRef<Promise<boolean> | null>(null)
-	const saveInFlightContentRef = useRef<string | null>(null)
-	// Latched per working copy; editing cannot make an uncertain write safe to retry.
-	const autosavePausedRef = useRef(new Set<string>())
 	const restoreAttemptedRef = useRef(false)
 	const refreshRetryTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 	const workspaceRoot = workspace?.rootPath ?? null
-	const [workspaceSessionId, setWorkspaceSessionId] = useState<string | null>(null)
-	const sessionRef = useRef<string | null>(null)
-	const grantRef = useRef<OrgWorkspaceInterface | null>(null)
-	const activationRef = useRef(0)
-	const mountedRef = useRef(true)
-	const nativeCloseReadyRef = useRef(false)
-	const originGrant = grantRef.current
+	const [session] = useState(() =>
+		createOrgWorkspaceSessionOwner({
+			effects,
+			emitError: setError,
+			releaseGrant: async (grant) => releaseOrgWorkspace(grant.rootPath, grant.capabilityToken!)(),
+		}),
+	)
+	const [clock] = useState(createOrgClockOwner)
+	const sessionSnapshot = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot)
+	const {
+		document: activeDocument,
+		source: content,
+		isDirty,
+		sessionId: workspaceSessionId,
+		activeRuntime: activeBufferRuntime,
+	} = sessionSnapshot
+	const focusedEffect = activeDocument ? effects.getFileSnapshot(activeDocument.relativePath) : null
+	const isLoading = focusedEffect?.loading ?? effectSnapshot.globalLoading
+	const isSaving = focusedEffect?.saving ?? false
+	const originGrant = sessionSnapshot.grant
 	const originSession = workspaceSessionId
-	const originActivation = activationRef.current
+	const originActivation = sessionSnapshot.activation
 	const originPath = activeDocument?.relativePath ?? null
-	const isCurrentOrigin = () =>
-		parkedReservoir.canMutate() &&
-		nativeCloseReadyRef.current &&
-		mountedRef.current &&
-		grantRef.current === originGrant &&
-		sessionRef.current === originSession &&
-		activationRef.current === originActivation &&
-		(activeRef.current?.relativePath ?? null) === originPath
-	const registryRef = useRef<ReturnType<typeof createOrgWorkspaceRuntimeRegistry> | null>(null)
-	if (!registryRef.current) registryRef.current = createOrgWorkspaceRuntimeRegistry()
-	const registry = registryRef.current
-	const runtimeIncarnationsRef = useRef(new WeakMap<OrgBufferRuntime, string>())
-	const runtimeIncarnation = (runtime: OrgBufferRuntime): string => {
-		let incarnation = runtimeIncarnationsRef.current.get(runtime)
-		if (!incarnation) {
-			incarnation = crypto.randomUUID()
-			runtimeIncarnationsRef.current.set(runtime, incarnation)
-		}
-		return incarnation
-	}
-	const bufferWindowLeasesRef = useRef(
-		new Map<
-			string,
-			{
-				readonly bufferId: string
-				readonly grant: OrgWorkspaceInterface
-				readonly session: string
-			}
-		>(),
-	)
-	const [activeBufferRuntime, setActiveBufferRuntime] = useState<OrgBufferRuntime | null>(null)
-	const transientDirtyRef = useRef(new Map<string, boolean>())
-	const transientGenerationRef = useRef(0)
-	const identityRegistryRef = useRef<ReturnType<typeof createOrgBufferIdentityRegistry> | null>(
-		null,
-	)
-	if (!identityRegistryRef.current) identityRegistryRef.current = createOrgBufferIdentityRegistry()
-	const bufferIdentity = identityRegistryRef.current
-	const parkedReservoirRef = useRef<ReturnType<typeof createOrgParkedWorkingCopyReservoir> | null>(
-		null,
-	)
-	if (!parkedReservoirRef.current)
-		parkedReservoirRef.current = createOrgParkedWorkingCopyReservoir(bufferIdentity, (failure) => {
-			if (mountedRef.current) setError(`Parked observer failure: ${failure.kind}`)
-		})
-	const parkedReservoir = parkedReservoirRef.current
-	useSyncExternalStore(
-		parkedReservoir.subscribe,
-		parkedReservoir.getSnapshot,
-		parkedReservoir.getSnapshot,
-	)
-	const identityScope =
-		originGrant && originSession ? { grant: originGrant, sessionId: originSession } : null
-	const conflictsRef = useRef(new Set<string>())
-	const editGenerationRef = useRef(0)
-	const activeRef = useRef(activeDocument)
-	activeRef.current = activeDocument
-	const [, publishBuffers] = useState(0)
-	const bufferIdFor = useCallback(
-		(path: string): string =>
-			bufferIdentity.ensure(
-				originGrant && originSession ? { grant: originGrant, sessionId: originSession } : null,
-				path,
-			),
-		[bufferIdentity, originGrant, originSession],
-	)
-	const mirrorSource = (value: string) => {
-		if (latestContentRef.current === value) return
-		editGenerationRef.current += 1
-		latestContentRef.current = value
-		setContent(value)
-		setDirty(value !== activeRef.current?.content)
-	}
-	const runtimeKey = (id: string) => ({
-		workspaceSessionId: sessionRef.current ?? "",
-		bufferId: id,
-	})
-	const runtimeFor = (id: string) => registry.get(runtimeKey(id))
-	const retireBuffer = (path: string) => {
-		const id = bufferIdentity.lookup(identityScope, path)
-		if (id) {
-			parkedReservoir.retire(identityScope, id)
-			registry.retire(runtimeKey(id))
-		}
-		bufferIdentity.retire(identityScope, path)
-	}
-	const installParkedSource = (path: string, value: string) => {
-		const id = bufferIdentity.lookup(identityScope, path)
-		if (id) registry.install(runtimeKey(id), value)
-	}
-	const closeRuntimes = () => {
-		bufferWindowLeasesRef.current.clear()
-		registry.close()
-		setActiveBufferRuntime(null)
-	}
-	// Shared grant-local ports for active and command-created parked runtimes.
-	const runtimePorts = (
-		grant: OrgWorkspaceInterface,
-		session: string,
-	): OrgWorkspaceRuntimePorts => {
-		const identityScope = { grant, sessionId: session }
+	const origin = { grant: originGrant, sessionId: originSession, activation: originActivation, path: originPath }
+	const isCurrentOrigin = () => session.isCurrentOrigin(origin)
+	const registry = session.runtimes
+	const bufferIdentity = session.identity
+	const parkedReservoir = session.parked
+	const identityScope = sessionSnapshot.scope
+	const runtimeKey = session.key
+	const runtimeFor = (id: string, scope = identityScope) => registry.get(runtimeKey(id, scope))
+	const retireBuffer = (path: string) => session.retire(identityScope, path)
+	const runtimeIncarnation = session.runtimeIncarnation
+	const dirtyPath = session.dirtyPath
+	const protectedPath = session.protectedPath
+	const fileBusy = (...paths: string[]) => paths.some((path) => effects.getFileSnapshot(path).busy)
+	const currentFileBaseline = (path: string, scope = identityScope) =>
+		session.document?.relativePath === path ? session.document : parkedReservoir.read(scope, path)?.document
+	const getBufferEffectState = useCallback((bufferId: string): OrgBufferEffectState | null => {
+		if (!session.matches(identityScope)) return null
+		const path = bufferIdentity.findPath(identityScope, bufferId)
+		if (!path) return null
+		const effect = effects.getFileSnapshot(path)
 		return {
-			readCommitContext: (key, previous, next, originWindowId): OrgRuntimeCommitContext => {
-				const lease = originWindowId ? bufferWindowLeasesRef.current.get(originWindowId) : undefined
-				const path = activeRef.current?.relativePath
-				const parkedPath = bufferIdentity.findPath(identityScope, key.bufferId)
-				return {
-					mounted: mountedRef.current,
-					closeReady: nativeCloseReadyRef.current,
-					grantMatches: grantRef.current === grant,
-					sessionMatches: sessionRef.current === session && key.workspaceSessionId === session,
-					originWindowId,
-					registeredWindowBufferId:
-						lease?.grant === grant && lease.session === session ? lease.bufferId : undefined,
-					isActiveOwner:
-						path !== undefined && bufferIdentity.lookup(identityScope, path) === key.bufferId,
-					previous,
-					next,
-					activeSource: latestContentRef.current,
-					parkedSource: parkedPath
-						? parkedReservoir.read(identityScope, parkedPath)?.content
-						: undefined,
-					runtimeBufferId: key.bufferId,
-					loading: loadingRef.current,
-					notificationInProgress: !parkedReservoir.canMutate(),
-					mutationInProgress: mutationInProgressRef.current,
-					ordinarySaveInFlight: Boolean(saveInFlightRef.current),
-				}
-			},
-			commitSource: (key, source) => {
-				const path = bufferIdentity.findPath(identityScope, key.bufferId)
-				if (path === activeRef.current?.relativePath) mirrorSource(source)
-				else if (path) {
-					const parked = parkedReservoir.read(identityScope, path)
-					if (parked)
-						parkedReservoir.mirrorReplacement(identityScope, key.bufferId, {
-							previous: parked.content,
-							source,
-						})
-				}
-			},
-			emitFailure: (key, failure) => {
-				if (
-					mountedRef.current &&
-					grantRef.current === grant &&
-					sessionRef.current === session &&
-					key.workspaceSessionId === session &&
-					bufferIdentity.findPath(identityScope, key.bufferId) !== undefined
-				)
-					setError(failure.message)
-			},
+			busy: effect.busy,
+			loading: effect.loading,
+			saving: effect.saving,
+			readOnly: !session.closeReady || effect.loading || (effect.busy && !effect.saveInFlight),
 		}
-	}
-	// Root captures authority and supplies snapshots/mirrors; the reservoir owns leases.
-	const installSource = (value: string) => {
-		const document = activeRef.current
-		const session = sessionRef.current
-		const grant = grantRef.current
-		if (!document || !session || !grant) {
-			setActiveBufferRuntime(null)
-			mirrorSource(value)
-			return
-		}
-		const identityScope = { grant, sessionId: session }
-		const id = bufferIdentity.ensure(identityScope, document.relativePath)
-		registry.activate(runtimeKey(id), value, runtimePorts(grant, session), {
-			prepareSource: (source) => {
-				latestContentRef.current = source
-				setContent(source)
-			},
-			setActiveRuntime: setActiveBufferRuntime,
-		})
-		setDirty(latestContentRef.current !== document.content)
-	}
-	const dirtyPath = useCallback(
-		(path: string): boolean =>
-			(activeRef.current?.relativePath === path &&
-				latestContentRef.current !== activeRef.current.content) ||
-			Boolean(
-				parkedReservoir.read(
-					grantRef.current && sessionRef.current
-						? { grant: grantRef.current, sessionId: sessionRef.current }
-						: null,
-					path,
-				)?.isDirty,
-			),
-		[],
-	)
-	const protectedPath = (path: string) =>
-		dirtyPath(path) || autosavePausedRef.current.has(path) || conflictsRef.current.has(path)
+	}, [session, identityScope, effects])
 	// Install only a confirmed filesystem body. A concurrent working copy keeps its
 	// canonical source/history, but receives the accepted disk baseline for reconciliation.
 	const installedTargetSource = (
 		confirmed: OrgDocumentInterface,
-		expected: OrgParkedWorkingCopy | undefined,
-		activeBody = latestContentRef.current,
-		activeGeneration = editGenerationRef.current,
+		capture: ReturnType<typeof session.captureFile>,
 	): boolean => {
-		const path = confirmed.relativePath
-		let newer = false
-		if (activeRef.current?.relativePath === path) {
-			newer =
-				latestContentRef.current !== activeBody ||
-				editGenerationRef.current !== activeGeneration ||
-				protectedPath(path)
-			activeRef.current = confirmed
-			setActiveDocument(confirmed)
-			if (!newer) installSource(confirmed.content)
-			if (latestContentRef.current !== confirmed.content) newer = true
-			setDirty(latestContentRef.current !== confirmed.content)
-		} else {
-			const parked = parkedReservoir.read(identityScope, path)
-			if (parked) {
-				const id = bufferIdentity.lookup(identityScope, path)
-				const runtime = id ? runtimeFor(id) : undefined
-				newer =
-					parked !== expected ||
-					parked.content !== parked.document.content ||
-					Boolean(runtime && runtime.source !== parked.content) ||
-					protectedPath(path)
-				if (!newer) installParkedSource(path, confirmed.content)
-				const working = runtime?.source ?? (newer ? parked.content : confirmed.content)
-				if (working !== confirmed.content) newer = true
-				parkedReservoir.installConfirmedBaseline(
-					identityScope,
-					parked.bufferId,
-					parkedReservoir.read(identityScope, path) ?? parked,
-					{
-						document: confirmed,
-						content: working,
-						isDirty: working !== confirmed.content,
-					},
-				)
-			}
-		}
-		if (newer) {
-			autosavePausedRef.current.add(path)
-			conflictsRef.current.add(path)
-		}
-		publishBuffers((version) => version + 1)
-		return newer
+		if (!capture) throw new Error("The file capture is no longer issued by this workspace.")
+		const result = session.installConfirmedTarget(identityScope, { document: confirmed, capture })
+		if (result.kind === "rejected") throw new Error(result.reason)
+		return result.retainedWorkingCopy
 	}
-	const hasDirtyBuffers = () =>
-		[...transientDirtyRef.current.values()].some(Boolean) ||
-		autosavePausedRef.current.size > 0 ||
-		conflictsRef.current.size > 0 ||
-		Boolean(activeRef.current && dirtyPath(activeRef.current.relativePath)) ||
-		parkedReservoir.list(identityScope).some((buffer) => buffer.isDirty)
-	const setTransientDirty = useCallback(
-		(id: string, dirty: boolean) => {
-			// Draft ownership is grant-local, not tied to editor activation (A/B/A).
-			if (
-				!parkedReservoir.canMutate() ||
-				!mountedRef.current ||
-				grantRef.current !== originGrant ||
-				sessionRef.current !== originSession
-			)
-				return false
-			if (Boolean(transientDirtyRef.current.get(id)) === dirty) return true
-			transientGenerationRef.current += 1
-			if (dirty) transientDirtyRef.current.set(id, true)
-			else transientDirtyRef.current.delete(id)
-			publishBuffers((version) => version + 1)
+
+	const remarkNotesSnapshot = (path: string): OrgRemarkNotesContext | null => {
+		const live = session.snapshotLiveBuffers(identityScope).find((buffer) => buffer.document.relativePath === path)
+		if (!live || !workspace || !originSession) return null
+		return {
+			workspaceSessionId: originSession,
+			rootPath: workspace.rootPath,
+			document: live.document,
+			content: live.runtime.source,
+			bufferId: live.bufferId,
+			runtime: live.runtime,
+			runtimeIncarnation: live.runtimeIncarnation,
+			sourceGeneration: live.runtime.revision,
+		}
+	}
+	const remarkNotesAreCurrent = (notes: OrgRemarkNotesContext): boolean => {
+		if (!workspace || notes.rootPath !== workspace.rootPath || notes.workspaceSessionId !== originSession ||
+			!session.matches(identityScope) || !isSafeRelativeOrgPath(notes.document.relativePath) ||
+			!notes.document.relativePath.endsWith("-notes.org")) return false
+		const live = remarkNotesSnapshot(notes.document.relativePath)
+		if (!notes.runtime) return !live && notes.bufferId === null && notes.content === notes.document.content
+		return !!live && !notes.runtime.closed && live.runtime === notes.runtime &&
+			live.bufferId === notes.bufferId && live.runtimeIncarnation === notes.runtimeIncarnation &&
+			live.sourceGeneration === notes.sourceGeneration && live.content === notes.content &&
+			live.document.revision === notes.document.revision && live.document.content === notes.document.content
+	}
+	const remarkSourceAuthority = (capture: OrgRemarkSourceCapture, requireWindow: boolean) => {
+		const source = Object.freeze({ ...capture })
+		const runtime = runtimeFor(source.bufferId)
+		const permit = source.windowId
+			? session.captureWindowPermit(identityScope, source.windowId, source.bufferId)
+			: null
+		return () => {
+			if (!workspace || !originSession || source.workspaceSessionId !== originSession ||
+				!session.matches(identityScope) || !isSafeRelativeOrgPath(source.relativePath) ||
+				source.relativePath.endsWith("-notes.org") ||
+				bufferIdentity.lookup(identityScope, source.relativePath) !== source.bufferId ||
+				!runtime || runtime.closed || runtimeFor(source.bufferId) !== runtime ||
+				runtimeIncarnation(runtime) !== source.runtimeIncarnation ||
+				runtime.revision !== source.sourceGeneration || runtime.source !== source.source ||
+				createOrgRemarkTracker(runtime).getSnapshot().version !== source.remarkVersion ||
+				(permit ? !permit() : requireWindow)) return false
 			return true
+		}
+	}
+	const mountRemarkNotes = (notes: OrgRemarkNotesContext): OrgRemarkNotesContext | null => {
+		if (!remarkNotesAreCurrent(notes)) return null
+		if (notes.runtime) return notes
+		const id = session.parkCommandSource(identityScope, notes.document.relativePath, notes.document, notes.content)
+		if (!id) return null
+		session.createParkedRuntime(identityScope, id, notes.content)
+		return remarkNotesSnapshot(notes.document.relativePath)
+	}
+	const pauseRemarkNotes = (path: string) => {
+		if (!session.matches(identityScope)) return
+		session.protect(identityScope, path, "conflict")
+		
+	}
+	const remarkSavePorts = (owner: symbol, notes: OrgRemarkNotesContext) => ({
+		write: saveOrgDocumentFlow,
+		isFresh: () => effects.owns(owner) && remarkNotesAreCurrent(notes),
+		isCurrent: () => effects.owns(owner) && session.matches(identityScope) &&
+			!!notes.bufferId && runtimeFor(notes.bufferId) === notes.runtime && !notes.runtime?.closed &&
+			bufferIdentity.lookup(identityScope, notes.document.relativePath) === notes.bufferId,
+		onWriteStarted: (settled: Promise<boolean>) => {
+			effects.captureSave(owner, settled, notes.content, notes.document.relativePath)
 		},
-		[originGrant, originSession],
+		commitConfirmed: (capture: { readonly content: string }, receipt: OrgDocumentWriteResultInterface) => {
+			if (!effects.owns(owner) || !session.matches(identityScope) || !notes.bufferId ||
+				runtimeFor(notes.bufferId) !== notes.runtime || notes.runtime?.closed)
+				throw new Error("The remark note owner changed while saving")
+			const result = session.acknowledgeWorkingCopy(identityScope, {
+				bufferId: notes.bufferId,
+				expectedDocument: notes.document,
+				capturedSource: capture.content,
+				receipt,
+			})
+			if (result.kind === "rejected") throw new Error(result.reason)
+			if (!effects.owns(owner) || !session.matches(identityScope)) return
+			setWorkspace((value) => value ? updateWorkspaceDocument(value, result.document, receipt.originalRecovery) : value)
+		},
+	})
+	const readRemarkNotes = useCallback(async (
+		input: OrgRemarkSourceCapture,
+		signal?: AbortSignal,
+		options?: { readonly mount?: boolean },
+	): Promise<OrgRemarkReadOutcome> => {
+		const source = Object.freeze({ ...input })
+		const ownsSource = remarkSourceAuthority(source, false)
+		const stale: OrgRemarkReadOutcome = { kind: "stale", message: "The source changed while remark notes were opening." }
+		if (!workspace || !originSession || !ownsSource() || signal?.aborted) return stale
+		const path = orgRemarkNotesPath(source.relativePath)
+		const existing = remarkNotesSnapshot(path)
+		if (existing) return { kind: "ready", notes: existing }
+		const current = () => ownsSource() && !signal?.aborted
+		try {
+			const scan = await scanOrgWorkspaceFlow(workspace.rootPath, workspace.capabilityToken)()
+			if (!current()) return stale
+			if (E.isLeft(scan)) return { kind: "rejected", message: scan.left.message }
+			const exists = scan.right.documents.some((entry) => entry.relativePath === path)
+			let document: OrgDocumentInterface = { relativePath: path, revision: "<missing>", content: "" }
+			if (exists) {
+				const opened = await openOrgDocumentFlow({ relativePath: path, workspaceRoot: workspace.rootPath, capabilityToken: workspace.capabilityToken })()
+				if (!current()) return stale
+				if (E.isLeft(opened)) return { kind: "rejected", message: opened.left.message }
+				document = opened.right
+			}
+			if (!current()) return stale
+			const notes: OrgRemarkNotesContext = {
+				workspaceSessionId: originSession, rootPath: workspace.rootPath, document, content: document.content,
+				bufferId: null, runtime: null, runtimeIncarnation: null, sourceGeneration: null,
+			}
+			if (!remarkNotesAreCurrent(notes)) return stale
+			const mounted = options?.mount && exists ? mountRemarkNotes(notes) : notes
+			return mounted ? { kind: "ready", notes: mounted } : stale
+		} catch {
+			return current() ? { kind: "rejected", message: "Cannot read the source-side remark notes." } : stale
+		}
+	}, [workspace, identityScope])
+	const executeRemarkMutation = useCallback(async (
+		inputSource: OrgRemarkSourceCapture,
+		inputNotes: OrgRemarkNotesContext,
+		inputAction: OrgRemarkAction,
+	): Promise<OrgRemarkActionOutcome> => {
+		const source = Object.freeze({ ...inputSource })
+		const notes = Object.freeze({ ...inputNotes, document: Object.freeze({ ...inputNotes.document }) })
+		const action: OrgRemarkAction = inputAction.type === "sync"
+			? { ...inputAction, marks: inputAction.marks.map((mark) => Object.freeze({ ...mark })) }
+			: { ...inputAction }
+		const sourceIsCurrent = remarkSourceAuthority(source, action.type !== "sync")
+		const ownsSource = () => sourceIsCurrent() && (action.type !== "sync" ||
+			session.snapshotLiveBuffers(identityScope).some((live) => live.bufferId === source.bufferId && live.document.content === source.source))
+		if (!workspace || fileBusy(source.relativePath, notes.document.relativePath) || !ownsSource() || !remarkNotesAreCurrent(notes))
+			return { kind: "stale", message: "The source or remark notes are no longer current." }
+		if (session.hasConflict(notes.document.relativePath) || session.isAutosavePaused(notes.document.relativePath))
+			return { kind: "rejected", message: "Resolve the remark-notes conflict or paused save before changing highlights." }
+		let owner: symbol | null = null
+		const owns = () => (owner ? effects.owns(owner) : !fileBusy(source.relativePath, notes.document.relativePath)) && ownsSource()
+		let committedNotes: OrgRemarkNotesContext | null = null
+		try {
+			const result = await runOrgRemarkMutationFlow(source, notes, action, {
+				isCurrentSource: owns,
+				notesAreCurrent: remarkNotesAreCurrent,
+				prepareCanonical: mountRemarkNotes,
+				apply: (canonical, edits, guard) => {
+					if (!canonical.bufferId) return false
+					const applied = registry.applyCommandEdits(runtimeKey(canonical.bufferId), canonical.content, edits, guard)
+					committedNotes = remarkNotesSnapshot(canonical.document.relativePath)
+					if (applied) {
+						owner = effects.begin({ label: "remarkMutation", kind: "save", paths: [source.relativePath, notes.document.relativePath] })
+						
+						setError(null)
+					}
+					return applied
+				},
+				snapshot: remarkNotesSnapshot,
+				capabilityToken: workspace.capabilityToken,
+				pause: pauseRemarkNotes,
+				save: {
+					write: saveOrgDocumentFlow,
+					isFresh: () => !!owner && !!committedNotes && remarkSavePorts(owner, committedNotes).isFresh(),
+					isCurrent: () => !!owner && !!committedNotes && remarkSavePorts(owner, committedNotes).isCurrent(),
+					commitConfirmed: (capture, receipt) => {
+						if (!owner || !committedNotes) throw new Error("The remark edit does not own its save")
+						remarkSavePorts(owner, committedNotes).commitConfirmed(capture, receipt)
+					},
+				},
+			})
+			if (result.kind === "uncertain" && session.matches(identityScope)) setError(result.message)
+			return result
+		} catch {
+			if (committedNotes) pauseRemarkNotes(notes.document.relativePath)
+			return { kind: committedNotes ? "uncertain" : "rejected", message: "The remark operation was not confirmed. Existing source and note bodies were retained; no retry or rollback was attempted." }
+		} finally {
+			if (owner) finishMutation(owner)
+		}
+	}, [workspace, identityScope])
+	const saveRemarkNotes = useCallback(async (input: OrgRemarkNotesContext): Promise<OrgRemarkActionOutcome> => {
+		const notes = Object.freeze({ ...input, document: Object.freeze({ ...input.document }) })
+		if (!workspace || !notes.runtime || !remarkNotesAreCurrent(notes) || fileBusy(notes.document.relativePath))
+			return { kind: "stale", message: "The remark note buffer changed before saving." }
+		if (session.hasConflict(notes.document.relativePath) || session.isAutosavePaused(notes.document.relativePath))
+			return { kind: "rejected", message: "Resolve the remark-notes conflict or paused save before saving notes." }
+		const owner = effects.begin({ label: "saveRemarkNotes", kind: "save", paths: [notes.document.relativePath] })
+		
+		setError(null)
+		try {
+			const result = await saveOrgWorkingCopyFlow({
+				relativePath: notes.document.relativePath, content: notes.content,
+				expectedRevision: notes.document.revision, workspaceRoot: notes.rootPath, capabilityToken: workspace.capabilityToken,
+			}, remarkSavePorts(owner, notes))
+			if (result.kind === "confirmed") {
+				const accepted = remarkNotesSnapshot(notes.document.relativePath)
+				if (accepted) return { kind: "confirmed", notes: accepted }
+			}
+			pauseRemarkNotes(notes.document.relativePath)
+			const message = result.kind === "write-left" ? result.error.message : "The remark note draft was retained, but saving was not confirmed. Reconcile before a manual retry."
+			if (session.matches(identityScope)) setError(message)
+			return { kind: "uncertain", message }
+		} finally {
+			finishMutation(owner)
+		}
+	}, [workspace, identityScope])
+	const hasDirtyBuffers = session.hasDirtyBuffers
+	const setTransientDirty = useCallback(
+		(id: string, dirty: boolean) => session.setTransientDirty(identityScope, id, dirty),
+		[session, identityScope],
 	)
 	const aggregateDirty = hasDirtyBuffers()
 	const openBuffers: readonly OrgOpenBufferSummary[] = [
@@ -652,19 +729,19 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			.map((buffer) => [buffer.document.relativePath, buffer] as const)
 			.map(([relativePath, buffer]) => ({
 				baseRevision: buffer.document.revision,
-				bufferId: bufferIdFor(relativePath),
-				hasConflict: conflictsRef.current.has(relativePath),
-				autosavePaused: autosavePausedRef.current.has(relativePath),
-				isDirty: buffer.isDirty,
+				bufferId: buffer.bufferId,
+				hasConflict: session.hasConflict(relativePath),
+				autosavePaused: session.isAutosavePaused(relativePath),
+				isDirty: buffer.isDirty || dirtyPath(relativePath),
 				relativePath,
 			})),
-		...(activeDocument
+		...(activeDocument && activeBufferRuntime
 			? [
 					{
 						baseRevision: activeDocument.revision,
-						bufferId: bufferIdFor(activeDocument.relativePath),
-						hasConflict: conflictsRef.current.has(activeDocument.relativePath),
-						autosavePaused: autosavePausedRef.current.has(activeDocument.relativePath),
+						bufferId: activeBufferRuntime.key.bufferId,
+						hasConflict: session.hasConflict(activeDocument.relativePath),
+						autosavePaused: session.isAutosavePaused(activeDocument.relativePath),
 						isDirty,
 						relativePath: activeDocument.relativePath,
 					},
@@ -672,155 +749,162 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			: []),
 	]
 
-	const liveBuffers: readonly OrgLiveBuffer[] = [
-		...parkedReservoir.list(identityScope).map((buffer) => ({
-			bufferId: buffer.bufferId,
-			document: buffer.document,
-			content: buffer.content,
-			runtime: runtimeFor(buffer.bufferId)!,
-			isDirty: buffer.isDirty,
-		})),
-		...(activeDocument && activeBufferRuntime
-			? [
-					{
-						bufferId: bufferIdFor(activeDocument.relativePath),
-						document: activeDocument,
-						content,
-						runtime: activeBufferRuntime,
-						isDirty,
-					},
-				]
-			: []),
-	]
-		.filter((buffer) => Boolean(buffer.runtime))
-		.map((buffer) => ({
-			...buffer,
-			runtimeIncarnation: runtimeIncarnation(buffer.runtime),
-			sourceGeneration: buffer.runtime.revision,
-		}))
+	const liveBuffers: readonly OrgLiveBuffer[] = session.snapshotLiveBuffers(identityScope)
 
 	const registerBufferWindow = useCallback(
-		(windowId: string, bufferId: string): (() => void) => {
-			if (
-				!windowId ||
-				!mountedRef.current ||
-				!parkedReservoir.canMutate() ||
-				!originGrant ||
-				!originSession ||
-				grantRef.current !== originGrant ||
-				sessionRef.current !== originSession
-			)
-				return () => undefined
-			const path = bufferIdentity.findPath(identityScope, bufferId)
-			if (
-				!path ||
-				!runtimeFor(bufferId) ||
-				(activeRef.current?.relativePath !== path && !parkedReservoir.read(identityScope, path))
-			)
-				return () => undefined
-			const lease = { bufferId, grant: originGrant, session: originSession }
-			bufferWindowLeasesRef.current.set(windowId, lease)
-			return () => {
-				if (bufferWindowLeasesRef.current.get(windowId) === lease)
-					bufferWindowLeasesRef.current.delete(windowId)
-			}
-		},
-		[originGrant, originSession],
+		(windowId: string, bufferId: string) => session.registerWindow(identityScope, windowId, bufferId),
+		[session, identityScope],
 	)
-
 	const captureBufferWindowPermit = useCallback(
-		(windowId: string, bufferId: string): (() => boolean) => {
-			const lease = bufferWindowLeasesRef.current.get(windowId)
-			const path = bufferIdentity.findPath(identityScope, bufferId)
-			return () =>
-				!!lease &&
-				lease.bufferId === bufferId &&
-				lease.grant === originGrant &&
-				lease.session === originSession &&
-				mountedRef.current &&
-				grantRef.current === lease.grant &&
-				sessionRef.current === lease.session &&
-				bufferWindowLeasesRef.current.get(windowId) === lease &&
-				!!runtimeFor(bufferId) &&
-				!!path &&
-				bufferIdentity.findPath(identityScope, bufferId) === path &&
-				!conflictsRef.current.has(path) &&
-				!autosavePausedRef.current.has(path) &&
-				parkedReservoir.canMutate()
-		},
-		[originGrant, originSession],
+		(windowId: string, bufferId: string) => session.captureWindowPermit(identityScope, windowId, bufferId),
+		[session, identityScope],
 	)
-
 	const activateOpenBuffer = useCallback(
 		(bufferId: string): boolean => {
-			// Focus changes are grant-local, not tied to the previously active pane.
-			if (
-				!mountedRef.current ||
-				!nativeCloseReadyRef.current ||
-				!parkedReservoir.canMutate() ||
-				!originGrant ||
-				!originSession ||
-				grantRef.current !== originGrant ||
-				sessionRef.current !== originSession ||
-				loadingRef.current ||
-				mutationInProgressRef.current ||
-				saveInFlightRef.current ||
-				saveAllOwnerRef.current
-			)
-				return false
-			const path = bufferIdentity.findPath(identityScope, bufferId)
-			if (!path) return false
-			if (activeRef.current?.relativePath === path) return true
-			const parked = parkedReservoir.read(identityScope, path)
-			const runtime = runtimeFor(bufferId)
-			if (!parked || !runtime || runtime.closed || runtime.source !== parked.content) return false
-			const previous = activeRef.current
-			if (previous)
-				parkedReservoir.park(identityScope, bufferIdFor(previous.relativePath), {
-					document: previous,
-					content: latestContentRef.current,
-					editGeneration: editGenerationRef.current,
-					isDirty: latestContentRef.current !== previous.content,
-				})
-			parkedReservoir.takeToActivate(identityScope, bufferId)
-			openRequestRef.current += 1
-			activationRef.current += 1
-			activeRef.current = parked.document
-			setActiveDocument(parked.document)
-			latestContentRef.current = parked.content
-			editGenerationRef.current += 1
-			setContent(parked.content)
-			setDirty(parked.isDirty)
-			setActiveBufferRuntime(runtime)
-			setRevealTarget(null)
+			const previousActivation = session.activation
+			if (!session.activateOpenBuffer(identityScope, bufferId)) return false
+			if (session.activation !== previousActivation) {
+				openRequestRef.current += 1
+				effects.cancelRead()
+				setRevealTarget(null)
+			}
 			return true
 		},
-		[originGrant, originSession, bufferIdFor],
+		[session, identityScope],
 	)
+	const nativeCoordinator = useRef<OrgNativeWindowCoordinator | null>(null)
+	const [nativeWindowSnapshot, setNativeWindowSnapshot] = useState<OrgNativeWindowSnapshot>({
+		windows: [], mainHidden: false,
+	})
+	useEffect(() => {
+		if (!isTauri()) return
+		const coordinator = createOrgNativeWindowCoordinator({
+			getIssuedScope: () => session.scope,
+			snapshotLiveBuffers: (scope) => session.snapshotLiveBuffers(scope),
+			windowAuthority: {
+				runtimes: { get: (key) => registry.get(key) },
+				key: (id, scope) => session.key(id, scope),
+				registerWindow: (scope, windowId, bufferId) => session.registerWindow(scope, windowId, bufferId),
+			},
+			isFileReady: (bufferId, path) => {
+				const scope = session.scope
+				if (!scope || bufferIdentity.findPath(scope, bufferId) !== path || !session.closeReady) return false
+				const effect = effects.getFileSnapshot(path)
+				return !effect.loading && (!effect.busy || effect.saveInFlight !== null)
+			},
+			activateBuffer: async (bufferId, targetWindowId) => {
+				const scope = session.scope
+				if (!scope || (targetWindowId && !session.captureWindowPermit(scope, targetWindowId, bufferId)())) return false
+				const mainTools = toolRegistry.getSnapshot().filter((tool) => tool.open && tool.layout === "main")
+				for (const tool of mainTools) if (!await toolRegistry.close(tool.lease, tool.windowId)) return false
+				await navigate({ to: "/" })
+				if (!session.matches(scope)) return false
+				const previous = session.activation
+				if (!session.activateOpenBuffer(scope, bufferId)) return false
+				if (session.activation !== previous) {
+					openRequestRef.current += 1
+					effects.cancelRead()
+					setRevealTarget(null)
+				}
+				return true
+			},
+			saveBuffer: (bufferId) => {
+				const scope = session.scope
+				const path = bufferIdentity.findPath(scope, bufferId)
+				if (!scope || !path) return Promise.resolve(false)
+				return saveDocumentPathWithResult(path, scope)
+			},
+			onError: (error) => setError(error.message),
+		})
+		nativeCoordinator.current = coordinator
+		const update = () => setNativeWindowSnapshot(coordinator.getSnapshot())
+		const stopSnapshot = coordinator.subscribe(update)
+		const stopSession = session.subscribe(coordinator.synchronize)
+		const stopEffects = effects.subscribe(coordinator.synchronize)
+		coordinator.synchronize()
+		update()
+		return () => {
+			stopSession()
+			stopEffects()
+			stopSnapshot()
+			if (nativeCoordinator.current === coordinator) nativeCoordinator.current = null
+			coordinator.dispose()
+		}
+	}, [session, effects, toolRegistry, navigate])
+	const detachBuffer = useCallback(async (bufferId: string, originWindowId?: string): Promise<string | null> => {
+		try {
+			const coordinator = nativeCoordinator.current
+			if (!coordinator) throw new Error("Native windows require the desktop application.")
+			return await coordinator.detach(bufferId, originWindowId)
+		} catch (error) {
+			setError(error instanceof Error ? error.message : String(error))
+			return null
+		}
+	}, [])
+	const attachNativeWindow = useCallback(async (label: string, generation: number, targetWindowId?: string) => {
+		const coordinator = nativeCoordinator.current
+		if (!coordinator?.getSnapshot().windows.some((window) => window.label === label && window.generation === generation)) return false
+		try { return await coordinator.attach(label, targetWindowId) }
+		catch (error) { setError(error instanceof Error ? error.message : String(error)); return false }
+	}, [])
+	const rebindNativeWindow = useCallback(async (label: string, generation: number, bufferId: string) => {
+		const coordinator = nativeCoordinator.current
+		if (!coordinator?.getSnapshot().windows.some((window) => window.label === label && window.generation === generation)) return false
+		try { return await coordinator.rebind(label, bufferId) }
+		catch (error) { setError(error instanceof Error ? error.message : String(error)); return false }
+	}, [])
+	const closeNativeWindow = useCallback(async (label: string, generation: number) => {
+		const coordinator = nativeCoordinator.current
+		if (!coordinator?.getSnapshot().windows.some((window) => window.label === label && window.generation === generation)) return false
+		try { return await coordinator.closeWindow(label) }
+		catch (error) { setError(error instanceof Error ? error.message : String(error)); return false }
+	}, [])
 
 	const nativeCloseReady = useOrgWindowClose(
 		{
 			get hasDirtyBuffers() {
-				return hasDirtyBuffers()
+				return hasDirtyBuffers() || toolRegistry.getSnapshot().some((tool) => tool.open && tool.state.dirty)
 			},
 			get isBusy() {
-				return mutationInProgressRef.current
+				return effects.busy || pendingTool()
+			},
+			get hasOtherWindows() {
+				return (nativeCoordinator.current?.getSnapshot().windows.length ?? 0) !== 0
 			},
 		},
 		setError,
+		() => {
+			const domain = session.captureDiscardPermit(), tools = captureToolDiscardPermit()
+			return () => domain() && tools()
+		},
+		(signal) => signal.aborted ? Promise.resolve(false) :
+			nativeCoordinator.current?.hideMainWithChildren() ?? Promise.resolve(false),
 	)
 
-	nativeCloseReadyRef.current = nativeCloseReady
+	useLayoutEffect(() => { session.setCloseReady(nativeCloseReady) }, [session, nativeCloseReady])
 
 	useBlocker({
 		disabled: false,
-		enableBeforeUnload: aggregateDirty || isSaving || isLoading,
-		shouldBlockFn: () => {
-			if (mutationInProgressRef.current) {
-				setError("A workspace operation is running; wait for it to finish before leaving.")
+		enableBeforeUnload: aggregateDirty || effectSnapshot.busy || effectSnapshot.loading ||
+			applicationTools.some((tool) => (tool.open && tool.state.dirty) || tool.state.pending),
+		shouldBlockFn: async () => {
+			// Route changes retain canonical buffers/history in the application provider.
+			// Only producer-owned scratch surfaces are destroyed by their UI route.
+			if (pendingTool()) {
+				setError("A tool operation is running; wait for its accepted effect to finish before leaving.")
 				return true
 			}
-			return hasDirtyBuffers() && !window.confirm("Discard unsaved Org document changes?")
+			if (!session.hasTransientDirty && !toolRegistry.getSnapshot().some((tool) => tool.open && tool.state.dirty)) return false
+			const scope = session.scope
+			const permit = captureToolDiscardPermit()
+			const accepted = await confirm({
+				title: "Discard unsaved changes?",
+				description: "Discard unsaved tool drafts before leaving this surface? Canonical Org buffers and history will be retained.",
+				confirmText: "Discard",
+				cancelText: "Cancel",
+				signal: confirmationLifetime.current?.signal,
+			})
+			return accepted !== true || session.scope !== scope || pendingTool() || !permit()
 		},
 	})
 
@@ -832,11 +916,11 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		let checking = false
 		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: revision checks and async commit guards must stay together.
 		const checkForExternalChange = async () => {
-			if (!isCurrentOrigin() || shouldSkipExternalCheck(checking, mutationInProgressRef.current)) {
+			if (!isCurrentOrigin() || shouldSkipExternalCheck(checking, fileBusy(activeDocument.relativePath))) {
 				return
 			}
 			checking = true
-			const generation = editGenerationRef.current
+			const capture = session.captureFile(identityScope, activeDocument.relativePath)
 			const requestGeneration = openRequestRef.current
 			const result = await openOrgDocumentFlow({
 				relativePath: activeDocument.relativePath,
@@ -846,16 +930,16 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			checking = false
 			if (
 				disposed ||
-				mutationInProgressRef.current ||
+				fileBusy(activeDocument.relativePath) ||
 				requestGeneration !== openRequestRef.current ||
 				!isCurrentOrigin()
 			) {
 				return
 			}
+			if (!capture || guardOrgWorkingCopyBaseline(capture.baseline!, currentFileBaseline(activeDocument.relativePath))) return
 			if (E.isLeft(result)) {
 				if (protectedPath(activeDocument.relativePath)) {
-					conflictsRef.current.add(activeDocument.relativePath)
-					autosavePausedRef.current.add(activeDocument.relativePath)
+					session.protect(identityScope, activeDocument.relativePath, "conflict")
 				}
 				setError(`Cannot refresh ${activeDocument.relativePath}: ${result.left.message}`)
 				return
@@ -863,16 +947,12 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			if (result.right.revision === activeDocument.revision) {
 				return
 			}
-			if (protectedPath(activeDocument.relativePath) || generation !== editGenerationRef.current) {
-				conflictsRef.current.add(activeDocument.relativePath)
-				autosavePausedRef.current.add(activeDocument.relativePath)
+			if (protectedPath(activeDocument.relativePath) || capture.runtime?.revision !== capture.sourceGeneration) {
+				session.protect(identityScope, activeDocument.relativePath, "conflict")
 				setError(`External modification detected for ${activeDocument.relativePath}.`)
 				return
 			}
-			conflictsRef.current.delete(activeDocument.relativePath)
-			activeRef.current = result.right
-			setActiveDocument(result.right)
-			installSource(result.right.content)
+			installedTargetSource(result.right, capture)
 			setWorkspace((current) =>
 				current ? updateWorkspaceDocument(current, result.right) : current,
 			)
@@ -886,14 +966,12 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 
 	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: async generation/conflict guards must stay adjacent to state commits.
 	const refreshWorkspace = useCallback(async () => {
-		const sourceDocument = activeRef.current
+		const sourceDocument = session.document
 		if (!workspace || !isCurrentOrigin()) {
 			return
 		}
-		if (!canRefreshWorkspace(workspace, mutationInProgressRef.current)) {
-			if (refreshRetryTimerRef.current !== undefined) {
-				clearTimeout(refreshRetryTimerRef.current)
-			}
+		if (!canRefreshWorkspace(workspace, effects.busy)) {
+			clearTimeout(refreshRetryTimerRef.current)
 			refreshRetryTimerRef.current = setTimeout(() => {
 				refreshRetryTimerRef.current = undefined
 				void refreshWorkspaceRef.current()
@@ -901,12 +979,12 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			return
 		}
 		const requestGeneration = openRequestRef.current
-		const contentAtStart = latestContentRef.current
-		const generation = editGenerationRef.current
+		const contentAtStart = session.source
+		const sourceCapture = sourceDocument ? session.captureFile(identityScope, sourceDocument.relativePath) : null
 		const result = await scanOrgWorkspaceFlow(workspace.rootPath, workspace.capabilityToken)()
 		if (
 			requestGeneration !== openRequestRef.current ||
-			mutationInProgressRef.current ||
+			effects.busy ||
 			!isCurrentOrigin()
 		) {
 			return
@@ -921,12 +999,12 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			.map((buffer) => [buffer.document.relativePath, buffer] as const)) {
 			const entry = result.right.documents.find((document) => document.relativePath === path)
 			if (protectedPath(path) && entry?.revision !== buffer.document.revision) {
-				conflictsRef.current.add(path)
-				autosavePausedRef.current.add(path)
+				// Reobserving a latched mismatch is not a new uncertain mutation.
+				if (!session.hasConflict(path)) session.protect(identityScope, path, "conflict")
 				setError(`External modification detected for ${path}.`)
 			}
 		}
-		publishBuffers((version) => version + 1)
+		
 		if (!sourceDocument) {
 			return
 		}
@@ -935,31 +1013,22 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			(document) => document.relativePath === sourceDocument.relativePath,
 		)
 		if (!scannedDocument) {
-			if (protectedPath(sourceDocument.relativePath) || generation !== editGenerationRef.current) {
-				conflictsRef.current.add(sourceDocument.relativePath)
-				autosavePausedRef.current.add(sourceDocument.relativePath)
+			if (protectedPath(sourceDocument.relativePath) || !session.fileCaptureIsCurrent(sourceCapture)) {
+				if (!session.hasConflict(sourceDocument.relativePath)) session.protect(identityScope, sourceDocument.relativePath, "conflict")
 				setError(
 					`The open document ${sourceDocument.relativePath} no longer exists in the workspace.`,
 				)
 			} else {
-				retireBuffer(sourceDocument.relativePath)
-				conflictsRef.current.delete(sourceDocument.relativePath)
-				autosavePausedRef.current.delete(sourceDocument.relativePath)
+				session.closeActiveDocument(identityScope)
 				setRevealTarget(null)
-				setDirty(false)
-				activationRef.current += 1
-				activeRef.current = null
-				setActiveDocument(null)
-				installSource("")
 			}
 			return
 		}
 		if (scannedDocument.revision === sourceDocument.revision) {
 			return
 		}
-		if (protectedPath(sourceDocument.relativePath) || generation !== editGenerationRef.current) {
-			conflictsRef.current.add(sourceDocument.relativePath)
-			autosavePausedRef.current.add(sourceDocument.relativePath)
+		if (protectedPath(sourceDocument.relativePath) || sourceCapture?.runtime?.revision !== sourceCapture?.sourceGeneration) {
+			if (!session.hasConflict(sourceDocument.relativePath)) session.protect(identityScope, sourceDocument.relativePath, "conflict")
 			setError(`External modification detected for ${sourceDocument.relativePath}.`)
 			return
 		}
@@ -971,16 +1040,16 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		})()
 		if (
 			requestGeneration !== openRequestRef.current ||
-			mutationInProgressRef.current ||
+			effects.busy ||
 			!isCurrentOrigin()
 		) {
 			return
 		}
 		if (
 			protectedPath(sourceDocument.relativePath) ||
-			generation !== editGenerationRef.current ||
-			latestContentRef.current !== contentAtStart ||
-			mutationInProgressRef.current
+			sourceCapture?.runtime?.revision !== sourceCapture?.sourceGeneration ||
+			session.source !== contentAtStart ||
+			effects.busy
 		) {
 			setError(`External modification detected for ${sourceDocument.relativePath}.`)
 			return
@@ -989,10 +1058,8 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			setError(`Cannot refresh ${sourceDocument.relativePath}: ${opened.left.message}`)
 			return
 		}
-		conflictsRef.current.delete(sourceDocument.relativePath)
-		activeRef.current = opened.right
-		setActiveDocument(opened.right)
-		installSource(opened.right.content)
+		if (!sourceCapture || guardOrgWorkingCopyBaseline(sourceCapture.baseline!, currentFileBaseline(sourceDocument.relativePath))) return
+		installedTargetSource(opened.right, sourceCapture)
 		setWorkspace((current) => (current ? updateWorkspaceDocument(current, opened.right) : current))
 	}, [activeDocument, isDirty, workspace, originSession, originActivation, originPath])
 
@@ -1054,70 +1121,63 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				void unwatchOrgWorkspace(watchToken, workspaceRoot, capabilityToken)()
 			}
 		}
-	}, [workspaceRoot, workspace?.capabilityToken])
+	}, [identityScope, workspaceRoot, workspace?.capabilityToken])
+
 
 	useEffect(() => {
-		if (!workspaceRoot) {
-			return
+		if (!confirmationLifetime.current || confirmationLifetime.current.signal.aborted) confirmationLifetime.current = new AbortController()
+		if (session.mount()) {
+			setWorkspace(session.grant)
 		}
 		return () => {
-			if (workspace?.capabilityToken)
-				void releaseOrgWorkspace(workspaceRoot, workspace.capabilityToken)()
-		}
-	}, [workspaceRoot, workspace?.capabilityToken])
-
-	useEffect(() => {
-		mountedRef.current = true
-		return () => {
-			mountedRef.current = false
-			bufferWindowLeasesRef.current.clear()
-			registry.close()
-			bufferIdentity.clearScope(
-				grantRef.current && sessionRef.current
-					? { grant: grantRef.current, sessionId: sessionRef.current }
-					: null,
-			)
+			confirmationLifetime.current?.abort()
+			session.dispose()
+			effects.dispose()
+			linkAbortRef.current?.abort()
 			openRequestRef.current += 1
-			sessionRef.current = null
-			if (refreshRetryTimerRef.current !== undefined) {
-				clearTimeout(refreshRetryTimerRef.current)
-			}
+			restoreAttemptedRef.current = false
+			clearTimeout(refreshRetryTimerRef.current)
 		}
-	}, [])
+	}, [session, effects])
 
 	const openWorkspace = useCallback(
 		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: capability cleanup and stale-request guards form one transaction.
 		async (source: "default" | "default-existing" | "picker") => {
 			const nonApprovalMutation = () =>
-				mutationInProgressRef.current && mutationOwnerRef.current !== rootApprovalOwnerRef.current
+				effects.busy && !effects.approving
 			if (!isCurrentOrigin() || nonApprovalMutation()) {
 				return
 			}
-			const confirmationGeneration = editGenerationRef.current
-			const transientGeneration = transientGenerationRef.current
+			const confirmationGeneration = session.editGeneration
+			const transientGeneration = session.transientGeneration
 			const approvedDirty = hasDirtyBuffers()
-			if (approvedDirty && !window.confirm("Discard unsaved changes and open another workspace?")) {
+			const discardPermit = session.captureDiscardPermit()
+			if (approvedDirty && await confirm({
+				title: "Open another workspace?",
+				description: "Discard unsaved changes and open another workspace?",
+				confirmText: "Discard and open",
+				cancelText: "Cancel",
+				signal: confirmationLifetime.current?.signal,
+			}) !== true) {
 				return
 			}
 			if (
 				!isCurrentOrigin() ||
 				nonApprovalMutation() ||
-				confirmationGeneration !== editGenerationRef.current ||
-				transientGeneration !== transientGenerationRef.current ||
+				!discardPermit() ||
+				confirmationGeneration !== session.editGeneration ||
+				transientGeneration !== session.transientGeneration ||
 				(hasDirtyBuffers() && !approvedDirty)
 			)
 				return
 			const requestId = openRequestRef.current + 1
-			const editGenerationAtStart = editGenerationRef.current
+			const editGenerationAtStart = session.editGeneration
 			openRequestRef.current = requestId
-			const owner = Symbol("openWorkspace")
-			rootApprovalOwnerRef.current = owner
-			mutationOwnerRef.current = owner
-			mutationInProgressRef.current = true
+			const owner = effects.begin({ label: "openWorkspace", kind: "approval" })
 			refileTargetRequestRef.current += 1
 			let granted: OrgWorkspaceInterface | null = null
 			try {
-				setLoading(true)
+				
 				setError(null)
 				const result =
 					source === "default"
@@ -1127,13 +1187,13 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 							: await selectOrgWorkspaceFlow()()
 				if (E.isRight(result)) granted = result.right
 				if (
-					mutationOwnerRef.current !== owner ||
+					!effects.owns(owner) ||
 					requestId !== openRequestRef.current ||
 					!isCurrentOrigin()
 				) {
 					return
 				}
-				setLoading(false)
+				
 				if (E.isLeft(result)) {
 					if (source === "default-existing") {
 						setDefaultWorkspacePreference(false)
@@ -1146,41 +1206,24 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				}
 				if (result.right) {
 					if (
-						editGenerationRef.current !== editGenerationAtStart ||
-						transientGeneration !== transientGenerationRef.current ||
+						!discardPermit() ||
+						session.editGeneration !== editGenerationAtStart ||
+						transientGeneration !== session.transientGeneration ||
 						(hasDirtyBuffers() && !approvedDirty)
 					) {
 						setError("Document changed while opening a workspace; the open was cancelled.")
 						return
 					}
-					closeRuntimes()
-					parkedReservoir.clearScope(identityScope)
-					bufferIdentity.clearScope(identityScope)
-					grantRef.current = result.right
-					activationRef.current += 1
-					sessionRef.current = result.right.capabilityToken ?? null
-					setWorkspaceSessionId(sessionRef.current)
-					transientDirtyRef.current.clear()
-					if (sessionRef.current) {
-						const scope = { grant: result.right, sessionId: sessionRef.current }
-						bufferIdentity.openScope(scope)
-						parkedReservoir.openScope(scope)
-					}
-					conflictsRef.current.clear()
-					autosavePausedRef.current.clear()
-					activeRef.current = null
+					if (!session.activateGrant(result.right)) return
 					setRevealTarget(null)
 					setDefaultWorkspacePreference(source !== "picker")
 					// Invalidate refreshes that may have started while the native picker was open.
 					openRequestRef.current += 1
 
 					setWorkspace(result.right)
-					setActiveDocument(null)
-					installSource("")
-					setDirty(false)
 				}
 			} catch {
-				if (mutationOwnerRef.current === owner && isCurrentOrigin()) {
+				if (effects.owns(owner) && isCurrentOrigin()) {
 					setError(
 						"Workspace approval ended unexpectedly; no new workspace was installed. Refresh and reconcile before a manual retry.",
 					)
@@ -1189,18 +1232,15 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				// A rejected approval has no known grant: never release an ambient root.
 				// Only a returned, unused capability belongs to this request.
 				try {
-					if (granted?.capabilityToken && grantRef.current !== granted) {
-						await releaseOrgWorkspace(granted.rootPath, granted.capabilityToken)()
-					}
+					await session.releaseUnusedGrant(granted)
 				} catch {
 					// Cleanup failure does not justify releasing any other capability.
 				} finally {
-					if (rootApprovalOwnerRef.current === owner) rootApprovalOwnerRef.current = null
 					finishMutation(owner)
 				}
 			}
 		},
-		[aggregateDirty, workspace, dirtyPath, originSession, originActivation, originPath],
+		[confirm, aggregateDirty, workspace, dirtyPath, originSession, originActivation, originPath],
 	)
 
 	const openDefaultWorkspace = useCallback(
@@ -1213,7 +1253,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	)
 
 	useEffect(() => {
-		if (!nativeCloseReady || restoreAttemptedRef.current) {
+		if (!nativeCloseReady || restoreAttemptedRef.current || !isCurrentOrigin()) {
 			return
 		}
 		restoreAttemptedRef.current = true
@@ -1229,11 +1269,11 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			signal?: AbortSignal,
 			// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: parking is committed only after all read, edit, abort, and revision guards pass.
 		): Promise<boolean> => {
-			if (!workspace || !isCurrentOrigin() || signal?.aborted || saveAllOwnerRef.current) {
+			if (!workspace || !isCurrentOrigin() || signal?.aborted || effects.getSnapshot().globalBusy) {
 				return false
 			}
-			if (activeRef.current?.relativePath === entry.relativePath) {
-				if (expectedRevision && activeRef.current.revision !== expectedRevision) {
+			if (session.document?.relativePath === entry.relativePath) {
+				if (expectedRevision && session.document.revision !== expectedRevision) {
 					setError(`Org link target changed while opening: ${entry.relativePath}`)
 					return false
 				}
@@ -1243,40 +1283,23 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			const isSameTargetBuffer = () =>
 				!targetBufferId ||
 				bufferIdentity.lookup(identityScope, entry.relativePath) === targetBufferId
-			if (mutationInProgressRef.current) {
-				const inFlight = saveInFlightRef.current
-				if (!inFlight) {
-					return false
-				}
-				const contentBeingSaved = saveInFlightContentRef.current
-				const saved = await inFlight
-				if (!isCurrentOrigin()) return false
-				if (signal?.aborted) {
-					return false
-				}
-				if (!canContinueAfterOrgSave(saved, contentBeingSaved, latestContentRef.current)) {
-					setError("New edits arrived while saving; navigation was paused until they are saved.")
-					return false
-				}
-			}
-			if (mutationInProgressRef.current || !isCurrentOrigin() || !isSameTargetBuffer()) return false
+			if (fileBusy(entry.relativePath) || !isCurrentOrigin() || !isSameTargetBuffer()) return false
 			const parked = parkedReservoir.read(identityScope, entry.relativePath)
-			const editGenerationAtStart = editGenerationRef.current
+			const sourceCapture = originPath ? session.captureFile(identityScope, originPath) : null
 			const requestId = openRequestRef.current + 1
-			const contentAtStart = latestContentRef.current
 			openRequestRef.current = requestId
-			setLoading(true)
+			const read = effects.beginRead("openDocument", [entry.relativePath])
 			setError(null)
 			const cancelRead = () => {
 				if (openRequestRef.current !== requestId) {
 					return
 				}
 				openRequestRef.current += 1
-				setLoading(false)
+				read.finish()
 			}
 			signal?.addEventListener("abort", cancelRead, { once: true })
 			try {
-				if (signal?.aborted) {
+				if (signal?.aborted || !read.isCurrent() || !isCurrentOrigin()) {
 					cancelRead()
 					return false
 				}
@@ -1285,16 +1308,15 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					capabilityToken: workspace.capabilityToken,
 					workspaceRoot: workspace.rootPath,
 				})()
-				if (requestId !== openRequestRef.current || !isCurrentOrigin()) {
+				if (!read.isCurrent() || requestId !== openRequestRef.current || !isCurrentOrigin()) {
 					return false
 				}
-				setLoading(false)
+				read.finish()
 				if (signal?.aborted || !isSameTargetBuffer()) {
 					return false
 				}
 				if (
-					latestContentRef.current !== contentAtStart ||
-					editGenerationRef.current !== editGenerationAtStart
+					sourceCapture && !session.fileCaptureIsCurrent(sourceCapture)
 				) {
 					setError("Document changed while another document was opening; the open was cancelled.")
 					return false
@@ -1308,8 +1330,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					protectedParked &&
 					(E.isLeft(result) || result.right.revision !== parked.document.revision)
 				) {
-					conflictsRef.current.add(entry.relativePath)
-					autosavePausedRef.current.add(entry.relativePath)
+					session.protect(identityScope, entry.relativePath, "conflict")
 					setError(`External modification detected for ${entry.relativePath}.`)
 				}
 				const nextDocument = protectedParked
@@ -1321,7 +1342,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					return false
 				}
 				if (!protectedParked) {
-					conflictsRef.current.delete(entry.relativePath)
+					session.reconcileProtection(identityScope, entry.relativePath, "conflict")
 				}
 				if (expectedRevision && nextDocument.revision !== expectedRevision) {
 					setError(`Org link target changed while opening: ${entry.relativePath}`)
@@ -1329,43 +1350,21 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				}
 				// Invalidate refreshes that may have started while this document was opening.
 				openRequestRef.current += 1
-				const previous = activeRef.current
-				if (previous) {
-					parkedReservoir.park(identityScope, bufferIdFor(previous.relativePath), {
-						content: latestContentRef.current,
-						document: previous,
-						editGeneration: editGenerationRef.current,
-						isDirty: latestContentRef.current !== previous.content,
-					})
-				}
-				// An unknown inactive disk body is a new authority, not a mapped edit.
-				// Keep the logical buffer lease, but retire its canonical history and
-				// attached windows (including an A/B/A switch batched before effects).
-				// Known controller writes already update the parked source; protected
-				// working copies must retain their body/history instead of importing disk.
-				if (parked && !protectedParked && parked.content !== nextDocument.content) {
-					const id = bufferIdentity.lookup(identityScope, entry.relativePath)
-					if (id) {
-						registry.retire(runtimeKey(id))
-					}
-				}
-				parkedReservoir.takeToActivate(
-					identityScope,
-					bufferIdentity.lookup(identityScope, entry.relativePath) ?? "",
-				)
-				bufferIdFor(entry.relativePath)
-				setRevealTarget(null)
-				activationRef.current += 1
-				activeRef.current = nextDocument
-				setActiveDocument(nextDocument)
 				const nextContent = protectedParked ? parked.content : nextDocument.content
-				installSource(nextContent)
-				return true
+				const activated = session.activateDocument(
+					identityScope,
+					nextDocument,
+					nextContent,
+					Boolean(parked && !protectedParked && parked.content !== nextDocument.content),
+				)
+				if (activated) setRevealTarget(null)
+				return activated
 			} finally {
 				signal?.removeEventListener("abort", cancelRead)
+				read.finish()
 			}
 		},
-		[workspace, bufferIdFor, originSession, originActivation, originPath],
+		[workspace, originSession, originActivation, originPath],
 	)
 
 	const runAgendaOperation = useCallback(
@@ -1375,9 +1374,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			signal?: AbortSignal,
 			options?: OrgAgendaExecutionOptions,
 		) => {
-			const grant = originGrant
-			const session = originSession
-			const scope = grant && session ? { grant, sessionId: session } : null
+			const scope = identityScope
 			return runOrgAgendaOperationFlow(
 				entry,
 				operation,
@@ -1385,39 +1382,21 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					scope,
 					captureClock: () => formatOrgLocalTimestamp(new Date()),
 					snapshot: (path) => ({
-						current:
-							mountedRef.current && grantRef.current === grant && sessionRef.current === session,
-						nativeReady: nativeCloseReadyRef.current,
+						current: session.matches(scope),
+						nativeReady: session.closeReady,
 						mirrorsMutable: parkedReservoir.canMutate(),
-						loading: loadingRef.current,
-						mutating: mutationInProgressRef.current,
-						saving: Boolean(saveInFlightRef.current),
-						saveAll: Boolean(saveAllOwnerRef.current),
-						agendaBusy: Boolean(agendaCommandOwnerRef.current),
-						conflict: conflictsRef.current.has(path),
-						paused: autosavePausedRef.current.has(path),
+						loading: effects.getFileSnapshot(path).loading,
+						mutating: effects.getFileSnapshot(path).busy,
+						saving: Boolean(effects.getFileSnapshot(path).saveInFlight),
+						saveAll: effects.getFileSnapshot(path).kind === "save-all",
+						agendaBusy: Boolean(effects.agendaBusy),
+						conflict: session.hasConflict(path),
+						paused: session.isAutosavePaused(path),
 					}),
-					claim: () => {
-						const owner = Symbol("agendaCommand")
-						agendaCommandOwnerRef.current = owner
-						return {
-							isCurrent: () => agendaCommandOwnerRef.current === owner,
-							startRead: () => {
-								mutationOwnerRef.current = owner
-								mutationInProgressRef.current = true
-								setLoading(true)
-							},
-							readIsCurrent: () => mutationOwnerRef.current === owner,
-							finishRead: () => finishMutation(owner),
-							release: () => {
-								if (agendaCommandOwnerRef.current === owner) agendaCommandOwnerRef.current = null
-								finishMutation(owner)
-							},
-						}
-					},
+					claim: () => effects.claimAgenda([entry.relativePath]),
 					readWorkingCopy: (path) => {
-						if (activeRef.current?.relativePath === path)
-							return { document: activeRef.current, content: latestContentRef.current }
+						if (session.document?.relativePath === path)
+							return { document: session.document, content: session.source }
 						const parked = parkedReservoir.read(scope, path)
 						return parked ? { document: parked.document, content: parked.content } : undefined
 					},
@@ -1430,26 +1409,9 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 						})()
 					},
 					lookupId: (path) => (scope ? bufferIdentity.lookup(scope, path) : undefined),
-					parkEditSource: (path, document, body) => {
-						if (!scope) return undefined
-						const id = bufferIdentity.ensure(scope, path)
-						return parkedReservoir.park(scope, id, {
-							document,
-							content: body,
-							editGeneration: 0,
-							isDirty: false,
-						})
-							? id
-							: undefined
-					},
-					createRuntime: (id, body) => {
-						if (!scope) throw new Error("Missing agenda scope.")
-						registry.create(
-							{ workspaceSessionId: scope.sessionId, bufferId: id },
-							body,
-							runtimePorts(scope.grant, scope.sessionId),
-						)
-					},
+					parkEditSource: (path, document, body) =>
+						session.parkCommandSource(scope, path, document, body),
+					createRuntime: (id, body) => session.createParkedRuntime(scope, id, body),
 					getRuntime: (id) =>
 						scope ? registry.get({ workspaceSessionId: scope.sessionId, bufferId: id }) : undefined,
 					runtimeIdentity: runtimeIncarnation,
@@ -1485,15 +1447,21 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			),
 		[runAgendaOperation],
 	)
-	const actOnAgendaEntry = useCallback(
-		(entry: OrgAgendaEntry, signal?: AbortSignal) =>
-			executeAgendaCommand(entry, { kind: "cycle-todo" }, signal),
-		[executeAgendaCommand],
-	)
-	const prepareAgendaPlanning = useCallback(
-		(entry: OrgAgendaEntry, field: "schedule" | "deadline", signal?: AbortSignal) =>
+	clock.configure({
+		scope: identityScope,
+		rootPath: identityScope?.grant.rootPath ?? null,
+		isCurrent: () => session.matches(identityScope),
+		buffers: () => session.snapshotLiveBuffers(identityScope).map(({ document, runtime }) => ({ relativePath: document.relativePath, runtime })),
+		available: (path) => session.matches(identityScope) && session.closeReady && parkedReservoir.canMutate() &&
+			!effects.getFileSnapshot(path).busy && !effects.getFileSnapshot(path).loading &&
+			!session.hasConflict(path) && !session.isAutosavePaused(path),
+		commit: (runtime, source, edits, guard) => registry.applyCommandEdits(runtime.key, source, edits, guard),
+		agenda: (entry, command, signal, isCurrent) => executeAgendaCommand(entry, command, signal, { isCurrent }),
+	})
+	const prepareAgendaCommand = useCallback(
+		(entry: OrgAgendaEntry, field: "schedule" | "deadline" | "todo-state", signal?: AbortSignal) =>
 			runAgendaOperation(entry, { kind: "prepare", field }, signal).then(
-				(result): OrgAgendaPlanningPreparation =>
+				(result): OrgAgendaPreparation =>
 					result.kind === "ready"
 						? result
 						: result.kind === "stale" || result.kind === "rejected"
@@ -1527,19 +1495,18 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			if (
 				!isCurrentOrigin() ||
 				signal?.aborted ||
-				mutationInProgressRef.current ||
-				saveAllOwnerRef.current
+				effects.getSnapshot().globalBusy
 			) {
 				return false
 			}
 			// IDs are opaque and grant-local: only resolve live buffers in the latest map.
 			const path = bufferIdentity.findPath(identityScope, bufferId)
 			if (!path) return false
-			if (activeRef.current?.relativePath === path) return true
+			if (session.document?.relativePath === path) return true
 			if (!parkedReservoir.read(identityScope, path)) return false
-			return openDocumentPath(path, undefined, signal)
+			return activateOpenBuffer(bufferId)
 		},
-		[openDocumentPath, originSession, originActivation, originPath],
+		[activateOpenBuffer, originSession, originActivation, originPath],
 	)
 
 	const openDocumentAt = useCallback(
@@ -1547,105 +1514,194 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			relativePath: string,
 			line: number,
 			expectedRevision?: string | null,
+			isTargetCurrent?: (phase: "before" | "after") => boolean,
+			signal?: AbortSignal,
+			captured?: OrgNavigationSource,
 		): Promise<boolean> => {
-			if (!isCurrentOrigin()) return false
+			const ownsSource = captured?.isCurrent ?? isCurrentOrigin
+			if (!ownsSource() || signal?.aborted || isTargetCurrent && !isTargetCurrent("before")) return false
+			if (captured) {
+				if (!workspace || !isSafeRelativeOrgPath(relativePath) || !Number.isSafeInteger(line) || line < 1 || fileBusy(relativePath))
+					return false
+				let target = session.snapshotLiveBuffers(identityScope).find(buffer => buffer.document.relativePath === relativePath)
+				if (!target) {
+					if (protectedPath(relativePath)) return false
+					const targetCapture = session.captureFile(identityScope, relativePath)
+					const read = effects.beginRead("openCapturedOrgDocumentAt", [relativePath], "captured-org-navigation")
+					try {
+						const opened = await openOrgDocumentFlow({
+							relativePath, workspaceRoot: workspace.rootPath, capabilityToken: workspace.capabilityToken,
+						})()
+						if (!captured.isCurrent() || signal?.aborted || !read.isCurrent() ||
+							!session.fileCaptureIsCurrent(targetCapture) || E.isLeft(opened) ||
+							opened.right.relativePath !== relativePath || typeof opened.right.content !== "string" ||
+							expectedRevision != null && opened.right.revision !== expectedRevision) return false
+						if (session.snapshotLiveBuffers(identityScope).some(buffer => buffer.document.relativePath === relativePath)) return false
+						const id = session.parkCommandSource(identityScope, relativePath, opened.right, opened.right.content)
+						if (!id) return false
+						session.createParkedRuntime(identityScope, id, opened.right.content)
+						target = session.snapshotLiveBuffers(identityScope).find(buffer => buffer.bufferId === id)
+					} catch {
+						if (captured.isCurrent()) setError("The captured navigation target could not be read; originating Source was retained.")
+						return false
+					} finally { read.finish() }
+				}
+				if (!target || expectedRevision != null && target.document.revision !== expectedRevision) return false
+				const targetCapture = session.captureFile(identityScope, relativePath)
+				if (isTargetCurrent && !isTargetCurrent("after")) return false
+				if (!captured.isCurrent() || signal?.aborted || !session.fileCaptureIsCurrent(targetCapture) || fileBusy(relativePath)) return false
+				// The registered native coordinator owns the deliberate rebind and its ACK;
+				// successful navigation intentionally retires the original presentation lease.
+				return await captured.navigate(target.bufferId, line)
+			}
 			const revealActivation =
-				originActivation + (activeRef.current?.relativePath !== relativePath ? 1 : 0)
-			if (activeRef.current?.relativePath !== relativePath) {
-				const opened = await openDocumentPath(relativePath, expectedRevision)
+				originActivation + (session.document?.relativePath !== relativePath ? 1 : 0)
+			if (session.document?.relativePath !== relativePath) {
+				const opened = await openDocumentPath(relativePath, expectedRevision, signal)
 				if (!opened) {
 					return false
 				}
 			}
 			if (
-				grantRef.current !== originGrant ||
-				sessionRef.current !== originSession ||
-				activationRef.current !== revealActivation ||
-				activeRef.current?.relativePath !== relativePath
+				signal?.aborted ||
+				!session.isCurrentOrigin(origin, revealActivation, relativePath) ||
+				(isTargetCurrent && !isTargetCurrent("after"))
 			)
 				return false
 			revealRequestRef.current += 1
 			setRevealTarget({ line, relativePath, requestId: revealRequestRef.current })
 			return true
 		},
-		[activeDocument, openDocumentPath, originSession, originActivation, originPath],
+		[activeDocument, openDocumentPath, workspace, identityScope, originSession, originActivation, originPath],
 	)
 
 	const openOrgLink = useCallback(
-		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: scan, stale guards, resolution, and navigation form one transaction.
-		async (target: OrgLinkClickTarget): Promise<boolean> => {
-			const sourceDocument = activeRef.current
-			if (!workspace || !sourceDocument || !isCurrentOrigin() || mutationInProgressRef.current) {
-				return false
-			}
-			const sourcePath = sourceDocument.relativePath
-			const contentAtStart = latestContentRef.current
+		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: exact query provenance and final reveal guards form one navigation transaction.
+		async (target: OrgLinkClickTarget, captured?: OrgNavigationSource): Promise<boolean> => {
+			const ownsSource = captured?.isCurrent ?? isCurrentOrigin
+			if (!workspace || !ownsSource() || effects.getSnapshot().globalBusy) return false
+			linkAbortRef.current?.abort()
+			const controller = new AbortController()
+			linkAbortRef.current = controller
+			const sourceCapture = captured?.capture ?? (originPath ? session.captureFile(identityScope, originPath) : null)
 			const requestGeneration = openRequestRef.current
-			const linkRequest = linkRequestRef.current + 1
-			linkRequestRef.current = linkRequest
+			const linkRequest = ++linkRequestRef.current
+			const current = () => !controller.signal.aborted && ownsSource() &&
+				!effects.getSnapshot().globalBusy && linkRequest === linkRequestRef.current &&
+				(captured !== undefined || requestGeneration === openRequestRef.current)
+			const sourceUnchanged = () => !sourceCapture || session.fileCaptureIsCurrent(sourceCapture)
 			setError(null)
-
-			// Explicit navigation rescans first instead of trusting a possibly stale watcher snapshot.
-			const scanned = await scanOrgWorkspaceFlow(workspace.rootPath, workspace.capabilityToken)()
-			if (
-				!isCurrentOrigin() ||
-				linkRequest !== linkRequestRef.current ||
-				requestGeneration !== openRequestRef.current
-			) {
+			try {
+				// Scan remains filesystem metadata only; every open working body precedes disk resolution.
+				const scanned = await scanOrgWorkspaceFlow(workspace.rootPath, workspace.capabilityToken)()
+				if (!current()) return false
+				if (!sourceUnchanged()) {
+					setError("Document changed while resolving the Org link; try again.")
+					return false
+				}
+				if (E.isLeft(scanned)) {
+					setError(scanned.left.message)
+					return false
+				}
+				const scannedWorkspace = { ...scanned.right, capabilityToken: workspace.capabilityToken }
+				setWorkspace(scannedWorkspace)
+				const { overlays } = orgQuerySourcesFromController({
+					workspace: scannedWorkspace,
+					workspaceSessionId: originSession,
+					liveBuffers: session.snapshotLiveBuffers(identityScope),
+				})
+				const result = await resolveOrgLinkTargetFlow(
+					scannedWorkspace,
+					target,
+					overlays,
+					undefined,
+					undefined,
+					{ workspaceSessionId: originSession ?? undefined },
+					controller.signal,
+				)()
+				if (!current()) return false
+				if (!sourceUnchanged()) {
+					setError("Document changed while resolving the Org link; try again.")
+					return false
+				}
+				if (E.isLeft(result)) {
+					setError(result.left.message)
+					return false
+				}
+				const resolved = result.right
+				if (resolved.workspaceRoot !== workspace.rootPath ||
+					resolved.capabilityToken !== workspace.capabilityToken ||
+					resolved.workspaceSessionId !== originSession) return false
+				if (resolved.source === "live") {
+					const overlay = overlays.find((buffer) => buffer.relativePath === resolved.relativePath)
+					const targetIsCurrent = () => {
+						const live = session.snapshotLiveBuffers(identityScope)
+							.find((buffer) => buffer.document.relativePath === resolved.relativePath)
+						return !!overlay && !!live && live.bufferId === resolved.sourceRevision &&
+							live.document.revision === resolved.diskRevision && live.content === overlay.content &&
+							live.runtimeIncarnation === resolved.runtimeIncarnation &&
+							live.sourceGeneration === resolved.sourceGeneration
+					}
+					if (!targetIsCurrent()) {
+						setError("Org link target changed while resolving; try again.")
+						return false
+					}
+					if (captured) return await openDocumentAt(resolved.relativePath, resolved.line, resolved.diskRevision, targetIsCurrent, controller.signal, captured)
+					const previousActivation = session.activation
+					if (!session.activateOpenBuffer(identityScope, resolved.sourceRevision)) return false
+					if (!targetIsCurrent() || session.document?.relativePath !== resolved.relativePath) return false
+					if (session.activation !== previousActivation) openRequestRef.current += 1
+					revealRequestRef.current += 1
+					setRevealTarget({
+						relativePath: resolved.relativePath,
+						line: resolved.line,
+						requestId: revealRequestRef.current,
+					})
+					return true
+				}
+				// Never apply a disk-established line to a working copy opened during resolution.
+				if (session.snapshotLiveBuffers(identityScope)
+					.some((buffer) => buffer.document.relativePath === resolved.relativePath)) {
+					setError("Org link target changed while resolving; try again.")
+					return false
+				}
+				return await openDocumentAt(resolved.relativePath, resolved.line, resolved.expectedRevision, (phase) => {
+					if (captured && (!current() || !sourceUnchanged())) return false
+					const live = session.snapshotLiveBuffers(identityScope)
+						.find((buffer) => buffer.document.relativePath === resolved.relativePath)
+					return !controller.signal.aborted && linkRequest === linkRequestRef.current &&
+						!fileBusy(resolved.relativePath) && !protectedPath(resolved.relativePath) &&
+						(phase === "before" ? !live : !!live &&
+							live.document.revision === resolved.expectedRevision &&
+							live.content === live.document.content)
+				}, controller.signal, captured)
+			} catch {
+				if (current()) setError("Org link resolution ended unexpectedly; try again.")
 				return false
+			} finally {
+				if (linkAbortRef.current === controller) linkAbortRef.current = null
 			}
-			if (latestContentRef.current !== contentAtStart) {
-				setError("Document changed while resolving the Org link; try again.")
-				return false
-			}
-			if (E.isLeft(scanned)) {
-				setError(scanned.left.message)
-				return false
-			}
-			setWorkspace({ ...scanned.right, capabilityToken: workspace.capabilityToken })
-			const result = await resolveOrgLinkTargetFlow(
-				{ ...scanned.right, capabilityToken: workspace.capabilityToken },
-				sourcePath,
-				contentAtStart,
-				target,
-			)()
-			if (
-				!isCurrentOrigin() ||
-				linkRequest !== linkRequestRef.current ||
-				requestGeneration !== openRequestRef.current
-			) {
-				return false
-			}
-			if (latestContentRef.current !== contentAtStart) {
-				setError("Document changed while resolving the Org link; try again.")
-				return false
-			}
-			if (E.isLeft(result)) {
-				setError(result.left.message)
-				return false
-			}
-			return openDocumentAt(
-				result.right.relativePath,
-				result.right.line,
-				result.right.expectedRevision,
-			)
 		},
 		[activeDocument, openDocumentAt, workspace, originSession, originActivation, originPath],
 	)
 
+	const captureActiveTransferSource = (): OrgTransferSource | null => {
+		const capture = session.document ? session.captureFile(identityScope, session.document.relativePath) : null
+		return capture?.baseline ? { capture, isCurrent: () => isCurrentOrigin() && session.fileCaptureIsCurrent(capture) } : null
+	}
+
 	const readRefileTarget = useCallback(
-		async (path: string, signal?: AbortSignal): Promise<OrgRefileTargetOutcome> => {
+		async (path: string, signal?: AbortSignal, captured = captureActiveTransferSource()): Promise<OrgRefileTargetOutcome> => {
 			const rejected = (message: string): OrgRefileTargetOutcome => ({ kind: "rejected", message })
-			const source = activeRef.current
+			const source = captured?.capture.baseline
 			// Every lookup supersedes earlier requests, including rejected lookups.
 			const request = ++refileTargetRequestRef.current
 			if (
 				signal?.aborted ||
-				!isCurrentOrigin() ||
+				!captured?.isCurrent() ||
 				!workspace ||
 				!source ||
-				liveWorkspaceRef.current?.rootPath !== workspace.rootPath ||
-				mutationInProgressRef.current ||
+				fileBusy(source.relativePath, path) ||
 				protectedPath(source.relativePath) ||
 				protectedPath(path)
 			)
@@ -1660,26 +1716,17 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					source.relativePath.normalize("NFC").toLocaleLowerCase("en-US")
 			)
 				return rejected("Refile target must be a safe, distinct relative Org path.")
-			const generation = editGenerationRef.current
-			const sourceContent = latestContentRef.current
-			const parkedTarget = parkedReservoir.read(identityScope, path)
+			const sourceCapture = captured.capture
+			const targetCapture = session.captureFile(identityScope, path)
+			if (!targetCapture) return rejected("Refile target scope is no longer available.")
 			const current = () =>
-				!signal?.aborted &&
-				isCurrentOrigin() &&
-				request === refileTargetRequestRef.current &&
-				liveWorkspaceRef.current?.rootPath === workspace.rootPath &&
-				activeRef.current === source &&
-				latestContentRef.current === sourceContent &&
-				editGenerationRef.current === generation &&
-				!mutationInProgressRef.current &&
-				!protectedPath(source.relativePath) &&
-				!protectedPath(path) &&
-				parkedReservoir.read(identityScope, path) === parkedTarget
-			let abortListener: (() => void) | undefined
-			const cancelled = new Promise<OrgRefileTargetOutcome>((resolve) => {
-				abortListener = () => resolve(rejected("Refile target lookup was cancelled."))
-				signal?.addEventListener("abort", abortListener, { once: true })
-			})
+				!signal?.aborted && request === refileTargetRequestRef.current && captured.isCurrent() &&
+				session.fileCaptureIsCurrent(sourceCapture) && session.fileCaptureIsCurrent(targetCapture) &&
+				!fileBusy(source.relativePath, path) &&
+				!protectedPath(source.relativePath) && !protectedPath(path)
+			const cancellation = Promise.withResolvers<OrgRefileTargetOutcome>()
+			const abortListener = () => cancellation.resolve(rejected("Refile target lookup was cancelled."))
+			signal?.addEventListener("abort", abortListener, { once: true })
 			try {
 				const lookup = (async (): Promise<OrgRefileTargetOutcome> => {
 					try {
@@ -1692,16 +1739,16 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 						})()
 						if (!current())
 							return rejected("Refile target lookup is stale; request a fresh target.")
-						return E.isLeft(result)
-							? rejected(result.left.message)
-							: { kind: "ready", snapshot: result.right }
+						if (E.isLeft(result)) return rejected(result.left.message)
+						refileTargets.set(result.right, { source: sourceCapture, target: targetCapture })
+						return { kind: "ready", snapshot: result.right }
 					} catch {
 						return rejected("Cannot read the refile target.")
 					}
 				})()
-				return await Promise.race([lookup, cancelled])
+				return await Promise.race([lookup, cancellation.promise])
 			} finally {
-				if (abortListener) signal?.removeEventListener("abort", abortListener)
+				signal?.removeEventListener("abort", abortListener)
 			}
 		},
 		[workspace, dirtyPath, originGrant, originSession, originActivation, originPath],
@@ -1713,21 +1760,23 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			cursor: number,
 			targetRelativePath?: string,
 			target?: OrgRefileTargetSelection,
+			captured = captureActiveTransferSource(),
 		): Promise<OrgSubtreeTransferOutcome> => {
-			const sourceDocument = activeRef.current
-			if (!isCurrentOrigin())
+			const sourceDocument = captured?.capture.baseline
+			if (!captured?.isCurrent())
 				return { kind: "rejected", message: "The source buffer is no longer active." }
-			const sourceGeneration = editGenerationRef.current
 			if (
 				target !== undefined &&
 				(!target ||
 					typeof target !== "object" ||
-					typeof target.expectedTargetRevision !== "string" ||
-					!target.expectedTargetRevision.trim() ||
+					!target.snapshot ||
+					typeof target.snapshot.revision !== "string" ||
+					!target.snapshot.revision.trim() ||
+					target.snapshot.relativePath !== targetRelativePath ||
 					(target.targetHeading !== undefined &&
 						(!target.targetHeading ||
 							typeof target.targetHeading !== "object" ||
-							target.expectedTargetRevision === "<missing>" ||
+							target.snapshot.revision === "<missing>" ||
 							!Number.isSafeInteger(target.targetHeading.from) ||
 							target.targetHeading.from < 0 ||
 							typeof target.targetHeading.heading !== "string" ||
@@ -1735,23 +1784,16 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 							/[\r\n]/.test(target.targetHeading.heading))))
 			)
 				return { kind: "rejected", message: "Invalid refile target selection." }
-			const rejectionMessage =
-				targetRelativePath && protectedPath(targetRelativePath)
-					? "Save or discard the target buffer before refiling a subtree."
-					: !targetRelativePath &&
-							(autosavePausedRef.current.size > 0 ||
-								conflictsRef.current.size > 0 ||
-								parkedReservoir.list(identityScope).some((buffer) => buffer.isDirty))
-						? "Save or discard inactive buffers before archiving a subtree."
-						: !workspace
-							? "Open an Org workspace before refiling or archiving a subtree."
-							: !sourceDocument
-								? "Open a document before refiling or archiving a subtree."
-								: mutationInProgressRef.current
-									? "Another workspace mutation is in progress; subtree transfer was not started."
-									: protectedPath(sourceDocument.relativePath)
-										? "Save the current document before refiling or archiving a subtree."
-										: null
+			const affectedTargetPath = targetRelativePath ?? (sourceDocument ? deriveOrgArchivePath(sourceDocument.relativePath) : null)
+			const rejectionMessage = !workspace
+				? "Open an Org workspace before refiling or archiving a subtree."
+				: !sourceDocument
+					? "Open a document before refiling or archiving a subtree."
+					: fileBusy(sourceDocument.relativePath, ...(affectedTargetPath ? [affectedTargetPath] : []))
+						? "An affected file is busy; subtree transfer was not started."
+						: protectedPath(sourceDocument.relativePath) || (affectedTargetPath && protectedPath(affectedTargetPath))
+							? "Save or reconcile the affected buffers before transferring a subtree."
+							: null
 			if (rejectionMessage) {
 				setError(rejectionMessage)
 				return { kind: "rejected", message: rejectionMessage }
@@ -1759,41 +1801,37 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			if (!workspace || !sourceDocument) {
 				return { kind: "rejected", message: "No active Org document is available." }
 			}
-			const sourceContent = latestContentRef.current
 			const sourcePath = sourceDocument.relativePath
-			const affectedTargetPath = targetRelativePath ?? deriveOrgArchivePath(sourcePath)
-			const targetBuffer = affectedTargetPath
-				? parkedReservoir.read(identityScope, affectedTargetPath)
-				: undefined
+			const sourceCapture = captured.capture
+			const reviewedTarget = target ? refileTargets.get(target.snapshot) : null
+			if (target && (!reviewedTarget || !session.fileCaptureIsCurrent(reviewedTarget.source) ||
+				!session.fileCaptureIsCurrent(reviewedTarget.target)))
+				return { kind: "rejected", message: "The reviewed Refile file owners changed. Look up and confirm a fresh target." }
+			const targetCapture = reviewedTarget?.target ??
+				(affectedTargetPath ? session.captureFile(identityScope, affectedTargetPath) : null)
+			if (!sourceCapture || !targetCapture || !affectedTargetPath)
+				return { kind: "rejected", message: "The affected file owners are no longer available." }
+			const sourceContent = sourceCapture.source ?? sourceDocument.content
+			if (target?.logging && target.logging.expectedSourceContent !== sourceContent)
+				return { kind: "rejected", message: "The reviewed logging source changed. Reopen Refile." }
 			const latchAffectedPaths = () => {
 				for (const path of [sourcePath, affectedTargetPath]) {
 					if (!path) continue
-					autosavePausedRef.current.add(path)
-					conflictsRef.current.add(path)
+					session.protect(identityScope, path, "conflict")
 				}
 				refileTargetRequestRef.current += 1
-				publishBuffers((version) => version + 1)
+				
 			}
 			const expectedSourceRevision = sourceDocument.revision
-			openRequestRef.current += 1
-			setLoading(false)
-			const owner = Symbol("transferSubtree")
-			mutationOwnerRef.current = owner
-			mutationInProgressRef.current = true
+			const owner = effects.begin({ label: "transferSubtree", paths: [sourcePath, affectedTargetPath] })
 			refileTargetRequestRef.current += 1
-			setSaving(true)
+			
 			setError(null)
 			const commonInput = {
 				confirmSourceUnchanged: () =>
-					isCurrentOrigin() &&
-					editGenerationRef.current === sourceGeneration &&
-					latestContentRef.current === sourceContent &&
-					activeRef.current === sourceDocument &&
-					liveWorkspaceRef.current?.rootPath === workspace.rootPath &&
-					!protectedPath(sourcePath) &&
-					(!affectedTargetPath ||
-						(!protectedPath(affectedTargetPath) &&
-							parkedReservoir.read(identityScope, affectedTargetPath) === targetBuffer)),
+					effects.owns(owner) && captured.isCurrent() && session.fileCaptureIsCurrent(sourceCapture) &&
+					session.fileCaptureIsCurrent(targetCapture) &&
+					!protectedPath(sourcePath) && !protectedPath(affectedTargetPath),
 				isProtectedPath: (path: string) => protectedPath(path),
 				cursor,
 				expectedSourceRevision,
@@ -1804,11 +1842,14 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			}
 			try {
 				const result = await (targetRelativePath
-					? refileOrgSubtreeFlow({ ...commonInput, ...target, targetRelativePath })()
+					? refileOrgSubtreeFlow({ ...commonInput, targetRelativePath,
+						...(target ? { expectedTargetRevision: target.snapshot.revision,
+							expectedTargetContent: target.snapshot.source,
+							targetHeading: target.targetHeading, logging: target.logging } : {}),
+					})()
 					: archiveOrgSubtreeFlow(commonInput)())
-				if (!isCurrentOrigin()) {
-					finishMutation(owner)
-					return { kind: "rejected", message: "The source buffer is no longer active." }
+				if (!effects.owns(owner) || !session.matches(identityScope)) {
+					return { kind: "rejected", message: "The original workspace owner is no longer current." }
 				}
 				if (E.isLeft(result)) {
 					const partial =
@@ -1833,14 +1874,9 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 						result.right.source,
 					)
 				})
-				const newerTarget = installedTargetSource(result.right.target, targetBuffer)
-				activeRef.current = result.right.source
-				setActiveDocument(result.right.source)
-				if (
-					editGenerationRef.current === sourceGeneration &&
-					latestContentRef.current === sourceContent
-				) {
-					installSource(result.right.source.content)
+				const newerTarget = installedTargetSource(result.right.target, targetCapture)
+				const newerSource = installedTargetSource(result.right.source, sourceCapture)
+				if (!newerSource) {
 					if (newerTarget) {
 						const message =
 							"The subtree moved, but newer target input was retained. Reread and reconcile the target before saving."
@@ -1849,16 +1885,15 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					}
 					return { kind: "success" }
 				}
-				setDirty(true)
 				const message =
 					"The subtree moved, but newer editor input was retained. Review and save the source to reconcile it."
 				setError(message)
 				return { kind: "success", message }
 			} catch {
-				if (mutationOwnerRef.current !== owner || !isCurrentOrigin())
+				if (!effects.owns(owner) || !session.matches(identityScope))
 					return {
 						kind: "partial",
-						message: "The source buffer is no longer active; reread the affected files.",
+						message: "The original workspace owner was retired; reread the affected files.",
 					}
 				latchAffectedPaths()
 				const message =
@@ -1878,102 +1913,189 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		[transferSubtree, originSession, originActivation, originPath],
 	)
 
+	const captureBufferTransfer = useCallback((bufferId: string, windowId: string, isCurrent: () => boolean): OrgCapturedBufferTransfer | null => {
+		const path = bufferIdentity.findPath(identityScope, bufferId)
+		const capture = path ? session.captureFile(identityScope, path) : null
+		const permit = session.captureWindowPermit(identityScope, windowId, bufferId)
+		if (!capture?.baseline || !capture.runtime || !permit || !permit() || !isCurrent() ||
+			capture.bufferId !== bufferId || !session.fileCaptureIsCurrent(capture)) return null
+		const captured: OrgTransferSource = Object.freeze({
+			capture,
+			isCurrent: () => permit() && isCurrent() && session.closeReady && session.fileCaptureIsCurrent(capture),
+		})
+		return Object.freeze({
+			readRefileTarget: (path: string, signal?: AbortSignal) => readRefileTarget(path, signal, captured),
+			refileSubtree: (cursor: number, path: string, selection?: OrgRefileTargetSelection) => transferSubtree(cursor, path, selection, captured),
+			archiveSubtree: (cursor: number) => transferSubtree(cursor, undefined, undefined, captured),
+		})
+	}, [identityScope, readRefileTarget, transferSubtree])
+
 	const archiveSubtree = useCallback(
 		async (cursor: number) => transferSubtree(cursor),
 		[transferSubtree, originSession, originActivation, originPath],
 	)
+	const captureFileReview = useCallback((bufferId: string, windowId: string, relativePath?: string) => {
+		const scope = identityScope
+		const originPath = bufferIdentity.findPath(scope, bufferId)
+		const path = relativePath ?? originPath
+		const capture = path ? session.captureFile(scope, path) : null
+		const originCapture = originPath && path !== originPath ? session.captureFile(scope, originPath) : null
+		const windowPermit = session.captureReviewWindowPermit(scope, windowId, bufferId)
+		const permit = () => windowPermit() && (!originCapture ||
+			(session.fileCaptureIsCurrent(originCapture) && !fileBusy(originCapture.relativePath)))
+		if (!scope || !path || !capture || !permit() || fileBusy(path) ||
+			(path !== originPath && !session.protectedPaths.includes(path))) return null
+		return async (signal?: AbortSignal): Promise<OrgFileReviewOutcome> => {
+			if (signal?.aborted || !permit() || !session.fileCaptureIsCurrent(capture) || fileBusy(path))
+				return { kind: "rejected", message: "The originating file or window changed before review." }
+			const lease = effects.beginRead("file-review", [path], `file-review:${path}`)
+			try {
+				const result = await openOrgDocumentFlow({
+					relativePath: path, workspaceRoot: scope.grant.rootPath, capabilityToken: scope.grant.capabilityToken,
+				})()
+				if (signal?.aborted || !lease.isCurrent() || !permit() || !session.fileCaptureIsCurrent(capture))
+					return { kind: "rejected", message: "The retained Source changed while disk Source was read." }
+				const disk: OrgFileDiskState = E.isLeft(result)
+					? { kind: isAuthorizedOrgPathAbsent(result.left, path) ? "missing" : "unavailable", relativePath: path, message: result.left.message }
+					: capture.runtime && capture.baseline ? result.right
+					: { kind: "unavailable", relativePath: path, message: "This path is occupied by an Org document. Open that document, then review its retained and disk Source before reconciling." }
+				const review = session.issueFileReview(capture, disk, permit)
+				return review ? { kind: "ready", review }
+					: { kind: "rejected", message: "The reviewed file is no longer current." }
+			} catch {
+				return { kind: "rejected", message: "Disk Source could not be read. The retained buffer was not changed." }
+			} finally {
+				lease.finish()
+			}
+		}
+	}, [session, identityScope, effects])
+	const acceptFileReview = useCallback(async (
+		review: OrgFileReview, choice: OrgFileReviewChoice, discardConsent = false, signal?: AbortSignal,
+	): Promise<OrgFileReviewOutcome> => {
+		const scope = identityScope
+		if (!scope || signal?.aborted || !session.reviewIsCurrent(review) || fileBusy(review.relativePath))
+			return { kind: "rejected", message: "The reviewed file or window changed; open a new review." }
+		const owner = effects.begin({ label: "reconcile-file", kind: choice === "recreate-missing" ? "save" : "mutation",
+			presentation: choice === "recreate-missing" ? "saving" : "loading", paths: [review.relativePath] })
+		try {
+			const fresh = await openOrgDocumentFlow({
+				relativePath: review.relativePath, workspaceRoot: scope.grant.rootPath, capabilityToken: scope.grant.capabilityToken,
+			})()
+			if (signal?.aborted || !effects.owns(owner) || !session.matches(scope) || !session.reviewIsCurrent(review))
+				return { kind: "rejected", message: "The reviewed Source or window changed during the disk check." }
+			const freshDisk: OrgFileDiskState = E.isLeft(fresh)
+				? { kind: isAuthorizedOrgPathAbsent(fresh.left, review.relativePath) ? "missing" : "unavailable", relativePath: review.relativePath, message: fresh.left.message }
+				: fresh.right
+			if (choice === "recreate-missing") {
+				if (!discardConsent) return { kind: "rejected", message: "Recreation requires an explicit confirmed create-CAS intent." }
+				const creation = session.captureFileReviewCreation(review, freshDisk)
+				if (!creation || !creation.capture.baseline || creation.capture.source === undefined)
+					return { kind: "rejected", message: "The missing path or retained Source changed; open a new review." }
+				const current = () => effects.owns(owner) && creation.isCurrent()
+				let accepted: OrgFileReviewOutcome | null = null
+				const result = await saveOrgWorkingCopyFlow({
+					content: creation.capture.source, expectedRevision: "<missing>", relativePath: review.relativePath,
+					workspaceRoot: scope.grant.rootPath, capabilityToken: scope.grant.capabilityToken,
+				}, {
+					write: saveOrgDocumentFlow,
+					isFresh: () => !signal?.aborted && current() && session.fileCaptureIsCurrent(creation.capture),
+					isCurrent: current,
+					onWriteStarted: (settled) => { effects.captureSave(owner, settled, creation.capture.source!, review.relativePath) },
+					commitConfirmed: (_, receipt) => {
+						if (!effects.owns(owner)) throw new Error("The create owner retired")
+						accepted = creation.acceptReceipt(receipt)
+						if (accepted.kind !== "accepted") throw new Error(accepted.kind === "rejected"
+							? accepted.message : "Creation receipt did not acknowledge retained Source")
+						const baseline = currentFileBaseline(review.relativePath, scope)
+						if (baseline && session.matches(scope))
+							setWorkspace((value) => value ? updateWorkspaceDocument(value, baseline, receipt.originalRecovery) : value)
+					},
+				})
+				if (result.kind === "confirmed" && accepted) return accepted
+				if (effects.owns(owner) && session.matches(scope)) session.protect(scope, review.relativePath, "conflict")
+				return { kind: "rejected", message: result.kind === "write-left" ? result.error.message
+					: "Creation was not confirmed. All retained Source/history remain protected; review disk again before any manual retry." }
+			}
+			const outcome = session.acceptFileReview(review, choice, freshDisk, discardConsent)
+			if (outcome.kind === "accepted" && effects.owns(owner) && session.matches(scope)) {
+				if (!("kind" in freshDisk)) setWorkspace((value) => value ? updateWorkspaceDocument(value, freshDisk) : value)
+				else if (freshDisk.kind === "missing") setWorkspace((value) => value
+					? { ...value, documents: value.documents.filter((entry) => entry.relativePath !== review.relativePath) } : value)
+				setError(null)
+			}
+			return outcome
+		} catch {
+			if (effects.owns(owner) && session.matches(scope) && choice === "recreate-missing") session.protect(scope, review.relativePath, "conflict")
+			return { kind: "rejected", message: choice === "recreate-missing"
+				? "Creation could not be confirmed. Source/history were retained; no automatic retry or rollback was attempted."
+				: "Reconciliation could not be confirmed. No file write was attempted." }
+		} finally {
+			finishMutation(owner)
+		}
+	}, [session, identityScope, effects])
 
 	const updateContent = useCallback(
-		(nextContent: string) => {
-			if (
-				!isCurrentOrigin() ||
-				loadingRef.current ||
-				!nativeCloseReadyRef.current ||
-				!parkedReservoir.canMutate() ||
-				(mutationInProgressRef.current && !saveInFlightRef.current)
-			)
-				return
-			const id = originPath ? bufferIdentity.lookup(identityScope, originPath) : undefined
-			const runtime = id ? runtimeFor(id) : undefined
-			if (!runtime || nextContent === runtime.source) return
-			// Compatibility edits obey the same busy/read-only gate as runtime UI edits.
-			try {
-				registry.updateSource(runtime.key, latestContentRef.current, nextContent, isCurrentOrigin)
-			} catch (failure) {
-				setError(failure instanceof Error ? failure.message : "Cannot update Org source")
-			}
-		},
-		[originSession, originActivation, originPath],
+		(nextContent: string) => session.updateContent(origin, nextContent),
+		[session, originSession, originActivation, originPath],
 	)
 
-	const saveDocumentWithResult = useCallback(async (): Promise<boolean> => {
-		if (!workspace || !activeDocument || !isCurrentOrigin() || mutationInProgressRef.current) {
+	const saveDocumentPathWithResult = useCallback(async (sourcePath: string, scope = identityScope): Promise<boolean> => {
+		if (!scope || !session.matches(scope) || fileBusy(sourcePath) || !session.captureFile(scope, sourcePath)) {
 			return false
 		}
-		openRequestRef.current += 1
-		mutationInProgressRef.current = true
-		refileTargetRequestRef.current += 1
-		const owner = Symbol("save")
-		mutationOwnerRef.current = owner
-		const sourcePath = activeRef.current!.relativePath
-		const sourceDocument = { ...activeRef.current! }
-		const logicalBufferId = bufferIdentity.lookup(identityScope, sourcePath)
+		const active = session.document?.relativePath === sourcePath
+		const parked = active ? undefined : parkedReservoir.read(scope, sourcePath)
+		const document = active ? session.document : parked?.document
+		const logicalBufferId = bufferIdentity.lookup(scope, sourcePath)
+		const sourceRuntime = logicalBufferId ? runtimeFor(logicalBufferId, scope) : undefined
+		if (!document || !logicalBufferId || !sourceRuntime || sourceRuntime.closed) return false
+		const sourceDocument = { ...document }
 		const sourceRevision = sourceDocument.revision
-		const contentBeingSaved = latestContentRef.current
-		setSaving(true)
+		const contentBeingSaved = sourceRuntime.source
+		const owner = effects.begin({ label: "save", kind: "save", paths: [sourcePath] })
+		
 		setError(null)
 		const capture = Object.freeze({
 			content: contentBeingSaved,
 			expectedRevision: sourceRevision,
 			relativePath: sourcePath,
-			capabilityToken: workspace.capabilityToken,
-			workspaceRoot: workspace.rootPath,
+			capabilityToken: scope.grant.capabilityToken,
+			workspaceRoot: scope.grant.rootPath,
 		})
 		const current = () =>
-			mutationOwnerRef.current === owner &&
-			isCurrentOrigin() &&
-			logicalBufferId !== undefined &&
-			bufferIdentity.lookup(identityScope, sourcePath) === logicalBufferId
+			effects.owns(owner) &&
+			session.matches(scope) &&
+			bufferIdentity.lookup(scope, sourcePath) === logicalBufferId &&
+			runtimeFor(logicalBufferId, scope) === sourceRuntime && !sourceRuntime.closed
 		try {
 			const result = await saveOrgWorkingCopyFlow(capture, {
 				write: saveOrgDocumentFlow,
-				isFresh: () =>
-					current() &&
-					activeRef.current?.relativePath === sourcePath &&
-					activeRef.current.revision === sourceRevision,
+				isFresh: () => current() && !guardOrgWorkingCopyBaseline(
+					sourceDocument,
+					currentFileBaseline(sourcePath, scope),
+				),
 				isCurrent: current,
 				onWriteStarted: (settled) => {
-					saveInFlightContentRef.current = contentBeingSaved
-					saveInFlightRef.current = settled
+					effects.captureSave(owner, settled, contentBeingSaved, sourcePath)
 				},
 				commitConfirmed: (_, receipt) => {
 					if (!current()) throw new Error("The save owner is no longer current")
-					const plan = planOrgWorkingCopyAck({
+					const result = session.acknowledgeWorkingCopy(scope, {
+						bufferId: logicalBufferId,
 						expectedDocument: sourceDocument,
-						currentDocument: activeRef.current,
-						workingSource: latestContentRef.current,
 						capturedSource: contentBeingSaved,
 						receipt,
 					})
-					if (plan.kind === "rejected") {
-						autosavePausedRef.current.add(sourcePath)
-						conflictsRef.current.add(sourcePath)
-						throw new Error(plan.reason)
-					}
-					activeRef.current = plan.document
-					setActiveDocument(plan.document)
-					setDirty(plan.isDirty)
-					autosavePausedRef.current.delete(sourcePath)
-					conflictsRef.current.delete(sourcePath)
-					setWorkspace((value) => (value ? updateWorkspaceDocument(value, plan.document) : value))
+					if (result.kind === "rejected") throw new Error(result.reason)
+					if (!current()) return
+					setWorkspace((value) => value ? updateWorkspaceDocument(value, result.document, receipt.originalRecovery) : value)
 				},
 			})
 			// The flow's terminal await introduces another ownership gap.
 			if (!current()) return false
 			if (result.kind === "confirmed") return true
 			if (result.kind === "stale-before" || result.kind === "stale-after") return false
-			conflictsRef.current.add(sourcePath)
-			autosavePausedRef.current.add(sourcePath)
+			session.protect(scope, sourcePath, "conflict")
 			setError(
 				result.kind === "write-left"
 					? result.error.message
@@ -1982,34 +2104,44 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			return false
 		} catch {
 			if (current()) {
-				autosavePausedRef.current.add(sourcePath)
-				conflictsRef.current.add(sourcePath)
+				session.protect(scope, sourcePath, "conflict")
 				setError(
 					"Save ended unexpectedly; files may have changed. The editor body was retained. Refresh and reconcile before a manual retry; no rollback was attempted.",
 				)
 			}
 			return false
 		} finally {
-			if (mutationOwnerRef.current === owner) {
-				saveInFlightRef.current = null
-				saveInFlightContentRef.current = null
-			}
 			finishMutation(owner)
 		}
-	}, [activeDocument, workspace, originSession, originActivation, originPath])
+	}, [session, identityScope, effects])
 
 	// One owner covers the entire snapshot; never nest the active save's lock.
 	const saveAllDocuments = useCallback(async (): Promise<OrgSaveAllOutcome> => {
-		const remainingPaths = () => [
-			...parkedReservoir
-				.list(identityScope)
-				.map((buffer) => [buffer.document.relativePath, buffer] as const)
-				.filter(([, buffer]) => buffer.isDirty)
-				.map(([path]) => path),
-			...(activeRef.current && dirtyPath(activeRef.current.relativePath)
-				? [activeRef.current.relativePath]
-				: []),
-		]
+		// Closed runtimes retain their last source. Keep reporting the originating
+		// buffers after retirement without reading a replacement grant's mirrors.
+		const retainedBuffers = new Map<string, { runtime: OrgBufferRuntime; baseline: string }>(
+			session.snapshotLiveBuffers(identityScope).map((buffer) => [
+				buffer.document.relativePath,
+				{ runtime: buffer.runtime, baseline: buffer.document.content },
+			]),
+		)
+		const remainingPaths = () => {
+			if (!session.matches(identityScope)) {
+				return [...retainedBuffers].flatMap(([path, buffer]) =>
+					buffer.runtime.source !== buffer.baseline ? [path] : [],
+				)
+			}
+			return [
+				...parkedReservoir
+					.list(identityScope)
+					.map((buffer) => [buffer.document.relativePath, buffer] as const)
+					.filter(([, buffer]) => buffer.isDirty)
+					.map(([path]) => path),
+				...(session.document && dirtyPath(session.document.relativePath)
+					? [session.document.relativePath]
+					: []),
+			]
+		}
 		const savedPaths: string[] = []
 		const outcome = (kind: OrgSaveAllOutcome["kind"], message?: string): OrgSaveAllOutcome => ({
 			kind,
@@ -2017,49 +2149,37 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			remainingDirtyPaths: remainingPaths(),
 			...(message ? { message } : {}),
 		})
-		if (!workspace || !isCurrentOrigin()) {
+		if (!workspace || !session.matches(identityScope) || effects.getSnapshot().globalBusy) {
 			return outcome(
 				"rejected",
 				"The workspace or active buffer is no longer current; save all was not started.",
 			)
 		}
-		if (mutationInProgressRef.current || saveInFlightRef.current) {
-			return outcome(
-				"rejected",
-				"Another workspace mutation is in progress; save all was not started.",
-			)
-		}
 		const selected: (OrgSaveAllCapture & {
-			readonly parked: OrgParkedWorkingCopy | null
 			readonly logicalBufferId: string | undefined
 			readonly expectedDocument: OrgDocumentInterface
-			readonly originalActiveDocument: OrgDocumentInterface | null
 		})[] = parkedReservoir
 			.list(identityScope)
-			.filter((buffer) => buffer.isDirty)
+			.filter((buffer) => dirtyPath(buffer.document.relativePath))
 			.map((buffer) => {
 				const document = Object.freeze({ ...buffer.document })
 				return {
 					document,
 					content: buffer.content,
-					parked: buffer,
 					expectedDocument: document,
-					originalActiveDocument: null,
 					logicalBufferId: bufferIdentity.lookup(identityScope, document.relativePath),
 					workspaceRoot: workspace.rootPath,
 					capabilityToken: workspace.capabilityToken,
 				}
 			})
-		const active = activeRef.current
+		const active = session.document
 		const activeBaseline = active ? Object.freeze({ ...active }) : null
 		const activeCapture =
 			active && activeBaseline && dirtyPath(active.relativePath)
 				? {
 						document: activeBaseline,
-						content: latestContentRef.current,
-						parked: null,
+						content: session.source,
 						expectedDocument: activeBaseline,
-						originalActiveDocument: active,
 						logicalBufferId: bufferIdentity.lookup(identityScope, active.relativePath),
 						workspaceRoot: workspace.rootPath,
 						capabilityToken: workspace.capabilityToken,
@@ -2067,42 +2187,30 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				: null
 		if (activeCapture) selected.push(activeCapture)
 		if (!selected.length) return outcome("success")
-		const owner = Symbol("saveAllDocuments")
-		mutationOwnerRef.current = owner
-		saveAllOwnerRef.current = owner
-		mutationInProgressRef.current = true
-		refileTargetRequestRef.current += 1
-		openRequestRef.current += 1
-		setLoading(false)
-		setSaving(true)
+		if (selected.some((capture) => fileBusy(capture.document.relativePath))) {
+			return outcome("rejected", "A selected file is already being changed; save all was not started.")
+		}
+		const owner = effects.begin({ label: "saveAllDocuments", kind: "save-all", paths: selected.map((capture) => capture.document.relativePath) })
+		
+		
 		setError(null)
-		// Batch navigation must not treat any individual write as permission to proceed.
-		let completeWaiter!: (saved: boolean) => void
-		saveInFlightRef.current = new Promise<boolean>((resolve) => {
-			completeWaiter = resolve
-		})
-		saveInFlightContentRef.current = null
+		// Each selected file retains its captured body while focus and newer input remain independent.
+		effects.captureBatch(owner)
 		// Batch ownership is independent of a member's live baseline path. Member
 		// authority is checked separately before its write, retaining earlier ACKs.
 		const current = () =>
-			mutationOwnerRef.current === owner &&
-			nativeCloseReadyRef.current &&
-			mountedRef.current &&
-			grantRef.current === originGrant &&
-			sessionRef.current === originSession &&
-			activationRef.current === originActivation
+			effects.owns(owner) && session.matches(identityScope)
 		const fail = (message: string): OrgSaveAllOutcome => {
 			if (current()) {
 				// Pause even unwritten members, but do not invent external conflicts for them.
 				for (const capture of selected) {
 					if (!savedPaths.includes(capture.document.relativePath)) {
-						autosavePausedRef.current.add(capture.document.relativePath)
+						session.protect(identityScope, capture.document.relativePath, "pause")
 						// Path drift must not let the retained body autosave under
 						// its corrupted live path while awaiting reconciliation.
-						const liveDocument = capture.parked
-							? parkedReservoir.read(identityScope, capture.document.relativePath)?.document
-							: activeRef.current
-						if (liveDocument) autosavePausedRef.current.add(liveDocument.relativePath)
+						const retained = retainedBuffers.get(capture.document.relativePath)?.runtime
+						const liveDocument = session.snapshotLiveBuffers(identityScope).find((buffer) => buffer.runtime === retained)?.document
+						if (liveDocument) session.protect(identityScope, liveDocument.relativePath, "pause")
 					}
 				}
 				setError(message)
@@ -2112,69 +2220,33 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		try {
 			const result = await saveAllOrgDocumentsFlow(selected, {
 				write: saveOrgDocumentFlow,
-				isFresh: ({
-					document,
-					parked,
-					originalActiveDocument,
-					logicalBufferId,
-					expectedDocument,
-				}) => {
-					if (
-						!current() ||
-						!logicalBufferId ||
-						bufferIdentity.lookup(identityScope, document.relativePath) !== logicalBufferId
-					)
-						return false
-					const liveParked = parked
-						? parkedReservoir.read(identityScope, document.relativePath)
-						: undefined
-					return (
-						(parked ? liveParked === parked : activeRef.current === originalActiveDocument) &&
-						!guardOrgWorkingCopyBaseline(
-							expectedDocument,
-							parked ? liveParked?.document : activeRef.current,
-						)
-					)
+				isFresh: ({ document, logicalBufferId, expectedDocument }) => {
+					const retained = retainedBuffers.get(document.relativePath)?.runtime
+					return current() && !!logicalBufferId && !!retained && !retained.closed &&
+						bufferIdentity.lookup(identityScope, document.relativePath) === logicalBufferId &&
+						runtimeFor(logicalBufferId) === retained &&
+						!guardOrgWorkingCopyBaseline(expectedDocument, currentFileBaseline(document.relativePath))
 				},
 				isOwnerCurrent: current,
 				commitConfirmed: (
-					{ document, content: body, parked, logicalBufferId, expectedDocument },
+					{ document, content: body, logicalBufferId, expectedDocument },
 					receipt,
 				) => {
 					const path = document.relativePath
-					if (
-						!current() ||
-						!logicalBufferId ||
-						bufferIdentity.lookup(identityScope, path) !== logicalBufferId
-					)
+					if (!current() || !logicalBufferId)
 						throw new Error("The captured buffer lease is no longer current")
-					const liveParked = parked ? parkedReservoir.read(identityScope, path) : undefined
-					const plan = planOrgWorkingCopyAck({
+					const result = session.acknowledgeWorkingCopy(identityScope, {
+						bufferId: logicalBufferId,
 						expectedDocument,
-						currentDocument: parked ? liveParked?.document : activeRef.current,
-						workingSource: parked ? (liveParked?.content ?? "") : latestContentRef.current,
 						capturedSource: body,
 						receipt,
 					})
-					if (plan.kind === "rejected") {
-						autosavePausedRef.current.add(path)
-						conflictsRef.current.add(path)
-						throw new Error(plan.reason)
-					}
-					if (parked && liveParked) {
-						parkedReservoir.installConfirmedBaseline(identityScope, logicalBufferId, liveParked, {
-							document: plan.document,
-							isDirty: plan.isDirty,
-						})
-					} else {
-						activeRef.current = plan.document
-						setActiveDocument(plan.document)
-						setDirty(plan.isDirty)
-					}
-					conflictsRef.current.delete(path)
-					autosavePausedRef.current.delete(path)
-					setWorkspace((value) => (value ? updateWorkspaceDocument(value, plan.document) : value))
-					publishBuffers((version) => version + 1)
+					if (result.kind === "rejected") throw new Error(result.reason)
+					const retained = retainedBuffers.get(path)
+					if (retained) retained.baseline = result.document.content
+					// A delivered ACK survives observer retirement; UI effects do not.
+					if (!current()) return
+					setWorkspace((value) => value ? updateWorkspaceDocument(value, result.document, receipt.originalRecovery) : value)
 				},
 			})
 			savedPaths.push(...result.confirmedPaths)
@@ -2189,7 +2261,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					result.writingPath &&
 					["write-left", "unexpected", "commit"].includes(result.failureKind)
 				) {
-					conflictsRef.current.add(result.writingPath)
+					session.protect(identityScope, result.writingPath, "conflict")
 				}
 				return fail(result.message)
 			}
@@ -2197,83 +2269,77 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				? outcome("partial", "Captured edits were saved, but newer editor input remains unsaved.")
 				: outcome("success")
 		} finally {
-			if (mutationOwnerRef.current === owner) {
-				saveInFlightRef.current = null
-				saveInFlightContentRef.current = null
-			}
-			if (saveAllOwnerRef.current === owner) saveAllOwnerRef.current = null
 			finishMutation(owner)
-			completeWaiter(false)
 		}
 	}, [workspace, dirtyPath, originSession, originActivation, originPath])
 
-	const saveDocument = useCallback(async (): Promise<void> => {
-		await saveDocumentWithResult()
-	}, [saveDocumentWithResult, originSession, originActivation, originPath])
+	const captureBufferSave = useCallback((bufferId: string): (() => Promise<boolean>) | null => {
+		const scope = identityScope
+		const path = bufferIdentity.findPath(scope, bufferId)
+		const runtime = runtimeFor(bufferId, scope)
+		if (!scope || !path || !runtime || runtime.closed || !session.matches(scope) || !session.captureFile(scope, path)) return null
+		return async () => {
+			if (!session.matches(scope) || runtime.closed || bufferIdentity.findPath(scope, bufferId) !== path ||
+				runtimeFor(bufferId, scope) !== runtime) return false
+			return saveDocumentPathWithResult(path, scope)
+		}
+	}, [session, identityScope, bufferIdentity, saveDocumentPathWithResult])
+
+	const saveDocument = useCallback(async (): Promise<boolean> => {
+		if (!originPath || !activeBufferRuntime || activeBufferRuntime.closed ||
+			bufferIdentity.lookup(identityScope, originPath) !== activeBufferRuntime.key.bufferId ||
+			runtimeFor(activeBufferRuntime.key.bufferId) !== activeBufferRuntime) return false
+		const save = captureBufferSave(activeBufferRuntime.key.bufferId)
+		return save ? save() : false
+	}, [captureBufferSave, activeBufferRuntime, identityScope, originSession, originPath])
 
 	const closeActiveDocument = useCallback(async (): Promise<boolean> => {
 		if (!isCurrentOrigin()) return false
-		const contentAtClose = latestContentRef.current
-		if (mutationInProgressRef.current) {
+		const contentAtClose = session.source
+		if (session.document && fileBusy(session.document.relativePath)) {
 			return false
 		}
-		if (activeRef.current && protectedPath(activeRef.current.relativePath)) {
-			const saved = await saveDocumentWithResult()
+		if (session.document && protectedPath(session.document.relativePath)) {
+			const saved = await saveDocumentPathWithResult(session.document.relativePath)
 			if (
 				!isCurrentOrigin() ||
-				mutationInProgressRef.current ||
+				(session.document !== null && fileBusy(session.document.relativePath)) ||
 				!saved ||
-				latestContentRef.current !== contentAtClose
+				session.source !== contentAtClose
 			) {
 				return false
 			}
 		}
-		if (activeRef.current) {
-			retireBuffer(activeRef.current.relativePath)
-			conflictsRef.current.delete(activeRef.current.relativePath)
-			autosavePausedRef.current.delete(activeRef.current.relativePath)
-		}
-		activationRef.current += 1
-		activeRef.current = null
+		if (!session.closeActiveDocument(identityScope)) return false
 		openRequestRef.current += 1
-		setLoading(false)
-		setActiveDocument(null)
-		installSource("")
-		setDirty(false)
+		effects.cancelRead()
 		setRevealTarget(null)
 		return true
-	}, [isDirty, saveDocumentWithResult, originSession, originActivation, originPath])
+	}, [isDirty, saveDocumentPathWithResult, originSession, originActivation, originPath])
 
 	const closeDocumentPath = useCallback(
 		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: inactive CAS save and guarded removal must be atomic.
 		async (relativePath: string): Promise<boolean> => {
 			if (!isCurrentOrigin()) return false
-			if (activeRef.current?.relativePath === relativePath) {
+			if (session.document?.relativePath === relativePath) {
 				return closeActiveDocument()
 			}
 			const buffer = parkedReservoir.read(identityScope, relativePath)
 			if (!buffer) {
 				return true
 			}
-			if (!workspace || !isCurrentOrigin() || mutationInProgressRef.current) {
+			if (!workspace || !session.matches(identityScope) || fileBusy(relativePath)) {
 				return false
 			}
 			if (protectedPath(relativePath)) {
-				const session = sessionRef.current
-				openRequestRef.current += 1
-				setLoading(false)
-				const owner = Symbol("closeDocumentPath")
-				mutationOwnerRef.current = owner
-				mutationInProgressRef.current = true
-				refileTargetRequestRef.current += 1
-				setSaving(true)
+				const owner = effects.begin({ label: "closeDocumentPath", kind: "save-close", paths: [relativePath] })
+				
 				let closingBuffer = buffer
 				const capturedDocument = { ...buffer.document }
 				const logicalBufferId = bufferIdentity.lookup(identityScope, relativePath)
 				const currentOwner = () =>
-					mutationOwnerRef.current === owner &&
-					isCurrentOrigin() &&
-					session === sessionRef.current &&
+					effects.owns(owner) &&
+					session.matches(identityScope) &&
 					logicalBufferId !== undefined &&
 					bufferIdentity.lookup(identityScope, relativePath) === logicalBufferId
 				const currentRetirement = () =>
@@ -2291,44 +2357,31 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 						write: saveOrgDocumentFlow,
 						isFresh: currentRetirement,
 						isCurrent: currentOwner,
+						onWriteStarted: (settled) => {
+							effects.captureSave(owner, settled, capture.content, relativePath)
+						},
 						commitConfirmed: (_, receipt) => {
-							const parked = parkedReservoir.read(identityScope, relativePath)
-							if (!currentOwner() || !parked)
+							if (!currentOwner() || !logicalBufferId)
 								throw new Error("The captured buffer lease is no longer current")
-							const plan = planOrgWorkingCopyAck({
+							const result = session.acknowledgeWorkingCopy(identityScope, {
+								bufferId: logicalBufferId,
 								expectedDocument: capturedDocument,
-								currentDocument: parked.document,
-								workingSource: parked.content,
 								capturedSource: capture.content,
 								receipt,
 							})
-							if (plan.kind === "rejected") {
-								autosavePausedRef.current.add(relativePath)
-								conflictsRef.current.add(relativePath)
-								throw new Error(plan.reason)
-							}
-							const persisted = plan.document
-							// ACK the disk baseline without touching working source or runtime history.
-							const successor = parkedReservoir.installConfirmedBaseline(
-								identityScope,
-								parked.bufferId,
-								parked,
-								plan,
-							)
-							if (!successor) throw new Error("Parked ACK lease changed")
-							// A replacement receives the ACK, but never permission to retire.
-							if (parked === closingBuffer) closingBuffer = successor
-							conflictsRef.current.delete(relativePath)
-							autosavePausedRef.current.delete(relativePath)
-							setWorkspace((value) => (value ? updateWorkspaceDocument(value, persisted) : value))
+							if (result.kind === "rejected") throw new Error(result.reason)
+							// A replacement receives the baseline ACK, never permission to retire.
+							if (result.previousCopy === closingBuffer && result.currentCopy)
+								closingBuffer = result.currentCopy
+							if (!currentOwner()) return
+							setWorkspace((value) => value ? updateWorkspaceDocument(value, result.document, receipt.originalRecovery) : value)
 						},
 					})
 					// Failed effects belong to the lease even when the working body changed.
 					if (!currentOwner()) return false
 					if (result.kind !== "confirmed") {
 						if (result.kind === "stale-before" || result.kind === "stale-after") return false
-						conflictsRef.current.add(relativePath)
-						autosavePausedRef.current.add(relativePath)
+						session.protect(identityScope, relativePath, "conflict")
 						setError(
 							result.kind === "write-left"
 								? result.error.message
@@ -2339,90 +2392,148 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					if (!currentRetirement()) return false
 				} catch {
 					if (!currentOwner()) return false
-					conflictsRef.current.add(relativePath)
-					autosavePausedRef.current.add(relativePath)
+					session.protect(identityScope, relativePath, "conflict")
 					setError(
 						`Cannot save ${relativePath}; the buffer was retained. Files may have changed. Refresh and reconcile before a manual retry; no rollback was attempted.`,
 					)
 					return false
 				} finally {
 					finishMutation(owner)
-					publishBuffers((version) => version + 1)
+					
 				}
 			}
-			retireBuffer(relativePath)
-			conflictsRef.current.delete(relativePath)
-			autosavePausedRef.current.delete(relativePath)
-			publishBuffers((version) => version + 1)
+			if (!retireBuffer(relativePath)) return false
+			
 			return true
 		},
 		[closeActiveDocument, workspace, originSession, originActivation, originPath],
 	)
 
+	const [autosaveSchedule] = useState(() => ({
+		epoch: 0,
+		delay: 0,
+		pending: new Map<OrgBufferRuntime, { generation: number; dueAt: number; epoch: number }>(),
+	}))
+
 	useEffect(() => {
-		if (
-			!isDirty ||
-			isLoading ||
-			isSaving ||
-			!workspace ||
-			!activeDocument ||
-			autosavePausedRef.current.has(activeDocument.relativePath) ||
-			conflictsRef.current.has(activeDocument.relativePath)
-		) {
+		if (autoSave !== true || !Number.isFinite(autoSaveDelay) || autoSaveDelay < 1000 || autoSaveDelay > 60000) {
+			autosaveSchedule.pending.clear()
 			return
 		}
+		if (autosaveSchedule.delay !== autoSaveDelay) {
+			autosaveSchedule.delay = autoSaveDelay
+			autosaveSchedule.pending.clear()
+		}
+		const now = performance.now()
+		const epoch = ++autosaveSchedule.epoch
+		let next: OrgLiveBuffer | undefined
+		let nextDueAt = Number.POSITIVE_INFINITY
+		for (const buffer of liveBuffers) {
+			const path = buffer.document.relativePath
+			if (!buffer.isDirty || session.isAutosavePaused(path) || session.hasConflict(path)) continue
+			let scheduled = autosaveSchedule.pending.get(buffer.runtime)
+			if (!scheduled) {
+				scheduled = { generation: buffer.sourceGeneration, dueAt: now + autoSaveDelay, epoch }
+				autosaveSchedule.pending.set(buffer.runtime, scheduled)
+			} else {
+				if (scheduled.generation !== buffer.sourceGeneration) {
+					scheduled.generation = buffer.sourceGeneration
+					scheduled.dueAt = now + autoSaveDelay
+				}
+				scheduled.epoch = epoch
+			}
+			if (fileBusy(path) || effects.getFileSnapshot(path).loading) continue
+			if (scheduled.dueAt < nextDueAt) {
+				next = buffer
+				nextDueAt = scheduled.dueAt
+			}
+		}
+		for (const [runtime, scheduled] of autosaveSchedule.pending) {
+			if (scheduled.epoch !== epoch) autosaveSchedule.pending.delete(runtime)
+		}
+		// Busy files retain their quiet deadlines; unrelated files can save concurrently.
+		if (!next || !workspace || !nativeCloseReady) return
+		const candidate = next
+		const path = candidate.document.relativePath
 		const timer = window.setTimeout(() => {
-			// A synchronous failure can finish before React publishes the busy state,
-			// leaving this previously scheduled timer alive. Recheck at execution.
+			// Fence before admission, including a same-path runtime replacement and
+			// failures that settled before React could publish their paused badge.
 			if (
-				!autosavePausedRef.current.has(activeDocument.relativePath) &&
-				!conflictsRef.current.has(activeDocument.relativePath)
-			)
-				void saveDocument()
-		}, ORG_AUTOSAVE_DELAY_MS)
+				useSettings.getState().autoSave === true &&
+				useSettings.getState().autoSaveInterval === autoSaveInterval &&
+				session.matches(identityScope) && !fileBusy(path) &&
+				runtimeFor(candidate.bufferId) === candidate.runtime && !candidate.runtime.closed &&
+				candidate.runtime.revision === candidate.sourceGeneration && dirtyPath(path) &&
+				!session.isAutosavePaused(path) && !session.hasConflict(path)
+			) void saveDocumentPathWithResult(path)
+		}, Math.max(0, nextDueAt - performance.now()))
 		return () => window.clearTimeout(timer)
-	}, [activeDocument, content, isDirty, isLoading, isSaving, saveDocument, workspace])
+	}, [liveBuffers, workspace, effectSnapshot, nativeCloseReady, saveDocumentPathWithResult, autoSave, autoSaveDelay, autoSaveInterval])
+
+	const readCaptureTarget = useCallback(
+		async (target: OrgCaptureTarget, signal?: AbortSignal): Promise<OrgCaptureTargetOutcome> => {
+			const request = ++captureTargetRequestRef.current
+			const checked = validateOrgCaptureTarget(target)
+			const rejected = (message: string): OrgCaptureTargetOutcome => ({ kind: "rejected", message })
+			if (E.isLeft(checked)) return rejected(checked.left.message)
+			const relativePath = checked.right.relativePath
+			const capture = session.captureFile(identityScope, relativePath)
+			const current = () =>
+				!signal?.aborted && request === captureTargetRequestRef.current &&
+				session.matches(identityScope) && !fileBusy(relativePath) && !protectedPath(relativePath) &&
+				session.fileCaptureIsCurrent(capture)
+			if (!workspace || !current())
+				return rejected("Wait for workspace operations and save or reconcile the Capture target before previewing.")
+			try {
+				const result = await readOrgCaptureTargetFlow({
+					workspaceRoot: workspace.rootPath,
+					capabilityToken: workspace.capabilityToken,
+					target: checked.right,
+				}, { isCurrent: current, signal })()
+				if (!current()) return rejected("Capture target preview was cancelled or its scope changed.")
+				return E.isLeft(result) ? rejected(result.left.message) : { kind: "ready", ...result.right }
+			} catch {
+				return rejected("Capture target preview failed; no content write was requested.")
+			}
+		},
+		[workspace, dirtyPath, originSession, originActivation, originPath],
+	)
 
 	const captureEntry = useCallback(
-		async (entrySource: string, targetRelativePath: string): Promise<OrgCaptureOutcome> => {
+		async (request: OrgCaptureRequest): Promise<OrgCaptureOutcome> => {
 			if (!workspace || !isCurrentOrigin())
 				return { kind: "rejected", message: "The workspace or source buffer is no longer current." }
-			const relativePath = targetRelativePath.trim()
-			if (mutationInProgressRef.current || protectedPath(relativePath)) {
-				const message = mutationInProgressRef.current
+			const input = validateOrgCaptureInput({
+				...request, workspaceRoot: workspace.rootPath, capabilityToken: workspace.capabilityToken,
+			})
+			if (E.isLeft(input)) {
+				setError(input.left.message)
+				return { kind: "rejected", message: input.left.message }
+			}
+			const relativePath = input.right.target.relativePath
+			if (fileBusy(relativePath) || protectedPath(relativePath)) {
+				const message = fileBusy(relativePath)
 					? "Another workspace operation is running; wait before capturing."
 					: `Save or reconcile changes before capturing to ${relativePath}.`
 				setError(message)
 				return { kind: "rejected", message }
 			}
-			const generation = editGenerationRef.current
-			const body = latestContentRef.current
-			const parked = parkedReservoir.read(identityScope, relativePath)
-			const owner = Symbol("captureEntry")
-			mutationOwnerRef.current = owner
-			mutationInProgressRef.current = true
-			refileTargetRequestRef.current += 1
-			openRequestRef.current += 1
-			setLoading(false)
-			setSaving(true)
+			const capture = session.captureFile(identityScope, relativePath)
+			const owner = effects.begin({ label: "captureEntry", paths: [relativePath] })
+			
+			
 			setError(null)
-			const current = () => mutationOwnerRef.current === owner && isCurrentOrigin()
+			const current = () => effects.owns(owner) && session.matches(identityScope)
 			const uncertain = (message: string): OrgCaptureOutcome => {
 				if (current()) {
-					autosavePausedRef.current.add(relativePath)
-					conflictsRef.current.add(relativePath)
+					session.protect(identityScope, relativePath, "conflict")
 					setError(message)
-					publishBuffers((version) => version + 1)
+					
 				}
 				return { kind: "uncertain", message }
 			}
 			try {
-				const result = await captureOrgEntryFlow({
-					entrySource,
-					relativePath,
-					workspaceRoot: workspace.rootPath,
-					capabilityToken: workspace.capabilityToken,
-				})()
+				const result = await captureOrgEntryFlow(input.right, { isCurrent: current })()
 				if (!current())
 					return {
 						kind: "uncertain",
@@ -2445,16 +2556,15 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 						"Capture returned an invalid confirmation; reread the target and reconcile. Do not retry automatically.",
 					)
 				setWorkspace((value) => (value ? updateWorkspaceDocument(value, confirmed) : value))
-				const newer = installedTargetSource(confirmed, parked, body, generation)
+				const newer = installedTargetSource(confirmed, capture)
 				if (newer) {
 					const message =
 						"Captured successfully, but newer editor input was retained. Reread and reconcile the target before saving."
-					autosavePausedRef.current.add(relativePath)
-					conflictsRef.current.add(relativePath)
+					session.protect(identityScope, relativePath, "conflict")
 					setError(message)
 					return { kind: "success", message }
 				}
-				publishBuffers((version) => version + 1)
+				
 				return { kind: "success" }
 			} catch {
 				return uncertain(
@@ -2469,48 +2579,47 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 
 	const captureTodo = useCallback(
 		async (title: string, targetRelativePath = "inbox.org") => {
-			if (!workspace || !isCurrentOrigin() || mutationInProgressRef.current) {
+			if (!workspace || !isCurrentOrigin() || !session.matches(identityScope)) {
 				return
 			}
 			const relativePath = targetRelativePath.trim() || "inbox.org"
+			if (fileBusy(relativePath)) return
 			if (protectedPath(relativePath)) {
 				setError(`Save or discard changes before capturing to ${relativePath}.`)
 				return
 			}
-			const activeContentAtStart = latestContentRef.current
-			const generation = editGenerationRef.current
-			const parked = parkedReservoir.read(identityScope, relativePath)
-			openRequestRef.current += 1
-			const owner = Symbol("captureTodo")
-			mutationOwnerRef.current = owner
-			mutationInProgressRef.current = true
-			refileTargetRequestRef.current += 1
-			setSaving(true)
+			const capture = session.captureFile(identityScope, relativePath)
+			const owner = effects.begin({ label: "captureTodo", paths: [relativePath] })
+			
 			setError(null)
 			try {
 				const result = await captureOrgTodoFlow({
-					relativePath,
+					target: { kind: "file", relativePath },
 					title,
 					capabilityToken: workspace.capabilityToken,
 					workspaceRoot: workspace.rootPath,
-				})()
-				if (mutationOwnerRef.current !== owner || !isCurrentOrigin()) {
+				}, { isCurrent: () => effects.owns(owner) && session.matches(identityScope) })()
+				if (!effects.owns(owner) || !session.matches(identityScope)) {
 					return
 				}
 				if (E.isLeft(result)) {
+					if (result.left.type === "ORG_CAPTURE_UNCERTAIN_WRITE_ERROR") {
+						session.protect(identityScope, relativePath, "conflict")
+						
+					}
 					setError(result.left.message)
 					return
 				}
 				setWorkspace((current) =>
 					current ? updateWorkspaceDocument(current, result.right) : current,
 				)
-				if (installedTargetSource(result.right, parked, activeContentAtStart, generation)) {
+				if (installedTargetSource(result.right, capture)) {
 					setError(
 						`Captured to ${relativePath}, but newer input was retained. Reread and reconcile the target before saving.`,
 					)
 				}
 			} catch {
-				if (mutationOwnerRef.current === owner && isCurrentOrigin()) {
+				if (effects.owns(owner) && session.matches(identityScope)) {
 					setError(
 						"captureTodo ended unexpectedly; files or derived state may have changed. All editor buffers were retained. Refresh and reconcile before a manual retry; do not automatically retry. No rollback was attempted.",
 					)
@@ -2522,39 +2631,166 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		[activeDocument, isDirty, workspace, dirtyPath, originSession, originActivation, originPath],
 	)
 
+	const publishFreshDocument = useCallback(
+		async (
+			input: OrgFreshDocumentPlan,
+			label: "Diary" | "Note",
+			open: boolean,
+			captured?: OrgNavigationSource,
+		): Promise<OrgFreshDocumentOutcome> => {
+			const plan = input
+			const ownsSource = captured?.isCurrent ?? isCurrentOrigin
+			if (!ownsSource()) {
+				return { kind: "stale", message: `${label} creation requires the current workspace owner.` }
+			}
+			if (!workspace) {
+				return { kind: "no-workspace", message: `Open an Org workspace before creating a ${label.toLowerCase()} entry.` }
+			}
+			const creationState = plan.directory ? effects.getFileSnapshot(plan.directory) : effects.getSnapshot()
+			if (creationState.busy || creationState.loading) {
+				const message = `${label} creation was not started while another workspace operation is busy.`
+				setError(message)
+				return { kind: "busy", message }
+			}
+			if (!workspace.capabilityToken) {
+				const message = `${label} creation requires an explicitly approved workspace grant.`
+				setError(message)
+				return { kind: "rejected", message }
+			}
+			// Collision allocation owns the target directory; an empty directory is
+			// an exclusive root namespace reservation, never the fake resource "".
+			const originCapture = captured?.capture ?? (originPath ? session.captureFile(identityScope, originPath) : null)
+			const owner = effects.begin({ label: `create${label}`, paths: plan.directory ? [plan.directory] : undefined })
+			setError(null)
+			try {
+				const result = await createOrgFreshDocumentFlow({
+					workspaceRoot: workspace.rootPath,
+					capabilityToken: workspace.capabilityToken,
+					plan,
+					documentLabel: label,
+					occupiedPaths: [
+						...workspace.documents.map((document) => document.relativePath),
+						...session.snapshotLiveBuffers(identityScope).map((buffer) => buffer.document.relativePath),
+					],
+					confirmCurrent: () => effects.owns(owner) && session.matches(identityScope) && (captured === undefined || captured.isCurrent()),
+				})()
+				if (!effects.owns(owner) || !session.matches(identityScope)) {
+					return {
+						kind: "stale",
+						message: E.isRight(result)
+							? `${label} ${result.right.relativePath} was created, but its original workspace owner is no longer current; it was not opened.`
+							: result.left.message,
+					}
+				}
+				if (E.isLeft(result)) {
+					setError(result.left.message)
+					return result.left
+				}
+				const document = result.right
+				setWorkspace((current) => {
+					if (!current) return current
+					const directories = new Set(current.directories)
+					for (const directory of directoryAndAncestors(plan.directory)) directories.add(directory)
+					return { ...updateWorkspaceDocument(current, document), directories: [...directories].sort() }
+				})
+				if (!open) {
+					return {
+						kind: "created-unopened",
+						relativePath: document.relativePath,
+						message: `${label} ${document.relativePath} was created without changing the originating buffer.`,
+					}
+				}
+				if (captured) {
+					if (!captured.isCurrent() || !session.fileCaptureIsCurrent(captured.capture))
+						return { kind: "created-unopened", relativePath: document.relativePath, message: `${label} was created, but its originating window changed; it was not opened.` }
+					const id = session.parkCommandSource(identityScope, document.relativePath, document, document.content)
+					if (id) session.createParkedRuntime(identityScope, id, document.content)
+					const runtime = id ? runtimeFor(id) : undefined
+					if (!id || !runtime) return { kind: "created-unopened", relativePath: document.relativePath, message: `${label} was created without replacing a newer canonical target.` }
+					finishMutation(owner)
+					const opened = captured.isCurrent() && await captured.navigate(id, runtime.state.doc.lines)
+					return opened ? { kind: "created", relativePath: document.relativePath }
+						: { kind: "created-unopened", relativePath: document.relativePath, message: `${label} was created, but its originating window could not accept navigation.` }
+				}
+				if (!isCurrentOrigin() || (originCapture && !session.fileCaptureIsCurrent(originCapture)) ||
+					!session.activateDocument(identityScope, document, document.content)) {
+					const message = `${label} ${document.relativePath} was created, but newer editor input or its owner was retained; it was not opened.`
+					setError(message)
+					return { kind: "created-unopened", relativePath: document.relativePath, message }
+				}
+				revealRequestRef.current += 1
+				setRevealTarget({
+					relativePath: document.relativePath,
+					line: session.getSnapshot().activeRuntime!.state.doc.lines,
+					requestId: revealRequestRef.current,
+				})
+				setError(null)
+				return { kind: "created", relativePath: document.relativePath }
+			} catch {
+				const message = `${label} creation ended unexpectedly; files may have changed. All buffers were retained. Refresh and reconcile before a manual retry; do not retry automatically.`
+				if (effects.owns(owner) && session.matches(identityScope)) setError(message)
+				return { kind: "uncertain", message }
+			} finally {
+				finishMutation(owner)
+			}
+		},
+		[workspace, originSession, originActivation, originPath],
+	)
+
+	const createDiary = useCallback(
+		async (captured?: OrgNavigationSource): Promise<OrgDiaryOutcome> =>
+			publishFreshDocument(Object.freeze(planOrgDiary(new Date(), crypto.randomUUID())), "Diary", true, captured),
+		[publishFreshDocument],
+	)
+	const captureBufferNavigation = useCallback((bufferId: string, windowId: string, isCurrent: () => boolean,
+		navigate: (bufferId: string, line: number) => Promise<boolean>): OrgCapturedBufferNavigation | null => {
+		const path = bufferIdentity.findPath(identityScope, bufferId)
+		const capture = path ? session.captureFile(identityScope, path) : null
+		const permit = session.captureWindowPermit(identityScope, windowId, bufferId)
+		if (!capture?.baseline || !capture.runtime || !permit || !permit() || !isCurrent() ||
+			capture.bufferId !== bufferId || !session.fileCaptureIsCurrent(capture)) return null
+		const captured: OrgNavigationSource = Object.freeze({
+			capture, navigate,
+			isCurrent: () => permit() && isCurrent() && session.closeReady && session.fileCaptureIsCurrent(capture),
+		})
+		return Object.freeze({
+			openOrgLink: (target: OrgLinkClickTarget) => openOrgLink(target, captured),
+			createDiary: () => createDiary(captured),
+			openDocumentAt: (path: string, line: number, revision?: string | null,
+				current?: (phase: "before" | "after") => boolean, signal?: AbortSignal) =>
+				openDocumentAt(path, line, revision, current, signal, captured),
+		})
+	}, [identityScope, openOrgLink, openDocumentAt, createDiary])
+
+	const createRoamNote = useCallback(
+		async (input: OrgRoamNotePlan, options?: { readonly open?: boolean }): Promise<OrgNoteOutcome> => {
+			const plan = Object.freeze({ ...input })
+			const open = options?.open ?? true
+			const capture = validateOrgRoamNoteCapture(plan)
+			if (capture.kind === "rejected") {
+				if (isCurrentOrigin()) setError(capture.message)
+				return capture
+			}
+			const result = await publishFreshDocument(plan, "Note", open)
+			return result.kind === "created" || result.kind === "created-unopened"
+				? { ...result, id: plan.id, title: capture.title }
+				: result
+		},
+		[publishFreshDocument],
+	)
+
 	const createDocument = useCallback(
 		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: creation, editor freshness checks, and parking are one transaction.
 		async (relativePath: string) => {
-			if (!workspace || !isCurrentOrigin() || !relativePath.trim() || saveAllOwnerRef.current) {
+			if (!workspace || !isCurrentOrigin() || !relativePath.trim() || fileBusy(relativePath)) {
 				return
 			}
 			if (protectedPath(relativePath)) {
 				setError(`Save or discard changes before creating ${relativePath}.`)
 				return
 			}
-			if (mutationInProgressRef.current) {
-				const inFlight = saveInFlightRef.current
-				if (!inFlight) {
-					return
-				}
-				const contentBeingSaved = saveInFlightContentRef.current
-				const saved = await inFlight
-				if (!isCurrentOrigin()) return
-				if (!canContinueAfterOrgSave(saved, contentBeingSaved, latestContentRef.current)) {
-					setError("New edits arrived while saving; note creation was paused until they are saved.")
-					return
-				}
-			}
-			if (mutationInProgressRef.current || !isCurrentOrigin()) return
-			const sourceAtStart = activeRef.current
-			const activationAtStart = activationRef.current
-			const owner = Symbol("create")
-			mutationOwnerRef.current = owner
-			const generationAtStart = editGenerationRef.current
-			openRequestRef.current += 1
-			mutationInProgressRef.current = true
-			refileTargetRequestRef.current += 1
-			setSaving(true)
+			const originCapture = originPath ? session.captureFile(identityScope, originPath) : null
+			const owner = effects.begin({ label: "create", paths: [relativePath] })
 			setError(null)
 			try {
 				const initialContent = initialOrgContent(relativePath)
@@ -2565,14 +2801,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					capabilityToken: workspace.capabilityToken,
 					workspaceRoot: workspace.rootPath,
 				})()
-				if (
-					!isCurrentOrigin() ||
-					mutationOwnerRef.current !== owner ||
-					sessionRef.current !== originSession ||
-					activationRef.current !== activationAtStart ||
-					activeRef.current?.relativePath !== sourceAtStart?.relativePath
-				)
-					return
+				if (!session.matches(identityScope) || !effects.owns(owner)) return
 				if (E.isLeft(result)) {
 					setError(result.left.message)
 					return
@@ -2588,30 +2817,22 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 							}
 						: current,
 				)
-				if (generationAtStart !== editGenerationRef.current) {
+				if (!isCurrentOrigin() || (originCapture && !session.fileCaptureIsCurrent(originCapture))) {
 					setError("The new document was created, but newer editor input was retained.")
 					return
 				}
-				const previous = activeRef.current
-				if (previous) {
-					parkedReservoir.park(identityScope, bufferIdFor(previous.relativePath), {
-						content: latestContentRef.current,
-						document: previous,
-						editGeneration: editGenerationRef.current,
-						isDirty: latestContentRef.current !== previous.content,
-					})
+				if (!session.activateDocument(identityScope, document, initialContent)) {
+					setError("The new document was created, but its originating editor owner was retained.")
+					return
 				}
-				parkedReservoir.takeToActivate(
-					identityScope,
-					bufferIdentity.lookup(identityScope, relativePath) ?? "",
-				)
-				bufferIdFor(relativePath)
-				activationRef.current += 1
-				activeRef.current = document
-				setActiveDocument(document)
-				installSource(initialContent)
+				revealRequestRef.current += 1
+				setRevealTarget({
+					relativePath: document.relativePath,
+					line: session.getSnapshot().activeRuntime!.state.doc.lines,
+					requestId: revealRequestRef.current,
+				})
 			} catch {
-				if (mutationOwnerRef.current === owner && isCurrentOrigin()) {
+				if (effects.owns(owner) && session.matches(identityScope)) {
 					setError(
 						"Create ended unexpectedly; files may have changed. All editor buffers were retained. Refresh and reconcile before a manual retry; no rollback was attempted.",
 					)
@@ -2620,7 +2841,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				finishMutation(owner)
 			}
 		},
-		[workspace, bufferIdFor, dirtyPath, originSession, originActivation, originPath],
+		[workspace, dirtyPath, originSession, originActivation, originPath],
 	)
 
 	const createDirectory = useCallback(
@@ -2628,17 +2849,12 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			if (
 				!workspace ||
 				!isCurrentOrigin() ||
-				mutationInProgressRef.current ||
+				fileBusy(relativePath) ||
 				!relativePath.trim()
 			) {
 				return
 			}
-			openRequestRef.current += 1
-			const owner = Symbol("createDirectory")
-			mutationOwnerRef.current = owner
-			mutationInProgressRef.current = true
-			refileTargetRequestRef.current += 1
-			setSaving(true)
+			const owner = effects.begin({ label: "createDirectory", paths: [relativePath] })
 			setError(null)
 			try {
 				const result = await createOrgDirectoryFlow({
@@ -2646,7 +2862,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					capabilityToken: workspace.capabilityToken,
 					workspaceRoot: workspace.rootPath,
 				})()
-				if (mutationOwnerRef.current !== owner || !isCurrentOrigin()) {
+				if (!effects.owns(owner) || !session.matches(identityScope)) {
 					return
 				}
 				if (E.isLeft(result)) {
@@ -2664,7 +2880,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					return { ...current, directories: [...directories].sort() }
 				})
 			} catch {
-				if (mutationOwnerRef.current === owner && isCurrentOrigin()) {
+				if (effects.owns(owner) && session.matches(identityScope)) {
 					setError(
 						"createDirectory ended unexpectedly; files or derived state may have changed. All editor buffers were retained. Refresh and reconcile before a manual retry; do not automatically retry. No rollback was attempted.",
 					)
@@ -2678,12 +2894,12 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 
 	const moveActiveDocument = useCallback(
 		async (targetRelativePath: string) => {
-			const sourceDocument = activeRef.current
+			const sourceDocument = session.document
 			if (
 				!workspace ||
 				!sourceDocument ||
 				!isCurrentOrigin() ||
-				mutationInProgressRef.current ||
+				fileBusy(sourceDocument.relativePath, targetRelativePath) ||
 				!targetRelativePath.trim()
 			) {
 				return
@@ -2692,15 +2908,12 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				setError("Save or discard the current changes before moving this document.")
 				return
 			}
-			openRequestRef.current += 1
+			const sourceCapture = session.captureFile(identityScope, sourceDocument.relativePath)
+			if (!sourceCapture) return
 			const sourcePath = sourceDocument.relativePath
 			const sourceId = bufferIdentity.lookup(identityScope, sourcePath)
 			const targetId = bufferIdentity.lookup(identityScope, targetRelativePath)
-			const owner = Symbol("moveActiveDocument")
-			mutationOwnerRef.current = owner
-			mutationInProgressRef.current = true
-			refileTargetRequestRef.current += 1
-			setSaving(true)
+			const owner = effects.begin({ label: "moveActiveDocument", paths: [sourcePath, targetRelativePath] })
 			setError(null)
 			try {
 				const result = await moveOrgDocumentFlow({
@@ -2710,7 +2923,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					capabilityToken: workspace.capabilityToken,
 					workspaceRoot: workspace.rootPath,
 				})()
-				if (mutationOwnerRef.current !== owner || !isCurrentOrigin()) {
+				if (!effects.owns(owner) || !session.matches(identityScope)) {
 					return
 				}
 				if (E.isLeft(result)) {
@@ -2719,39 +2932,17 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				}
 				if (
 					!sourceId ||
+					!session.fileCaptureIsCurrent(sourceCapture) ||
 					bufferIdentity.lookup(identityScope, sourcePath) !== sourceId ||
 					bufferIdentity.lookup(identityScope, result.right.relativePath) !== targetId
 				) {
 					setError("Buffer identity changed while moving; refresh and reconcile.")
 					return
 				}
-				// The root approved the overwrite and verified both mappings after IO.
-				if (result.right.relativePath !== sourcePath) retireBuffer(result.right.relativePath)
-				if (
-					!bufferIdentity.moveApproved(
-						identityScope,
-						sourcePath,
-						result.right.relativePath,
-						sourceId,
-					)
-				) {
+				if (!session.moveApproved(identityScope, sourcePath, result.right.relativePath, sourceId)) {
 					setError("Buffer identity changed while moving; refresh and reconcile.")
 					return
 				}
-				const wasPaused = autosavePausedRef.current.delete(sourcePath)
-				const hadConflict = conflictsRef.current.delete(sourcePath)
-				autosavePausedRef.current.delete(result.right.relativePath)
-				conflictsRef.current.delete(result.right.relativePath)
-				if (wasPaused) autosavePausedRef.current.add(result.right.relativePath)
-				if (hadConflict) conflictsRef.current.add(result.right.relativePath)
-				activationRef.current += 1
-				if (activeRef.current)
-					activeRef.current = { ...activeRef.current, relativePath: result.right.relativePath }
-				setActiveDocument((current) =>
-					current?.relativePath === sourcePath
-						? { ...current, relativePath: result.right.relativePath }
-						: current,
-				)
 				setWorkspace((current) =>
 					current
 						? {
@@ -2765,7 +2956,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 						: current,
 				)
 			} catch {
-				if (mutationOwnerRef.current === owner && isCurrentOrigin()) {
+				if (effects.owns(owner) && session.matches(identityScope)) {
 					setError(
 						"moveActiveDocument ended unexpectedly; files or derived state may have changed. All editor buffers were retained. Refresh and reconcile before a manual retry; do not automatically retry. No rollback was attempted.",
 					)
@@ -2779,21 +2970,26 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 
 	const migrateLegacyWorkspace = useCallback(
 		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: preview, source rechecks, atomic publication, and verification are one migration transaction.
-		async (legacyWorkspace: WorkspaceInterface) => {
-			if (!workspace || !isCurrentOrigin() || mutationInProgressRef.current) {
+		async (legacyWorkspace: LegacyMigrationWorkspace) => {
+			if (!workspace || !isCurrentOrigin() || effects.busy) {
 				return
 			}
 			openRequestRef.current += 1
-			const owner = Symbol("migrateLegacyWorkspace")
-			mutationOwnerRef.current = owner
-			mutationInProgressRef.current = true
+			const owner = effects.begin({ label: "migrateLegacyWorkspace", presentation: "loading" })
 			refileTargetRequestRef.current += 1
-			setLoading(true)
+			
 			setError(null)
 			setMigrationStatus(null)
 			try {
+				// Legacy DB/recovery modules must stay outside the normal Org loading graph.
+				const {
+					areLegacyMigrationPlansEquivalent,
+					executeLegacyMigrationFlow,
+					prepareLegacyMigrationFlow,
+				} = await import("@/flows/org-workspace/legacy-migration.flow")
+				if (!effects.owns(owner) || !isCurrentOrigin()) return
 				const prepared = await prepareLegacyMigrationFlow(legacyWorkspace)()
-				if (mutationOwnerRef.current !== owner || !isCurrentOrigin()) {
+				if (!effects.owns(owner) || !isCurrentOrigin()) {
 					return
 				}
 				if (E.isLeft(prepared)) {
@@ -2817,19 +3013,24 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					...warningEntries.slice(0, 8),
 					...(omittedWarnings > 0 ? [`…and ${omittedWarnings} more affected paths.`] : []),
 				].join("\n")
-				const confirmed = window.confirm(
-					`Migrate “${legacyWorkspace.title}” into ${plan.rootDirectory}?\n\n` +
+				const migrationPermit = session.captureDiscardPermit()
+				const confirmed = await confirm({
+					title: "Migrate legacy workspace?",
+					description: `Migrate captured workspace “${plan.graph.workspace.name}” (${plan.graph.workspace.id}) into ${plan.rootDirectory}?\n\n` +
 						`${plan.documents.length} Org documents, ${plan.directories.length} directories, ` +
 						`${plan.rawBackups.length} raw backups, ${placeholders} placeholders, ` +
 						`${warningCount} warnings.\n\n` +
 						(warningPreview ? `Warning preview:\n${warningPreview}\n\n` : "") +
-						"Every selected-workspace and recoverable orphan content row is backed up. Existing paths will never be reused or overwritten.",
-				)
-				if (!isCurrentOrigin() || !confirmed) {
+						`The exact workspace metadata, ${plan.graph.nodes.length} node rows with original parent links, and all ${plan.rawBackups.length} selected-workspace/recoverable orphan content rows are preserved in the recovery bundle. This is not a whole-database backup: unrelated users, settings, and tables are not included. Existing paths will never be reused or overwritten.`,
+					confirmText: "Migrate",
+					cancelText: "Cancel",
+					signal: confirmationLifetime.current?.signal,
+				})
+				if (!effects.owns(owner) || !isCurrentOrigin() || !migrationPermit() || confirmed !== true) {
 					return
 				}
 				const refreshedPlan = await prepareLegacyMigrationFlow(legacyWorkspace)()
-				if (mutationOwnerRef.current !== owner || !isCurrentOrigin()) {
+				if (!effects.owns(owner) || !isCurrentOrigin() || !migrationPermit()) {
 					return
 				}
 				if (E.isLeft(refreshedPlan)) {
@@ -2847,7 +3048,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					workspace.capabilityToken,
 					refreshedPlan.right,
 				)()
-				if (mutationOwnerRef.current !== owner || !isCurrentOrigin()) {
+				if (!effects.owns(owner) || !isCurrentOrigin()) {
 					return
 				}
 				if (E.isLeft(written)) {
@@ -2855,7 +3056,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					return
 				}
 				const finalPlan = await prepareLegacyMigrationFlow(legacyWorkspace)()
-				if (mutationOwnerRef.current !== owner || !isCurrentOrigin()) {
+				if (!effects.owns(owner) || !isCurrentOrigin()) {
 					return
 				}
 				if (
@@ -2874,7 +3075,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					workspace.rootPath,
 					workspace.capabilityToken,
 				)()
-				if (mutationOwnerRef.current !== owner || !isCurrentOrigin()) {
+				if (!effects.owns(owner) || !isCurrentOrigin()) {
 					return
 				}
 				if (E.isLeft(rescanned)) {
@@ -2883,7 +3084,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				}
 				setWorkspace({ ...rescanned.right, capabilityToken: workspace.capabilityToken })
 			} catch {
-				if (mutationOwnerRef.current === owner && isCurrentOrigin()) {
+				if (effects.owns(owner) && isCurrentOrigin()) {
 					setError(
 						"migrateLegacyWorkspace ended unexpectedly; files or derived state may have changed. All editor buffers were retained. Refresh and reconcile before a manual retry; do not automatically retry. No rollback was attempted.",
 					)
@@ -2892,23 +3093,24 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				finishMutation(owner)
 			}
 		},
-		[workspace, originSession, originActivation, originPath],
+		[confirm, workspace, originSession, originActivation, originPath],
 	)
 
 	const verifyLegacyMigration = useCallback(
-		async (legacyWorkspace: WorkspaceInterface) => {
-			if (!workspace || !isCurrentOrigin() || mutationInProgressRef.current) {
+		async (legacyWorkspace: LegacyMigrationWorkspace) => {
+			if (!workspace || !isCurrentOrigin() || effects.busy) {
 				return
 			}
 			openRequestRef.current += 1
-			const owner = Symbol("verifyLegacyMigration")
-			mutationOwnerRef.current = owner
-			mutationInProgressRef.current = true
+			const owner = effects.begin({ label: "verifyLegacyMigration", presentation: "loading" })
 			refileTargetRequestRef.current += 1
-			setLoading(true)
+			
 			setError(null)
 			setMigrationStatus(null)
 			try {
+				// Legacy recovery is loaded only by its explicit legacy-mode action.
+				const { verifyLegacyMigrationRecoveryFlow } = await import("@/flows/org-workspace/legacy-migration.flow")
+				if (!effects.owns(owner) || !isCurrentOrigin()) return
 				const result = await verifyLegacyMigrationRecoveryFlow(
 					legacyWorkspace,
 					workspace.rootPath,
@@ -2916,7 +3118,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					undefined,
 					workspace.capabilityToken,
 				)()
-				if (mutationOwnerRef.current !== owner || !isCurrentOrigin()) {
+				if (!effects.owns(owner) || !isCurrentOrigin()) {
 					return
 				}
 				if (E.isLeft(result)) {
@@ -2929,7 +3131,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					`Recovery verified ${result.right.verification.checkedCount} artifacts against current legacy source.`,
 				)
 			} catch {
-				if (mutationOwnerRef.current === owner && isCurrentOrigin()) {
+				if (effects.owns(owner) && isCurrentOrigin()) {
 					setError(
 						"verifyLegacyMigration ended unexpectedly; files or derived state may have changed. All editor buffers were retained. Refresh and reconcile before a manual retry; do not automatically retry. No rollback was attempted.",
 					)
@@ -2942,7 +3144,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	)
 
 	const rebuildDerivedIndex = useCallback(async () => {
-		if (!workspace || !isCurrentOrigin() || mutationInProgressRef.current) {
+		if (!workspace || !isCurrentOrigin() || effects.busy) {
 			return
 		}
 		if (hasDirtyBuffers()) {
@@ -2950,16 +3152,14 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			return
 		}
 		openRequestRef.current += 1
-		const owner = Symbol("rebuildDerivedIndex")
-		mutationOwnerRef.current = owner
-		mutationInProgressRef.current = true
+		const owner = effects.begin({ label: "rebuildDerivedIndex", presentation: "loading" })
 		refileTargetRequestRef.current += 1
-		setLoading(true)
+		
 		setError(null)
 		setDerivedIndexStatus(null)
 		try {
 			const rescanned = await scanOrgWorkspaceFlow(workspace.rootPath, workspace.capabilityToken)()
-			if (mutationOwnerRef.current !== owner || !isCurrentOrigin()) {
+			if (!effects.owns(owner) || !isCurrentOrigin()) {
 				return
 			}
 			if (E.isLeft(rescanned)) {
@@ -2971,7 +3171,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				...rescanned.right,
 				capabilityToken: workspace.capabilityToken,
 			})()
-			if (mutationOwnerRef.current !== owner || !isCurrentOrigin()) {
+			if (!effects.owns(owner) || !isCurrentOrigin()) {
 				return
 			}
 			if (E.isLeft(result)) {
@@ -2982,7 +3182,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				`Derived index rebuilt: ${result.right.documentCount} documents, ${result.right.headingCount} headings, ${result.right.linkCount} links, ${result.right.agendaCount} agenda entries.`,
 			)
 		} catch {
-			if (mutationOwnerRef.current === owner && isCurrentOrigin()) {
+			if (effects.owns(owner) && isCurrentOrigin()) {
 				setError(
 					"rebuildDerivedIndex ended unexpectedly; files or derived state may have changed. All editor buffers were retained. Refresh and reconcile before a manual retry; do not automatically retry. No rollback was attempted.",
 				)
@@ -2993,19 +3193,17 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	}, [isDirty, workspace, originSession, originActivation, originPath])
 
 	const clearDerivedIndex = useCallback(async () => {
-		if (!workspace || !isCurrentOrigin() || mutationInProgressRef.current) {
+		if (!workspace || !isCurrentOrigin() || effects.busy) {
 			return
 		}
-		const owner = Symbol("clearDerivedIndex")
-		mutationOwnerRef.current = owner
-		mutationInProgressRef.current = true
+		const owner = effects.begin({ label: "clearDerivedIndex", presentation: "loading" })
 		refileTargetRequestRef.current += 1
-		setLoading(true)
+		
 		setError(null)
 		setDerivedIndexStatus(null)
 		try {
 			const result = await clearOrgDerivedIndexFlow(workspace.rootPath, workspace.capabilityToken)()
-			if (mutationOwnerRef.current !== owner || !isCurrentOrigin()) {
+			if (!effects.owns(owner) || !isCurrentOrigin()) {
 				return
 			}
 			if (E.isLeft(result)) {
@@ -3014,7 +3212,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 			}
 			setDerivedIndexStatus("Derived index cleared. Org files were not modified.")
 		} catch {
-			if (mutationOwnerRef.current === owner && isCurrentOrigin()) {
+			if (effects.owns(owner) && isCurrentOrigin()) {
 				setError(
 					"clearDerivedIndex ended unexpectedly; files or derived state may have changed. All editor buffers were retained. Refresh and reconcile before a manual retry; do not automatically retry. No rollback was attempted.",
 				)
@@ -3025,18 +3223,19 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	}, [workspace, originSession, originActivation, originPath])
 
 	const runLegacyRecoveryDrill = useCallback(
-		async (legacyWorkspace: WorkspaceInterface) => {
-			if (!workspace || !isCurrentOrigin() || mutationInProgressRef.current) {
+		async (legacyWorkspace: LegacyMigrationWorkspace) => {
+			if (!workspace || !isCurrentOrigin() || effects.busy) {
 				return
 			}
-			const owner = Symbol("runLegacyRecoveryDrill")
-			mutationOwnerRef.current = owner
-			mutationInProgressRef.current = true
+			const owner = effects.begin({ label: "runLegacyRecoveryDrill", presentation: "loading" })
 			refileTargetRequestRef.current += 1
-			setLoading(true)
+			
 			setError(null)
 			setMigrationStatus(null)
 			try {
+				// Legacy recovery is loaded only by its explicit legacy-mode action.
+				const { runLegacyMigrationRecoveryDrillFlow } = await import("@/flows/org-workspace/legacy-migration.flow")
+				if (!effects.owns(owner) || !isCurrentOrigin()) return
 				const result = await runLegacyMigrationRecoveryDrillFlow(
 					legacyWorkspace,
 					workspace.rootPath,
@@ -3044,7 +3243,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					undefined,
 					workspace.capabilityToken,
 				)()
-				if (mutationOwnerRef.current !== owner || !isCurrentOrigin()) {
+				if (!effects.owns(owner) || !isCurrentOrigin()) {
 					return
 				}
 				if (E.isLeft(result)) {
@@ -3052,10 +3251,10 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					return
 				}
 				setMigrationStatus(
-					`Recovery drill passed: reconstructed ${result.right.recoveredContentCount} legacy content rows from raw backups and verified ${result.right.verification.checkedCount} artifacts. Recovery database script: ${result.right.recoverySqlPath}`,
+					`Recovery drill passed: reconstructed selected workspace ${result.right.recoveredWorkspaceId}, ${result.right.recoveredNodeCount} node rows with exact parent links, and ${result.right.recoveredContentCount} preserved content rows; verified ${result.right.verification.checkedCount} artifacts. Standalone selected-workspace SQLite script: ${result.right.recoverySqlPath}. Unrelated users, settings, and database tables are not restored.`,
 				)
 			} catch {
-				if (mutationOwnerRef.current === owner && isCurrentOrigin()) {
+				if (effects.owns(owner) && isCurrentOrigin()) {
 					setError(
 						"runLegacyRecoveryDrill ended unexpectedly; files or derived state may have changed. All editor buffers were retained. Refresh and reconcile before a manual retry; do not automatically retry. No rollback was attempted.",
 					)
@@ -3068,67 +3267,69 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	)
 
 	const deleteActiveDocument = useCallback(async () => {
-		const sourceDocument = activeRef.current
-		if (!workspace || !sourceDocument || !isCurrentOrigin() || mutationInProgressRef.current) {
+		const sourceDocument = session.document
+		if (!workspace || !sourceDocument || !isCurrentOrigin() || fileBusy(sourceDocument.relativePath)) {
 			return
 		}
-		if (
-			dirtyPath(sourceDocument.relativePath) &&
-			!window.confirm("Delete this file and permanently discard unsaved changes?")
-		) {
-			return
-		}
-		if (!isCurrentOrigin() || mutationInProgressRef.current) return
-		openRequestRef.current += 1
-		const owner = Symbol("deleteActiveDocument")
-		mutationOwnerRef.current = owner
-		mutationInProgressRef.current = true
-		refileTargetRequestRef.current += 1
-		setSaving(true)
+		const sourceBaseline = Object.freeze({ ...sourceDocument })
+		const sourceCapture = session.captureFile(identityScope, sourceDocument.relativePath)
+		if (!sourceCapture) return
+		if (dirtyPath(sourceBaseline.relativePath) && await confirm({
+			title: "Delete this file?",
+			description: "Remove this file's pathname and discard unsaved editor input? Native file bytes remain at a manual recovery path; this does not preserve unsaved input.",
+			confirmText: "Delete",
+			cancelText: "Cancel",
+			signal: confirmationLifetime.current?.signal,
+		}) !== true) return
+		if (fileBusy(sourceBaseline.relativePath) || !session.fileCaptureIsCurrent(sourceCapture)) return
+		const owner = effects.begin({ label: "deleteActiveDocument", paths: [sourceBaseline.relativePath] })
 		setError(null)
-		const sourcePath = sourceDocument.relativePath
-		const generationAtDelete = editGenerationRef.current
+		const sourcePath = sourceBaseline.relativePath
 		try {
 			const result = await deleteOrgDocumentFlow({
-				expectedRevision: sourceDocument.revision,
+				expectedRevision: sourceBaseline.revision,
 				relativePath: sourcePath,
 				capabilityToken: workspace.capabilityToken,
 				workspaceRoot: workspace.rootPath,
 			})()
-			if (mutationOwnerRef.current !== owner || !isCurrentOrigin()) {
+			if (!effects.owns(owner) || !session.matches(identityScope)) {
 				return
 			}
 			if (E.isLeft(result)) {
 				setError(result.left.message)
 				return
 			}
+			const retained: OrgOriginalRecoveryEntryInterface = result.right
+			if (!retained || retained.kind !== "delete" || retained.object !== "original" || retained.sourceRelativePath !== sourcePath ||
+				typeof retained.relativePath !== "string" || !retained.relativePath) {
+				session.protect(identityScope, sourcePath, "conflict")
+				session.invalidateBaseline(identityScope, sourcePath)
+				setError("Deletion acknowledgement was invalid. Editor input was retained; refresh and reconcile before any manual retry.")
+				return
+			}
 			setWorkspace((current) =>
 				current
 					? {
 							...current,
+							originalRecoveries: [...(current.originalRecoveries ?? []).filter((entry) => entry.relativePath !== retained.relativePath), retained],
 							documents: current.documents.filter(
 								(document) => document.relativePath !== sourcePath,
 							),
 						}
 					: current,
 			)
-			if (generationAtDelete !== editGenerationRef.current) {
-				conflictsRef.current.add(sourcePath)
-				autosavePausedRef.current.add(sourcePath)
-				setDirty(true)
+			if (!session.fileCaptureIsCurrent(sourceCapture)) {
+				session.protect(identityScope, sourcePath, "conflict")
+				session.invalidateBaseline(identityScope, sourcePath)
 				setError(`The file ${sourcePath} was deleted, but newer editor input was retained.`)
 				return
 			}
-			retireBuffer(sourcePath)
-			conflictsRef.current.delete(sourcePath)
-			autosavePausedRef.current.delete(sourcePath)
-			activationRef.current += 1
-			activeRef.current = null
-			setActiveDocument(null)
-			installSource("")
-			setDirty(false)
+			if (session.document?.relativePath === sourcePath) {
+				session.closeActiveDocument(identityScope)
+				setRevealTarget(null)
+			} else retireBuffer(sourcePath)
 		} catch {
-			if (mutationOwnerRef.current === owner && isCurrentOrigin()) {
+			if (effects.owns(owner) && session.matches(identityScope)) {
 				setError(
 					"deleteActiveDocument ended unexpectedly; files or derived state may have changed. All editor buffers were retained. Refresh and reconcile before a manual retry; do not automatically retry. No rollback was attempted.",
 				)
@@ -3136,19 +3337,23 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		} finally {
 			finishMutation(owner)
 		}
-	}, [activeDocument, workspace, dirtyPath, originSession, originActivation, originPath])
+	}, [confirm, activeDocument, workspace, dirtyPath, originSession, originActivation, originPath])
 
 	return {
 		liveBuffers,
 		registerBufferWindow,
 		captureBufferWindowPermit,
+		captureBufferTransfer,
+		captureBufferNavigation,
+		clock,
 		activateOpenBuffer,
 		activeBufferRuntime,
-		activeBufferId: activeDocument ? bufferIdFor(activeDocument.relativePath) : null,
+		activeBufferId: activeBufferRuntime?.key.bufferId ?? null,
 		activeDocument,
 		archiveSubtree,
 		captureTodo,
 		captureEntry,
+		readCaptureTarget,
 		setTransientDirty,
 		clearDerivedIndex,
 		closeActiveDocument,
@@ -3156,13 +3361,33 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		content,
 		createDirectory,
 		createDocument,
+		createDiary,
+		createRoamNote,
+		readRemarkNotes,
+		executeRemarkMutation,
+		saveRemarkNotes,
 		deleteActiveDocument,
 		derivedIndexStatus,
 		error,
 		isDirty,
 		isLoading: isLoading || !nativeCloseReady,
-		isEditorReadOnly: isLoading || !nativeCloseReady || (isSaving && !saveInFlightRef.current),
+		isEditorReadOnly: isLoading || !nativeCloseReady || Boolean(focusedEffect?.busy && !focusedEffect.saveInFlight),
 		isSaving,
+		isWorkspaceBusy: effectSnapshot.busy || effectSnapshot.loading,
+		isWorkspaceBlocked: effectSnapshot.globalBusy || effectSnapshot.globalLoading || !nativeCloseReady,
+		getBufferEffectState,
+		captureBufferSave,
+		captureFileReview,
+		protectedPaths: session.protectedPaths,
+		acceptFileReview,
+		cancelFileReview: session.cancelFileReview,
+		isFileReviewCurrent: session.reviewIsCurrent,
+		nativeWindowsAvailable: isTauri(),
+		nativeWindows: nativeWindowSnapshot.windows,
+		detachBuffer,
+		attachNativeWindow,
+		rebindNativeWindow,
+		closeNativeWindow,
 		migrateLegacyWorkspace,
 		migrationStatus,
 		moveActiveDocument,
@@ -3173,9 +3398,8 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		openDocumentPath,
 		switchBuffer,
 		openOrgLink,
-		actOnAgendaEntry,
 		executeAgendaCommand,
-		prepareAgendaPlanning,
+		prepareAgendaCommand,
 		rebuildDerivedIndex,
 		refileSubtree,
 		readRefileTarget,

@@ -5,6 +5,7 @@ import type {
 	OrgTodoNoteResult,
 } from "@/flows/org-command/org-todo-note"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
+import type { ApplicationToolOrigin } from "@/flows/application/application-tool-registry"
 
 type Request = OrgTodoNoteRequest | OrgAgendaTodoNoteRequest
 let nextOwner = 0
@@ -17,13 +18,16 @@ const abortSafely = (source: Request) => {
 }
 
 /** The shell owns the scratch buffer, even after its originating view is gone. */
-export function useOrgTodoNoteWorkflow(controller: OrgWorkspaceController) {
+export function useOrgTodoNoteWorkflow(controller: OrgWorkspaceController, captureOrigin?: () => ApplicationToolOrigin | null) {
 	const live = useRef(controller)
+	const captureOriginRef = useRef(captureOrigin)
+	captureOriginRef.current = captureOrigin
 	live.current = controller
 	const owner = useRef<{
 		readonly id: string
 		readonly source: Request
 		readonly request: OrgTodoNoteRequest
+		readonly origin: ApplicationToolOrigin
 		readonly close: (host?: HTMLElement) => void
 		protection: OrgWorkspaceController | null
 	} | null>(null)
@@ -59,6 +63,10 @@ export function useOrgTodoNoteWorkflow(controller: OrgWorkspaceController) {
 			focused.closest(".cm-editor, [data-agenda-key]")
 				? focused
 				: null
+		const toolOrigin = source.origin ?? captureOriginRef.current?.() ?? {
+			isLive: () => inScope() && !!focusOrigin?.isConnected,
+			restore: () => { focusOrigin?.focus() },
+		}
 		let pending = false
 		let terminal = false
 		let abortRequested = false
@@ -71,7 +79,7 @@ export function useOrgTodoNoteWorkflow(controller: OrgWorkspaceController) {
 			if (!terminal || owned?.request !== request) return
 			const restore =
 				inScope() &&
-				focusOrigin?.isConnected &&
+				toolOrigin.isLive() &&
 				host?.isConnected &&
 				host.contains(document.activeElement)
 			// The old callback never releases a new grant. G2 has an explicit,
@@ -81,10 +89,13 @@ export function useOrgTodoNoteWorkflow(controller: OrgWorkspaceController) {
 				owned.protection.setTransientDirty(id, false)
 			owner.current = null
 			setNote(null)
-			if (restore) focusOrigin?.focus()
+			if (restore) void toolOrigin.restore()
 		}
 		const request: OrgTodoNoteRequest = {
+			label: source.label,
+			successMessage: source.successMessage,
 			validate,
+			subscribeValidation: source.subscribeValidation,
 			abort: () => {
 				if (terminal || abortRequested) return
 				abortRequested = true
@@ -109,7 +120,7 @@ export function useOrgTodoNoteWorkflow(controller: OrgWorkspaceController) {
 						terminal = true
 						return { kind: "aborted" }
 					}
-					return { kind: "rejected", reason: "TODO state change failed; no automatic retry." }
+					return { kind: "rejected", reason: "Org change failed; no automatic retry." }
 				} finally {
 					pending = false
 				}
@@ -120,12 +131,16 @@ export function useOrgTodoNoteWorkflow(controller: OrgWorkspaceController) {
 			abortSafely(source)
 			return false
 		}
-		owner.current = { id, source, request, close, protection: origin }
+		owner.current = {
+			id, source, request, close, protection: origin,
+			origin: toolOrigin,
+		}
 		setNote(owner.current)
 		return true
 	}
 	return {
 		note,
+		closeFence: JSON.stringify([controller.workspaceSessionId, controller.workspace?.rootPath, controller.workspace?.capabilityToken]),
 		admit,
 		isActive: note !== null,
 		isOwned: () => owner.current !== null,

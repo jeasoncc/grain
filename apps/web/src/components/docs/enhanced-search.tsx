@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { Search, FileText, ArrowRight, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, FileText, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { docNavItems, type NavItem } from "./doc-nav-data";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 interface SearchResult {
@@ -61,10 +60,6 @@ export function EnhancedSearch() {
     }).slice(0, 10); // 限制结果数量
   }, [query, allItems]);
 
-  // 重置选中索引当结果变化时
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [filteredResults]);
 
   // 键盘导航
   useEffect(() => {
@@ -84,6 +79,7 @@ export function EnhancedSearch() {
         const result = filteredResults[selectedIndex];
         router.push(result.item.href);
         setQuery("");
+        setSelectedIndex(0);
         setIsOpen(false);
       }
     };
@@ -126,6 +122,7 @@ export function EnhancedSearch() {
       if (e.key === "Escape" && isOpen) {
         setIsOpen(false);
         setQuery("");
+        setSelectedIndex(0);
         inputRef.current?.blur();
       }
     };
@@ -137,6 +134,7 @@ export function EnhancedSearch() {
   const handleResultClick = useCallback((href: string) => {
     router.push(href);
     setQuery("");
+    setSelectedIndex(0);
     setIsOpen(false);
     inputRef.current?.blur();
   }, [router]);
@@ -151,7 +149,10 @@ export function EnhancedSearch() {
           type="text"
           placeholder="搜索文档... (Ctrl+K)"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setSelectedIndex(0);
+          }}
           onFocus={() => setIsOpen(true)}
           className="pl-9 pr-4 py-2 w-full"
           aria-label="搜索文档"
@@ -234,7 +235,7 @@ export function EnhancedSearch() {
               <div className="p-8 text-center">
                 <Search className="w-8 h-8 text-gray-400 mx-auto mb-3" aria-hidden="true" />
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  未找到与 "<span className="font-medium">{query}</span>" 相关的文档
+                  未找到与 &quot;<span className="font-medium">{query}</span>&quot; 相关的文档
                 </p>
               </div>
             )}

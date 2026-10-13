@@ -1,12 +1,12 @@
 # Novel Editor 官网
 
-这是 Novel Editor 项目的官方网站，基于 Next.js 15 构建，使用 React 19、TypeScript 和 Tailwind CSS。
+这是 Novel Editor 项目的官方网站，基于 Next.js 16 构建，使用 React 19、TypeScript 6 和 Tailwind CSS。
 
 ## ✨ 特性
 
 - 🎨 **现代化设计** - 精美的 UI 设计，支持暗色模式
 - 📱 **完全响应式** - 完美适配移动端、平板和桌面端
-- ⚡ **性能优化** - 使用 Next.js 15 的 App Router，极速加载
+- ⚡ **性能优化** - 使用 Next.js 16 的 App Router，极速加载
 - 🌙 **暗色模式** - 内置暗色模式支持，自动跟随系统偏好
 - ♿ **无障碍友好** - 遵循 WCAG 标准，键盘导航支持
 - 🔍 **SEO 优化** - 完整的元数据和 Open Graph 标签
@@ -14,8 +14,9 @@
 ## 🚀 快速开始
 
 ```bash
-# 安装依赖
-bun install
+# 从仓库根目录安装所有 workspace，使用唯一根锁文件
+bun install --frozen-lockfile
+cd apps/web
 
 # 启动开发服务器
 bun run dev
@@ -23,9 +24,15 @@ bun run dev
 # 构建生产版本
 bun run build
 
-# 启动生产服务器
+# 预览已导出的 out/ 静态站点（serve，端口 3000；不是 next start）
 bun run start
 ```
+
+要求 Bun 1.4.2、Node.js `^22.22.2 || ^24.15.0 || >=26.0.0`。
+`next.config.ts` 是唯一配置；`output: "export"` 和 `images.unoptimized: true`
+保留无 Node 服务的部署方式。`bun run lint` 使用 ESLint CLI，`bun run typecheck`
+单独检查类型；Next 16 的构建不再代替 lint。Web 使用 ESLint 9.39.5，
+以满足 Next 官方 React/import/jsx-a11y 插件的稳定 peer 范围，其他工作区使用 ESLint 10。
 
 ## 📁 项目结构
 
@@ -92,8 +99,8 @@ apps/web/
 
 ## 🔧 技术栈
 
-- **框架**: Next.js 15
-- **语言**: TypeScript
+- **框架**: Next.js 16
+- **语言**: TypeScript 6
 - **样式**: Tailwind CSS 4
 - **UI 组件**: 自定义组件 + Radix UI
 - **图标**: Lucide React

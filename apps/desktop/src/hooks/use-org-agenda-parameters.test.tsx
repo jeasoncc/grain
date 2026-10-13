@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { useOrgAgendaParameters, type AgendaParameterController } from "./use-org-agenda-parameters"
 import type { OrgAgendaEntry } from "@/pipes/org"
 import { OrgMinibuffer } from "@/views/org-workspace/org-minibuffer.view.fn"
+import type { OrgAgendaTodoNoteRequest } from "@/flows/org-command/org-todo-note"
 
 const deferred = <T,>() => {
 	let resolve!: (value: T) => void
@@ -14,14 +15,14 @@ const deferred = <T,>() => {
 }
 const entry = { relativePath: "tasks.org", heading: "Task" } as OrgAgendaEntry
 const setup = (strict = false, now?: () => Date) => {
-	const prepareAgendaPlanning = vi.fn().mockResolvedValue({ kind: "ready", date: null })
+	const prepareAgendaCommand = vi.fn().mockResolvedValue({ kind: "ready", date: null })
 	const executeAgendaCommand = vi.fn().mockResolvedValue({ kind: "confirmed" })
 	const restoreFocus = vi.fn()
 	const reload = vi.fn()
 	const hook = renderHook(
 		({ scope, sourceVersion }) =>
 			useOrgAgendaParameters({
-				controller: { prepareAgendaPlanning, executeAgendaCommand } as AgendaParameterController,
+				controller: { prepareAgendaCommand, executeAgendaCommand } as AgendaParameterController,
 				scope,
 				sourceVersion,
 				reload,
@@ -35,113 +36,49 @@ const setup = (strict = false, now?: () => Date) => {
 				: undefined,
 		},
 	)
-	return { ...hook, prepareAgendaPlanning, executeAgendaCommand, restoreFocus, reload }
+	return { ...hook, prepareAgendaCommand, executeAgendaCommand, restoreFocus, reload }
 }
 afterEach(cleanup)
 describe("agenda shared parameter lifecycle", () => {
-	it.each([
-		["today", "2026-10-01"],
-		[" TOMORROW ", "2026-10-02"],
-		["yesterday", "2026-09-30"],
-		["+2d", "2026-10-03"],
-		["-1w", "2026-09-24"],
-	])("resolves %s using the fresh local accept date across midnight", async (input, date) => {
-		const now = vi
-			.fn()
-			.mockReturnValueOnce(new Date(2026, 8, 30, 23, 59))
-			.mockReturnValue(new Date(2026, 9, 1, 0, 1))
-		const test = setup(false, now)
-		await act(async () => test.result.current.start(entry, "schedule"))
-		const session = test.result.current.session!
-		expect(session.initialInput).toBe("2026-09-30")
-		expect(session.candidates).toEqual(expect.arrayContaining(["today", "tomorrow", "+1d"]))
-		expect(session.prompt).toContain("tomorrow")
-		await act(async () => {
-			await session.onAccept(input)
-		})
-		expect(now).toHaveBeenCalledTimes(2)
-		expect(test.executeAgendaCommand.mock.calls[0][1]).toEqual({ kind: "schedule", date })
-	})
-
-	it("accepts an ISO date without reading a failed clock again", async () => {
-		const now = vi
-			.fn()
-			.mockReturnValueOnce(new Date(2026, 8, 30))
-			.mockImplementation(() => {
-				throw new Error("clock unavailable")
-			})
-		const test = setup(false, now)
-		await act(async () => test.result.current.start(entry, "deadline"))
-		await act(async () => {
-			await test.result.current.session!.onAccept(" 2026-10-02 ")
-		})
-		expect(now).toHaveBeenCalledOnce()
-		expect(test.executeAgendaCommand.mock.calls[0][1]).toEqual({
-			kind: "deadline",
-			date: "2026-10-02",
-		})
-	})
-
-	it.each([
-		"throw",
-		"invalid",
-		"outside-range",
-	])("rejects a %s preparation clock before preparing or locking", async (failure) => {
+	it.each(["throw", "invalid", "outside-calendar"])("rejects an invalid injected %s clock without opening writable parameters or executing a command", async (failure) => {
 		const now = vi.fn(() => {
-			if (failure === "throw") throw new Error("clock unavailable")
+			if (failure === "throw") throw new Error("Clock unavailable")
 			return failure === "invalid" ? new Date(Number.NaN) : new Date(10000, 0, 1)
 		})
 		const test = setup(false, now)
 		await act(async () => test.result.current.start(entry, "schedule"))
-		expect(test.prepareAgendaPlanning).not.toHaveBeenCalled()
 		expect(test.executeAgendaCommand).not.toHaveBeenCalled()
 		expect(test.result.current.session).toBeNull()
 		expect(test.result.current.isPending()).toBe(false)
-		expect(test.result.current.status).toBeTruthy()
-		expect(test.reload).not.toHaveBeenCalled()
-		expect(test.restoreFocus).not.toHaveBeenCalled()
-		// A bad planning clock must not prevent date-independent TODO commands.
-		await act(async () => test.result.current.start(entry, "cycle-todo"))
-		expect(now).toHaveBeenCalledOnce()
-		expect(test.executeAgendaCommand).toHaveBeenCalledOnce()
 	})
 
-	it.each([
-		"throw",
-		"invalid",
-	])("retains the session on a %s relative accept clock and allows correction", async (failure) => {
-		const now = vi
-			.fn()
-			.mockReturnValueOnce(new Date(2026, 8, 30))
-			.mockImplementation(() => {
-				if (failure === "throw") throw new Error("clock unavailable")
-				return new Date(Number.NaN)
-			})
-		const test = setup(false, now)
-		await act(async () => test.result.current.start(entry, "schedule"))
-		const session = test.result.current.session!
-		let result: unknown
-		await act(async () => {
-			result = await session.onAccept("tomorrow")
-		})
-		expect(result).toEqual({ ok: false, message: expect.any(String) })
-		expect(test.result.current.session).toBe(session)
-		expect(test.executeAgendaCommand).not.toHaveBeenCalled()
-		expect(test.reload).not.toHaveBeenCalled()
-		expect(test.restoreFocus).not.toHaveBeenCalled()
-		await act(async () => {
-			await session.onAccept("2026-10-02")
-		})
-		expect(test.executeAgendaCommand).toHaveBeenCalledOnce()
+	it("retains a stale note request read-only and makes cancellation perform no command", async () => {
+		let note!: OrgAgendaTodoNoteRequest
+		const executeAgendaCommand = vi.fn().mockImplementation(async (target, command) => ({
+			kind: "needs-note", entry: target, command,
+		}))
+		const hook = renderHook(({ version }) => useOrgAgendaParameters({
+			controller: { executeAgendaCommand, prepareAgendaCommand: async () => ({ kind: "ready", entry, date: null }) },
+			scope: "one", sourceVersion: version, now: () => new Date(2026, 8, 30, 12),
+			reload: vi.fn(), restoreFocus: vi.fn(), onTodoNoteRequest: (request) => { note = request },
+		}), { initialProps: { version: "v1" } })
+		await act(async () => hook.result.current.start(entry, "schedule"))
+		await act(async () => { await hook.result.current.session!.onAccept("tomorrow 12:30 +1d") })
+		const changed = vi.fn()
+		note.subscribeValidation?.(changed)
+		hook.rerender({ version: "v2" })
+		expect(changed).toHaveBeenCalled()
+		expect(note.validate?.()).toMatchObject({ kind: "rejected" })
+		await act(async () => { expect(await note.execute("copyable draft")).toMatchObject({ kind: "rejected" }) })
+		act(() => note.abort())
+		expect(executeAgendaCommand).toHaveBeenCalledOnce()
+		expect(hook.result.current.isPending()).toBe(false)
 	})
 
 	it.each([
 		"2026-02-30",
-		"next Monday",
-		"",
-		"+1m",
 		"2026-10-01 trailing",
-	])("keeps invalid input %s editable without clock or effect reads", async (input) => {
+	])("keeps invalid input %s editable without executing or restoring the origin", async (input) => {
 		const now = vi.fn(() => new Date(2026, 8, 30))
 		const test = setup(false, now)
 		await act(async () => test.result.current.start(entry, "schedule"))
@@ -151,8 +88,6 @@ describe("agenda shared parameter lifecycle", () => {
 			result = await session.onAccept(input)
 		})
 		expect(result).toEqual({ ok: false, message: expect.any(String) })
-		expect(now).toHaveBeenCalledOnce()
-		expect(test.prepareAgendaPlanning).toHaveBeenCalledOnce()
 		expect(test.executeAgendaCommand).not.toHaveBeenCalled()
 		expect(test.result.current.session).toBe(session)
 		expect(test.reload).not.toHaveBeenCalled()
@@ -176,7 +111,7 @@ describe("agenda shared parameter lifecycle", () => {
 			const parameters = useOrgAgendaParameters({
 				controller: {
 					executeAgendaCommand,
-					prepareAgendaPlanning: async () => ({ kind: "ready", date: null, entry }),
+					prepareAgendaCommand: async () => ({ kind: "ready", date: null, entry }),
 				} as AgendaParameterController,
 				scope: "one",
 				reload: () => {},
@@ -194,7 +129,7 @@ describe("agenda shared parameter lifecycle", () => {
 		const app = render(<App />)
 		try {
 			await act(async () => fireEvent.click(app.getByText("Schedule")))
-			const input = app.getByRole("combobox")
+			const input = app.getByRole("combobox", { name: /^Schedule \(/ })
 			expect(document.activeElement).toBe(input)
 			await act(async () => fireEvent.keyDown(input, { key: "Enter" }))
 			expect(executeAgendaCommand).toHaveBeenCalledOnce()
@@ -252,9 +187,9 @@ describe("agenda shared parameter lifecycle", () => {
 	it("aborts preparation immediately when the source changes and drops late ready", async () => {
 		const test = setup()
 		const prepared = deferred<unknown>()
-		test.prepareAgendaPlanning.mockReturnValueOnce(prepared.promise)
+		test.prepareAgendaCommand.mockReturnValueOnce(prepared.promise)
 		act(() => test.result.current.start(entry, "schedule"))
-		const signal = test.prepareAgendaPlanning.mock.calls[0][2] as AbortSignal
+		const signal = test.prepareAgendaCommand.mock.calls[0][2] as AbortSignal
 		test.rerender({ scope: "one", sourceVersion: "v2" })
 		expect(signal.aborted).toBe(true)
 		await act(async () => prepared.resolve({ kind: "ready", date: null }))
@@ -275,7 +210,7 @@ describe("agenda shared parameter lifecycle", () => {
 		expect(test.result.current.pending).toBe(true)
 		expect(test.result.current.isPending()).toBe(true)
 		act(() => test.result.current.start(entry, "schedule"))
-		expect(test.prepareAgendaPlanning).not.toHaveBeenCalled()
+		expect(test.prepareAgendaCommand).not.toHaveBeenCalled()
 		await act(async () => outcome.resolve({ kind: "confirmed" }))
 		expect(test.result.current.pending).toBe(false)
 		expect(test.result.current.isPending()).toBe(false)

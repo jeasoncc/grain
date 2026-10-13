@@ -506,7 +506,7 @@ fn delete_backup(
         .and(with_config(config))
         .and_then(|filename: String, config: Arc<AppConfig>| async move {
             let backup_path = config.backup_dir().join(&filename);
-            crate::delete_backup(&backup_path)
+            crate::delete_backup(&config, &backup_path)
                 .map(|_| warp::reply::json(&serde_json::json!({"success": true})))
                 .map_err(|e| warp::reject::custom(AppRejection::from(e)))
         })

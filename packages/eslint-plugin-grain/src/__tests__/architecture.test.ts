@@ -5,15 +5,12 @@
 
 import { describe, expect, it } from "vitest"
 import {
-	getAllowedDependencies,
 	getArchitectureLayer,
-	getContainerExtraDependencies,
 	getDeprecatedDirectoryMigration,
 	getExpectedTestFilePath,
 	getImportLayer,
 	getLayerChineseName,
 	getLayerDescription,
-	getLayerViolationDetails,
 	getRelativeImportDepth,
 	getSuggestedDirectory,
 	isAliasImport,
@@ -136,46 +133,6 @@ describe("getImportLayer", () => {
 	})
 })
 
-describe("getAllowedDependencies", () => {
-	it("should return correct dependencies for views (strict mode)", () => {
-		const allowed = getAllowedDependencies("views", true)
-		expect(allowed).toEqual(["hooks", "types"])
-	})
-
-	it("should return correct dependencies for pipes (strict mode)", () => {
-		const allowed = getAllowedDependencies("pipes", true)
-		expect(allowed).toEqual(["utils", "types"])
-	})
-
-	it("should return correct dependencies for flows (strict mode)", () => {
-		const allowed = getAllowedDependencies("flows", true)
-		expect(allowed).toEqual(["pipes", "io", "state", "types"])
-	})
-
-	it("should return correct dependencies for state (strict mode)", () => {
-		const allowed = getAllowedDependencies("state", true)
-		expect(allowed).toEqual(["types"]) // 严格模式不允许 pipes
-	})
-
-	it("should return correct dependencies for state (legacy mode)", () => {
-		const allowed = getAllowedDependencies("state", false)
-		expect(allowed).toEqual(["types", "pipes"]) // 宽松模式允许 pipes
-	})
-
-	it("should return empty array for types layer", () => {
-		const allowed = getAllowedDependencies("types", true)
-		expect(allowed).toEqual([])
-	})
-})
-
-describe("getContainerExtraDependencies", () => {
-	it("should return extra dependencies for container components", () => {
-		const extra = getContainerExtraDependencies()
-		expect(extra).toContain("flows")
-		expect(extra).toContain("state")
-	})
-})
-
 describe("isLayerViolation", () => {
 	it("should detect views -> flows violation", () => {
 		expect(isLayerViolation("views", "flows", false, true)).toBe(true)
@@ -208,14 +165,10 @@ describe("isLayerViolation", () => {
 	it("should allow container -> state", () => {
 		expect(isLayerViolation("views", "state", true, true)).toBe(false)
 	})
-})
 
-describe("getLayerViolationDetails", () => {
-	it("should return violation details", () => {
-		const details = getLayerViolationDetails("views", "flows", true)
-		expect(details.allowed).toEqual(["hooks", "types"])
-		expect(details.message).toContain("views/ 层不能依赖 flows/ 层")
-		expect(details.suggestion).toContain("hooks, types")
+	it("should enforce the state-to-pipes boundary in strict mode only", () => {
+		expect(isLayerViolation("state", "pipes", false, true)).toBe(true)
+		expect(isLayerViolation("state", "pipes", false, false)).toBe(false)
 	})
 })
 

@@ -89,7 +89,7 @@ export default createRule({
 						}
 
 						// Build the new import text
-						const sourceCode = context.sourceCode || context.getSourceCode()
+						const sourceCode = context.sourceCode
 						const newImports: string[] = []
 
 						for (const group of [

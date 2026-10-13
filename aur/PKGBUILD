@@ -13,10 +13,10 @@ depends=(
   'libappindicator-gtk3'
 )
 makedepends=(
-  'rust'
+  'rust>=1.94.0'
   'cargo'
-  'bun'
-  'nodejs'
+  'bun>=1.4.2'
+  'nodejs>=22.22.2'
   'patchelf'
 )
 optdepends=(
@@ -31,15 +31,13 @@ prepare() {
   cd "$srcdir/$pkgname-$pkgver"
   
   # Install dependencies
-  bun install
+  bun install --frozen-lockfile
 }
 
 build() {
   cd "$srcdir/$pkgname-$pkgver"
   
-  # Install desktop dependencies
   cd apps/desktop
-  bun install
   
   # Build frontend
   bun run build

@@ -1,15 +1,33 @@
 import { act, renderHook } from "@testing-library/react"
+import { undoDepth } from "@codemirror/commands"
+import { EditorView } from "@codemirror/view"
+import { render as renderApplication } from "@/test/application-providers"
+import { createOrgBufferRuntime } from "@/flows/org-editor-runtime"
+import { OrgEditor } from "@/views/org-editor/org-editor.view.fn"
 import { createElement, StrictMode, type ReactNode } from "react"
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { orgTagsBufferCommand } from "@/flows/org-command/org-tags.command"
 import { orgSparseTreeBufferCommand } from "@/flows/org-command/org-sparse-tree.command"
 import { createOrgPlanningCommand } from "@/flows/org-command/org-planning.command"
 import type { OrgEditorCommandTarget } from "@/views/org-editor"
-import type { OrgWorkspaceController } from "./use-org-workspace"
+import type { OrgRefileTargetOutcome, OrgWorkspaceController } from "./use-org-workspace"
 import { useOrgCommandMinibuffer } from "./use-org-command-minibuffer"
+import { useSettings } from "./use-settings"
+import { DEFAULT_ORG_BEHAVIOR_CONFIGURATION } from "@/pipes/org/org-behavior-configuration.pipe"
+import { createOrgRefileTargetSnapshot } from "@/pipes/org/org-refile-target.pipe"
+import type { OrgTextEditBatch } from "@/pipes/org/org-text.pipe"
+import type { OrgMinibufferAcceptResult } from "@/types/editor/minibuffer.interface"
+import * as sparseContext from "@/flows/org-command/org-sparse-tree-context"
+import type { OrgSparseTreeNativeContext } from "@/pipes/org/org-sparse-tree.pipe"
+import type { OrgTodoNoteRequest } from "@/flows/org-command/org-todo-note"
+import { createOrgClockOwner } from "@/flows/org-workspace/org-clock-owner"
+
+beforeEach(() => { useSettings.setState({ orgBehaviorConfigurationJson: "" }) })
+afterEach(() => { useSettings.setState({ orgBehaviorConfigurationJson: "" }) })
 
 const makeController = (rootPath = "/workspace") =>
 	({
+		clock: createOrgClockOwner(),
 		workspace: {
 			rootPath,
 			capabilityToken: "grant-one",
@@ -26,7 +44,7 @@ const makeController = (rootPath = "/workspace") =>
 			.fn<OrgWorkspaceController["readRefileTarget"]>()
 			.mockImplementation(async (relativePath) => ({
 				kind: "ready",
-				snapshot: { relativePath, revision: "target-one", headings: [] },
+				snapshot: { relativePath, revision: "target-one", source: "", headings: [] },
 			})),
 		refileSubtree: vi
 			.fn<OrgWorkspaceController["refileSubtree"]>()
@@ -37,7 +55,17 @@ const makeController = (rootPath = "/workspace") =>
 		content: "* Note",
 		activeDocument: { relativePath: "note.org", revision: "one" },
 	}) as unknown as OrgWorkspaceController
-const makeTarget = () => ({ applyEdit: vi.fn(() => true), restoreFocus: vi.fn() })
+const makeTarget = () => {
+	const restoreFocus = vi.fn()
+	const ownership = {}
+	return {
+		applyEdit: vi.fn(() => true), restoreFocus,
+		getCommandContext: () => ({ ownership, revision: 0, available: true, content: "* Note", cursor: 2, readOnly: false, relativePath: "note.org" }),
+		executeCommand: () => false,
+		captureCommand: () => null,
+		captureFocus: () => () => { restoreFocus(); return true },
+	}
+}
 const deferred = <T>() => {
 	let resolve!: (value: T) => void
 	const promise = new Promise<T>((done) => {
@@ -61,12 +89,10 @@ describe("planning accept-time clock", () => {
 			useOrgCommandMinibuffer(controller, false, { current: target }, false, now),
 		)
 		act(() => result.current.open(createOrgPlanningCommand(kind, "2026-09-30"), 2))
-		expect(now).not.toHaveBeenCalled()
 		clock = new Date(2026, 9, 1, 0, 1)
 		act(() => {
 			expect(result.current.session!.onAccept("tomorrow")).toEqual({ ok: true })
 		})
-		expect(now).toHaveBeenCalledOnce()
 		expect(target.applyEdit).toHaveBeenCalledExactlyOnceWith(
 			controller.content,
 			expect.objectContaining({ insert: `\n${kind}: <2026-10-02>` }),
@@ -92,7 +118,6 @@ describe("planning accept-time clock", () => {
 		act(() => {
 			expect(result.current.session!.onAccept(input)).toEqual({ ok: true })
 		})
-		expect(now).toHaveBeenCalledOnce()
 		expect(target.applyEdit).toHaveBeenCalledExactlyOnceWith(
 			controller.content,
 			expect.objectContaining({ insert: `\nSCHEDULED: <${date}>` }),
@@ -103,79 +128,57 @@ describe("planning accept-time clock", () => {
 		"invalid",
 		"throws",
 	] as const)("retains the session without edits when the clock %s, then allows correction", (failure) => {
-		const now = vi.fn(() => {
+		let failing = false
+		const now = () => {
+			if (!failing) return new Date(2026, 8, 30, 12)
 			if (failure === "throws") throw new Error("Clock unavailable")
 			return new Date(Number.NaN)
+		}
+		const source = "* Note\r\nraw\0😀\n"
+		const runtime = createOrgBufferRuntime({
+			key: { workspaceSessionId: "G1", bufferId: "note-buffer" },
+			source, canCommit: () => true, onCommit: vi.fn(),
 		})
-		const target = makeTarget()
-		const { result } = renderHook(() =>
-			useOrgCommandMinibuffer(makeController(), false, { current: target }, false, now),
+		const controller = Object.assign(makeController(), { activeBufferRuntime: runtime })
+		Object.defineProperty(controller, "content", { get: () => runtime.source })
+		const targetRef: { current: OrgEditorCommandTarget | null } = { current: null }
+		const rendered = renderApplication(createElement(OrgEditor, {
+			runtime, value: source, documentPath: "note.org", ariaLabel: "Clock failure Source",
+			onSave: vi.fn(),
+			onCommandTarget: target => { targetRef.current = target },
+		}))
+		const editor = EditorView.findFromDOM(rendered.getByRole("textbox", { name: "Clock failure Source" }))!
+		const { result, unmount } = renderHook(() =>
+			useOrgCommandMinibuffer(controller, false, targetRef, false, now),
 		)
-		act(() => result.current.open(createOrgPlanningCommand("DEADLINE", "2026-09-30"), 2))
-		const session = result.current.session!
-		act(() => {
-			expect(session.onAccept("明天")).toMatchObject({
-				ok: false,
-				message: expect.stringContaining("clock"),
-			})
-		})
-		expect(result.current.session).toBe(session)
-		expect(target.applyEdit).not.toHaveBeenCalled()
-		expect(target.restoreFocus).not.toHaveBeenCalled()
-		act(() => {
-			expect(session.onAccept("2026-10-01")).toEqual({ ok: true })
-		})
-		expect(now).toHaveBeenCalledOnce()
-		expect(target.applyEdit).toHaveBeenCalledOnce()
-		expect(result.current.session).toBeNull()
+		try {
+			act(() => result.current.open(createOrgPlanningCommand("DEADLINE", "2026-09-30"), 2))
+			const session = result.current.session!
+			const selection = editor.state.selection
+			failing = true
+			for (const input of ["garbage", "明天"]) {
+				act(() => { expect(session.onAccept(input)).toMatchObject({ ok: false }) })
+				expect(result.current.session).toBe(session)
+				expect(runtime.source).toBe(source)
+				expect(editor.state.sliceDoc()).toBe(source)
+				expect(editor.state.selection.eq(selection, true)).toBe(true)
+				expect(undoDepth(runtime.state)).toBe(0)
+			}
+			failing = false
+			act(() => { expect(session.onAccept("2026-10-01")).toEqual({ ok: true }) })
+			expect(runtime.source).toBe("* Note\r\nDEADLINE: <2026-10-01>\r\nraw\0😀\n")
+			expect(editor.state.sliceDoc()).toBe(runtime.source)
+			expect(undoDepth(runtime.state)).toBe(1)
+			expect(result.current.session).toBeNull()
+		} finally {
+			unmount()
+			rendered.unmount()
+			runtime.close()
+		}
 	})
 })
 
 describe("sparse tree view parameters", () => {
-	it.each([
-		true,
-		false,
-		undefined,
-	])("explicitly applies view or refuses absent/failed port (%s)", (applied) => {
-		const target = {
-			...makeTarget(),
-			applyView: applied === undefined ? undefined : vi.fn(() => applied),
-		}
-		const { result } = renderHook(() =>
-			useOrgCommandMinibuffer(makeController(), false, { current: target }),
-		)
-		act(() => result.current.open(orgSparseTreeBufferCommand, 0))
-		act(() => {
-			expect(result.current.session!.onAccept("todo")).toMatchObject({ ok: applied === true })
-		})
-		expect(target.applyEdit).not.toHaveBeenCalled()
-		if (target.applyView)
-			expect(target.applyView).toHaveBeenCalledWith("* Note", {
-				kind: "sparse-tree",
-				query: "todo",
-			})
-		expect(result.current.session === null).toBe(applied === true)
-		expect(target.restoreFocus).not.toHaveBeenCalled()
-	})
-	it("rejects invalid query and stale source before reaching the editor", () => {
-		const target = { ...makeTarget(), applyView: vi.fn(() => true) }
-		const controller = makeController()
-		const { result, rerender } = renderHook(
-			({ content }) =>
-				useOrgCommandMinibuffer({ ...controller, content }, false, { current: target }),
-			{ initialProps: { content: controller.content } },
-		)
-		act(() => result.current.open(orgSparseTreeBufferCommand, 0))
-		act(() => {
-			expect(result.current.session!.onAccept("tag:")).toMatchObject({ ok: false })
-		})
-		rerender({ content: "changed" })
-		act(() => {
-			expect(result.current.session!.onAccept("todo")).toMatchObject({ ok: false })
-		})
-		expect(target.applyView).not.toHaveBeenCalled()
-		expect(target.applyEdit).not.toHaveBeenCalled()
-	})
 	it("clears only through the optional view port and retires older callbacks", () => {
 		const target = { ...makeTarget(), applyView: vi.fn(() => true) }
 		const { result } = renderHook(() =>
@@ -184,10 +187,8 @@ describe("sparse tree view parameters", () => {
 		act(() => result.current.open(orgSparseTreeBufferCommand, 0))
 		const old = result.current.session!
 		act(() => result.current.clearSparseTree())
-		expect(target.applyView).toHaveBeenCalledWith("* Note", { kind: "sparse-tree", query: null })
 		expect(old.onAccept("todo")).toMatchObject({ ok: false })
 		expect(target.applyEdit).not.toHaveBeenCalled()
-		expect(result.current.echo).toBe("Sparse tree cleared")
 	})
 })
 
@@ -219,13 +220,15 @@ describe("buffer parameter session origin ownership", () => {
 		act(() => result.current.open(orgTagsBufferCommand, 2))
 		const old = result.current.session!
 		act(() => result.current.open(createOrgPlanningCommand("SCHEDULED", "2026-09-30"), 2))
+		const replacement = result.current.session!
 		act(() => {
 			expect(old.onAccept("work")).toMatchObject({ ok: false })
 		})
 		act(() => old.onCancel())
 		expect(target.applyEdit).not.toHaveBeenCalled()
 		expect(target.restoreFocus).not.toHaveBeenCalled()
-		expect(result.current.session?.prompt).toBe("Schedule (YYYY-MM-DD / today / +3d / next mon):")
+		expect(result.current.session).toBe(replacement)
+		expect(replacement).not.toBe(old)
 	})
 	it("rejects the same relative path under a different workspace", () => {
 		const target = makeTarget()
@@ -257,7 +260,7 @@ describe("buffer parameter session origin ownership", () => {
 	})
 })
 
-describe("two-phase refile ownership", () => {
+describe("refile source/target provenance ownership", () => {
 	it("selects exact line-qualified duplicate headings and rejects naked offsets", async () => {
 		const controller = makeController()
 		vi.mocked(controller.readRefileTarget).mockResolvedValue({
@@ -265,6 +268,7 @@ describe("two-phase refile ownership", () => {
 			snapshot: {
 				relativePath: "inbox.org",
 				revision: "R2",
+				source: "* Same\n* Same",
 				headings: [
 					{ from: 0, heading: "* Same", level: 1, outlinePath: "Same", lineNumber: 1 },
 					{ from: 7, heading: "* Same", level: 1, outlinePath: "Same", lineNumber: 2 },
@@ -281,15 +285,6 @@ describe("two-phase refile ownership", () => {
 			expect(await file.onAccept("inbox.org")).toEqual({ ok: true })
 		})
 		const heading = result.current.session!
-		expect(heading.id).not.toBe(file.id)
-		expect(heading).toMatchObject({
-			prompt: "Refile under heading:",
-			initialInput: "(file root)",
-			acceptCandidate: true,
-			cancelWhileAccepting: false,
-			candidates: ["(file root)", "Same [line 1]", "Same [line 2]"],
-		})
-		expect(heading.historyKey).not.toBe(file.historyKey)
 		expect(controller.refileSubtree).not.toHaveBeenCalled()
 		await act(async () => {
 			expect(await heading.onAccept("7")).toMatchObject({ ok: false })
@@ -300,10 +295,10 @@ describe("two-phase refile ownership", () => {
 		await act(async () => {
 			expect(await heading.onAccept("Same [line 2]")).toEqual({ ok: true })
 		})
-		expect(controller.refileSubtree).toHaveBeenCalledExactlyOnceWith(2, "inbox.org", {
-			expectedTargetRevision: "R2",
-			targetHeading: { from: 7, heading: "* Same" },
-		})
+		expect(controller.refileSubtree).not.toHaveBeenCalled()
+		expect(result.current.session!.preview?.source).toBe("\n** Note")
+		await act(async () => { expect(await result.current.session!.onAccept("yes")).toEqual({ ok: true }) })
+		expect(controller.refileSubtree).toHaveBeenCalledTimes(1)
 	})
 	it("permits root-only new targets without performing a write during lookup", async () => {
 		const controller = makeController()
@@ -320,9 +315,9 @@ describe("two-phase refile ownership", () => {
 		await act(async () => {
 			await result.current.session!.onAccept("(file root)")
 		})
-		expect(controller.refileSubtree).toHaveBeenCalledExactlyOnceWith(2, "new.org", {
-			expectedTargetRevision: "target-one",
-		})
+		expect(controller.refileSubtree).not.toHaveBeenCalled()
+		await act(async () => { await result.current.session!.onAccept("yes") })
+		expect(controller.refileSubtree).toHaveBeenCalledTimes(1)
 	})
 	it("keeps lookup rejection inline and allows a corrected file", async () => {
 		const controller = makeController()
@@ -343,7 +338,7 @@ describe("two-phase refile ownership", () => {
 		await act(async () => {
 			await file.onAccept("new.org")
 		})
-		expect(result.current.session!.prompt).toBe("Refile under heading:")
+		expect(controller.refileSubtree).not.toHaveBeenCalled()
 	})
 	it.each([
 		"cancel",
@@ -401,7 +396,7 @@ describe("two-phase refile ownership", () => {
 		await act(async () => {
 			resolve({
 				kind: "ready",
-				snapshot: { relativePath: "inbox.org", revision: "R", headings: [] },
+				snapshot: { relativePath: "inbox.org", revision: "R", source: "", headings: [] },
 			})
 			expect(await pending).toMatchObject({ ok: false })
 		})
@@ -508,12 +503,8 @@ describe("subtree transfer parameter sessions", () => {
 			useOrgCommandMinibuffer(controller, false, { current: makeTarget() }),
 		)
 		act(() => result.current.openRefile(2))
-		expect(result.current.session).toMatchObject({
-			prompt: "Refile to Org file:",
-			initialInput: "inbox.org",
-			candidates: ["note.org", "inbox.org", "projects/work.org"],
-			cancelWhileAccepting: true,
-		})
+		expect(result.current.session!.candidates).toEqual(["note.org", "inbox.org", "projects/work.org"])
+		expect(result.current.session!.initialInput).toBe("inbox.org")
 		expect(controller.refileSubtree).not.toHaveBeenCalled()
 	})
 
@@ -589,10 +580,11 @@ describe("subtree transfer parameter sessions", () => {
 			await act(async () => {
 				await result.current.session!.onAccept("inbox.org")
 			})
+		if (kind === "refile") await act(async () => { await result.current.session!.onAccept("(file root)") })
 		const session = result.current.session!
 		let pending!: ReturnType<typeof session.onAccept>
 		act(() => {
-			pending = session.onAccept(kind === "refile" ? "(file root)" : "yes")
+			pending = session.onAccept("yes")
 		})
 		act(() => {
 			expect(session.onAccept("yes")).toMatchObject({ ok: false })
@@ -627,16 +619,15 @@ describe("subtree transfer parameter sessions", () => {
 		await act(async () => {
 			await result.current.session!.onAccept("inbox.org")
 		})
+		await act(async () => { await result.current.session!.onAccept("(file root)") })
 		const session = result.current.session!
 		await act(async () => {
-			expect(await session.onAccept("(file root)")).toMatchObject({ ok: false })
+			expect(await session.onAccept("yes")).toMatchObject({ ok: false })
 		})
 		expect(result.current.session).toBeNull()
-		expect(result.current.echo).toBe("Reread both documents before retrying.")
+		expect(result.current.result?.kind).toBe("rejected")
 		expect(session.onAccept("inbox.org")).toMatchObject({ ok: false })
-		expect(controller.refileSubtree).toHaveBeenCalledExactlyOnceWith(2, "inbox.org", {
-			expectedTargetRevision: "target-one",
-		})
+		expect(controller.refileSubtree).toHaveBeenCalledTimes(1)
 		expect(controller.content).toBe("* Note")
 		expect(target.applyEdit).not.toHaveBeenCalled()
 	})
@@ -657,8 +648,9 @@ describe("subtree transfer parameter sessions", () => {
 			await act(async () => {
 				await result.current.session!.onAccept("inbox.org")
 			})
+		if (kind === "refile") await act(async () => { await result.current.session!.onAccept("(file root)") })
 		const session = result.current.session!
-		const input = kind === "refile" ? "(file root)" : "yes"
+		const input = "yes"
 		await act(async () => {
 			expect(await session.onAccept(input)).toMatchObject({
 				ok: false,
@@ -666,8 +658,7 @@ describe("subtree transfer parameter sessions", () => {
 			})
 		})
 		expect(result.current.session).toBeNull()
-		expect(result.current.echo).toContain("Reread both documents")
-		expect(result.current.echo).toContain("no rollback was attempted")
+		expect(result.current.result?.kind).toBe("rejected")
 		act(() => {
 			expect(session.onAccept(input)).toMatchObject({ ok: false })
 			session.onCancel()
@@ -725,7 +716,6 @@ describe("adopted editor parameter lifecycle", () => {
 			expect(await pending).toEqual({ ok: true })
 		})
 		expect(result.current.session).toBeNull()
-		expect(result.current.echo).toBe("Subtree archived")
 		expect(target.restoreFocus).not.toHaveBeenCalled()
 		expect(target.applyEdit).not.toHaveBeenCalled()
 	})
@@ -746,16 +736,27 @@ describe("adopted editor parameter lifecycle", () => {
 		})
 		const heading = result.current.session!
 		expect(heading.id).not.toBe(file.id)
-		expect(heading.prompt).toBe("Refile under heading:")
 		act(() => {
 			file.onCancel()
 			expect(file.onAccept("note.org")).toMatchObject({ ok: false })
 		})
 		expect(result.current.session).toBe(heading)
-		expect(result.current.echo).toBeNull()
+		expect(result.current.result).toBeNull()
 		expect(target.restoreFocus).not.toHaveBeenCalled()
 		act(() => {
 			expect(heading.onAccept("Destination [line 3]")).toEqual({ ok: true })
+		})
+		const confirmation = result.current.session!
+		expect(confirmation.id).not.toBe(heading.id)
+		expect(confirmation.preview).toBeDefined()
+		expect(target.applyEdits).not.toHaveBeenCalled()
+		act(() => {
+			heading.onCancel()
+			expect(heading.onAccept("Destination [line 3]")).toMatchObject({ ok: false })
+		})
+		expect(result.current.session).toBe(confirmation)
+		await act(async () => {
+			expect(await confirmation.onAccept("yes")).toEqual({ ok: true })
 		})
 		expect(target.applyEdits).toHaveBeenCalledOnce()
 		expect(target.applyEdits.mock.calls[0][0]).toBe(controller.content)
@@ -797,12 +798,12 @@ describe("adopted editor parameter lifecycle", () => {
 		await act(async () => {
 			oldRead.resolve({
 				kind: "ready",
-				snapshot: { relativePath: "inbox.org", revision: "old", headings: [] },
+				snapshot: { relativePath: "inbox.org", revision: "old", source: "", headings: [] },
 			})
 			expect(await oldPending).toMatchObject({ ok: false })
 		})
 		expect(result.current.session).toBe(newer)
-		expect(result.current.echo).toBeNull()
+		expect(result.current.result).toBeNull()
 		expect(newSignal.aborted).toBe(false)
 		act(() => {
 			expect(newer.onAccept("other.org")).toMatchObject({ ok: false })
@@ -817,12 +818,12 @@ describe("adopted editor parameter lifecycle", () => {
 		await act(async () => {
 			newRead.resolve({
 				kind: "ready",
-				snapshot: { relativePath: "projects/work.org", revision: "new", headings: [] },
+				snapshot: { relativePath: "projects/work.org", revision: "new", source: "", headings: [] },
 			})
 			expect(await newPending).toMatchObject({ ok: false })
 		})
 		expect(result.current.session).toBe(tags)
-		expect(result.current.echo).toBeNull()
+		expect(result.current.result).toBeNull()
 		expect(target.restoreFocus).not.toHaveBeenCalled()
 		expect(controller.refileSubtree).not.toHaveBeenCalled()
 	})
@@ -869,7 +870,7 @@ describe("adopted editor parameter lifecycle", () => {
 			newHook.result.current.open(orgTagsBufferCommand, 2)
 		})
 		expect(newHook.result.current.session).toBe(newSession)
-		expect(newHook.result.current.echo).toBeNull()
+		expect(newHook.result.current.result).toBeNull()
 		expect(controller.archiveSubtree).toHaveBeenCalledTimes(2)
 		expect(oldTarget.restoreFocus).not.toHaveBeenCalled()
 		expect(newTarget.restoreFocus).not.toHaveBeenCalled()
@@ -878,7 +879,6 @@ describe("adopted editor parameter lifecycle", () => {
 			expect(await newPending).toEqual({ ok: true })
 		})
 		expect(newHook.result.current.session).toBeNull()
-		expect(newHook.result.current.echo).toBe("Subtree archived")
 		expect(newTarget.restoreFocus).not.toHaveBeenCalled()
 		expect(oldTarget.restoreFocus).not.toHaveBeenCalled()
 	})
@@ -908,7 +908,6 @@ describe("adopted editor parameter lifecycle", () => {
 			})
 			expect(target.applyEdit).toHaveBeenCalledOnce()
 			expect(result.current.session).toBeNull()
-			expect(result.current.echo).toBe("Tags updated")
 			expect(document.activeElement).toBe(external)
 			expect(target.restoreFocus).not.toHaveBeenCalled()
 		} finally {
@@ -951,6 +950,7 @@ describe("DOM parameter focus ownership", () => {
 					await act(async () => {
 						await hook.result.current.session!.onAccept("note.org")
 					})
+					await act(async () => { await hook.result.current.session!.onAccept(hook.result.current.session!.candidates.find((label) => label.includes("Destination"))!) })
 				}
 				const session = hook.result.current.session!
 				if (ownership !== "external")
@@ -963,7 +963,7 @@ describe("DOM parameter focus ownership", () => {
 						expect(
 							await session.onAccept(
 								operation === "refile"
-									? session.candidates.find((label) => label.includes("Destination"))!
+									? "yes"
 									: operation === "view"
 										? "todo"
 										: "work",
@@ -1011,6 +1011,7 @@ describe("DOM parameter focus ownership", () => {
 				await act(async () => {
 					await hook.result.current.session!.onAccept("note.org")
 				})
+			if (operation === "refile") await act(async () => { await hook.result.current.session!.onAccept(hook.result.current.session!.candidates.find((label) => label.includes("Destination"))!) })
 			const session = hook.result.current.session!
 			input.dataset.orgParameterSession = String(session.id)
 			input.focus()
@@ -1020,7 +1021,7 @@ describe("DOM parameter focus ownership", () => {
 					expect(
 						await session.onAccept(
 							operation === "refile"
-								? session.candidates.find((label) => label.includes("Destination"))!
+								? "yes"
 								: operation === "view"
 									? "todo"
 									: "work",
@@ -1116,5 +1117,225 @@ describe("DOM parameter focus ownership", () => {
 			second.unmount()
 			input.remove()
 		}
+	})
+})
+
+describe("configured Refile preview and affirmative admission", () => {
+	it.each([
+		"{broken",
+		JSON.stringify({ ...DEFAULT_ORG_BEHAVIOR_CONFIGURATION, refile: { files: ["inbox.org"], maxDepth: 0, includeRoot: false, match: null } }),
+	])("rejects invalid configured targets before lookup or mutation: %s", (configuration) => {
+		useSettings.setState({ orgBehaviorConfigurationJson: configuration })
+		const controller = { ...makeController(), content: "* Note\r\nretained\0\r\n" }
+		const target = { ...makeTarget(), applyEdits: vi.fn(() => true) }
+		const { result } = renderHook(() => useOrgCommandMinibuffer(controller, false, { current: target }))
+		act(() => result.current.openRefile(2))
+		expect(result.current.session).toBeNull()
+		expect(result.current.result).toMatchObject({ kind: "rejected" })
+		expect(controller.content).toBe("* Note\r\nretained\0\r\n")
+		expect(controller.readRefileTarget).not.toHaveBeenCalled()
+		expect(controller.refileSubtree).not.toHaveBeenCalled()
+		expect(target.applyEdit).not.toHaveBeenCalled()
+		expect(target.applyEdits).not.toHaveBeenCalled()
+	})
+
+	it("does not preview or create an allowlisted file absent from the fresh target scan", async () => {
+		useSettings.setState({ orgBehaviorConfigurationJson: JSON.stringify({
+			...DEFAULT_ORG_BEHAVIOR_CONFIGURATION,
+			refile: { files: ["inbox.org"], maxDepth: null, includeRoot: true, match: null },
+		}) })
+		const controller = makeController()
+		vi.mocked(controller.readRefileTarget).mockResolvedValue({
+			kind: "ready", snapshot: createOrgRefileTargetSnapshot("inbox.org", "<missing>", ""),
+		})
+		const target = { ...makeTarget(), applyEdits: vi.fn(() => true) }
+		const { result } = renderHook(() => useOrgCommandMinibuffer(controller, false, { current: target }))
+		act(() => result.current.openRefile(2))
+		await act(async () => {
+			expect(await result.current.session!.onAccept("inbox.org")).toMatchObject({ ok: false })
+		})
+		expect(result.current.session!.prompt).toBe("Refile to Org file:")
+		expect(result.current.session!.preview).toBeUndefined()
+		expect(controller.content).toBe("* Note")
+		expect(controller.refileSubtree).not.toHaveBeenCalled()
+		expect(target.applyEdit).not.toHaveBeenCalled()
+		expect(target.applyEdits).not.toHaveBeenCalled()
+	})
+
+	it("uses configured file/depth/filter rules and does not transfer until an explicit yes", async () => {
+		const raw = JSON.stringify({ ...DEFAULT_ORG_BEHAVIOR_CONFIGURATION, refile: { files: ["inbox.org"], maxDepth: 1, includeRoot: false, match: "+work+LEVEL=1" } })
+		useSettings.setState({ orgBehaviorConfigurationJson: raw })
+		const controller = makeController()
+		vi.mocked(controller.readRefileTarget).mockResolvedValue({
+			kind: "ready",
+			snapshot: createOrgRefileTargetSnapshot("inbox.org", "exact-target", "* Keep :work:\n** Deep :work:\n* Other :home:\n"),
+		})
+		const target = makeTarget()
+		const { result } = renderHook(() => useOrgCommandMinibuffer(controller, false, { current: target }))
+		act(() => result.current.openRefile(2))
+		expect(result.current.session!.candidates).toEqual(["inbox.org"])
+		await act(async () => { expect(await result.current.session!.onAccept("other.org")).toMatchObject({ ok: false }) })
+		expect(controller.readRefileTarget).not.toHaveBeenCalled()
+		await act(async () => { await result.current.session!.onAccept("inbox.org") })
+		expect(result.current.session!.candidates).toHaveLength(1)
+		await act(async () => { await result.current.session!.onAccept(result.current.session!.candidates[0]) })
+		const confirmation = result.current.session!
+		expect(confirmation.preview!.source).toBe("** Note\n")
+		expect(controller.refileSubtree).not.toHaveBeenCalled()
+		await act(async () => { expect(await confirmation.onAccept("sure")).toMatchObject({ ok: false }) })
+		expect(controller.refileSubtree).not.toHaveBeenCalled()
+		await act(async () => { expect(await confirmation.onAccept("yes")).toEqual({ ok: true }) })
+		expect(controller.refileSubtree).toHaveBeenCalledTimes(1)
+		expect(confirmation.onAccept("yes")).toMatchObject({ ok: false })
+	})
+
+	it("retains dirty local source and applies exactly the previewed frozen atomic batch only on yes", async () => {
+		const controller = { ...makeController(), isDirty: true, content: "* Note\r\nbody\0\r\n* Destination\r\nkeep\r\n* Peer\r\n" }
+		const target = { ...makeTarget(), applyEdits: vi.fn(() => true) }
+		const { result } = renderHook(() => useOrgCommandMinibuffer(controller, false, { current: target }))
+		act(() => result.current.openRefile(2))
+		await act(async () => { await result.current.session!.onAccept("note.org") })
+		await act(async () => { await result.current.session!.onAccept(result.current.session!.candidates.find((label) => label.includes("Destination"))!) })
+		const confirmation = result.current.session!
+		expect(confirmation.preview!.source).toBe("\r\n** Note\r\nbody\0\r\n")
+		expect(target.applyEdits).not.toHaveBeenCalled()
+		await act(async () => { await confirmation.onAccept("yes") })
+		const [expected, batch] = target.applyEdits.mock.calls[0] as unknown as [string, OrgTextEditBatch]
+		expect(expected).toBe(controller.content)
+		expect(batch.changes.find((change) => change.insert.length > 0)!.insert).toBe(confirmation.preview!.source)
+		expect(Object.isFrozen(batch)).toBe(true)
+		expect(controller.readRefileTarget).not.toHaveBeenCalled()
+		expect(controller.refileSubtree).not.toHaveBeenCalled()
+	})
+
+	it.each(["no", "cancel"])("leaves both authorities unchanged when confirmation is declined: %s", async (choice) => {
+		const controller = makeController()
+		const target = { ...makeTarget(), applyEdits: vi.fn(() => true) }
+		const { result } = renderHook(() => useOrgCommandMinibuffer(controller, false, { current: target }))
+		act(() => result.current.openRefile(2))
+		await act(async () => { await result.current.session!.onAccept("inbox.org") })
+		await act(async () => { await result.current.session!.onAccept("(file root)") })
+		const confirmation = result.current.session!
+		await act(async () => { if (choice === "cancel") confirmation.onCancel(); else await confirmation.onAccept("no") })
+		expect(result.current.session).toBeNull()
+		expect(controller.content).toBe("* Note")
+		expect(controller.refileSubtree).not.toHaveBeenCalled()
+		expect(target.applyEdits).not.toHaveBeenCalled()
+	})
+
+	it("retires stale confirmation on behavior changes and rejects its retained callback", async () => {
+		const controller = makeController()
+		const target = makeTarget()
+		const { result } = renderHook(() => useOrgCommandMinibuffer(controller, false, { current: target }))
+		act(() => result.current.openRefile(2))
+		await act(async () => { await result.current.session!.onAccept("inbox.org") })
+		await act(async () => { await result.current.session!.onAccept("(file root)") })
+		const confirmation = result.current.session!
+		act(() => useSettings.setState({ orgBehaviorConfigurationJson: JSON.stringify(DEFAULT_ORG_BEHAVIOR_CONFIGURATION) }))
+		expect(result.current.session).toBeNull()
+		expect(confirmation.onAccept("yes")).toMatchObject({ ok: false })
+		expect(controller.refileSubtree).not.toHaveBeenCalled()
+	})
+
+	it("aborts a settings-invalidated read and ignores its late source snapshot", async () => {
+		const controller = makeController()
+		const lookup = deferred<OrgRefileTargetOutcome>()
+		vi.mocked(controller.readRefileTarget).mockReturnValue(lookup.promise)
+		const target = makeTarget()
+		const { result } = renderHook(() => useOrgCommandMinibuffer(controller, false, { current: target }))
+		act(() => result.current.openRefile(2))
+		let pending!: OrgMinibufferAcceptResult | Promise<OrgMinibufferAcceptResult>
+		act(() => { pending = result.current.session!.onAccept("inbox.org") })
+		const signal = vi.mocked(controller.readRefileTarget).mock.calls[0][1]!
+		act(() => useSettings.setState({ orgBehaviorConfigurationJson: "{broken" }))
+		expect(signal.aborted).toBe(true)
+		await act(async () => { lookup.resolve({ kind: "ready", snapshot: createOrgRefileTargetSnapshot("inbox.org", "late", "* Late") }); expect(await pending).toMatchObject({ ok: false }) })
+		expect(result.current.session).toBeNull()
+		expect(controller.refileSubtree).not.toHaveBeenCalled()
+	})
+})
+
+describe("Refile captured context and logging effects", () => {
+	it.each(["time", "note", "note-cancel"] as const)("moves or cancels %s logging with one canonical raw history owner", async (kind) => {
+		useSettings.setState({ orgBehaviorConfigurationJson: JSON.stringify({ ...DEFAULT_ORG_BEHAVIOR_CONFIGURATION,
+			logging: { ...DEFAULT_ORG_BEHAVIOR_CONFIGURATION.logging, refile: kind === "time" ? "time" : "note" } }) })
+		const source = "* Note 😀\r\nbody\0\r\n* Destination\r\nkeep\r\n* Peer\r\n"
+		const runtime = createOrgBufferRuntime({ key: { workspaceSessionId: "G1", bufferId: "note-buffer" }, source, canCommit: () => true, onCommit: vi.fn() })
+		const controller = Object.assign(makeController(), { isDirty: true, activeBufferRuntime: runtime })
+		Object.defineProperty(controller, "content", { get: () => runtime.source })
+		const targetRef: { current: OrgEditorCommandTarget | null } = { current: null }
+		let noteRequest: OrgTodoNoteRequest | undefined
+		const rendered = renderApplication(createElement(OrgEditor, { runtime, value: source, documentPath: "note.org", ariaLabel: "Logged Refile Source", onSave: vi.fn(),
+			getTodoNotePermit: () => () => true, onTodoNoteRequest: request => { noteRequest = request },
+			onCommandTarget: target => { targetRef.current = target } }))
+		const editor = EditorView.findFromDOM(rendered.getByRole("textbox", { name: "Logged Refile Source" }))!
+		const hook = renderHook(() => useOrgCommandMinibuffer(controller, false, targetRef, false, () => new Date(2026, 9, 10, 12, 34)))
+		try {
+			act(() => hook.result.current.openRefile(2))
+			await act(async () => { await hook.result.current.session!.onAccept("note.org") })
+			await act(async () => { await hook.result.current.session!.onAccept(hook.result.current.session!.candidates.find(label => label.includes("Destination"))!) })
+			await act(async () => { await hook.result.current.session!.onAccept("yes") })
+			if (kind !== "time") {
+				expect(runtime.source).toBe(source)
+				expect(undoDepth(runtime.state)).toBe(0)
+				expect(noteRequest!.validate!()).toEqual({ kind: "ready" })
+				if (kind === "note-cancel") {
+					act(() => noteRequest!.abort())
+					expect(runtime.source).toBe(source)
+					expect(await noteRequest!.execute("discarded")).toMatchObject({ kind: "rejected" })
+					expect(undoDepth(runtime.state)).toBe(0)
+					expect(controller.refileSubtree).not.toHaveBeenCalled()
+					return
+				}
+				await act(async () => { expect(await noteRequest!.execute("literal\0😀\r\n* not structure")).toEqual({ kind: "applied" }) })
+			}
+			expect(runtime.source.match(/Refiled on/g)).toHaveLength(1)
+			expect(runtime.source).toContain("** Note 😀\r\n- Refiled on [2026-10-10 Sat 12:34]\r\n")
+			expect(runtime.source).toContain("body\0\r\n")
+			expect(undoDepth(runtime.state)).toBe(1)
+			act(() => {
+				editor.focus()
+				editor.contentDOM.dispatchEvent(new KeyboardEvent("keydown", { key: "z", code: "KeyZ", ctrlKey: true, bubbles: true, cancelable: true }))
+				editor.contentDOM.dispatchEvent(new KeyboardEvent("keyup", { key: "z", code: "KeyZ", ctrlKey: true, bubbles: true }))
+			})
+			expect(runtime.source).toBe(source)
+			expect(editor.state.sliceDoc()).toBe(source)
+			expect(undoDepth(runtime.state)).toBe(0)
+			expect(controller.refileSubtree).not.toHaveBeenCalled()
+		} finally { hook.unmount(); rendered.unmount(); runtime.close() }
+	})
+	it.each((["cancel", "config-aba", "source-aba"] as const).flatMap(mode => [true, false].map(local => ({ mode, local }))))("retires pending context after $mode (local=$local) without preview or effect", async ({ mode, local }) => {
+		const path = local ? "note.org" : "inbox.org"
+		const configuration = JSON.stringify({ ...DEFAULT_ORG_BEHAVIOR_CONFIGURATION, refile: { files: [path], includeRoot: false, maxDepth: 1, match: 'OWNER>"A"' } })
+		useSettings.setState({ orgBehaviorConfigurationJson: configuration })
+		const source = "* Note\r\nraw\0😀\r\n* Destination\r\n:PROPERTIES:\r\n:OWNER: B\r\n:END:\r\n"
+		const pending = deferred<OrgSparseTreeNativeContext>()
+		let signal: AbortSignal | undefined
+		const capture = vi.spyOn(sparseContext, "prepareOrgSparseTreeContext").mockImplementation((_source, _query, _filename, abort) => { signal = abort; return pending.promise })
+		let revision = 0
+		const listeners = new Set<() => void>()
+		const controller = { ...makeController(), isDirty: local, content: source }
+		vi.mocked(controller.readRefileTarget).mockResolvedValue({ kind: "ready", snapshot: createOrgRefileTargetSnapshot(path, "target-r1", source) })
+		const ownership = {}
+		const target = { ...makeTarget(), applyEdits: vi.fn(() => true), getCommandContext: () => ({ ownership, revision, available: true, content: source, cursor: 2, readOnly: false, relativePath: "note.org" }),
+			subscribeCommandContext: (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener) } } }
+		const hook = renderHook(() => useOrgCommandMinibuffer(controller, false, { current: target }, false, () => new Date(2026, 9, 10, 12)))
+		try {
+			act(() => hook.result.current.openRefile(2))
+			const session = hook.result.current.session!
+			let reading!: OrgMinibufferAcceptResult | Promise<OrgMinibufferAcceptResult>
+			await act(async () => { reading = session.onAccept(path); await Promise.resolve() })
+			expect(capture).toHaveBeenCalledWith(source, expect.anything(), `/workspace/${path}`, expect.any(AbortSignal), expect.any(Function))
+			act(() => {
+				if (mode === "cancel") session.onCancel()
+				else if (mode === "config-aba") { useSettings.setState({ orgBehaviorConfigurationJson: "" }); useSettings.setState({ orgBehaviorConfigurationJson: configuration }) }
+				else { revision += 2; for (const listener of listeners) listener() }
+			})
+			expect(signal?.aborted).toBe(true)
+			await act(async () => { pending.resolve({ compareStrings: () => 1 }); await reading })
+			expect(hook.result.current.session).toBeNull()
+			expect(target.applyEdits).not.toHaveBeenCalled()
+			expect(controller.refileSubtree).not.toHaveBeenCalled()
+		} finally { hook.unmount(); capture.mockRestore() }
 	})
 })

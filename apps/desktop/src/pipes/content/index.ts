@@ -3,8 +3,6 @@
  * @description Content pipes module exports
  */
 
-export { generateEmptyContent, getDefaultTitle } from "./generate-empty-content.pipe"
-
 export {
 	createDocument,
 	createHeadingNode,
@@ -14,21 +12,9 @@ export {
 	createTagNode,
 	createTagsLine,
 	createTextNode,
-	extractTagsFromDocument,
-	extractTextFromDocument,
-	formatFullDateTime,
-	formatShortDate,
-	generateContentByType,
-	generateDiaryContent,
-	generateLedgerContent,
-	generateNoteContent,
-	generateTodoContent,
-	generateWikiContent,
-	parseContent,
-} from "./content.generate.fn"
+} from "./legacy-content.pipe"
 
 export type {
-	ContentGenerationOptions,
 	LexicalDocument,
 	LexicalHeadingNode,
 	LexicalListItemNode,
@@ -38,21 +24,7 @@ export type {
 	LexicalRootNode,
 	LexicalTagNode,
 	LexicalTextNode,
-} from "./content.generate.fn"
-
-export {
-	EXCALIDRAW_SOURCE,
-	EXCALIDRAW_VERSION,
-	generateExcalidrawContent,
-	isValidExcalidrawContent,
-	parseExcalidrawContent,
-} from "./excalidraw.content.fn"
-
-export type {
-	ExcalidrawAppState,
-	ExcalidrawContentParams,
-	ExcalidrawDocument,
-} from "./excalidraw.content.fn"
+} from "./legacy-content.pipe"
 
 export { generateMermaidContent, generatePlantUMLContent } from "./diagram.content.fn"
 

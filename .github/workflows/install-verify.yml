@@ -377,9 +377,9 @@ jobs:
           flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
           
           # 搜索 flatpak
-          if flatpak search com.lotus.NovelEditor 2>/dev/null | grep -q "NovelEditor"; then
+          if flatpak search com.lotus.Grain 2>/dev/null | grep -q "Grain"; then
             echo "✅ Package found on Flathub"
-            flatpak remote-info flathub com.lotus.NovelEditor
+            flatpak remote-info flathub com.lotus.Grain
           else
             echo "⚠ Package not yet available on Flathub"
           fi

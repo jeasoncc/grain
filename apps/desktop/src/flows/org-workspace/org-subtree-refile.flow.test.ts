@@ -1,12 +1,13 @@
 import * as TE from "fp-ts/TaskEither"
 import { describe, expect, it, vi } from "vitest"
-import type { OrgFileRepository } from "@/io/file/org-file.repository"
+import { createOrgFileRepository, type InvokeCommand, type OrgFileRepository } from "@/io/file/org-file.repository"
 import type { OrgDocumentInterface, OrgFileError } from "@/types/org"
 import {
 	archiveOrgSubtreeFlow,
 	ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE,
 	refileOrgSubtreeFlow,
 } from "./org-subtree-refile.flow"
+import { DEFAULT_ORG_BEHAVIOR_CONFIGURATION } from "@/pipes/org/org-behavior-configuration.pipe"
 
 const snapshot = {
 	directories: [],
@@ -28,7 +29,7 @@ const repositoryWith = (overrides: Partial<OrgFileRepository> = {}): OrgFileRepo
 	clearDerivedIndex: () =>
 		TE.right({ agendaCount: 0, documentCount: 0, headingCount: 0, linkCount: 0 }),
 	createDirectory: () => TE.right(undefined),
-	deleteDocument: () => TE.right(undefined),
+	deleteDocument: () => TE.left(fileError("unexpected delete")),
 	getDerivedIndexStats: () =>
 		TE.right({ agendaCount: 0, documentCount: 0, headingCount: 0, linkCount: 0 }),
 	moveDocument: () => TE.right({ relativePath: "moved.org", revision: "moved" }),
@@ -60,6 +61,146 @@ const input = {
 	targetRelativePath: "target.org",
 	workspaceRoot: "/notes",
 }
+
+describe("authorized logged Refile transfer", () => {
+	it.each(["success", "source-failure", "target-uncertain"] as const)("copies one log with exact raw payload and retains copy-first recovery: %s", async (mode) => {
+		const source = "#+STARTUP: lognoterefile\r\n* Move 😀\r\nbody\0\r\n** Child\r\nkeep\r\n* Peer\r\n"
+		let target = { relativePath: "target.org", revision: "target-r1", content: "* Destination\r\n" }
+		const writes: { relativePath: string; content: string; expectedRevision?: string }[] = []
+		const repository = repositoryWith({
+			readDocument: () => TE.right(target),
+			writeDocument: (request) => {
+				writes.push(request)
+				if (request.relativePath === "target.org") {
+					target = { ...target, content: request.content, revision: "target-r2" }
+					if (mode === "target-uncertain") return TE.left(fileError("lost target result"))
+					return TE.right(target)
+				}
+				return mode === "source-failure" ? TE.left(fileError("source CAS refused")) : TE.right({ relativePath: request.relativePath, revision: "source-r2" })
+			},
+		})
+		const result = await refileOrgSubtreeFlow({
+			...input, sourceContent: source, cursor: source.indexOf("* Move"), expectedTargetRevision: "target-r1",
+			logging: { expectedSourceContent: source, stamp: "[2026-10-10 Sat 12:34]", note: "literal\0😀\r\n* not a heading", options: { logging: DEFAULT_ORG_BEHAVIOR_CONFIGURATION.logging } },
+		}, repository)()
+		expect(target.content.match(/Refiled on/g)).toHaveLength(1)
+		expect(target.content).toContain("body\0\r\n** Child\r\nkeep\r\n")
+		expect(target.content).toContain('"literal\\u0000😀\\r\\n"')
+		expect(writes[0].expectedRevision).toBe("target-r1")
+		expect(writes.map(write => write.relativePath)).toEqual(mode === "target-uncertain" ? ["target.org"] : ["target.org", "source.org"])
+		if (writes[1]) expect(writes[1].content).toBe("#+STARTUP: lognoterefile\r\n* Peer\r\n")
+		expect(result._tag).toBe(mode === "success" ? "Right" : "Left")
+		if (result._tag === "Left") expect(result.left.type).toBe(mode === "source-failure" ? "ORG_SUBTREE_REFILE_PARTIAL_ERROR" : "ORG_SUBTREE_REFILE_UNCERTAIN_WRITE_ERROR")
+	})
+	it.each(["stale", "missing-note"] as const)("refuses %s logging before any file IO", async (mode) => {
+		const source = "#+STARTUP: lognoterefile\r\n* Move\r\nraw\0😀\r\n"
+		const scanWorkspace = vi.fn<OrgFileRepository["scanWorkspace"]>(() => TE.right(snapshot))
+		const result = await refileOrgSubtreeFlow({
+			...input, sourceContent: source, cursor: source.indexOf("* Move"),
+			logging: { expectedSourceContent: mode === "stale" ? source + "x" : source, stamp: "[2026-10-10 Sat 12:34]", options: {} },
+		}, repositoryWith({ scanWorkspace }))()
+		expect(result._tag).toBe("Left")
+		expect(scanWorkspace).not.toHaveBeenCalled()
+	})
+})
+
+/** Cross the real repository error wrapper; model occupancy and persisted bytes separately. */
+const nativeRefileFixture = (options: {
+	readonly occupied?: boolean
+	readonly targetFailure?: unknown
+	readonly sourceFailure?: unknown
+} = {}) => {
+	const source = { relativePath: "source.org", revision: "source-r1", content: input.sourceContent }
+	const disk = new Map<string, OrgDocumentInterface>([["source.org", source]])
+	const occupied = options.occupied ? ["target.org"] : []
+	const collision = { kind: "creation-collision", relativePath: "target.org", noWrite: true, message: "occupied" }
+	const writes: Record<string, unknown>[] = []
+	const reads: string[] = []
+	const invoke = vi.fn(async (command: string, request?: Record<string, unknown>): Promise<unknown> => {
+		if (command === "scan_org_workspace")
+			return { directories: occupied, documents: [...disk.values()] }
+		if (!request) throw new Error("Missing RPC request")
+		const path = String(request.relativePath)
+		if (command === "read_org_document") {
+			reads.push(path)
+			const document = disk.get(path)
+			if (!document) throw new Error("Missing document")
+			return document
+		}
+		if (command !== "write_org_document") throw new Error("Unexpected RPC command")
+		writes.push(request)
+		if (request.expectedRevision === "<missing>" && occupied.includes(path)) throw collision
+		if (path === "source.org" && options.sourceFailure !== undefined) throw options.sourceFailure
+		const document = { relativePath: path, content: String(request.content), revision: `${path}-r2` }
+		disk.set(path, document)
+		if (path === "target.org" && options.targetFailure !== undefined) throw options.targetFailure
+		return { relativePath: document.relativePath, revision: document.revision }
+	})
+	return {
+		repository: createOrgFileRepository(invoke as InvokeCommand),
+		disk,
+		occupied,
+		collision,
+		writes,
+		reads,
+	}
+}
+
+describe("native Refile publication proof", () => {
+	it("returns a known no-write collision for an occupied missing target without writing the source", async () => {
+		const fixture = nativeRefileFixture({ occupied: true })
+		const result = await refileOrgSubtreeFlow(input, fixture.repository)()
+		expect(result).toMatchObject({
+			_tag: "Left",
+			left: { type: "ORG_FILE_ERROR", operation: "write", command: "write_org_document", cause: fixture.collision },
+		})
+		expect(fixture.writes).toEqual([expect.objectContaining({ relativePath: "target.org", expectedRevision: "<missing>" })])
+		expect(fixture.reads).toEqual([])
+		expect(fixture.occupied.includes("target.org")).toBe(true)
+		expect([...fixture.disk.keys()]).toEqual(["source.org"])
+		expect(fixture.disk.get("source.org")?.content).toBe(input.sourceContent)
+	})
+
+	it.each([
+		null,
+		{},
+		"creation collision: no write",
+		{ kind: "creation-collision", relativePath: "other.org", noWrite: true },
+		{ kind: "creation-collision", relativePath: "TARGET.org", noWrite: true },
+		{ kind: "creation-collision", relativePath: "target.org", noWrite: false },
+		{ kind: "creation-collision", relativePath: "target.org" },
+		{ kind: "creation-collision", relativePath: 1, noWrite: true },
+		{ kind: "creation-collision", relativePath: "target.org", noWrite: "true" },
+		{ kind: "revision-conflict", relativePath: "target.org", noWrite: true },
+		{ kind: "unknown", relativePath: "target.org", noWrite: true },
+		{ cause: { kind: "creation-collision", relativePath: "target.org", noWrite: true } },
+	])("keeps unproven target failures uncertain after possible publication: %j", async (targetFailure) => {
+		const fixture = nativeRefileFixture({ targetFailure })
+		const result = await refileOrgSubtreeFlow(input, fixture.repository)()
+		expect(result).toMatchObject({
+			_tag: "Left",
+			left: { type: "ORG_SUBTREE_REFILE_UNCERTAIN_WRITE_ERROR", targetRelativePath: "target.org", cause: { cause: targetFailure } },
+		})
+		expect(fixture.writes.map(request => request.relativePath)).toEqual(["target.org"])
+		expect(fixture.reads).toEqual([])
+		expect(fixture.disk.get("target.org")?.content).toBe("* Move\nbody\n** Child\nchild\n")
+		expect(fixture.disk.get("source.org")?.content).toBe(input.sourceContent)
+	})
+
+	it("keeps a confirmed target partial even when the source supplies an exact native no-write proof", async () => {
+		const sourceFailure = { kind: "creation-collision", relativePath: "source.org", noWrite: true, message: "source refused" }
+		const fixture = nativeRefileFixture({ sourceFailure })
+		const result = await refileOrgSubtreeFlow(input, fixture.repository)()
+		expect(result).toMatchObject({
+			_tag: "Left",
+			left: { type: "ORG_SUBTREE_REFILE_PARTIAL_ERROR", cause: { cause: sourceFailure }, target: fixture.disk.get("target.org") },
+		})
+		expect(fixture.writes.map(request => request.relativePath)).toEqual(["target.org", "source.org"])
+		expect(fixture.reads).toEqual(["target.org"])
+		expect(fixture.disk.get("target.org")?.content).toBe("* Move\nbody\n** Child\nchild\n")
+		expect(fixture.disk.get("source.org")?.content).toBe(input.sourceContent)
+	})
+})
 
 describe("refileOrgSubtreeFlow", () => {
 	it.each([
@@ -371,6 +512,53 @@ const headingInput = {
 }
 
 describe("snapshot refile RPC boundaries", () => {
+	it("rejects target bytes differing from the reviewed preview even with an unchanged heading and reported revision", async () => {
+		const reviewed = "* Parent\r\nraw\0😀\r\n* Peer\r\n"
+		const fixture = persistedRepository(reviewed.replace("raw", "externally changed"))
+		const result = await refileOrgSubtreeFlow({
+			...headingInput, expectedTargetContent: reviewed,
+		}, fixture.repository)()
+		expect(result).toHaveProperty("left.type", "ORG_SUBTREE_REFILE_VALIDATION_ERROR")
+		expect(fixture.writeDocument).not.toHaveBeenCalled()
+	})
+
+	it("retains the reviewed setup and exact heading across a deferred target read", async () => {
+		const fixture = persistedRepository()
+		const entered = Promise.withResolvers<void>()
+		const waiting = Promise.withResolvers<void>()
+		let reads = 0
+		const request = { ...headingInput, targetHeading: { ...headingInput.targetHeading } }
+		const task = refileOrgSubtreeFlow(request, repositoryWith({
+			...fixture.repository,
+			readDocument: (read) => async () => {
+				if (++reads === 1) {
+					entered.resolve()
+					await waiting.promise
+				}
+				return fixture.readDocument(read)()
+			},
+		}))()
+		await entered.promise
+		request.targetRelativePath = "other.org"
+		request.sourceRelativePath = "other-source.org"
+		request.workspaceRoot = "/other-owner"
+		request.expectedSourceRevision = "other-source-revision"
+		request.expectedTargetRevision = "other-target-revision"
+		request.targetHeading.from = 14
+		request.targetHeading.heading = "* Parent changed"
+		waiting.resolve()
+		expect(await task).toHaveProperty("_tag", "Right")
+		expect(fixture.writeDocument.mock.calls.map(([write]) => ({
+			path: write.relativePath, root: write.workspaceRoot, revision: write.expectedRevision,
+		}))).toEqual([
+			{ path: "target.org", root: "/notes", revision: "target-r1" },
+			{ path: "source.org", root: "/notes", revision: "source-r1" },
+		])
+		expect(fixture.writeDocument.mock.calls[0][0].content).toBe(
+			"* Parent\nbody\n** Move\nbody\n*** Child\nchild\n* Parent\nsecond\n",
+		)
+	})
+
 	it("inserts under the exact duplicate heading offset, retaining raw unknown blocks, NUL and CRLF", async () => {
 		const target = "* Parent\r\nfirst\r\n* Parent\r\nsecond\r\n* Peer\r\n"
 		const fixture = persistedRepository(target)
@@ -593,6 +781,25 @@ describe("snapshot refile RPC boundaries", () => {
 })
 
 describe("live transfer guards", () => {
+	it("captures guard getters once at setup and classifies a failed capture before IO", async () => {
+		const fixture = persistedRepository()
+		const getter = vi.fn(() => () => true)
+		const request = { ...headingInput }
+		Object.defineProperty(request, "confirmSourceUnchanged", { enumerable: true, get: getter })
+		const task = refileOrgSubtreeFlow(request, fixture.repository)
+		expect(getter).toHaveBeenCalledTimes(1)
+		expect(await task()).toHaveProperty("_tag", "Right")
+		expect(getter).toHaveBeenCalledTimes(1)
+		const failed = persistedRepository()
+		const badRequest = { ...headingInput }
+		Object.defineProperty(badRequest, "confirmSourceUnchanged", {
+			enumerable: true, get: () => { throw new Error("setup guard failed") },
+		})
+		expect(await refileOrgSubtreeFlow(badRequest, failed.repository)()).toHaveProperty("left.type", "ORG_FILE_ERROR")
+		expect(failed.writeDocument).not.toHaveBeenCalled()
+		expect(failed.readDocument).not.toHaveBeenCalled()
+	})
+
 	it("does not interpret truthy nonboolean protection flags as protected", async () => {
 		const fixture = persistedRepository()
 		const result = await refileOrgSubtreeFlow(
@@ -666,7 +873,6 @@ describe("live transfer guards", () => {
 	it.each([
 		"confirm",
 		"protected",
-		"getter",
 	] as const)("owns %s exceptions before and after target persistence", async (kind) => {
 		for (const afterWrite of [false, true]) {
 			const fixture = persistedRepository()
@@ -679,10 +885,6 @@ describe("live transfer guards", () => {
 				confirmSourceUnchanged: () => (kind === "confirm" && shouldThrow() ? boom() : true),
 				isProtectedPath: () => (kind === "protected" && shouldThrow() ? boom() : false),
 			}
-			if (kind === "getter")
-				Object.defineProperty(request, "confirmSourceUnchanged", {
-					get: () => (shouldThrow() ? boom() : () => true),
-				})
 			const task = refileOrgSubtreeFlow(request, fixture.repository)
 			const result = await task()
 			expect(result).toHaveProperty(

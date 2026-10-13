@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useDocPathname } from "./hooks/use-doc-pathname";
 import { cn } from "@/lib/utils";
 
 const WORDS_PER_MINUTE = 200; // 平均阅读速度：200 字/分钟
@@ -19,7 +19,7 @@ function calculateReadingTime(text: string): number {
 }
 
 export function ReadingTime() {
-  const pathname = usePathname();
+  const pathname = useDocPathname();
   const [readingTime, setReadingTime] = useState<number | null>(null);
 
   useEffect(() => {

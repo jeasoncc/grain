@@ -2,6 +2,10 @@
 
 本目录包含 ESLint Plugin Grain 的所有配置预设。
 
+适用于 ESLint 10 flat config。`grainPlugin.configs.strict`、`legacy`、`recommended`
+已自动注册 `grain` 插件，可以直接放入配置数组。命名导出的 `strictConfig` /
+`legacyConfig` 仅提供规则覆盖；单独使用时必须显式注册插件。
+
 ## 可用配置
 
 ### 1. Strict Configuration (推荐) ⭐
@@ -26,20 +30,17 @@
 
 ```javascript
 // eslint.config.js
-import grainPlugin from 'eslint-plugin-grain';
+import grainPlugin from '@grain/eslint-plugin';
 
 export default [
-  {
-    plugins: { grain: grainPlugin },
-    rules: grainPlugin.configs.strict.rules,
-  }
+  grainPlugin.configs.strict,
 ];
 ```
 
-或者直接导入配置：
+或者导入规则覆盖并显式注册插件：
 
 ```javascript
-import { strictConfig } from 'eslint-plugin-grain/configs/strict';
+import grainPlugin, { strictConfig } from '@grain/eslint-plugin';
 
 export default [
   {
@@ -76,13 +77,10 @@ export default [
 
 ```javascript
 // eslint.config.js
-import grainPlugin from 'eslint-plugin-grain';
+import grainPlugin from '@grain/eslint-plugin';
 
 export default [
-  {
-    plugins: { grain: grainPlugin },
-    rules: grainPlugin.configs.legacy.rules,
-  }
+  grainPlugin.configs.legacy,
 ];
 ```
 
@@ -117,13 +115,10 @@ export default [
 
 ```javascript
 // eslint.config.js
-import grainPlugin from 'eslint-plugin-grain';
+import grainPlugin from '@grain/eslint-plugin';
 
 export default [
-  {
-    plugins: { grain: grainPlugin },
-    rules: grainPlugin.configs.recommended.rules,
-  }
+  grainPlugin.configs.recommended,
 ];
 ```
 
@@ -182,11 +177,11 @@ Legacy → Recommended → Strict
 
 ```javascript
 // eslint.config.js
-import grainPlugin from 'eslint-plugin-grain';
+import grainPlugin from '@grain/eslint-plugin';
 
 export default [
   {
-    plugins: { grain: grainPlugin },
+    ...grainPlugin.configs.strict,
     rules: {
       // 使用 strict 配置作为基础
       ...grainPlugin.configs.strict.rules,
@@ -238,7 +233,7 @@ A: 不推荐。应该选择一个配置作为基础，然后根据需要进行�
 
 ### Q: 如何处理第三方库的违规？
 
-A: 使用 ESLint 的 `ignorePatterns` 或文件级别的 `/* eslint-disable */` 注释来忽略第三方代码。
+A: 在 flat config 中用独立的 `{ ignores: ['vendor/**'] }` 对象排除不属于项目源码的目录；不再使用旧 `ignorePatterns`。
 
 ---
 

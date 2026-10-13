@@ -1,34 +1,15 @@
-/**
- * Data Management Settings Route
- *
- * 使用 BackupManagerContainer 组件进行数据管理
- */
+import { createFileRoute, Link } from "@tanstack/react-router"
 
-import { createFileRoute } from "@tanstack/react-router"
-import { BackupManagerContainer } from "@/views/backup-manager/backup-manager.container.fn"
-
-export const Route = createFileRoute("/settings/data")({
-	component: DataSettingsPage,
-})
+export const Route = createFileRoute("/settings/data")({ component: DataSettingsPage })
 
 function DataSettingsPage() {
-	return (
-		<div className="space-y-10 max-w-3xl">
-			<div>
-				<h3 className="text-lg font-medium">Data Management</h3>
-				<p className="text-sm text-muted-foreground">
-					Backup, restore, and manage your application data.
-				</p>
-			</div>
-
-			<div className="space-y-4">
-				<h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-					Backup & Restore
-				</h4>
-				<div className="pt-2">
-					<BackupManagerContainer />
-				</div>
-			</div>
-		</div>
-	)
+	return <div className="space-y-4 max-w-3xl">
+		<h3 className="text-lg font-medium">Data and recovery</h3>
+		<p>Org files are the source of truth. The Org index is disposable and can be rebuilt from Workspace tools.</p>
+		<p>Historical SQLite is read-only. Desktop backup, restore, deletion and old editor settings are no longer available. Keep any original full-database archives outside Grain.</p>
+		<p>Migration preserves the selected workspace graph and its selected-workspace/recoverable orphan bodies. Its recovery bundle does not include unrelated users, settings or tables.</p>
+		<Link to="/history" className="underline">Read-only historical listing and preview</Link>
+		<p>Open an Org destination to migrate, verify migration artifacts or run the selected-workspace recovery drill.</p>
+		<Link to="/" className="underline">Open Org workspace</Link>
+	</div>
 }

@@ -83,16 +83,6 @@ describe("Import Type Detection", () => {
 })
 
 describe("Layer Dependencies", () => {
-	it("should return correct allowed dependencies for views", () => {
-		const allowed = getAllowedDependencies("views")
-		expect(allowed).toEqual(["hooks", "types"])
-	})
-
-	it("should return correct allowed dependencies for pipes", () => {
-		const allowed = getAllowedDependencies("pipes")
-		expect(allowed).toEqual(["utils", "types"])
-	})
-
 	it("should return empty array for unknown layer", () => {
 		const allowed = getAllowedDependencies("unknown")
 		expect(allowed).toEqual([])

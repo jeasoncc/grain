@@ -252,7 +252,7 @@ pub async fn decrement_count(db: &DatabaseConnection, id: &str) -> Result<TagMod
         .await?
         .ok_or(DbErr::RecordNotFound(format!("Tag {} not found", id)))?;
 
-    let new_count = (tag.count - 1).max(0);
+    let new_count = std::cmp::max(tag.count - 1, 0);
     let mut model: TagActiveModel = tag.into();
     model.count = Set(new_count);
 

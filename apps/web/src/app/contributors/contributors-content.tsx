@@ -1,6 +1,7 @@
 "use client";
 
-import { Users, Heart, Github, GitBranch } from "lucide-react";
+import { Users, Heart, GitBranch } from "lucide-react";
+import { GitHubIcon } from "@/components/ui/github-icon";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,7 @@ const contributionTypes = [
   {
     title: "代码贡献",
     description: "提交代码、修复 bug、开发新功能",
-    icon: <Github className="w-6 h-6" />,
+    icon: <GitHubIcon className="w-6 h-6" />,
   },
   {
     title: "文档改进",
@@ -202,7 +203,7 @@ export function ContributorsPageContent() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <Github className="w-5 h-5 mr-2" />
+                    <GitHubIcon className="w-5 h-5 mr-2" />
                     访问 GitHub
                   </Link>
                 </Button>

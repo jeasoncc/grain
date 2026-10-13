@@ -54,7 +54,7 @@ export function minimalTextChange(previous: Text, next: Text): ChangeSpec {
 	return { from, insert: next.slice(from, endB), to: endA }
 }
 /** Validate before constructing transactions. All ranges address the original raw source. */
-export function rawSourceBatch(source: string, edits: readonly OrgTextEdit[]) {
+export function rawSourceBatch(source: string, edits: readonly Pick<OrgTextEdit, "from" | "to" | "insert">[]) {
 	if (!Array.isArray(edits)) {
 		throw new OrgBufferRuntimeError(
 			"invalid-edit",
@@ -97,9 +97,21 @@ export function rawSourceBatch(source: string, edits: readonly OrgTextEdit[]) {
 			"Command edits must preserve the source separator",
 		)
 	}
-	const offset = (position: number) =>
-		position -
-		(separator.length === 2 ? (source.slice(0, position).match(/\r\n/g)?.length ?? 0) : 0)
+	// Edits are sorted: scan the CRLF coordinate mapping once instead of
+	// copying and regex-scanning a growing source prefix for every endpoint.
+	let scanned = 0, breaks = 0
+	const offset = (position: number) => {
+		if (separator.length !== 2) return position
+		while (scanned < position) {
+			if (source.charCodeAt(scanned) === 13 && source.charCodeAt(scanned + 1) === 10) {
+				breaks++
+				scanned += 2
+			} else {
+				scanned++
+			}
+		}
+		return position - breaks
+	}
 	return {
 		nextSource,
 		changes: edits
@@ -117,6 +129,13 @@ export interface OriginSelection {
 	readonly selection: EditorSelection
 }
 export const originWindow = Annotation.define<string>()
+/** Semantic editor operation, not permission to commit or to bypass window effects. */
+export const orgSemanticHistory = Annotation.define<{
+	readonly selection: EditorSelection
+	readonly group: string
+	/** Provisional native composition; end collapses it into one canonical event. */
+	readonly composition?: "update" | "end"
+}>()
 export const restoreOriginSelection = StateEffect.define<OriginSelection>({
 	map: (value, mapping) => ({ ...value, selection: value.selection.map(mapping) }),
 })
@@ -125,6 +144,8 @@ export function transactionTraits(tr: Transaction): CMAnnotation<unknown>[] {
 	const userEvent = tr.annotation(Transaction.userEvent)
 	const add = tr.annotation(Transaction.addToHistory)
 	const isolate = tr.annotation(isolateHistory)
+	const semantic = tr.annotation(orgSemanticHistory)
+	if (semantic !== undefined) result.push(orgSemanticHistory.of(semantic))
 	if (userEvent !== undefined) {
 		result.push(Transaction.userEvent.of(userEvent))
 	}

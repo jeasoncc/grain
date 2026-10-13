@@ -125,7 +125,7 @@ export {
   ClickableLinkPlugin,
   AutoLinkPlugin,
   AutoFocusPlugin,
-  HorizontalRulePlugin,
+  HorizontalRuleExtension,
   // TEMPORARILY DISABLED: TablePlugin (has dependency issues)
   // TablePlugin,
   ClearEditorPlugin,

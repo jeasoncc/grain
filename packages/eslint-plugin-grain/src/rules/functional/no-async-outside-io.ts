@@ -124,7 +124,7 @@ const ALLOWED_ASYNC_LAYERS = ["io", "queries"] as const
 
 export default createRule({
 	create(context) {
-		const filename = context.filename || context.getFilename()
+		const filename = context.filename
 
 		// Skip test files
 		if (isTestFile(filename)) {

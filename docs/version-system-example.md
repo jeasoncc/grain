@@ -61,7 +61,7 @@ update_docker_version() {
 
 ```bash
         update_snap_version "$PROJECT_ROOT/snap/snapcraft.yaml" "$NEW_VERSION" >/dev/null 2>&1
-        update_flatpak_version "$PROJECT_ROOT/flatpak/com.lotus.NovelEditor.yml" "$NEW_VERSION" >/dev/null 2>&1
+        update_flatpak_version "$PROJECT_ROOT/flatpak/com.lotus.Grain.yml" "$NEW_VERSION" >/dev/null 2>&1
         update_winget_version "$NEW_VERSION" >/dev/null 2>&1
         update_docker_version "$PROJECT_ROOT/docker/docker-compose.yml" "$NEW_VERSION" >/dev/null 2>&1
 ```
@@ -80,7 +80,7 @@ git add \
     aur/PKGBUILD \
     aur/PKGBUILD-binary \
     snap/snapcraft.yaml \
-    flatpak/com.lotus.NovelEditor.yml \
+    flatpak/com.lotus.Grain.yml \
     winget-manifests/*.yaml \
     docker/docker-compose.yml \
     2>/dev/null || true

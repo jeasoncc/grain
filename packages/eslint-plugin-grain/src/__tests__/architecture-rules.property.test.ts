@@ -7,46 +7,9 @@
  * Validates: Requirements 2.1-2.12, 3.1-3.10
  */
 
-import { Linter } from "eslint"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
-import plugin from "../index.js"
-
-// Helper to run ESLint with our plugin and a specific filename
-// Uses eslintrc config type because flat config has issues with filename matching
-function runLintWithFilename(
-	code: string,
-	rules: Record<string, string | [string, unknown]>,
-	filename: string,
-): Linter.LintMessage[] {
-	// Use legacy eslintrc config type for proper filename handling
-	const linter = new Linter({ configType: "eslintrc" })
-
-	// Define rules from our plugin
-	const ruleNames = Object.keys(rules)
-	const ruleDefinitions: Record<string, Linter.RuleModule> = {}
-	for (const ruleName of ruleNames) {
-		const shortName = ruleName.replace("grain/", "")
-		const rule = plugin.rules[shortName]
-		if (rule) {
-			ruleDefinitions[ruleName] = rule as Linter.RuleModule
-		}
-	}
-	linter.defineRules(ruleDefinitions)
-
-	const config = {
-		parserOptions: {
-			ecmaFeatures: {
-				jsx: true,
-			},
-			ecmaVersion: 2022,
-			sourceType: "module" as const,
-		},
-		rules,
-	}
-
-	return linter.verify(code, config, { filename })
-}
+import { runLint } from "./test-utils.js"
 
 /**
  * Property 3: Architecture Layer Dependency Validation
@@ -124,11 +87,9 @@ describe("Property 3: Architecture Layer Dependency Validation", () => {
 					const filename = generateFilename(currentLayer)
 					const code = `import { something } from '@/${importLayer}/module';`
 
-					const errors = runLintWithFilename(
-						code,
+					const errors = runLint(code,
 						{ "grain/layer-dependencies": "error" },
-						filename,
-					)
+						filename,)
 
 					// Should have at least one error for layer violation
 					const hasViolation = errors.some((e) => e.ruleId === "grain/layer-dependencies")
@@ -154,11 +115,9 @@ describe("Property 3: Architecture Layer Dependency Validation", () => {
 					const filename = generateFilename(currentLayer)
 					const code = `import { something } from '@/${importLayer}/module';`
 
-					const errors = runLintWithFilename(
-						code,
+					const errors = runLint(code,
 						{ "grain/layer-dependencies": "error" },
-						filename,
-					)
+						filename,)
 
 					// Should have no layer dependency errors
 					const hasViolation = errors.some((e) => e.ruleId === "grain/layer-dependencies")
@@ -177,11 +136,9 @@ describe("Property 3: Architecture Layer Dependency Validation", () => {
 					const filename = "/project/src/views/sidebar/sidebar.view.fn.tsx"
 					const code = `import { createNode } from '@/flows/node/create-node.flow';`
 
-					const errors = runLintWithFilename(
-						code,
+					const errors = runLint(code,
 						{ "grain/layer-dependencies": "error" },
-						filename,
-					)
+						filename,)
 
 					expect(errors.some((e) => e.ruleId === "grain/layer-dependencies")).toBe(true)
 					return true
@@ -196,11 +153,9 @@ describe("Property 3: Architecture Layer Dependency Validation", () => {
 					const filename = "/project/src/pipes/node/transform.pipe.ts"
 					const code = `import { nodeApi } from '@/io/api/node.api';`
 
-					const errors = runLintWithFilename(
-						code,
+					const errors = runLint(code,
 						{ "grain/layer-dependencies": "error" },
-						filename,
-					)
+						filename,)
 
 					expect(errors.some((e) => e.ruleId === "grain/layer-dependencies")).toBe(true)
 					return true
@@ -215,11 +170,9 @@ describe("Property 3: Architecture Layer Dependency Validation", () => {
 					const filename = "/project/src/pipes/node/transform.pipe.ts"
 					const code = `import { useSelectionStore } from '@/state/selection.state';`
 
-					const errors = runLintWithFilename(
-						code,
+					const errors = runLint(code,
 						{ "grain/layer-dependencies": "error" },
-						filename,
-					)
+						filename,)
 
 					expect(errors.some((e) => e.ruleId === "grain/layer-dependencies")).toBe(true)
 					return true
@@ -236,11 +189,9 @@ describe("Property 3: Architecture Layer Dependency Validation", () => {
 						const filename = "/project/src/utils/date.util.ts"
 						const code = `import { something } from '@/${importLayer}/module';`
 
-						const errors = runLintWithFilename(
-							code,
+						const errors = runLint(code,
 							{ "grain/layer-dependencies": "error" },
-							filename,
-						)
+							filename,)
 
 						expect(errors.some((e) => e.ruleId === "grain/layer-dependencies")).toBe(true)
 						return true
@@ -258,11 +209,9 @@ describe("Property 3: Architecture Layer Dependency Validation", () => {
 					const filename = "/project/src/views/sidebar/sidebar.container.fn.tsx"
 					const code = `import { createNode } from '@/flows/node/create-node.flow';`
 
-					const errors = runLintWithFilename(
-						code,
+					const errors = runLint(code,
 						{ "grain/layer-dependencies": "error" },
-						filename,
-					)
+						filename,)
 
 					// Container components should be allowed to import from flows/
 					expect(errors.some((e) => e.ruleId === "grain/layer-dependencies")).toBe(false)
@@ -278,11 +227,9 @@ describe("Property 3: Architecture Layer Dependency Validation", () => {
 					const filename = "/project/src/views/sidebar/sidebar.container.fn.tsx"
 					const code = `import { useSelectionStore } from '@/state/selection.state';`
 
-					const errors = runLintWithFilename(
-						code,
+					const errors = runLint(code,
 						{ "grain/layer-dependencies": "error" },
-						filename,
-					)
+						filename,)
 
 					// Container components should be allowed to import from state/
 					expect(errors.some((e) => e.ruleId === "grain/layer-dependencies")).toBe(false)
@@ -353,11 +300,9 @@ describe("Property 4: Side Effect Detection in Pure Layers", () => {
               }
             `
 
-						const errors = runLintWithFilename(
-							code,
+						const errors = runLint(code,
 							{ "grain/no-side-effects-in-pipes": "error" },
-							filename,
-						)
+							filename,)
 
 						expect(errors.some((e) => e.ruleId === "grain/no-side-effects-in-pipes")).toBe(true)
 						return true
@@ -377,11 +322,9 @@ describe("Property 4: Side Effect Detection in Pure Layers", () => {
             }
           `
 
-					const errors = runLintWithFilename(
-						code,
+					const errors = runLint(code,
 						{ "grain/no-side-effects-in-pipes": "error" },
-						filename,
-					)
+						filename,)
 
 					expect(errors.some((e) => e.ruleId === "grain/no-side-effects-in-pipes")).toBe(true)
 					return true
@@ -400,11 +343,9 @@ describe("Property 4: Side Effect Detection in Pure Layers", () => {
             }
           `
 
-					const errors = runLintWithFilename(
-						code,
+					const errors = runLint(code,
 						{ "grain/no-side-effects-in-pipes": "error" },
-						filename,
-					)
+						filename,)
 
 					expect(errors.some((e) => e.ruleId === "grain/no-side-effects-in-pipes")).toBe(true)
 					return true
@@ -423,11 +364,9 @@ describe("Property 4: Side Effect Detection in Pure Layers", () => {
             }
           `
 
-					const errors = runLintWithFilename(
-						code,
+					const errors = runLint(code,
 						{ "grain/no-side-effects-in-pipes": "error" },
-						filename,
-					)
+						filename,)
 
 					expect(errors.some((e) => e.ruleId === "grain/no-side-effects-in-pipes")).toBe(true)
 					return true
@@ -449,11 +388,9 @@ describe("Property 4: Side Effect Detection in Pure Layers", () => {
               }
             `
 
-						const errors = runLintWithFilename(
-							code,
+						const errors = runLint(code,
 							{ "grain/no-side-effects-in-pipes": "error" },
-							filename,
-						)
+							filename,)
 
 						expect(errors.some((e) => e.ruleId === "grain/no-side-effects-in-pipes")).toBe(true)
 						return true
@@ -476,11 +413,9 @@ describe("Property 4: Side Effect Detection in Pure Layers", () => {
             }
           `
 
-					const errors = runLintWithFilename(
-						code,
+					const errors = runLint(code,
 						{ "grain/no-side-effects-in-pipes": "error" },
-						filename,
-					)
+						filename,)
 
 					expect(errors.some((e) => e.ruleId === "grain/no-side-effects-in-pipes")).toBe(true)
 					return true
@@ -500,11 +435,9 @@ describe("Property 4: Side Effect Detection in Pure Layers", () => {
             };
           `
 
-					const errors = runLintWithFilename(
-						code,
+					const errors = runLint(code,
 						{ "grain/no-side-effects-in-pipes": "error" },
-						filename,
-					)
+						filename,)
 
 					expect(errors.some((e) => e.ruleId === "grain/no-side-effects-in-pipes")).toBe(true)
 					return true
@@ -525,11 +458,9 @@ describe("Property 4: Side Effect Detection in Pure Layers", () => {
             }
           `
 
-					const errors = runLintWithFilename(
-						code,
+					const errors = runLint(code,
 						{ "grain/no-side-effects-in-pipes": "error" },
-						filename,
-					)
+						filename,)
 
 					expect(errors.some((e) => e.ruleId === "grain/no-side-effects-in-pipes")).toBe(true)
 					return true
@@ -562,11 +493,9 @@ describe("Property 4: Side Effect Detection in Pure Layers", () => {
             }
           `
 
-					const errors = runLintWithFilename(
-						code,
+					const errors = runLint(code,
 						{ "grain/no-side-effects-in-pipes": "error" },
-						filename,
-					)
+						filename,)
 
 					// Should have no side effect errors for pure functions
 					expect(errors.filter((e) => e.ruleId === "grain/no-side-effects-in-pipes").length).toBe(0)
@@ -602,11 +531,9 @@ describe("Property 4: Side Effect Detection in Pure Layers", () => {
               );
           `
 
-					const errors = runLintWithFilename(
-						code,
+					const errors = runLint(code,
 						{ "grain/no-side-effects-in-pipes": "error" },
-						filename,
-					)
+						filename,)
 
 					// Should have no side effect errors for fp-ts operations
 					expect(errors.filter((e) => e.ruleId === "grain/no-side-effects-in-pipes").length).toBe(0)
@@ -630,11 +557,9 @@ describe("Property 4: Side Effect Detection in Pure Layers", () => {
             }
           `
 
-					const errors = runLintWithFilename(
-						code,
+					const errors = runLint(code,
 						{ "grain/no-react-in-pure-layers": "error" },
-						filename,
-					)
+						filename,)
 
 					expect(errors.some((e) => e.ruleId === "grain/no-react-in-pure-layers")).toBe(true)
 					return true
@@ -655,11 +580,9 @@ describe("Property 4: Side Effect Detection in Pure Layers", () => {
             }
           `
 
-					const errors = runLintWithFilename(
-						code,
+					const errors = runLint(code,
 						{ "grain/no-react-in-pure-layers": "error" },
-						filename,
-					)
+						filename,)
 
 					expect(errors.some((e) => e.ruleId === "grain/no-react-in-pure-layers")).toBe(true)
 					return true

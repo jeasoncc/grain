@@ -11,7 +11,7 @@ type Options = []
 
 export default createRule<Options, MessageIds>({
 	create(context) {
-		const filename = context.getFilename()
+		const filename = context.filename
 
 		// 只检查 .tsx 文件
 		if (!filename.endsWith(".tsx")) {

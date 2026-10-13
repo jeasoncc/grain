@@ -21,7 +21,7 @@ export default createRule({
 				| TSESTree.ArrowFunctionExpression,
 		) {
 			// 跳过类型声明文件
-			const filename = context.getFilename()
+			const filename = context.filename
 			if (filename.endsWith(".d.ts")) {
 				return
 			}

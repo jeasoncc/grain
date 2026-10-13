@@ -12,12 +12,13 @@ import type {
 import { createJsonContent } from "@grain/editor-core";
 import type { LexicalEditor, SerializedEditorState } from "lexical";
 import {
+  $createTextNode,
   $getRoot,
   $getSelection,
   $isRangeSelection,
   FORMAT_TEXT_COMMAND,
   COMMAND_PRIORITY_NORMAL,
-  KEY_ENTER_COMMAND,
+  KEY_DOWN_COMMAND,
 } from "lexical";
 import { $createHeadingNode, $createQuoteNode } from "@lexical/rich-text";
 import {
@@ -26,8 +27,8 @@ import {
   INSERT_CHECK_LIST_COMMAND,
 } from "@lexical/list";
 import { $createCodeNode } from "@lexical/code";
-import { $createLinkNode } from "@lexical/link";
-import { INSERT_HORIZONTAL_RULE_COMMAND } from "@lexical/react/LexicalHorizontalRuleNode";
+import { $createLinkNode, $toggleLink } from "@lexical/link";
+import { INSERT_HORIZONTAL_RULE_COMMAND } from "@lexical/extension";
 import { INSERT_TABLE_COMMAND } from "@lexical/table";
 
 /**
@@ -68,9 +69,9 @@ export const createLexicalDocumentAdapter = (
 
   // Register keyboard listener for save (Ctrl+S)
   const removeSaveListener = editor.registerCommand(
-    KEY_ENTER_COMMAND,
+    KEY_DOWN_COMMAND,
     (event) => {
-      if (event && (event.ctrlKey || event.metaKey) && event.key === "s") {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
         event.preventDefault();
         for (const callback of saveCallbacks) {
           callback();
@@ -206,16 +207,14 @@ export const createLexicalDocumentAdapter = (
       editor.update(() => {
         const selection = $getSelection();
         if ($isRangeSelection(selection)) {
-          const linkNode = $createLinkNode(url);
           if (text) {
             // If text is provided, we need to create a text node inside the link
-            const { $createTextNode } = require("lexical");
+            const linkNode = $createLinkNode(url);
             const textNode = $createTextNode(text);
             linkNode.append(textNode);
             selection.insertNodes([linkNode]);
           } else {
-            // Wrap selection in link
-            selection.insertNodes([linkNode]);
+            $toggleLink(url);
           }
         }
       });

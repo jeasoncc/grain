@@ -13,15 +13,18 @@ import {
   memo,
 } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
-import Document from "@tiptap/extension-document";
-import Text from "@tiptap/extension-text";
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
-import Placeholder from "@tiptap/extension-placeholder";
+import { Document } from "@tiptap/extension-document";
+import { Text } from "@tiptap/extension-text";
+import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
+import { Placeholder } from "@tiptap/extensions";
+import { common, createLowlight } from "lowlight";
 import type { DiagramType } from "@grain/editor-core";
 import type {
   TiptapDiagramEditorProps,
   TiptapDiagramEditorHandle,
 } from "./tiptap-diagram-editor.types";
+
+const lowlight = createLowlight(common);
 
 /**
  * TiptapDiagramEditor component
@@ -61,6 +64,7 @@ export const TiptapDiagramEditor = memo(
           Document,
           Text,
           CodeBlockLowlight.configure({
+            lowlight,
             defaultLanguage: currentDiagramType,
           }),
           Placeholder.configure({
@@ -119,6 +123,8 @@ export const TiptapDiagramEditor = memo(
               mermaid.default.initialize({
                 startOnLoad: false,
                 theme: "default",
+                layout: "dagre",
+                look: "classic",
                 securityLevel: "loose",
               });
               const result = await mermaid.default.render(
@@ -200,10 +206,10 @@ export const TiptapDiagramEditor = memo(
                 {
                   type: "codeBlock",
                   attrs: { language: currentDiagramType },
-                  content: [{ type: "text", text: source }],
+                  content: source ? [{ type: "text", text: source }] : [],
                 },
               ],
-            });
+            }, { emitUpdate: false });
             renderDiagram(source);
           },
           focus: () => {

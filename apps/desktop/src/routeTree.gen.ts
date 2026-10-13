@@ -10,7 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as LegacyRouteImport } from './routes/legacy'
+import { Route as HistoryRouteImport } from './routes/history'
 import { Route as OrgRouteImport } from './routes/org'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
@@ -30,11 +30,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LegacyRoute = LegacyRouteImport.update({
-  id: '/legacy',
-  path: '/legacy',
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
   getParentRoute: () => rootRouteImport,
-} as any).lazy(() => import('./routes/legacy.lazy').then((d) => d.Route))
+} as any).lazy(() => import('./routes/history.lazy').then((d) => d.Route))
 const OrgRoute = OrgRouteImport.update({
   id: '/org',
   path: '/org',
@@ -103,7 +103,7 @@ const SettingsTypographyRoute = SettingsTypographyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/legacy': typeof LegacyRoute
+  '/history': typeof HistoryRoute
   '/org': typeof OrgRoute
   '/settings': typeof SettingsRouteWithChildren
   '/settings/about': typeof SettingsAboutRoute
@@ -120,7 +120,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/legacy': typeof LegacyRoute
+  '/history': typeof HistoryRoute
   '/org': typeof OrgRoute
   '/settings/about': typeof SettingsAboutRoute
   '/settings/data': typeof SettingsDataRoute
@@ -137,7 +137,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/legacy': typeof LegacyRoute
+  '/history': typeof HistoryRoute
   '/org': typeof OrgRoute
   '/settings': typeof SettingsRouteWithChildren
   '/settings/about': typeof SettingsAboutRoute
@@ -156,7 +156,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/legacy'
+    | '/history'
     | '/org'
     | '/settings'
     | '/settings/about'
@@ -173,7 +173,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/legacy'
+    | '/history'
     | '/org'
     | '/settings/about'
     | '/settings/data'
@@ -189,7 +189,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/legacy'
+    | '/history'
     | '/org'
     | '/settings'
     | '/settings/about'
@@ -207,7 +207,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  LegacyRoute: typeof LegacyRoute
+  HistoryRoute: typeof HistoryRoute
   OrgRoute: typeof OrgRoute
   SettingsRoute: typeof SettingsRouteWithChildren
 }
@@ -221,11 +221,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/legacy': {
-      id: '/legacy'
-      path: '/legacy'
-      fullPath: '/legacy'
-      preLoaderRoute: typeof LegacyRouteImport
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/org': {
@@ -356,7 +356,7 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  LegacyRoute: LegacyRoute,
+  HistoryRoute: HistoryRoute,
   OrgRoute: OrgRoute,
   SettingsRoute: SettingsRouteWithChildren,
 }

@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { act, fireEvent, screen, waitFor } from "@testing-library/react"
+import { render } from "@/test/application-providers"
 import { describe, expect, it, vi } from "vitest"
 import { parseOrgInspectorProperties } from "./org-inspector.view.fn"
 import { OrgQuickOpen } from "./org-quick-open.view.fn"
@@ -16,9 +17,9 @@ describe("OrgQuickOpen", () => {
 		fireEvent.change(screen.getByLabelText("Search workspace notes"), {
 			target: { value: "grain" },
 		})
-		expect(screen.queryByText("inbox")).not.toBeInTheDocument()
+		expect(screen.queryByText("inbox.org")).not.toBeInTheDocument()
 		await act(async () => {
-			fireEvent.click(screen.getByText("grain"))
+			fireEvent.click(screen.getByRole("option", { name: "projects/grain.org" }))
 		})
 		expect(onSelect).toHaveBeenCalledWith(documents[1], expect.any(AbortSignal))
 	})
@@ -28,8 +29,8 @@ describe("OrgQuickOpen", () => {
 		fireEvent.change(screen.getByLabelText("Search workspace notes"), {
 			target: { value: "pgn" },
 		})
-		expect(screen.getByText("grain")).toBeInTheDocument()
-		expect(screen.queryByText("inbox")).not.toBeInTheDocument()
+		expect(screen.getByRole("option", { name: "projects/grain.org" })).toBeInTheDocument()
+		expect(screen.queryByRole("option", { name: "inbox.org" })).not.toBeInTheDocument()
 	})
 
 	it("supports keyboard selection", async () => {
@@ -41,25 +42,19 @@ describe("OrgQuickOpen", () => {
 		})
 		expect(onSelect).toHaveBeenCalledWith(documents[1], expect.any(AbortSignal))
 	})
-	it("is a nonmodal surface with results above the prompt and unique aria IDs", () => {
-		render(
-			<>
-				<OrgQuickOpen documents={documents} open onOpenChange={vi.fn()} onSelect={vi.fn()} />
-				<OrgQuickOpen documents={documents} open onOpenChange={vi.fn()} onSelect={vi.fn()} />
-			</>,
-		)
+	it("has one nonmodal root host when a newer navigation request supersedes another", () => {
+		const superseded = vi.fn()
+		render(<>
+			<OrgQuickOpen documents={documents} open onOpenChange={superseded} onSelect={vi.fn()} />
+			<OrgQuickOpen documents={documents} open onOpenChange={vi.fn()} onSelect={vi.fn()} />
+		</>)
 		expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
-		const inputs = screen.getAllByRole("combobox")
-		expect(inputs[0].id).not.toBe(inputs[1].id)
-		for (const input of inputs) {
-			const list = document.getElementById(input.getAttribute("aria-controls")!)!
-			expect(list).toHaveAttribute("role", "listbox")
-			expect(list.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-			expect(document.getElementById(input.getAttribute("aria-activedescendant")!)).toHaveAttribute(
-				"aria-selected",
-				"true",
-			)
-		}
+		expect(screen.getAllByRole("combobox")).toHaveLength(1)
+		expect(superseded).toHaveBeenCalledWith(false)
+		const input = screen.getByRole("combobox")
+		const list = document.getElementById(input.getAttribute("aria-controls")!)!
+		expect(list).toHaveAttribute("role", "listbox")
+		expect(document.getElementById(input.getAttribute("aria-activedescendant")!)).toHaveAttribute("aria-selected", "true")
 	})
 
 	it("preserves basename, substring, path and fuzzy ranking", () => {
@@ -75,12 +70,8 @@ describe("OrgQuickOpen", () => {
 			/>,
 		)
 		fireEvent.change(screen.getByRole("combobox"), { target: { value: " AB " } })
-		expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual([
-			"abz",
-			"abc",
-			"zab",
-			"xab",
-			"ba",
+		expect(screen.getAllByRole("option").map((option) => option.getAttribute("aria-label"))).toEqual([
+			"z/ab.org", "abc.org", "zab.org", "ab/x.org", "a/b.org",
 		])
 	})
 
@@ -171,7 +162,7 @@ describe("OrgQuickOpen", () => {
 		fireEvent.keyDown(screen.getByRole("combobox"), { key: "Escape" })
 		expect(signal.aborted).toBe(true)
 		expect(onOpenChange).toHaveBeenCalledExactlyOnceWith(false)
-		expect(screen.getByRole("combobox")).toHaveAttribute("aria-busy", "false")
+		expect(screen.queryByRole("combobox")).not.toBeInTheDocument()
 		onOpenChange.mockClear()
 		await act(async () => resolve(true))
 		expect(onOpenChange).not.toHaveBeenCalled()
@@ -208,7 +199,7 @@ describe("OrgQuickOpen", () => {
 		expect(currentSignal.aborted).toBe(false)
 		await act(async () => resolvers[1](true))
 		expect(onOpenChange).toHaveBeenCalledExactlyOnceWith(false)
-		expect(screen.getByRole("combobox")).toHaveAttribute("aria-busy", "false")
+		expect(screen.queryByRole("combobox")).not.toBeInTheDocument()
 	})
 
 	it("moves candidates without opening and cancels with focus restoration", () => {

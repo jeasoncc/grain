@@ -57,11 +57,11 @@ jobs:
           echo "📝 Updating Flatpak manifest to version $VERSION"
           
           # 更新 metainfo 中的版本
-          sed -i "s/<release version=\".*\"/<release version=\"$VERSION\"/" flatpak/com.lotus.NovelEditor.metainfo.xml
-          sed -i "s/date=\".*\"/date=\"$(date +%Y-%m-%d)\"/" flatpak/com.lotus.NovelEditor.metainfo.xml
+          sed -i "s/<release version=\".*\"/<release version=\"$VERSION\"/" flatpak/com.lotus.Grain.metainfo.xml
+          sed -i "s/date=\".*\"/date=\"$(date +%Y-%m-%d)\"/" flatpak/com.lotus.Grain.metainfo.xml
           
           echo "📄 Flatpak manifest (using local source):"
-          cat flatpak/com.lotus.NovelEditor.yml | tail -10
+          cat flatpak/com.lotus.Grain.yml | tail -10
       
       - name: Install Flatpak
         run: |
@@ -75,22 +75,28 @@ jobs:
       - name: Install Flatpak SDK
         run: |
           # 安装到用户空间（与 flatpak-builder --user 匹配）
-          flatpak install --user -y flathub org.freedesktop.Platform//24.08
-          flatpak install --user -y flathub org.freedesktop.Sdk//24.08
-          flatpak install --user -y flathub org.freedesktop.Sdk.Extension.node20//24.08
-          flatpak install --user -y flathub org.freedesktop.Sdk.Extension.rust-stable//24.08
+          flatpak install --user -y flathub org.freedesktop.Platform//25.08
+          flatpak install --user -y flathub org.freedesktop.Sdk//25.08
+          flatpak install --user -y flathub org.freedesktop.Sdk.Extension.node24//25.08
+          flatpak install --user -y flathub org.freedesktop.Sdk.Extension.rust-stable//25.08
+
+      - name: Setup Node LTS
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24.21.0'
+          package-manager-cache: false
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
-          bun-version: latest
+          bun-version: '1.4.2'
 
       - name: Pre-install dependencies with Bun
         run: |
           echo "📦 Pre-installing dependencies with Bun..."
           # 在 workflow 中用 Bun 安装依赖（有网络）
           # 这样 Flatpak 沙箱构建时就不需要网络了
-          bun install
+          bun install --frozen-lockfile
           
           echo "✅ Dependencies installed"
           echo "node_modules size: $(du -sh node_modules | cut -f1)"
@@ -104,11 +110,11 @@ jobs:
           
           # 构建 Flatpak（使用用户级 flathub remote，禁用沙箱以允许网络访问安装 bun）
           flatpak-builder --force-clean --disable-rofiles-fuse --user --install-deps-from=flathub \
-            --repo=repo build-dir flatpak/com.lotus.NovelEditor.yml
+            --repo=repo build-dir flatpak/com.lotus.Grain.yml
           
           # 导出为 .flatpak 文件
           flatpak build-bundle repo grain-${{ steps.version.outputs.version }}.flatpak \
-            com.lotus.NovelEditor
+            com.lotus.Grain
           
           echo "✅ Flatpak built successfully"
           ls -la *.flatpak
@@ -121,7 +127,7 @@ jobs:
           flatpak install --user -y grain-${{ steps.version.outputs.version }}.flatpak
           
           # 验证安装
-          if flatpak list --user | grep -q com.lotus.NovelEditor; then
+          if flatpak list --user | grep -q com.lotus.Grain; then
             echo "✅ Flatpak installation test passed"
           else
             echo "❌ Flatpak installation test failed"
@@ -142,14 +148,14 @@ jobs:
           echo ""
           echo "Next steps to publish on Flathub:"
           echo "1. Fork https://github.com/flathub/flathub"
-          echo "2. Create a new repository: https://github.com/flathub/com.lotus.NovelEditor"
-          echo "3. Copy flatpak/com.lotus.NovelEditor.yml to the new repo"
+          echo "2. Create a new repository: https://github.com/flathub/com.lotus.Grain"
+          echo "3. Copy flatpak/com.lotus.Grain.yml to the new repo"
           echo "4. Submit PR to flathub/flathub with the new app"
           echo ""
           echo "Files ready for submission:"
-          echo "- flatpak/com.lotus.NovelEditor.yml"
-          echo "- flatpak/com.lotus.NovelEditor.desktop"
-          echo "- flatpak/com.lotus.NovelEditor.metainfo.xml"
+          echo "- flatpak/com.lotus.Grain.yml"
+          echo "- flatpak/com.lotus.Grain.desktop"
+          echo "- flatpak/com.lotus.Grain.metainfo.xml"
       
       - name: Create success comment
         if: success() && github.event_name == 'push'
@@ -166,18 +172,18 @@ jobs:
                 body: `🎉 **Flatpak 构建成功！**
             
             **版本：** ${version}
-            **包名：** com.lotus.NovelEditor
+            **包名：** com.lotus.Grain
             
             **下载：** 查看 Actions artifacts
             
             **下一步：** 提交到 Flathub
             1. Fork https://github.com/flathub/flathub
-            2. 创建新仓库：com.lotus.NovelEditor
+            2. 创建新仓库：com.lotus.Grain
             3. 提交 PR 到 Flathub
             
             **安装命令（发布后）：**
             \`\`\`bash
-            flatpak install flathub com.lotus.NovelEditor
+            flatpak install flathub com.lotus.Grain
             \`\`\``
               });
             } catch (error) {

@@ -1,5 +1,4 @@
 import {
-	CalendarPlus,
 	ChevronRight,
 	Copy,
 	FilePenLine,
@@ -15,7 +14,7 @@ import {
 	Search,
 	Trash2,
 } from "lucide-react"
-import { memo, type ReactNode, useEffect, useMemo, useState } from "react"
+import { memo, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
 import { buildOrgWorkspaceTree } from "@/pipes/org"
 import type { OrgDocumentEntryInterface, OrgTreeEntryInterface } from "@/types/org"
@@ -75,7 +74,7 @@ const workspaceName = (rootPath: string) => {
 	return parts.at(-1) ?? "Workspace"
 }
 
-const OrgTree = ({
+const OrgTree = memo(function OrgTreeView({
 	activePath,
 	collapsed,
 	entries,
@@ -83,8 +82,9 @@ const OrgTree = ({
 	onCopy,
 	onOpen,
 	onToggle,
-}: OrgTreeProps) => (
-	<ul className="space-y-px">
+}: OrgTreeProps) {
+	return (
+	<ul className="min-w-0 space-y-px">
 		{entries.map((entry) => {
 			if (entry.type === "directory") {
 				const isCollapsed = collapsed.has(entry.relativePath)
@@ -92,8 +92,10 @@ const OrgTree = ({
 					<li key={entry.relativePath}>
 						<button
 							type="button"
-							className="flex h-[26px] w-full items-center gap-1 rounded px-1.5 text-left text-[13px] text-muted-foreground transition-colors duration-150 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"
+							className="flex h-8 min-w-0 w-full items-center gap-1 rounded px-1.5 text-left text-[13px] text-muted-foreground transition-colors duration-150 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
 							aria-expanded={!isCollapsed}
+							aria-label={entry.relativePath}
+							title={entry.relativePath}
 							onClick={() => onToggle(entry.relativePath)}
 						>
 							<ChevronRight
@@ -107,7 +109,7 @@ const OrgTree = ({
 							<span className="truncate">{entry.name}</span>
 						</button>
 						{!isCollapsed && entry.children.length > 0 && (
-							<div className="ml-4">
+							<div className="ml-3 border-l border-sidebar-border pl-1">
 								<OrgTree
 									activePath={activePath}
 									collapsed={collapsed}
@@ -124,15 +126,17 @@ const OrgTree = ({
 			}
 			const selected = activePath === entry.relativePath
 			return (
-				<li key={entry.relativePath} className="group flex items-center">
+				<li key={entry.relativePath} className="group flex min-w-0 items-center">
 					<button
 						type="button"
-						className={`relative flex h-[26px] min-w-0 flex-1 items-center gap-2 rounded px-2 text-left text-[13px] transition-colors duration-150 ${
+						className={`relative flex h-8 min-w-0 flex-1 items-center gap-2 rounded px-2 text-left text-[13px] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${
 							selected
 								? "bg-sidebar-accent font-medium text-sidebar-accent-foreground before:absolute before:inset-y-1 before:left-0 before:w-0.5 before:rounded-r before:bg-sidebar-primary"
 								: "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"
 						}`}
 						aria-current={selected ? "page" : undefined}
+						aria-label={entry.relativePath}
+						title={entry.relativePath}
 						disabled={isBusy}
 						onClick={() => onOpen(entry)}
 					>
@@ -145,7 +149,7 @@ const OrgTree = ({
 								type="button"
 								disabled={isBusy}
 								aria-label={`Actions for ${entry.relativePath}`}
-								className="flex size-6 shrink-0 items-center justify-center rounded opacity-0 text-muted-foreground hover:bg-sidebar-accent group-hover:opacity-100 focus:opacity-100"
+								className="flex size-8 shrink-0 items-center justify-center rounded text-muted-foreground opacity-60 hover:bg-sidebar-accent hover:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
 							>
 								<MoreHorizontal className="size-3.5" />
 							</button>
@@ -172,13 +176,13 @@ const OrgTree = ({
 			)
 		})}
 	</ul>
-)
+	)
+})
 
 export const OrgWorkspaceSidebar = memo(function OrgWorkspaceSidebar({
 	controller,
 	isBusy,
 	tools,
-	onCreateDiary,
 	onHide,
 	onShowEditor,
 }: OrgWorkspaceSidebarProps) {
@@ -187,6 +191,8 @@ export const OrgWorkspaceSidebar = memo(function OrgWorkspaceSidebar({
 	const [dialog, setDialog] = useState<SidebarDialog | null>(null)
 	const [query, setQuery] = useState("")
 	const [clipboardStatus, setClipboardStatus] = useState<string | null>(null)
+	const latest = useRef({ controller, onShowEditor })
+	latest.current = { controller, onShowEditor }
 	useEffect(() => {
 		const rootPath = controller.workspace?.rootPath
 		if (!rootPath) return
@@ -223,7 +229,7 @@ export const OrgWorkspaceSidebar = memo(function OrgWorkspaceSidebar({
 		const timer = window.setTimeout(() => setClipboardStatus(null), 2200)
 		return () => window.clearTimeout(timer)
 	}, [clipboardStatus])
-	const copyToClipboard = async (value: string, label: string) => {
+	const copyToClipboard = useCallback(async (value: string, label: string) => {
 		try {
 			if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable")
 			await navigator.clipboard.writeText(value)
@@ -231,31 +237,41 @@ export const OrgWorkspaceSidebar = memo(function OrgWorkspaceSidebar({
 		} catch {
 			setClipboardStatus("Could not access the clipboard")
 		}
-	}
-	const workspaceTree = useMemo(() => {
-		if (!controller.workspace) return []
-		return filterTree(
-			buildOrgWorkspaceTree(controller.workspace.directories, controller.workspace.documents),
-			query,
-		)
-	}, [controller.workspace, query])
-	const toggleDirectory = (path: string) => {
+	}, [])
+	const directories = controller.workspace?.directories
+	const documents = controller.workspace?.documents
+	const tree = useMemo(
+		() => directories && documents ? buildOrgWorkspaceTree(directories, documents) : [],
+		[directories, documents],
+	)
+	const workspaceTree = useMemo(() => filterTree(tree, query), [tree, query])
+	const treeCollapsed = useMemo(
+		() => query.trim() ? new Set<string>() : collapsedDirectories,
+		[query, collapsedDirectories],
+	)
+	const openTreeDocument = useCallback((document: OrgDocumentEntryInterface) => {
+		const current = latest.current
+		current.onShowEditor()
+		void current.controller.openDocument(document)
+	}, [])
+	const toggleDirectory = useCallback((path: string) => {
 		setCollapsedDirectories((current) => {
 			const next = new Set(current)
 			if (next.has(path)) next.delete(path)
 			else next.add(path)
 			return next
 		})
-	}
+	}, [])
 
 	return (
 		<>
-			<aside className="flex h-full min-w-0 flex-col bg-sidebar">
-				<div className="flex h-10 shrink-0 items-center gap-1 px-2">
+			<aside className="flex h-full min-w-0 flex-col bg-sidebar" aria-label="Workspace files">
+				<div className="flex h-10 shrink-0 items-center gap-1 border-b border-sidebar-border px-2">
 					<button
 						type="button"
-						className="min-w-0 flex-1 truncate text-left text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-						title={controller.workspace?.rootPath}
+						className="h-8 min-w-0 flex-1 truncate rounded px-1 text-left text-sm font-semibold hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset disabled:cursor-not-allowed disabled:opacity-60"
+						aria-label={`Switch workspace${controller.workspace ? `: ${controller.workspace.rootPath}` : ""}`}
+						title={controller.workspace ? `Switch workspace: ${controller.workspace.rootPath}` : "Select workspace"}
 						disabled={isBusy}
 						onClick={() => void controller.selectWorkspace()}
 					>
@@ -265,6 +281,7 @@ export const OrgWorkspaceSidebar = memo(function OrgWorkspaceSidebar({
 					<Button
 						variant="ghost"
 						size="icon"
+						className="size-8 shrink-0"
 						aria-label="Hide sidebar"
 						title="Hide sidebar"
 						onClick={onHide}
@@ -273,9 +290,9 @@ export const OrgWorkspaceSidebar = memo(function OrgWorkspaceSidebar({
 					</Button>
 				</div>
 
-				<div className="flex h-10 items-center px-2">
-					<label className="flex h-8 items-center gap-2 rounded-md border border-transparent bg-background/70 px-2 text-muted-foreground focus-within:border-ring/40 focus-within:bg-background">
-						<Search className="size-3.5" />
+				<div className="shrink-0 px-2 pt-2">
+					<label className="flex h-8 min-w-0 w-full items-center gap-2 rounded-md border border-transparent bg-background/70 px-2 text-muted-foreground focus-within:border-ring/40 focus-within:bg-background">
+						<Search className="size-3.5 shrink-0" />
 						<input
 							value={query}
 							onChange={(event) => setQuery(event.target.value)}
@@ -294,26 +311,14 @@ export const OrgWorkspaceSidebar = memo(function OrgWorkspaceSidebar({
 						{clipboardStatus}
 					</div>
 				)}
-				<div className="px-2 pb-1">
-					<button
-						type="button"
-						disabled={isBusy}
-						onClick={onCreateDiary}
-						className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-xs font-medium text-foreground transition-colors duration-150 hover:bg-sidebar-accent disabled:cursor-not-allowed disabled:opacity-40"
-						title="Create or open diary/YYYY-MM-DD.org"
-					>
-						<CalendarPlus className="size-4 text-muted-foreground" />
-						<span>New diary</span>
-						<span className="ml-auto text-[10px] font-normal text-muted-foreground">Today</span>
-					</button>
-				</div>
-				<div className="flex h-8 shrink-0 items-center gap-0.5 px-2">
-					<span className="min-w-0 flex-1 px-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+				<div className="flex h-10 shrink-0 items-center gap-0.5 px-2" role="group" aria-label="Workspace file operations">
+					<h2 className="min-w-0 flex-1 px-1 text-[11px] font-medium text-muted-foreground">
 						Files
-					</span>
+					</h2>
 					<Button
 						variant="ghost"
 						size="icon"
+						className="size-8 shrink-0"
 						title="New note"
 						aria-label="New Org document"
 						disabled={isBusy}
@@ -324,6 +329,7 @@ export const OrgWorkspaceSidebar = memo(function OrgWorkspaceSidebar({
 					<Button
 						variant="ghost"
 						size="icon"
+						className="size-8 shrink-0"
 						title="New folder"
 						aria-label="New directory"
 						disabled={isBusy}
@@ -334,6 +340,7 @@ export const OrgWorkspaceSidebar = memo(function OrgWorkspaceSidebar({
 					<Button
 						variant="ghost"
 						size="icon"
+						className="size-8 shrink-0"
 						title="Refresh"
 						aria-label="Refresh workspace"
 						disabled={isBusy}
@@ -341,47 +348,17 @@ export const OrgWorkspaceSidebar = memo(function OrgWorkspaceSidebar({
 					>
 						<RefreshCw className="size-3.5" />
 					</Button>
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
-								variant="ghost"
-								size="icon"
-								title="Current note actions"
-								aria-label="Document actions"
-								disabled={!controller.activeDocument || isBusy}
-							>
-								<MoreHorizontal className="size-3.5" />
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end">
-							<DropdownMenuItem onClick={() => setDialog("move-document")}>
-								<FilePenLine className="mr-2 size-4" />
-								Move or rename
-							</DropdownMenuItem>
-							<DropdownMenuSeparator />
-							<DropdownMenuItem
-								className="text-destructive focus:text-destructive"
-								onClick={() => setDialog("delete-document")}
-							>
-								<Trash2 className="mr-2 size-4" />
-								Delete note
-							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
 				</div>
 
-				<div className="min-h-0 flex-1 overflow-auto px-1.5 pb-2">
+				<div className="min-h-0 min-w-0 flex-1 overflow-auto px-1.5 pb-2">
 					{workspaceTree.length > 0 ? (
 						<OrgTree
 							activePath={controller.activeDocument?.relativePath}
-							collapsed={query.trim() ? new Set<string>() : collapsedDirectories}
+							collapsed={treeCollapsed}
 							entries={workspaceTree}
 							isBusy={isBusy}
-							onCopy={(value, label) => void copyToClipboard(value, label)}
-							onOpen={(document) => {
-								onShowEditor()
-								void controller.openDocument(document)
-							}}
+							onCopy={copyToClipboard}
+							onOpen={openTreeDocument}
 							onToggle={toggleDirectory}
 						/>
 					) : (
@@ -389,6 +366,47 @@ export const OrgWorkspaceSidebar = memo(function OrgWorkspaceSidebar({
 							{query ? "No matching notes." : "No notes yet. Create your first note."}
 						</p>
 					)}
+				</div>
+				<div className="shrink-0 border-t border-sidebar-border px-2 py-2" role="group" aria-label="Current note operations">
+					<div className="flex min-w-0 items-center gap-2">
+						<div className="min-w-0 flex-1 px-1">
+							<h2 className="text-[11px] font-medium text-muted-foreground">Current note</h2>
+							<p
+								className="mt-1 truncate text-xs text-sidebar-foreground"
+								title={controller.activeDocument?.relativePath}
+							>
+								{controller.activeDocument?.relativePath ?? "No note open"}
+							</p>
+						</div>
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button
+									variant="ghost"
+									size="icon"
+									className="size-8 shrink-0"
+									title="Current note actions"
+									aria-label={controller.activeDocument ? `Actions for current note: ${controller.activeDocument.relativePath}` : "Current note actions"}
+									disabled={!controller.activeDocument || isBusy}
+								>
+									<MoreHorizontal className="size-3.5" />
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align="end">
+								<DropdownMenuItem onClick={() => setDialog("move-document")}>
+									<FilePenLine className="mr-2 size-4" />
+									Move or rename
+								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem
+									className="text-destructive focus:text-destructive"
+									onClick={() => setDialog("delete-document")}
+								>
+									<Trash2 className="mr-2 size-4" />
+									Delete note
+								</DropdownMenuItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
+					</div>
 				</div>
 			</aside>
 

@@ -38,7 +38,7 @@ export const useSidebarStore = create((set) => ({
   isOpen: false,
   toggle: () => set(state => ({ isOpen: !state.isOpen })),
 }));`
-			const errors = runLint(code, { "grain/zustand-patterns": "error" })
+			const errors = runLint(code, { "grain/zustand-patterns": "error" }, "/src/state/sidebar.state.ts")
 			expect(errors.filter((e) => e.ruleId === "grain/zustand-patterns")).toHaveLength(0)
 		})
 
@@ -53,7 +53,7 @@ export const useStore = create(immer((set) => ({
     state.items.push(item);
   }),
 })));`
-			const errors = runLint(code, { "grain/zustand-patterns": "error" })
+			const errors = runLint(code, { "grain/zustand-patterns": "error" }, "/src/state/items.state.ts")
 			expect(errors.filter((e) => e.ruleId === "grain/zustand-patterns")).toHaveLength(0)
 		})
 
@@ -74,7 +74,7 @@ export const useStore = create((set) => ({
   prop10: 10,
   action: () => set({ prop1: 2 }),
 }));`
-			const errors = runLint(code, { "grain/zustand-patterns": "error" })
+			const errors = runLint(code, { "grain/zustand-patterns": "error" }, "/src/state/example.state.ts")
 			expect(errors.filter((e) => e.ruleId === "grain/zustand-patterns")).toHaveLength(0)
 		})
 
@@ -96,9 +96,18 @@ export const useStore = create((set) => ({
   prop11: 11,
   action: () => set({ prop1: 2 }),
 }));`
-			const errors = runLint(code, { "grain/zustand-patterns": "error" })
+			const errors = runLint(code, { "grain/zustand-patterns": "error" }, "/src/state/example.state.ts")
 			const ruleErrors = errors.filter((e) => e.ruleId === "grain/zustand-patterns")
-			expect(ruleErrors.length).toBeGreaterThan(0)
+			expect(ruleErrors.map((error) => error.messageId)).toEqual(["tooManyProperties"])
+		})
+
+		it("should report store definitions outside the state layer", () => {
+			const code = `
+import { create } from 'zustand';
+export const useSidebarStore = create(() => ({ isOpen: false }));`
+			const errors = runLint(code, { "grain/zustand-patterns": "error" }, "/src/hooks/use-sidebar.ts")
+			const ruleErrors = errors.filter((error) => error.ruleId === "grain/zustand-patterns")
+			expect(ruleErrors.map((error) => error.messageId)).toEqual(["wrongLocation"])
 		})
 	})
 })

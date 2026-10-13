@@ -1,0 +1,97 @@
+;;; org-sparse-special-properties.gnu-oracle.el --- Owned primitive fixtures -*- lexical-binding: t; -*-
+;; Input is the committed owned JSON only. No files, local evaluation or Babel.
+(require 'json)
+(require 'cl-lib)
+(require 'org)
+(require 'org-clock)
+(require 'org-duration)
+(set-language-environment "UTF-8")
+(setq coding-system-for-read 'utf-8-unix coding-system-for-write 'utf-8-unix)
+(let* ((fixture (json-parse-string (decode-coding-string (read-string "") 'utf-8-unix) :object-type 'alist :array-type 'list
+                                  :null-object nil :false-object :false)) rows)
+  (dolist (entry (alist-get 'cases fixture))
+    (set-time-zone-rule (alist-get 'zone entry))
+    (let* ((source (alist-get 'source entry)) (at 0) (raw 0) chars offsets
+           (org-inhibit-startup t) (enable-local-variables nil) (enable-local-eval nil)
+           (org-enforce-todo-dependencies (eq t (alist-get 'todoDependencies entry)))
+           (org-enforce-todo-checkbox-dependencies (eq t (alist-get 'checkboxDependencies entry)))
+           (org-blocker-hook (append (when org-enforce-todo-dependencies
+                                     '(org-block-todo-from-children-or-siblings-or-parent))
+                                   (when org-enforce-todo-checkbox-dependencies
+                                     '(org-block-todo-from-checkboxes))))
+           (org-clock-report-include-clocking-task (eq t (alist-get 'includeClockingTask entry)))
+           (org-duration-format (pcase (alist-get 'durationFormat entry)
+                                  ("h:mm" 'h:mm) ("h:mm:ss" 'h:mm:ss)
+                                  (_ '(("d" . nil) (special . h:mm)))))
+           (day (mapcar #'string-to-number (split-string (alist-get 'today entry) "-")))
+           (start (encode-time 0 0 0 (nth 2 day) (nth 1 day) (nth 0 day)))
+           (end (encode-time 0 0 0 (1+ (nth 2 day)) (nth 1 day) (nth 0 day)))
+           (fixed (seconds-to-time (/ (alist-get 'nowEpochMs entry) 1000.0))))
+      (while (< at (length source))
+        (let ((char (aref source at)))
+          (push raw offsets) (push (if (= char ?\r) ?\n char) chars)
+          (setq raw (+ raw (if (> char #xffff) 2 1)))
+          (when (and (= char ?\r) (< (1+ at) (length source)) (= (aref source (1+ at)) ?\n))
+            (setq at (1+ at) raw (1+ raw)))
+          (setq at (1+ at))))
+      (push raw offsets)
+      (setq offsets (vconcat (nreverse offsets)))
+      (with-temp-buffer
+        (insert (apply #'string (nreverse chars))) (org-mode)
+        (setq buffer-file-name (alist-get 'fileName entry))
+        (let* ((active (alist-get 'activeClock entry))
+               (org-clock-marker (make-marker)) (org-clock-hd-marker (make-marker))
+               (org-clock-start-time (when active (seconds-to-time (/ (alist-get 'startedAtEpochMs active) 1000.0))))
+               values local-times)
+          (when active
+            (let ((pos (cl-position (alist-get 'headingStart active) offsets)))
+              (set-marker org-clock-hd-marker (1+ pos) (current-buffer))
+              (set-marker org-clock-marker (1+ pos) (current-buffer))))
+          ;; Capture only the clock primitive; native summation/properties stay intact.
+          (cl-letf (((symbol-function 'current-time) (lambda () fixed))
+                    ((symbol-function 'time-since) (lambda (time) (time-subtract fixed time))))
+            (org-clock-sum)
+            (org-clock-sum start end nil :org-clock-minutes-today))
+          ;; Independent native local-calendar encoding is captured as input
+          ;; authority, not recomputed by the TypeScript summation under test.
+          (goto-char (point-min))
+          (while (re-search-forward "^[ \t]*CLOCK:" nil t)
+            (beginning-of-line)
+            (let* ((element (org-element-at-point))
+                   (stamp (and (eq (org-element-type element) 'clock)
+                               (org-element-property :value element))))
+              (when stamp
+                (dolist (suffix '("start" "end"))
+                  (let* ((fields (mapcar
+                                  (lambda (part) (org-element-property
+                                                  (intern (concat ":" part "-" suffix)) stamp))
+                                  '("year" "month" "day" "hour" "minute"))))
+                    (when (cl-every #'numberp fields)
+                      (condition-case nil
+                          (push `((fields . ,(vconcat fields))
+                                  (epochMs . ,(* 1000 (float-time
+                                                       (org-encode-time
+                                                        (list 0 (nth 4 fields) (nth 3 fields)
+                                                              (nth 2 fields) (nth 1 fields)
+                                                              (nth 0 fields) nil -1 nil)))))) local-times)
+                        (error nil)))))))
+            (forward-line 1))
+          (goto-char (point-min))
+          (while (re-search-forward "^\\*+ +" nil t)
+            (goto-char (match-beginning 0))
+            (when (eq (org-element-type (org-element-at-point)) 'headline)
+              (push `((headingStart . ,(aref offsets (1- (point))))
+                      (FILE . ,(or (cdr (assoc "FILE" (org-entry-properties nil "FILE"))) :null))
+                      (BLOCKED . ,(cdr (assoc "BLOCKED" (org-entry-properties nil "BLOCKED"))))
+                      (CLOCKSUM . ,(or (cdr (assoc "CLOCKSUM" (org-entry-properties nil "CLOCKSUM"))) :null))
+                      (CLOCKSUM_T . ,(or (cdr (assoc "CLOCKSUM_T" (org-entry-properties nil "CLOCKSUM_T"))) :null))) values))
+            (forward-line 1))
+          (push `((id . ,(alist-get 'id entry))
+                  (todayStartEpochMs . ,(* 1000 (float-time start)))
+                  (todayEndEpochMs . ,(* 1000 (float-time end)))
+                  (localTimes . ,(vconcat (nreverse local-times)))
+                  (values . ,(vconcat (nreverse values)))) rows)))))
+  (princ (decode-coding-string
+          (json-serialize `((emacsVersion . ,emacs-version) (orgVersion . ,(org-version))
+                            (rows . ,(vconcat (nreverse rows)))))
+          'utf-8-unix)))

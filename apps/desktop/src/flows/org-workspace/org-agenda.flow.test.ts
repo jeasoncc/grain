@@ -3,6 +3,8 @@ import * as TE from "fp-ts/TaskEither"
 import { describe, expect, it, vi } from "vitest"
 import type { OrgFileRepository } from "@/io/file/org-file.repository"
 import type { OrgDocumentInterface, OrgFileError, OrgWorkspaceInterface } from "@/types/org"
+import { DEFAULT_ORG_BEHAVIOR_CONFIGURATION } from "@/pipes/org/org-behavior-configuration.pipe"
+import type { OrgAgendaViewConfiguration } from "@/pipes/org/org-agenda-configuration.pipe"
 import {
 	loadOrgAgendaFlow,
 	ORG_AGENDA_CACHE_MAX_ENTRIES,
@@ -249,7 +251,7 @@ describe("loadOrgAgendaFlow", () => {
 		})
 		const disk = await load(workspace, repository, cache)
 		expect(E.isRight(disk) && disk.right[1].origin.source).toBe("disk")
-		expect(readDocument).toHaveBeenCalledTimes(2)
+		expect(readDocument).toHaveBeenCalledTimes(4)
 	})
 
 	it("returns globally sorted entries and performs zero reads on a second load", async () => {
@@ -416,5 +418,36 @@ describe("loadOrgAgendaFlow", () => {
 		await loadOrgAgendaFlow(remountedWorkspace, repository)()
 
 		expect(readDocument).toHaveBeenCalledTimes(1)
+	})
+
+	it("cancels superseded reads before cache publication or reading the remaining files", async () => {
+		const cache: OrgAgendaCache = new Map()
+		const abort = new AbortController()
+		let resolve!: (value: E.Either<OrgFileError, OrgDocumentInterface>) => void
+		const read = vi.fn(() => () => new Promise<E.Either<OrgFileError, OrgDocumentInterface>>((settle) => { resolve = settle }))
+		const pending = loadOrgAgendaFlow(workspace, repositoryWithRead(read), cache, [], {}, abort.signal)()
+		abort.abort()
+		resolve(E.right({ relativePath: "a.org", revision: "1", content: sources["a.org"] }))
+		const result = await pending
+		expect(E.isLeft(result) && result.left.message).toBe("Org query cancelled.")
+		expect(cache.size).toBe(0)
+		expect(read).toHaveBeenCalledTimes(1)
+	})
+
+	it("requires an explicit calendar before any configured read and filters only exact granted file paths", async () => {
+		const read = successfulReader()
+		const repository = repositoryWithRead(read)
+		const view: OrgAgendaViewConfiguration = { id: "owned", name: "Owned", files: ["a.org"], mode: "dates", todo: null, match: null, window: { start: "2025-05-02", span: 1 }, overdue: false, deadlineWarningDays: null }
+		const request = { view, inheritance: DEFAULT_ORG_BEHAVIOR_CONFIGURATION.inheritance }
+		const missing = await loadOrgAgendaFlow(workspace, repository, new Map(), [], {}, undefined, request)()
+		expect(E.isLeft(missing)).toBe(true)
+		expect(read).not.toHaveBeenCalled()
+		const calendar = { today: "2026-10-03", now: "12:00" }
+		const scoped = await loadOrgAgendaFlow(workspace, repository, new Map(), [], {}, undefined, { ...request, calendar })()
+		expect(E.isRight(scoped) && scoped.right.map(row => [row.relativePath, row.heading, row.date])).toEqual([["a.org", "A", "2025-05-02"]])
+		read.mockClear()
+		const literal = await loadOrgAgendaFlow(workspace, repository, new Map(), [], {}, undefined, { ...request, calendar, view: { ...view, files: ["*.org"] } })()
+		expect(E.isRight(literal) && literal.right).toEqual([])
+		expect(read).not.toHaveBeenCalled()
 	})
 })

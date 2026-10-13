@@ -23,8 +23,7 @@ Grain is a modern, cross-platform writing application designed for long-form wri
 | Platform | Technology |
 |----------|------------|
 | Desktop (Windows/macOS/Linux) | Tauri 2.x + React |
-| Web | Next.js 15 |
-| Mobile | Expo/React Native |
+| Web | Next.js 16 |
 | Admin Panel | Vite + React |
 | API Server | Elysia + Bun |
 

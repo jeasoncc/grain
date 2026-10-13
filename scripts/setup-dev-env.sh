@@ -20,7 +20,7 @@ rustc --version
 
 # 3. 安装项目依赖
 echo "📦 安装项目依赖..."
-bun install
+bun install --frozen-lockfile
 
 # 4. 检查 Rust 工具链
 echo "🦀 检查 Rust 工具链..."

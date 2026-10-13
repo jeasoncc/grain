@@ -4,12 +4,9 @@ export {
 	OrgAgendaView,
 	type OrgAgendaViewProps,
 } from "./org-agenda.view.fn"
-export {
-	ORG_BACKLINKS_DEBOUNCE_MS,
-	OrgBacklinksContainer,
-} from "./org-backlinks.container.fn"
+export { OrgBacklinksContainer } from "./org-backlinks.container.fn"
 export { OrgBacklinksView, type OrgBacklinksViewProps } from "./org-backlinks.view.fn"
-export { OrgCommandPalette, orgCommandIcons } from "./org-command-palette.view.fn"
+export { orgCommandIcons } from "./org-command-icons"
 export {
 	OrgCaptureWorkflow,
 	type OrgCaptureWorkflowProps,

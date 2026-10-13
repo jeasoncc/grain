@@ -13,10 +13,10 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import {
   $getTableCellNodeFromLexicalNode,
   $getTableNodeFromLexicalNodeOrThrow,
-  $insertTableRow__EXPERIMENTAL,
-  $insertTableColumn__EXPERIMENTAL,
-  $deleteTableRow__EXPERIMENTAL,
-  $deleteTableColumn__EXPERIMENTAL,
+  $insertTableRowAtSelection,
+  $insertTableColumnAtSelection,
+  $deleteTableRowAtSelection,
+  $deleteTableColumnAtSelection,
   $isTableCellNode,
   $isTableRowNode,
   TableCellNode,
@@ -99,7 +99,7 @@ export default function TableActionsPlugin(): null {
           const tableNode = $getTableNodeFromLexicalNodeOrThrow(tableCellNode);
           
           // 在下方插入新行
-          $insertTableRow__EXPERIMENTAL(false);
+          $insertTableRowAtSelection(true);
           
           // 获取新行的第一个单元格并移动光标
           const firstCell = getFirstCellOfLastRow(tableNode);
@@ -153,7 +153,7 @@ export default function TableActionsPlugin(): null {
 
     // 键盘快捷键处理
     const removeKeydownListener = editor.registerRootListener(
-      (rootElement, prevRootElement) => {
+      (rootElement) => {
         const handleKeydown = (event: KeyboardEvent) => {
           // Ctrl+Shift+Enter: 在下方插入行
           if (event.ctrlKey && event.shiftKey && event.key === "Enter") {
@@ -166,7 +166,7 @@ export default function TableActionsPlugin(): null {
               
               if (tableCellNode && $isTableCellNode(tableCellNode)) {
                 event.preventDefault();
-                $insertTableRow__EXPERIMENTAL(false);
+                $insertTableRowAtSelection(true);
               }
             });
           }
@@ -182,7 +182,7 @@ export default function TableActionsPlugin(): null {
               
               if (tableCellNode && $isTableCellNode(tableCellNode)) {
                 event.preventDefault();
-                $insertTableColumn__EXPERIMENTAL(false);
+                $insertTableColumnAtSelection(true);
               }
             });
           }
@@ -198,7 +198,7 @@ export default function TableActionsPlugin(): null {
               
               if (tableCellNode && $isTableCellNode(tableCellNode)) {
                 event.preventDefault();
-                $deleteTableRow__EXPERIMENTAL();
+                $deleteTableRowAtSelection();
               }
             });
           }
@@ -214,18 +214,15 @@ export default function TableActionsPlugin(): null {
               
               if (tableCellNode && $isTableCellNode(tableCellNode)) {
                 event.preventDefault();
-                $deleteTableColumn__EXPERIMENTAL();
+                $deleteTableColumnAtSelection();
               }
             });
           }
         };
 
-        if (rootElement) {
-          rootElement.addEventListener("keydown", handleKeydown);
-        }
-        if (prevRootElement) {
-          prevRootElement.removeEventListener("keydown", handleKeydown);
-        }
+        if (!rootElement) return;
+        rootElement.addEventListener("keydown", handleKeydown);
+        return () => rootElement.removeEventListener("keydown", handleKeydown);
       }
     );
 

@@ -8,9 +8,6 @@ import type {
 } from "@/types/org"
 import {
 	captureOrgTodoFlow,
-	createOrgDirectoryFlow,
-	deleteOrgDocumentFlow,
-	moveOrgDocumentFlow,
 	openDefaultOrgWorkspaceFlow,
 	openOrgDocumentFlow,
 	reopenDefaultOrgWorkspaceFlow,
@@ -36,7 +33,7 @@ const repositoryWith = (overrides: Partial<OrgFileRepository> = {}): OrgFileRepo
 	clearDerivedIndex: () =>
 		TE.right({ agendaCount: 0, documentCount: 0, headingCount: 0, linkCount: 0 }),
 	createDirectory: () => TE.right(undefined),
-	deleteDocument: () => TE.right(undefined),
+	deleteDocument: () => TE.left(fileError("delete", "unexpected delete")),
 	getDerivedIndexStats: () =>
 		TE.right({ agendaCount: 0, documentCount: 0, headingCount: 0, linkCount: 0 }),
 	moveDocument: () => TE.right(writeResult),
@@ -67,91 +64,50 @@ const fileError = (operation: OrgFileError["operation"], message: string): OrgFi
 	type: "ORG_FILE_ERROR",
 })
 
-describe("Org TODO capture flow", () => {
-	it("reads the latest existing source and writes with its exact revision", async () => {
-		const latest = { ...document, content: "unknown syntax", revision: "latest-revision" }
-		const readDocument = vi.fn(() => TE.right(latest))
+describe("Org TODO capture convenience", () => {
+	it("uses the same scoped heading placement and fresh revision CAS as configured Capture", async () => {
+		const readDocument = vi.fn(() => TE.right({ ...document, content: "* Work\r\nbody\r\n* Peer\nuntouched", revision: "latest" }))
 		const writeDocument = vi.fn(() => TE.right(writeResult))
 		const repository = repositoryWith({ readDocument, writeDocument })
-		const input = { relativePath: "notes.org", title: "Captured", workspaceRoot: "/notes" }
-
-		const result = await captureOrgTodoFlow(input, repository)()
-
-		expect(readDocument).toHaveBeenCalledWith(input)
-		expect(writeDocument).toHaveBeenCalledWith({
-			content: "unknown syntax\n* TODO Captured\n",
-			expectedRevision: "latest-revision",
-			relativePath: "notes.org",
+		const result = await captureOrgTodoFlow({
 			workspaceRoot: "/notes",
+			target: { kind: "heading", relativePath: "notes.org", headingPath: ["Work"] },
+			title: "Captured\nwith context",
+			expectedRevision: "latest",
+			capabilityToken: "exact-grant",
+		}, { repository, isCurrent: () => true })()
+		expect(writeDocument).toHaveBeenCalledExactlyOnceWith({
+			workspaceRoot: "/notes", relativePath: "notes.org", capabilityToken: "exact-grant",
+			expectedRevision: "latest", content: "* Work\r\nbody\r\n** TODO Captured with context\n* Peer\nuntouched",
 		})
-		expect(result).toEqual({
-			_tag: "Right",
-			right: { ...writeResult, content: "unknown syntax\n* TODO Captured\n" },
-		})
+		expect(result).toEqual({ _tag: "Right", right: { ...writeResult, content: "* Work\r\nbody\r\n** TODO Captured with context\n* Peer\nuntouched" } })
 	})
-
-	it("creates a standard title file with the missing revision", async () => {
-		const writeDocument = vi.fn(() =>
-			TE.right({ relativePath: "lists/inbox.org", revision: "created" }),
-		)
-		const repository = repositoryWith({
-			scanWorkspace: () => TE.right({ directories: [], documents: [] }),
-			writeDocument,
-		})
-
-		const result = await captureOrgTodoFlow(
-			{ relativePath: "lists/inbox.org", title: "New", workspaceRoot: "/notes" },
-			repository,
-		)()
-
-		expect(writeDocument).toHaveBeenCalledWith({
-			content: "#+title: inbox\n\n* TODO New\n",
-			expectedRevision: "<missing>",
-			relativePath: "lists/inbox.org",
-			workspaceRoot: "/notes",
-		})
-		expect(result).toEqual({
-			_tag: "Right",
-			right: {
-				content: "#+title: inbox\n\n* TODO New\n",
-				relativePath: "lists/inbox.org",
-				revision: "created",
-			},
-		})
+	it("does not downgrade an unconfirmed convenience write into a safe retry", async () => {
+		const conflict = fileError("write", "revision conflict or lost native confirmation")
+		const writeDocument = vi.fn(() => TE.left(conflict))
+		const result = await captureOrgTodoFlow({
+			workspaceRoot: "/notes", target: { kind: "file", relativePath: "notes.org" }, title: "Task",
+		}, { repository: repositoryWith({ writeDocument }), isCurrent: () => true })()
+		expect(result).toMatchObject({ _tag: "Left", left: { type: "ORG_CAPTURE_UNCERTAIN_WRITE_ERROR", cause: conflict } })
+		expect(writeDocument).toHaveBeenCalledTimes(1)
 	})
-
-	it("propagates read and write conflicts", async () => {
-		const readConflict = fileError("read", "read conflict")
-		const writeConflict = fileError("write", "revision conflict")
-		const readFailure = repositoryWith({ readDocument: () => TE.left(readConflict) })
-		const writeFailure = repositoryWith({ writeDocument: () => TE.left(writeConflict) })
-		const input = { relativePath: "notes.org", title: "Task", workspaceRoot: "/notes" }
-
-		expect(await captureOrgTodoFlow(input, readFailure)()).toEqual({
-			_tag: "Left",
-			left: readConflict,
-		})
-		expect(await captureOrgTodoFlow(input, writeFailure)()).toEqual({
-			_tag: "Left",
-			left: writeConflict,
-		})
+	it("rejects a stale confirmed preview without creating parents or invoking the content writer", async () => {
+		const writeDocument = vi.fn(() => TE.right(writeResult))
+		const result = await captureOrgTodoFlow({
+			workspaceRoot: "/notes", target: { kind: "file", relativePath: "notes.org" }, title: "Task", expectedRevision: "old-preview",
+		}, { repository: repositoryWith({ writeDocument }), isCurrent: () => true })()
+		expect(result).toMatchObject({ _tag: "Left", left: { noWrite: true } })
+		expect(writeDocument).not.toHaveBeenCalled()
 	})
-
-	it("rejects blank titles and non-relative Org targets before IO", async () => {
+	it("rejects blank titles and stale owners before filesystem IO", async () => {
 		const scanWorkspace = vi.fn(() => TE.right(snapshot))
 		const repository = repositoryWith({ scanWorkspace })
-
-		const blank = await captureOrgTodoFlow(
-			{ relativePath: "inbox.org", title: " \n ", workspaceRoot: "/notes" },
-			repository,
-		)()
-		const invalidPath = await captureOrgTodoFlow(
-			{ relativePath: "../inbox.org", title: "Task", workspaceRoot: "/notes" },
-			repository,
-		)()
-
-		expect(blank._tag).toBe("Left")
-		expect(invalidPath._tag).toBe("Left")
+		for (const [title, current] of [[" \n ", true], ["Task", false]] as const) {
+			const result = await captureOrgTodoFlow({
+				workspaceRoot: "/notes", target: { kind: "file", relativePath: "notes.org" }, title,
+			}, { repository, isCurrent: () => current })()
+			expect(result).toMatchObject({ _tag: "Left", left: { noWrite: true } })
+		}
 		expect(scanWorkspace).not.toHaveBeenCalled()
 	})
 })
@@ -193,40 +149,6 @@ describe("Org workspace flows", () => {
 		expect(result).toEqual({ _tag: "Right", right: null })
 	})
 
-	it("delegates lifecycle operations through the repository", async () => {
-		const createDirectory = vi.fn(() => TE.right(undefined))
-		const moveDocument = vi.fn(() => TE.right(writeResult))
-		const deleteDocument = vi.fn(() => TE.right(undefined))
-		const repository = repositoryWith({ createDirectory, deleteDocument, moveDocument })
-		const createInput = { relativePath: "projects", workspaceRoot: "/notes" }
-		const moveInput = {
-			expectedSourceRevision: "rev-1",
-			sourceRelativePath: "notes.org",
-			targetRelativePath: "projects/notes.org",
-			workspaceRoot: "/notes",
-		}
-		const deleteInput = {
-			expectedRevision: "rev-2",
-			relativePath: "projects/notes.org",
-			workspaceRoot: "/notes",
-		}
-
-		expect(await createOrgDirectoryFlow(createInput, repository)()).toEqual({
-			_tag: "Right",
-			right: undefined,
-		})
-		expect(await moveOrgDocumentFlow(moveInput, repository)()).toEqual({
-			_tag: "Right",
-			right: writeResult,
-		})
-		expect(await deleteOrgDocumentFlow(deleteInput, repository)()).toEqual({
-			_tag: "Right",
-			right: undefined,
-		})
-		expect(createDirectory).toHaveBeenCalledWith(createInput)
-		expect(moveDocument).toHaveBeenCalledWith(moveInput)
-		expect(deleteDocument).toHaveBeenCalledWith(deleteInput)
-	})
 
 	it("opens and saves through the repository", async () => {
 		const readDocument = vi.fn(() => TE.right(document))

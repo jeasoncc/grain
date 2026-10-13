@@ -107,8 +107,8 @@ jobs:
           
           # Build dependencies
           BuildRequires:  cargo
-          BuildRequires:  rust
-          BuildRequires:  nodejs
+          BuildRequires:  rust >= 1.94.0
+          BuildRequires:  nodejs >= 22.22.2
           BuildRequires:  npm
           BuildRequires:  webkit2gtk3-devel
           BuildRequires:  gtk3-devel
@@ -139,15 +139,14 @@ jobs:
           
           %build
           # Install Bun
-          curl -fsSL https://bun.sh/install | bash
+          curl -fsSL https://bun.sh/install | bash -s "bun-v1.4.2"
           export PATH="\$HOME/.bun/bin:\$PATH"
           
           # Install dependencies
-          bun install
+          bun install --frozen-lockfile
           
           # Build the application
           cd apps/desktop
-          bun install
           bun run tauri build
           
           %install

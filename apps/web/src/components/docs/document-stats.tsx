@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useDocPathname } from "./hooks/use-doc-pathname";
 import { FileText, Eye, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function DocumentStats() {
-  const pathname = usePathname();
+  const pathname = useDocPathname();
   const [wordCount, setWordCount] = useState<number>(0);
   const [charCount, setCharCount] = useState<number>(0);
 

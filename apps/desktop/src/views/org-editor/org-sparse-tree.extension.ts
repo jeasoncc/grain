@@ -8,10 +8,12 @@ import {
 	StateField,
 	Transaction,
 } from "@codemirror/state"
-import { Decoration, type DecorationSet, EditorView, keymap } from "@codemirror/view"
+import { Decoration, type DecorationSet, EditorView, keymap, ViewPlugin, WidgetType } from "@codemirror/view"
 import {
 	buildOrgSparseTreePlan,
 	isParsedOrgSparseTreeQuery,
+	OrgSparseTreeContextRequiredError,
+	type OrgSparseTreeNativeContext,
 } from "@/pipes/org/org-sparse-tree.pipe"
 import { isOrgRuntimeProjection } from "@/flows/org-editor-runtime/org-buffer-runtime"
 import type { OrgSparseTreePlan, OrgSparseTreeQuery } from "@/types/org"
@@ -21,8 +23,11 @@ import { safeOrgSparseBoundaryChange } from "./org-sparse-boundary.pipe"
 type HiddenRange = { readonly from: number; readonly to: number }
 export interface OrgSparseTreeState {
 	readonly query: OrgSparseTreeQuery
-	/** Raw-source query result, independent of the window's temporarily revealed selection. */
-	readonly plan: OrgSparseTreePlan
+	/** No match result is claimed while native context is pending or unavailable. */
+	readonly plan: OrgSparseTreePlan | null
+	readonly nativeContext: OrgSparseTreeNativeContext | undefined
+	readonly contextStatus: "ready" | "pending" | "error"
+	readonly contextError: string | null
 	/** Effective hidden ranges in CodeMirror offsets. Canonical selection targets are revealed. */
 	readonly hiddenRanges: readonly HiddenRange[]
 	readonly decorations: DecorationSet
@@ -32,6 +37,8 @@ export interface OrgSparseTreeState {
 export const setOrgSparseTree = StateEffect.define<{
 	readonly query: OrgSparseTreeQuery
 	readonly restoreSelection: EditorSelection | null
+	readonly nativeContext?: OrgSparseTreeNativeContext
+	readonly contextError?: string
 }>()
 export const clearOrgSparseTree = StateEffect.define<null>()
 // Each controller owns its invocation context. No annotation can confer authority.
@@ -139,6 +146,9 @@ export const sparseSelectionIntersects = (
 		),
 	)
 
+const sourceChangedContext = (context: OrgSparseTreeNativeContext | undefined): OrgSparseTreeNativeContext | undefined =>
+	context?.specialProperties?.size ? { compareStrings: context.compareStrings } : context
+
 /** Preflight ordinary local source AND selection, never private canonical projections/history. */
 export const allowOrgSparseTreeSourceTransaction = (
 	transaction: Transaction,
@@ -197,25 +207,72 @@ export const allowOrgSparseTreeSourceTransaction = (
 			transaction.newDoc.length,
 			transaction.startState.lineBreak,
 		)
-		const ranges = buildOrgSparseTreePlan(source, sparse.query).hiddenRanges.map(
-			({ from, to }) => ({
-				from: editorOffsetFromSource(source, from, transaction.startState.lineBreak),
-				to: editorOffsetFromSource(source, to, transaction.startState.lineBreak),
-			}),
-		)
-		if (sparseSelectionIntersects(transaction.newSelection, ranges)) return false
+		try {
+			const ranges = buildOrgSparseTreePlan(source, sparse.query, undefined, undefined, sourceChangedContext(sparse.nativeContext)).hiddenRanges.map(
+				({ from, to }) => ({
+					from: editorOffsetFromSource(source, from, transaction.startState.lineBreak),
+					to: editorOffsetFromSource(source, to, transaction.startState.lineBreak),
+				}),
+			)
+			if (sparseSelectionIntersects(transaction.newSelection, ranges)) return false
+		} catch (error) {
+			if (!(error instanceof OrgSparseTreeContextRequiredError)) throw error
+			// The post-edit view explicitly becomes pending; never reject canonical Source
+			// merely because a new property value has not been collated yet.
+		}
 	}
 	return allowed
 }
+
+class OrgSparseContextStatus extends WidgetType {
+	constructor(readonly message: string) { super() }
+	eq(other: OrgSparseContextStatus) { return this.message === other.message }
+	toDOM() {
+		const node = document.createElement("div")
+		node.className = "cm-org-sparse-context-status px-2 py-1 font-mono text-xs text-muted-foreground"
+		node.setAttribute("role", "status")
+		node.textContent = this.message
+		return node
+	}
+}
+
+const unresolvedContext = (
+	query: OrgSparseTreeQuery,
+	restoreSelection: EditorSelection | null,
+	nativeContext: OrgSparseTreeNativeContext | undefined,
+	error: string | null,
+): OrgSparseTreeState => ({
+	query, restoreSelection, nativeContext,
+	plan: null,
+	hiddenRanges: [],
+	contextStatus: error === null ? "pending" : "error",
+	contextError: error,
+	decorations: Decoration.set([Decoration.widget({
+		block: true,
+		side: -1,
+		widget: new OrgSparseContextStatus(error === null
+			? "Sparse-tree native context pending; Source is fully visible."
+			: `Sparse-tree context unavailable; Source is fully visible. ${error}`),
+	}).range(0)]),
+})
 
 const project = (
 	state: EditorState,
 	query: OrgSparseTreeQuery,
 	restoreSelection: EditorSelection | null,
 	revealSelection = false,
+	nativeContext?: OrgSparseTreeNativeContext,
+	contextError: string | null = null,
 ): OrgSparseTreeState => {
 	const source = state.sliceDoc()
-	const plan = buildOrgSparseTreePlan(source, query)
+	if (contextError !== null) return unresolvedContext(query, restoreSelection, nativeContext, contextError)
+	let plan: OrgSparseTreePlan
+	try {
+		plan = buildOrgSparseTreePlan(source, query, undefined, undefined, nativeContext)
+	} catch (error) {
+		if (!(error instanceof OrgSparseTreeContextRequiredError)) throw error
+		return unresolvedContext(query, restoreSelection, nativeContext, null)
+	}
 	const offset = (raw: number) => editorOffsetFromSource(source, raw, state.lineBreak)
 	// filter:false canonical projections must never reject history, nor strand a caret.
 	const hiddenRanges = plan.hiddenRanges
@@ -242,6 +299,9 @@ const project = (
 		plan,
 		query,
 		restoreSelection,
+		nativeContext,
+		contextStatus: "ready",
+		contextError: null,
 	}
 }
 
@@ -264,8 +324,18 @@ export const orgSparseTreeField = StateField.define<OrgSparseTreeState | null>({
 			const active = transaction.startState.field(field)
 			const query = apply?.value.query ?? active?.query
 			if (!query) return transaction
+			// A native context refresh reprojects the same query; it must not move
+			// the Source caret as if the user had issued a new sparse-tree command.
+			if (apply && active?.query === query) return transaction
 			const state = transaction.state
-			const plan = buildOrgSparseTreePlan(state.sliceDoc(), query)
+			let plan: OrgSparseTreePlan
+			try {
+				const context = apply ? apply.value.nativeContext : active?.nativeContext
+				plan = buildOrgSparseTreePlan(state.sliceDoc(), query, undefined, undefined, transaction.docChanged ? sourceChangedContext(context) : context)
+			} catch (error) {
+				if (!(error instanceof OrgSparseTreeContextRequiredError)) throw error
+				return transaction
+			}
 			const ranges =
 				apply || transaction.docChanged
 					? plan.hiddenRanges.map(({ from, to }) => ({
@@ -311,6 +381,8 @@ export const orgSparseTreeField = StateField.define<OrgSparseTreeState | null>({
 				next.query,
 				next.restoreSelection?.map(transaction.changes) ?? null,
 				isOwnedHistory(transaction) || isOrgRuntimeProjection(transaction),
+				transaction.docChanged ? sourceChangedContext(next.nativeContext) : next.nativeContext,
+				transaction.docChanged ? null : next.contextError,
 			)
 		}
 		// Genuine local movement supersedes the original caret, but canonical ACK/history
@@ -326,9 +398,80 @@ export const orgSparseTreeField = StateField.define<OrgSparseTreeState | null>({
 		for (const effect of transaction.effects) {
 			if (effect.is(clearOrgSparseTree)) next = null
 			if (effect.is(setOrgSparseTree)) {
-				next = project(transaction.state, effect.value.query, effect.value.restoreSelection)
+				next = project(transaction.state, effect.value.query, effect.value.restoreSelection, effect.value.query === value?.query, effect.value.nativeContext, effect.value.contextError ?? null)
 			}
 		}
 		return next
 	},
 })
+
+/** Root supplies the data-only reader and this exact window's issued effect owner. */
+export function orgSparseTreeNativeContextRefresh(ports: {
+	readonly isCurrent: (view: EditorView) => boolean
+	readonly contextIdentity: (view: EditorView) => object
+	readonly source: (view: EditorView) => string
+	readonly read: (source: string, query: OrgSparseTreeQuery, signal: AbortSignal) => OrgSparseTreeNativeContext | undefined | Promise<OrgSparseTreeNativeContext | undefined>
+	readonly issue: (effect: StateEffect<unknown>) => StateEffect<unknown>
+}) {
+	return ViewPlugin.fromClass(class {
+		private generation = 0
+		private request: {
+			readonly doc: EditorState["doc"]
+			readonly query: OrgSparseTreeQuery
+			readonly contextIdentity: object
+			readonly abort: AbortController
+		} | null = null
+		private live = true
+		constructor(readonly view: EditorView) { queueMicrotask(() => this.refresh()) }
+		update() { this.refresh() }
+		destroy() { this.live = false; this.generation++; this.request?.abort.abort(); this.request = null }
+		private refresh() {
+			const sparse = this.view.state.field(orgSparseTreeField, false)
+			if (!this.live || !sparse || sparse.contextStatus !== "pending" || !ports.isCurrent(this.view)) {
+				if (this.request) { this.generation++; this.request.abort.abort(); this.request = null }
+				return
+			}
+			const doc = this.view.state.doc, query = sparse.query, contextIdentity = ports.contextIdentity(this.view)
+			if (this.request?.doc === doc && this.request.query === query && this.request.contextIdentity === contextIdentity) return
+			this.request?.abort.abort()
+			const generation = ++this.generation, abort = new AbortController()
+			this.request = { doc, query, contextIdentity, abort }
+			const current = () => this.live && !abort.signal.aborted && generation === this.generation &&
+				ports.isCurrent(this.view) && ports.contextIdentity(this.view) === contextIdentity && this.view.state.doc === doc &&
+				this.view.state.field(orgSparseTreeField, false)?.query === query &&
+				this.view.state.field(orgSparseTreeField, false)?.contextStatus === "pending"
+			const source = ports.source(this.view)
+			// Always cross a microtask before dispatch: plugin update runs inside view.update.
+			void Promise.resolve().then(() => {
+				if (!current()) return undefined
+				return ports.read(source, query, abort.signal)
+			}).then((nativeContext) => {
+				if (!current()) return
+				const active = this.view.state.field(orgSparseTreeField)!
+				this.view.dispatch({
+					annotations: Transaction.addToHistory.of(false),
+					effects: ports.issue(setOrgSparseTree.of({ query, nativeContext, restoreSelection: active.restoreSelection })),
+				})
+				if (current()) {
+					this.view.dispatch({
+						annotations: Transaction.addToHistory.of(false),
+						effects: ports.issue(setOrgSparseTree.of({
+							query, restoreSelection: this.view.state.field(orgSparseTreeField)!.restoreSelection,
+							contextError: "The native snapshot did not resolve the required sparse-tree context.",
+						})),
+					})
+				}
+			}).catch((error: unknown) => {
+				if (!current()) return
+				const active = this.view.state.field(orgSparseTreeField)!
+				this.view.dispatch({
+					annotations: Transaction.addToHistory.of(false),
+					effects: ports.issue(setOrgSparseTree.of({
+						query, restoreSelection: active.restoreSelection,
+						contextError: error instanceof Error ? error.message : String(error),
+					})),
+				})
+			})
+		}
+	})
+}

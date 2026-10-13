@@ -69,7 +69,7 @@ pub async fn run_server() {
     tracing::info!("🚀 服务器启动: http://{}", addr);
     tracing::info!("📖 API 文档: http://{}/api", addr);
 
-    warp::serve(routes).run(addr).await;
+    warp::serve(routes).bind(addr).await.run().await;
 }
 
 /// 初始化日志系统

@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core"
 import * as TE from "fp-ts/TaskEither"
+import { decodeLegacyRecoveryBundle } from "@/pipes/migration/migration.plan.fn"
 import type {
 	CreateOrgDirectoryInput,
 	DeleteOrgDocumentInput,
@@ -14,6 +15,7 @@ import type {
 	OrgMigrationRecoveryBundleInterface,
 	OrgMigrationVerificationResultInterface,
 	OrgMigrationWriteResultInterface,
+	OrgOriginalRecoveryEntryInterface,
 	OrgWorkspaceInterface,
 	OrgWorkspaceScanInterface,
 	OrgWorkspaceWatchToken,
@@ -63,7 +65,7 @@ export interface OrgFileRepository {
 		capabilityToken?: string,
 	) => TE.TaskEither<OrgFileError, OrgDerivedIndexStats>
 	readonly createDirectory: (input: CreateOrgDirectoryInput) => TE.TaskEither<OrgFileError, void>
-	readonly deleteDocument: (input: DeleteOrgDocumentInput) => TE.TaskEither<OrgFileError, void>
+	readonly deleteDocument: (input: DeleteOrgDocumentInput) => TE.TaskEither<OrgFileError, OrgOriginalRecoveryEntryInterface>
 	readonly moveDocument: (
 		input: MoveOrgDocumentInput,
 	) => TE.TaskEither<OrgFileError, OrgDocumentWriteResultInterface>
@@ -110,6 +112,9 @@ const errorMessage = (cause: unknown): string => {
 	if (cause instanceof Error) {
 		return cause.message
 	}
+	if (typeof cause === "object" && cause !== null && "message" in cause && typeof cause.message === "string") {
+		return cause.message
+	}
 	return typeof cause === "string" ? cause : String(cause)
 }
 
@@ -124,6 +129,16 @@ const mapCommandError = (
 	operation,
 	type: "ORG_FILE_ERROR",
 })
+
+/** Only this typed native read envelope proves absence; text/scan omission never does. */
+export const isAuthorizedOrgPathAbsent = (error: OrgFileError, relativePath: string): boolean => {
+	const cause = error.cause
+	return error.type === "ORG_FILE_ERROR" && error.operation === "read" &&
+		error.command === ORG_FILE_COMMANDS.read && typeof cause === "object" && cause !== null &&
+		"kind" in cause && cause.kind === "document-path-absent" &&
+		"relativePath" in cause && cause.relativePath === relativePath &&
+		"authorizedObservation" in cause && cause.authorizedObservation === true
+}
 
 const invokeTask = <Result>(
 	invokeCommand: InvokeCommand,
@@ -161,7 +176,7 @@ export const createOrgFileRepository = (
 			workspaceRoot,
 		}),
 	deleteDocument: ({ workspaceRoot, relativePath, expectedRevision, capabilityToken }) =>
-		invokeTask<void>(invokeCommand, "delete", ORG_FILE_COMMANDS.delete, {
+		invokeTask<OrgOriginalRecoveryEntryInterface>(invokeCommand, "delete", ORG_FILE_COMMANDS.delete, {
 			...capabilityPayload(capabilityToken),
 			expectedRevision,
 			relativePath,
@@ -202,11 +217,12 @@ export const createOrgFileRepository = (
 			workspaceRoot,
 		}),
 	readMigrationRecovery: (workspaceRoot, manifestRelativePath, capabilityToken) =>
-		invokeTask<OrgMigrationRecoveryBundleInterface>(
-			invokeCommand,
-			"readMigrationRecovery",
-			ORG_FILE_COMMANDS.readMigrationRecovery,
-			{ ...capabilityPayload(capabilityToken), manifestRelativePath, workspaceRoot },
+		TE.tryCatch(
+			async () => decodeLegacyRecoveryBundle(await invokeCommand<unknown>(
+				ORG_FILE_COMMANDS.readMigrationRecovery,
+				{ ...capabilityPayload(capabilityToken), manifestRelativePath, workspaceRoot },
+			)),
+			(cause) => mapCommandError("readMigrationRecovery", ORG_FILE_COMMANDS.readMigrationRecovery, cause),
 		),
 	releaseWorkspace: (workspaceRoot, capabilityToken) =>
 		capabilityToken

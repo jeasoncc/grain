@@ -1,14 +1,14 @@
 /**
  * CodeHighlightPlugin - 代码块语法高亮插件
  *
- * 使用 @lexical/code 的 registerCodeHighlighting 函数
+ * 使用 @lexical/code-prism 的 registerCodeHighlighting 函数
  * 为代码块提供语法高亮支持
  *
  * 支持的语言包括：JavaScript、TypeScript、Python、Java、C、C++、
  * Go、Rust、Ruby、PHP、SQL、HTML、CSS、JSON、Markdown 等
  */
 
-import { registerCodeHighlighting } from "@lexical/code";
+import { registerCodeHighlighting } from "@lexical/code-prism";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { useEffect } from "react";
 

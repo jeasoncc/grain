@@ -5,7 +5,8 @@
 
 import type { DiagramEditorAdapter, DiagramType } from "@grain/editor-core";
 import type { LexicalEditor } from "lexical";
-import { $getRoot } from "lexical";
+import { $createParagraphNode, $createTextNode, $getRoot } from "lexical";
+import mermaid from "mermaid";
 
 /**
  * Configuration for creating a LexicalDiagramAdapter
@@ -31,6 +32,9 @@ export const createLexicalDiagramAdapter = (
   const { editor } = config;
   let currentDiagramType: DiagramType = config.diagramType ?? "mermaid";
   let previewElement: HTMLElement | null = config.previewElement ?? null;
+  let renderVersion = 0;
+  let destroyed = false;
+  const renderContainers = new Set<HTMLDivElement>();
 
   // Store callbacks for cleanup
   const changeCallbacks = new Set<(source: string) => void>();
@@ -38,7 +42,11 @@ export const createLexicalDiagramAdapter = (
   const renderErrorCallbacks = new Set<(error: Error) => void>();
 
   // Register update listener for change events
-  const removeUpdateListener = editor.registerUpdateListener(({ editorState }) => {
+  const removeUpdateListener = editor.registerUpdateListener(({ editorState, dirtyElements, dirtyLeaves }) => {
+    if (dirtyElements.size > 0 || dirtyLeaves.size > 0) {
+      ++renderVersion;
+      if (previewElement) previewElement.innerHTML = "";
+    }
     if (changeCallbacks.size > 0) {
       editorState.read(() => {
         const root = $getRoot();
@@ -53,19 +61,35 @@ export const createLexicalDiagramAdapter = (
   /**
    * Render the diagram using Mermaid
    */
-  const renderMermaid = async (source: string): Promise<string> => {
+  const renderDiagram = async (source: string): Promise<string> => {
+    const version = ++renderVersion;
+    let renderContainer: HTMLDivElement | undefined;
+    if (previewElement) previewElement.innerHTML = "";
     try {
-      const mermaid = await import("mermaid");
-      mermaid.default.initialize({
+      if (destroyed) throw new Error("Cannot render a destroyed diagram editor");
+      if (currentDiagramType === "plantuml") {
+        throw new Error("PlantUML preview is unavailable. A server-side renderer is required.");
+      }
+      mermaid.initialize({
         startOnLoad: false,
         theme: "default",
+        layout: "dagre",
+        look: "classic",
         securityLevel: "loose",
       });
 
-      const { svg } = await mermaid.default.render(
-        `mermaid-${Date.now()}`,
-        source
+      // Contain Mermaid's temporary SVG, including the SVG left on parse failure.
+      renderContainer = document.createElement("div");
+      renderContainer.setAttribute("aria-hidden", "true");
+      renderContainer.style.cssText = "position:fixed;left:-10000px;top:0;visibility:hidden;pointer-events:none";
+      document.body.append(renderContainer);
+      renderContainers.add(renderContainer);
+      const { svg } = await mermaid.render(
+        `mermaid-${crypto.randomUUID()}`,
+        source,
+        renderContainer
       );
+      if (destroyed || version !== renderVersion) return svg;
 
       // Update preview element if available
       if (previewElement) {
@@ -74,30 +98,29 @@ export const createLexicalDiagramAdapter = (
 
       // Notify callbacks
       for (const callback of renderCompleteCallbacks) {
+        if (destroyed || version !== renderVersion) break;
         callback(svg);
       }
 
       return svg;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      for (const callback of renderErrorCallbacks) {
-        callback(err);
+      if (!destroyed && version === renderVersion) {
+        if (previewElement) previewElement.innerHTML = "";
+        for (const callback of renderErrorCallbacks) {
+          if (destroyed || version !== renderVersion) break;
+          callback(err);
+        }
       }
       throw err;
+    } finally {
+      if (renderContainer) {
+        renderContainer.remove();
+        renderContainers.delete(renderContainer);
+      }
     }
   };
 
-  /**
-   * Render PlantUML diagram
-   * Note: PlantUML requires server-side rendering
-   */
-  const renderPlantUML = async (_source: string): Promise<string> => {
-    const error = new Error("PlantUML rendering requires server-side support");
-    for (const callback of renderErrorCallbacks) {
-      callback(error);
-    }
-    throw error;
-  };
 
   return {
     // ============================================
@@ -114,14 +137,16 @@ export const createLexicalDiagramAdapter = (
     },
 
     setSource(source: string): void {
+      ++renderVersion;
+      if (previewElement) previewElement.innerHTML = "";
       editor.update(() => {
         const root = $getRoot();
         root.clear();
-        const { $createTextNode, $createParagraphNode } = require("lexical");
+        // Keep a block child even for empty source; childless roots are invalid.
         const paragraph = $createParagraphNode();
         paragraph.append($createTextNode(source));
         root.append(paragraph);
-      });
+      }, { discrete: true });
     },
 
     // ============================================
@@ -134,6 +159,8 @@ export const createLexicalDiagramAdapter = (
 
     setDiagramType(type: DiagramType): void {
       currentDiagramType = type;
+      ++renderVersion;
+      if (previewElement) previewElement.innerHTML = "";
     },
 
     // ============================================
@@ -147,10 +174,7 @@ export const createLexicalDiagramAdapter = (
         source = root.getTextContent();
       });
 
-      if (currentDiagramType === "mermaid") {
-        return renderMermaid(source);
-      }
-      return renderPlantUML(source);
+      return renderDiagram(source);
     },
 
     getPreviewElement(): HTMLElement | null {
@@ -195,6 +219,10 @@ export const createLexicalDiagramAdapter = (
     },
 
     destroy(): void {
+      destroyed = true;
+      ++renderVersion;
+      for (const container of renderContainers) container.remove();
+      renderContainers.clear();
       removeUpdateListener();
       changeCallbacks.clear();
       renderCompleteCallbacks.clear();

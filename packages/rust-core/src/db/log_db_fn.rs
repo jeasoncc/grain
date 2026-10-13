@@ -50,7 +50,7 @@ pub async fn init_log_database(db: &DatabaseConnection) -> AppResult<()> {
 /// 检查日志数据库是否存在
 pub async fn check_log_database_exists(db: &DatabaseConnection) -> AppResult<bool> {
     let result = db
-        .query_one(Statement::from_string(
+        .query_one_raw(Statement::from_string(
             DatabaseBackend::Sqlite,
             "SELECT name FROM sqlite_master WHERE type='table' AND name='logs'".to_string(),
         ))

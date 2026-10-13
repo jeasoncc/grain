@@ -1,5 +1,6 @@
 import { useEffect } from "react"
-import { act, cleanup, fireEvent, render, renderHook, screen } from "@testing-library/react"
+import { act, cleanup, fireEvent, renderHook, screen, waitFor } from "@testing-library/react"
+import { render } from "@/test/application-providers"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import type { OrgTodoNoteRequest, OrgTodoNoteResult } from "@/flows/org-command/org-todo-note"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
@@ -41,6 +42,8 @@ function Harness({
 				<OrgTodoNote
 					request={workflow.note.request}
 					onClose={workflow.note.close}
+					origin={workflow.note.origin}
+					closeFence={workflow.closeFence}
 					isProtected={workflow.isProtected}
 				/>
 			)}
@@ -122,7 +125,7 @@ describe("TODO note workflow ownership", () => {
 		expect(screen.getByText("Finish note")).toBeDisabled()
 	})
 
-	it.each(["editor", "agenda"])("restores the exact connected %s origin on cancel", (kind) => {
+	it.each(["editor", "agenda"])("restores the exact connected %s origin on cancel", async (kind) => {
 		const source = { execute: vi.fn(), abort: vi.fn() }
 		const mounted = render(
 			<>
@@ -139,8 +142,10 @@ describe("TODO note workflow ownership", () => {
 		origin.focus()
 		fireEvent.click(screen.getByText("Open"))
 		expect(screen.getByRole("textbox")).toHaveFocus()
-		fireEvent.keyDown(screen.getByRole("textbox"), { key: "g", ctrlKey: true })
-		expect(origin).toHaveFocus()
+		await act(async () => {
+			fireEvent.keyDown(screen.getByRole("textbox"), { key: "g", ctrlKey: true })
+		})
+		await waitFor(() => expect(origin).toHaveFocus())
 		mounted.unmount()
 	})
 
@@ -177,7 +182,7 @@ describe("TODO note workflow ownership", () => {
 		"disconnected",
 		"scope",
 		"workspaceRoot",
-	])("does not steal focus when origin restoration is %s", (reason) => {
+	])("does not steal focus when origin restoration is %s", async (reason) => {
 		const outcome = deferred()
 		const source = { execute: () => outcome.promise, abort: vi.fn() }
 		const first = controller()
@@ -215,7 +220,9 @@ describe("TODO note workflow ownership", () => {
 					/>
 				</>,
 			)
-		fireEvent.keyDown(screen.getByRole("textbox"), { key: "g", ctrlKey: true })
+		await act(async () => {
+			fireEvent.keyDown(screen.getByRole("textbox"), { key: "g", ctrlKey: true })
+		})
 		expect(origin).not.toHaveFocus()
 		if (reason === "external") expect(screen.getByText("External")).toHaveFocus()
 	})
@@ -277,12 +284,15 @@ describe("TODO note workflow ownership", () => {
 			result.current.admit({ execute: () => outcome.promise, abort: vi.fn() })
 		})
 		const owned = result.current.note!
-		const execution = owned.request.execute("note")
+		let execution!: OrgTodoNoteResult | Promise<OrgTodoNoteResult>
+		act(() => { execution = owned.request.execute("note") })
 		rerender({ origin: next })
 		expect(nextDirty).toHaveBeenCalledWith(expect.any(String), true)
 		expect(result.current.isProtected).toBe(true)
-		owned.request.abort()
-		owned.close()
+		act(() => {
+			owned.request.abort()
+			owned.close()
+		})
 		expect(result.current.isOwned()).toBe(true)
 		await act(async () => {
 			outcome.resolve({ kind: "rejected", reason: "cancelled" })

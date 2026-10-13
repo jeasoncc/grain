@@ -78,7 +78,7 @@ package.json                           # 主版本源 (version: "0.1.47")
 ├── aur/PKGBUILD                       # Arch Linux 包配置
 ├── aur/PKGBUILD-binary                # Arch Linux 二进制包配置
 ├── snap/snapcraft.yaml               # Snap 包配置
-├── flatpak/com.lotus.NovelEditor.yml  # Flatpak 包配置
+├── flatpak/com.lotus.Grain.yml        # Flatpak 包配置
 
 # Windows 包管理器配置
 ├── winget-manifests/Jeason.NovelEditor.yaml
@@ -370,7 +370,7 @@ apps/desktop/src-tauri/Cargo.toml              # Rust 配置
 aur/PKGBUILD                                   # Arch Linux
 aur/PKGBUILD-binary                            # Arch Linux 二进制
 snap/snapcraft.yaml                           # Snap 包
-flatpak/com.lotus.NovelEditor.yml              # Flatpak 包
+flatpak/com.lotus.Grain.yml                    # Flatpak 包
 winget-manifests/*.yaml                        # Windows 包管理器
 ```
 
@@ -456,7 +456,7 @@ git add \
     aur/PKGBUILD \
     aur/PKGBUILD-binary \
     snap/snapcraft.yaml \
-    flatpak/com.lotus.NovelEditor.yml \
+    flatpak/com.lotus.Grain.yml \
     winget-manifests/*.yaml \
     path/to/newfile \                    # 添加这行
     2>/dev/null || true
@@ -620,7 +620,7 @@ update_docker_version() {
 
 ```bash
         update_snap_version "$PROJECT_ROOT/snap/snapcraft.yaml" "$NEW_VERSION" >/dev/null 2>&1
-        update_flatpak_version "$PROJECT_ROOT/flatpak/com.lotus.NovelEditor.yml" "$NEW_VERSION" >/dev/null 2>&1
+        update_flatpak_version "$PROJECT_ROOT/flatpak/com.lotus.Grain.yml" "$NEW_VERSION" >/dev/null 2>&1
         update_winget_version "$NEW_VERSION" >/dev/null 2>&1
         update_docker_version "$PROJECT_ROOT/docker/docker-compose.yml" "$NEW_VERSION" >/dev/null 2>&1
 ```
@@ -639,7 +639,7 @@ git add \
     aur/PKGBUILD \
     aur/PKGBUILD-binary \
     snap/snapcraft.yaml \
-    flatpak/com.lotus.NovelEditor.yml \
+    flatpak/com.lotus.Grain.yml \
     winget-manifests/*.yaml \
     docker/docker-compose.yml \
     2>/dev/null || true

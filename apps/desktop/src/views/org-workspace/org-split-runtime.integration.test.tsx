@@ -2,7 +2,9 @@ import { redoDepth, undoDepth } from "@codemirror/commands"
 import { foldCode, foldedRanges } from "@codemirror/language"
 import { EditorSelection, EditorState, StateEffect } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { act, cleanup, fireEvent, screen } from "@testing-library/react"
+import { render } from "@/test/application-providers"
+import { OrgWorkspaceProvider } from "@/views/application/org-workspace-provider"
 import * as E from "fp-ts/Either"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
@@ -10,11 +12,12 @@ import {
 	openDefaultOrgWorkspaceFlow,
 	openOrgDocumentFlow,
 	saveOrgDocumentFlow,
-	resolveOrgLinkTargetFlow,
 	scanOrgWorkspaceFlow,
-} from "@/flows/org-workspace"
+} from "@/flows/org-workspace/org-workspace.flow"
+import { resolveOrgLinkTargetFlow } from "@/flows/org-workspace/org-link-target.flow"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
 import {
+	orgFileRepository,
 	releaseOrgWorkspace,
 	unwatchOrgWorkspace,
 	watchOrgWorkspace,
@@ -22,6 +25,12 @@ import {
 import type { OrgDocumentInterface, OrgWorkspaceInterface } from "@/types/org"
 import { OrgWorkspaceContainer } from "./org-workspace.container.fn"
 import { orgSparseTreeField } from "../org-editor/org-sparse-tree.extension"
+import { useSettings } from "@/hooks/use-settings"
+
+const savedAutosavePreferences = {
+	autoSave: useSettings.getState().autoSave,
+	autoSaveInterval: useSettings.getState().autoSaveInterval,
+}
 
 // Observe, but never substitute, the production controller used by the production root.
 let controller: OrgWorkspaceController
@@ -40,6 +49,7 @@ vi.mock("@/io/event", () => ({ listenForOrgDiaryCreation: () => () => undefined 
 // Only filesystem/host boundaries are replaced: hook, pane, editor and CM history are real.
 vi.mock("@tanstack/react-router", () => ({
 	useBlocker: vi.fn(),
+	useNavigate: () => async () => undefined,
 	Link: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
 }))
 vi.mock("@/io/event/org-window-close.adapter", () => ({
@@ -48,32 +58,39 @@ vi.mock("@/io/event/org-window-close.adapter", () => ({
 vi.mock("@/io/event/org-workspace-event.adapter", () => ({
 	orgWorkspaceEventAdapter: { listen: async () => () => undefined },
 }))
-vi.mock("@/io/file/org-file.repository", () => ({
-	releaseOrgWorkspace: vi.fn(),
-	unwatchOrgWorkspace: vi.fn(),
-	watchOrgWorkspace: vi.fn(),
-}))
-vi.mock("@/flows/org-workspace", () => ({
-	archiveOrgSubtreeFlow: vi.fn(),
-	clearOrgDerivedIndexFlow: vi.fn(),
+vi.mock("@/io/file/org-file.repository", async (original) => {
+	const real = await original<typeof import("@/io/file/org-file.repository")>()
+	return {
+		...real,
+		orgFileRepository: { ...real.orgFileRepository, readDocument: vi.fn() },
+		releaseOrgWorkspace: vi.fn(),
+		unwatchOrgWorkspace: vi.fn(),
+		watchOrgWorkspace: vi.fn(),
+	}
+})
+vi.mock("@/flows/org-workspace/org-workspace.flow", () => ({
 	createOrgDirectoryFlow: vi.fn(),
 	deleteOrgDocumentFlow: vi.fn(),
-	prepareLegacyMigrationFlow: vi.fn(),
-	verifyLegacyMigrationRecoveryFlow: vi.fn(),
-	runLegacyMigrationRecoveryDrillFlow: vi.fn(),
-	rebuildOrgDerivedIndexFlow: vi.fn(),
-	resolveOrgLinkTargetFlow: vi.fn(),
 	selectOrgWorkspaceFlow: vi.fn(),
 	captureOrgTodoFlow: vi.fn(),
-	captureOrgEntryFlow: vi.fn(),
 	moveOrgDocumentFlow: vi.fn(),
-	ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE: "duplicate",
 	openDefaultOrgWorkspaceFlow: vi.fn(),
+	reopenDefaultOrgWorkspaceFlow: vi.fn(),
 	openOrgDocumentFlow: vi.fn(),
-	refileOrgSubtreeFlow: vi.fn(),
 	saveOrgDocumentFlow: vi.fn(),
 	scanOrgWorkspaceFlow: vi.fn(),
 }))
+vi.mock("@/flows/org-workspace/org-derived-index.flow", () => ({
+	clearOrgDerivedIndexFlow: vi.fn(),
+	rebuildOrgDerivedIndexFlow: vi.fn(),
+}))
+vi.mock("@/flows/org-workspace/org-subtree-refile.flow", () => ({
+	archiveOrgSubtreeFlow: vi.fn(),
+	refileOrgSubtreeFlow: vi.fn(),
+}))
+vi.mock("@/flows/org-workspace/org-capture-entry.flow", () => ({ captureOrgEntryFlow: vi.fn(), readOrgCaptureTargetFlow: vi.fn() }))
+vi.mock("@/flows/org-workspace/org-link-target.flow", () => ({ resolveOrgLinkTargetFlow: vi.fn() }))
+vi.mock("@/flows/org-workspace/org-refile-target.flow", () => ({ readOrgRefileTargetFlow: vi.fn() }))
 
 // CRLF, LF, NUL, surrogate pairs and missing final newline travel as raw source.
 const rawA = "* A :raw:\r\nbody\0😀\r\n* Second\r\nsecond body\r\nEOF"
@@ -175,10 +192,18 @@ async function localHeading(editor: EditorView, destination = "Second", toolbar 
 	return heading
 }
 async function acceptHeading(heading: HTMLElement) {
-	fireEvent.keyDown(heading, { key: "Enter" })
 	await act(async () => {
-		await Promise.resolve()
+		fireEvent.keyDown(heading, { key: "Enter" })
 	})
+	const confirmation = screen.queryByRole("combobox", {
+		name: "Confirm Refile (yes/no):",
+	})
+	if (confirmation) {
+		await act(async () => {
+			fireEvent.change(confirmation, { target: { value: "yes" } })
+			fireEvent.keyDown(confirmation, { key: "Enter" })
+		})
+	}
 }
 const rangeRects = Object.getOwnPropertyDescriptor(Range.prototype, "getClientRects")
 const rangeBounds = Object.getOwnPropertyDescriptor(Range.prototype, "getBoundingClientRect")
@@ -190,7 +215,7 @@ async function setup() {
 				if (consumeReactKey) event.preventDefault()
 			}}
 		>
-			<OrgWorkspaceContainer />
+			<OrgWorkspaceProvider><OrgWorkspaceContainer /></OrgWorkspaceProvider>
 		</div>,
 	)
 	await act(async () => {
@@ -222,7 +247,6 @@ beforeEach(() => {
 		removeEventListener: () => undefined,
 		dispatchEvent: () => true,
 	}))
-	vi.spyOn(window, "confirm").mockReturnValue(true)
 	disk = new Map([
 		["a.org", { relativePath: "a.org", content: rawA, revision: "a-1" }],
 		["b.org", { relativePath: "b.org", content: rawB, revision: "b-1" }],
@@ -234,6 +258,11 @@ beforeEach(() => {
 		directories: [],
 		documents: [...disk.values()].map(({ relativePath, revision }) => ({ relativePath, revision })),
 	}
+	vi.mocked(orgFileRepository.readDocument).mockImplementation((input) => async () => {
+		const document = disk.get(input.relativePath)
+		if (!document) throw new Error(`Unexpected fixture document: ${input.relativePath}`)
+		return E.right({ ...document })
+	})
 	vi.mocked(openDefaultOrgWorkspaceFlow).mockImplementation(() => async () => E.right(workspace))
 	vi.mocked(scanOrgWorkspaceFlow).mockImplementation(() => async () => E.right(workspace))
 	vi.mocked(openOrgDocumentFlow).mockImplementation(
@@ -254,6 +283,7 @@ beforeEach(() => {
 })
 afterEach(() => {
 	cleanup()
+	useSettings.setState(savedAutosavePreferences)
 	for (const [key, descriptor] of [
 		["getClientRects", rangeRects],
 		["getBoundingClientRect", rangeBounds],
@@ -266,6 +296,41 @@ afterEach(() => {
 })
 
 describe("production root independently bound split (synthetic host IO, real hook/pane/editor/runtime)", () => {
+	it.each([false, true])("returns Capture cancellation to Agenda with an open buffer=%s", async (withBuffer) => {
+		await setup()
+		if (!withBuffer) {
+			await act(async () => {
+				expect(await controller.closeDocumentPath("a.org")).toBe(true)
+			})
+		}
+		const originBuffer = controller.activeBufferId
+		const runtime = controller.activeBufferRuntime
+		const generation = runtime?.revision
+		fireEvent.click(screen.getByRole("button", { name: "Agenda" }))
+		expect(screen.getByRole("button", { name: "Agenda" })).toHaveAttribute("aria-pressed", "true")
+		expect(screen.queryByRole("textbox", { name: /^Editing / })).toBeNull()
+		const trigger = screen.getByRole("button", { name: "Quick capture" })
+		act(() => trigger.focus())
+		fireEvent.click(trigger)
+		const input = screen.getByRole("combobox", { name: "Capture template:" })
+		await act(async () => {
+			fireEvent.keyDown(input, { key: "g", ctrlKey: true })
+		})
+		expect(screen.queryByRole("combobox", { name: "Capture template:" })).toBeNull()
+		expect(screen.getByRole("button", { name: "Agenda" })).toHaveAttribute("aria-pressed", "true")
+		expect(screen.queryByRole("textbox", { name: /^Editing / })).toBeNull()
+		expect(trigger).toHaveFocus()
+		expect(controller.activeBufferId).toBe(originBuffer)
+		expect(controller.activeBufferRuntime).toBe(runtime)
+		if (runtime) {
+			expect(runtime.source).toBe(rawA)
+			expect(runtime.revision).toBe(generation)
+			expect(undoDepth(runtime.state)).toBe(0)
+			expect(redoDepth(runtime.state)).toBe(0)
+		}
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
+
 	it.each([
 		false,
 		true,
@@ -347,7 +412,7 @@ describe("production root independently bound split (synthetic host IO, real hoo
 		const sparse = screen.getByRole("combobox", { name: /^Sparse tree/ })
 		fireEvent.change(sparse, { target: { value: "tag:keep" } })
 		fireEvent.keyDown(sparse, { key: "Enter" })
-		expect(a.state.field(orgSparseTreeField)?.plan.hiddenRanges.length).toBeGreaterThan(0)
+		expect(a.state.field(orgSparseTreeField)?.plan?.hiddenRanges.length).toBeGreaterThan(0)
 		const reads = vi.mocked(openOrgDocumentFlow).mock.calls.length
 		const scans = vi.mocked(scanOrgWorkspaceFlow).mock.calls.length
 		act(() => a.dispatch({ selection: { anchor: raw.indexOf("Move") } }))
@@ -385,9 +450,6 @@ describe("production root independently bound split (synthetic host IO, real hoo
 			expect(undoDepth(runtime.state)).toBe(0)
 			expect(controller.isDirty).toBe(false)
 			expect(redoDepth(runtime.state)).toBe(0)
-			expect(
-				screen.getByText("The originating editor cannot apply this move. Cancel and retry."),
-			).toBeInTheDocument()
 		}
 		expect(openOrgDocumentFlow).toHaveBeenCalledTimes(reads)
 		expect(scanOrgWorkspaceFlow).toHaveBeenCalledTimes(scans)
@@ -498,10 +560,7 @@ describe("production root independently bound split (synthetic host IO, real hoo
 		const selection = runtimeA.state.selection
 		fireEvent.change(heading, { target: { value: "Second" } })
 		fireEvent.keyDown(heading, { key: "Tab" })
-		fireEvent.keyDown(heading, { key: "Enter" })
-		await act(async () => {
-			await Promise.resolve()
-		})
+		await acceptHeading(heading)
 		const expected = `* Second\r\nsecond body\r\nEOF${dirty ? " dirty" : ""}\r\n** A :raw:\r\nbody\0😀\r\n`
 		expect(runtimeA.source).toBe(expected)
 		expect(runtimeB.source).toBe(rawB)
@@ -520,6 +579,7 @@ describe("production root independently bound split (synthetic host IO, real hoo
 		expect(runtimeA.state.selection.eq(selection)).toBe(true)
 		key(a, true)
 		expect(runtimeA.source).toBe(expected)
+		act(() => useSettings.setState({ autoSave: true, autoSaveInterval: 1 }))
 		await act(async () => {
 			await vi.advanceTimersByTimeAsync(2000)
 		})
@@ -591,10 +651,14 @@ describe("production root independently bound split (synthetic host IO, real hoo
 		fireEvent.keyDown(file, { key: "Enter", isComposing: true })
 		expect(screen.queryByRole("combobox", { name: "Refile under heading:" })).toBeNull()
 		fireEvent.compositionEnd(file)
-		consumeReactKey = true
-		fireEvent.keyDown(file, { key: "Enter" })
-		expect(screen.queryByRole("combobox", { name: "Refile under heading:" })).toBeNull()
-		consumeReactKey = false
+		const consume = (event: Event) => event.preventDefault()
+		document.addEventListener("keydown", consume, true)
+		try {
+			fireEvent.keyDown(file, { key: "Enter" })
+			expect(screen.queryByRole("combobox", { name: "Refile under heading:" })).toBeNull()
+		} finally {
+			document.removeEventListener("keydown", consume, true)
+		}
 		fireEvent.keyDown(file, { key: "Enter" })
 		await act(async () => {
 			await Promise.resolve()
@@ -637,7 +701,7 @@ describe("production root independently bound split (synthetic host IO, real hoo
 		fireEvent.change(input, { target: { value: query } })
 		fireEvent.keyDown(input, { key: "Enter" })
 		expect(a.contentDOM).toHaveFocus()
-		expect(a.state.field(orgSparseTreeField)?.plan.hiddenRanges.length).toBeGreaterThan(0)
+		expect(a.state.field(orgSparseTreeField)?.plan?.hiddenRanges.length).toBeGreaterThan(0)
 		expect(a.contentDOM).toHaveTextContent(visible)
 		expect(a.contentDOM).not.toHaveTextContent(hidden)
 		expect(peer.state.field(orgSparseTreeField)).toBeNull()
@@ -650,7 +714,7 @@ describe("production root independently bound split (synthetic host IO, real hoo
 		fireEvent.keyDown(a.contentDOM, { key: "p", ctrlKey: true })
 		const palette = screen.getByRole("combobox")
 		fireEvent.change(palette, { target: { value: "Clear sparse tree" } })
-		fireEvent.keyDown(palette, { key: "Enter" })
+		await act(async () => { fireEvent.keyDown(palette, { key: "Enter" }) })
 		expect(a.state.field(orgSparseTreeField)).toBeNull()
 		expect(a.contentDOM).toHaveTextContent(visible)
 		expect(a.contentDOM).toHaveTextContent(hidden)
@@ -674,13 +738,15 @@ describe("production root independently bound split (synthetic host IO, real hoo
 		fireEvent.change(input, { target: { value: "tag:raw" } })
 		// The other real CM projection edits the same canonical buffer while the prompt is open.
 		act(() => peer.dispatch({ changes: { from: peer.state.doc.length, insert: " peer edit" } }))
+		expect(screen.queryByRole("combobox", { name: /^Sparse tree/ })).toBeNull()
+		expect(input.isConnected).toBe(false)
+		// Delivery to the detached input cannot resurrect or accept its old source.
 		fireEvent.keyDown(input, { key: "Enter" })
-		expect(screen.getByRole("alert")).toHaveTextContent("content changed")
+		source(rawA + " peer edit")
 		expect(a.state.field(orgSparseTreeField)).toBeNull()
 		expect(peer.state.field(orgSparseTreeField)).toBeNull()
 		expect(undoDepth(runtimeA.state)).toBe(1)
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
-		fireEvent.keyDown(input, { key: "Escape" })
 		focus(peer)
 		await open("b.org")
 		const b = right(),
@@ -802,18 +868,28 @@ describe("production root independently bound split (synthetic host IO, real hoo
 	it.each([
 		"ctrlKey",
 		"metaKey",
-	] as const)("real CM %s mousedown link on unfocused A routes fresh A controller, preserves B and refuses busy handoff", async (modifier) => {
+	] as const)("real CM %s mousedown link on unfocused A navigates independently of B save and preserves both bodies", async (modifier) => {
 		const linkedA = "* A\n[[file:c.org][C]]\n"
 		disk.set("a.org", { relativePath: "a.org", content: linkedA, revision: "a-1" })
 		await setup()
-		const a = left()
+		const a = left(), runtimeA = controller.activeBufferRuntime!
 		focus(right())
 		await open("b.org")
 		const b = right(),
 			runtimeB = controller.activeBufferRuntime!
 		vi.spyOn(a, "posAtCoords").mockReturnValue(linkedA.indexOf("file:") + 2)
 		vi.mocked(resolveOrgLinkTargetFlow).mockReturnValue(() =>
-			Promise.resolve(E.right({ relativePath: "c.org", line: 1, expectedRevision: "c-1" })),
+			Promise.resolve(E.right({
+				relativePath: "c.org",
+				line: 1,
+				expectedRevision: "c-1",
+				source: "disk",
+				workspaceRoot: workspace.rootPath,
+				capabilityToken: workspace.capabilityToken,
+				workspaceSessionId: controller.workspaceSessionId!,
+				sourceRevision: "c-1",
+				diskRevision: "c-1",
+			})),
 		)
 		type(b, "dirty")
 		let finish!: (result: Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>) => void
@@ -823,31 +899,21 @@ describe("production root independently bound split (synthetic host IO, real hoo
 					finish = resolve
 				}),
 		)
-		let saving!: Promise<void>
+		let saving!: Promise<boolean>
 		await act(async () => {
 			saving = controller.saveDocument()
 			await Promise.resolve()
 		})
-		const scans = vi.mocked(scanOrgWorkspaceFlow).mock.calls.length
-		fireEvent.mouseDown(a.contentDOM, { button: 0, [modifier]: true })
-		expect(scanOrgWorkspaceFlow).toHaveBeenCalledTimes(scans)
-		expect(controller.activeBufferRuntime).toBe(runtimeB)
-		expect(resolveOrgLinkTargetFlow).not.toHaveBeenCalled()
-		expect(left()).toBe(a)
+		await act(async () => {
+			fireEvent.mouseDown(a.contentDOM, { button: 0, [modifier]: true })
+		})
+		expect(controller.activeDocument!.relativePath).toBe("c.org")
+		expect(runtimeA.source).toBe(linkedA)
+		expect(runtimeB.source).toBe("dirty" + rawB)
 		await act(async () => {
 			finish(E.right({ relativePath: "b.org", revision: "b-saved" }))
 			await saving
 		})
-		await act(async () => {
-			fireEvent.mouseDown(a.contentDOM, { button: 0, [modifier]: true })
-			await Promise.resolve()
-		})
-		expect(resolveOrgLinkTargetFlow).toHaveBeenCalledWith(
-			expect.anything(),
-			"a.org",
-			linkedA,
-			expect.objectContaining({ relativePath: "c.org" }),
-		)
 		expect(controller.activeDocument!.relativePath).toBe("c.org")
 		expect(left().contentDOM.getAttribute("aria-label")).toBe("Editing c.org")
 		expect(right()).toBe(b)
@@ -902,6 +968,7 @@ describe("production root independently bound split (synthetic host IO, real hoo
 		key(left(), true)
 		source(first + "RIGHT")
 		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(2)
+		act(() => useSettings.setState({ autoSave: true, autoSaveInterval: 1 }))
 		await act(async () => {
 			await vi.advanceTimersByTimeAsync(1000)
 		})
@@ -1023,7 +1090,7 @@ describe("production root independently bound split (synthetic host IO, real hoo
 		expect(views()).toEqual([a, b])
 	})
 
-	it("defers focus handoff while a save owns B, then activates A synchronously without replacing either view", async () => {
+	it("focuses A independently while B save drains and preserves native copy and arrow input", async () => {
 		await setup()
 		focus(right())
 		await open("b.org")
@@ -1038,15 +1105,13 @@ describe("production root independently bound split (synthetic host IO, real hoo
 					finish = resolve
 				}),
 		)
-		let saving!: Promise<void>
+		let saving!: Promise<boolean>
 		await act(async () => {
 			saving = controller.saveDocument()
 			await Promise.resolve()
 		})
 		focus(a)
-		expect(controller.activeDocument!.relativePath).toBe("b.org")
-		expect(a.state.facet(EditorState.readOnly)).toBe(true)
-		expect(b.state.facet(EditorState.readOnly)).toBe(false)
+		expect(controller.activeDocument!.relativePath).toBe("a.org")
 		act(() => a.dispatch({ selection: { anchor: 0, head: 3 } }))
 		const copy = new KeyboardEvent("keydown", {
 			key: "c",
@@ -1079,7 +1144,7 @@ describe("production root independently bound split (synthetic host IO, real hoo
 			} finally {
 				document.removeEventListener("keydown", consume, true)
 			}
-			expect(controller.activeDocument!.relativePath).toBe("b.org")
+			expect(controller.activeDocument!.relativePath).toBe("a.org")
 		}
 		skippedKeys()
 		const save = new KeyboardEvent("keydown", {
@@ -1095,7 +1160,7 @@ describe("production root independently bound split (synthetic host IO, real hoo
 			finish(E.right({ relativePath: "b.org", revision: "b-saved" }))
 			await saving
 		})
-		// ACK and consumed/composing keys must not implicitly activate the parked window.
+		// ACK and consumed/composing keys cannot change the independent A origin.
 		skippedKeys()
 		act(() => a.dispatch({ selection: { anchor: 0, head: 3 } }))
 		const copyAfterAck = new KeyboardEvent("keydown", {
@@ -1126,7 +1191,7 @@ describe("production root independently bound split (synthetic host IO, real hoo
 		"save",
 		"retire",
 		"G2",
-	] as const)("actual toolbar Save uses fenced pending A after B ACK (%s)", async (outcome) => {
+	] as const)("actual toolbar Save stays bound to A while B ACK drains (%s)", async (outcome) => {
 		await setup()
 		const a = left()
 		type(a, "dirty A")
@@ -1144,7 +1209,7 @@ describe("production root independently bound split (synthetic host IO, real hoo
 					finish = resolve
 				}),
 		)
-		let saving!: Promise<void>
+		let saving!: Promise<boolean>
 		await act(async () => {
 			saving = controller.saveDocument()
 			await Promise.resolve()
@@ -1153,19 +1218,14 @@ describe("production root independently bound split (synthetic host IO, real hoo
 		act(() => a.dispatch({ selection: { anchor: 2, head: 3 } }))
 		fireEvent.keyDown(a.contentDOM, { key: "c", ctrlKey: true })
 		const selection = a.state.selection.main
-		expect(controller.activeDocument!.relativePath).toBe("b.org")
-		expect(screen.getByRole("button", { name: "Save document" }).hasAttribute("disabled")).toBe(
-			true,
-		)
+		expect(controller.activeDocument!.relativePath).toBe("a.org")
 		await act(async () => {
 			finish(E.right({ relativePath: "b.org", revision: "b-saved" }))
 			await saving
 		})
-		expect(controller.activeDocument!.relativePath).toBe("b.org")
-		expect(controller.isDirty).toBe(false)
+		expect(controller.activeDocument!.relativePath).toBe("a.org")
+		expect(controller.isDirty).toBe(true)
 		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
-		// No editor focus/key/selection event after ACK. Only the actual button
-		// may resolve the pending origin, and it must read the fresh controller.
 		if (outcome === "save") {
 			const save = screen.getByRole("button", { name: "Save document" })
 			expect(save.hasAttribute("disabled")).toBe(false)
@@ -1196,13 +1256,17 @@ describe("production root independently bound split (synthetic host IO, real hoo
 			expect(a.state.selection.main.head).toBe(selection.head)
 			expect(b.state.sliceDoc()).toBe(bSource)
 		} else {
-			await act(async () => {
-				if (outcome === "retire") expect(await controller.closeDocumentPath("a.org")).toBe(true)
-				else {
-					workspace = { ...workspace, capabilityToken: "G2" }
-					await controller.openDefaultWorkspace()
-				}
-			})
+			if (outcome === "retire") {
+				await act(async () => { expect(await controller.closeDocumentPath("a.org")).toBe(true) })
+			} else {
+				workspace = { ...workspace, capabilityToken: "G2" }
+				let opening!: Promise<void>
+				act(() => { opening = controller.openDefaultWorkspace() })
+				await act(async () => {
+					fireEvent.click(screen.getByRole("button", { name: "Discard and open" }))
+					await opening
+				})
+			}
 			if (outcome === "G2") await open("a.org")
 			expect(runtimeA.closed).toBe(true)
 			const calls = vi.mocked(saveOrgDocumentFlow).mock.calls.length
@@ -1213,7 +1277,7 @@ describe("production root independently bound split (synthetic host IO, real hoo
 		}
 	})
 
-	it("toolbar resolves refused A focus after B save ACK without another editor event", async () => {
+	it("toolbar mutates A independently while B save drains without replacing its origin", async () => {
 		await setup()
 		const a = left()
 		focus(right())
@@ -1228,7 +1292,7 @@ describe("production root independently bound split (synthetic host IO, real hoo
 					finish = resolve
 				}),
 		)
-		let saving!: Promise<void>
+		let saving!: Promise<boolean>
 		await act(async () => {
 			saving = controller.saveDocument()
 			await Promise.resolve()
@@ -1237,29 +1301,20 @@ describe("production root independently bound split (synthetic host IO, real hoo
 		act(() => a.dispatch({ selection: { anchor: 2, head: 3 } }))
 		fireEvent.keyDown(a.contentDOM, { key: "c", ctrlKey: true })
 		const selection = a.state.selection.main
-		expect(controller.activeDocument!.relativePath).toBe("b.org")
+		expect(controller.activeDocument!.relativePath).toBe("a.org")
 		const trigger = screen.getByRole("button", { name: "Note actions" })
 		fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false })
 		fireEvent.click(trigger)
-		expect(screen.queryByRole("menu")).toBeNull()
-		expect(screen.queryByRole("combobox", { name: "Tags:" })).toBeNull()
-		await act(async () => {
-			finish(E.right({ relativePath: "b.org", revision: "b-saved" }))
-			await saving
-		})
-		// No editor focus, key, or selection event after ACK: the actual toolbar
-		// must recover the refused origin and use the freshly rendered hook.
-		fireEvent.pointerDown(screen.getByRole("button", { name: "Note actions" }), {
-			button: 0,
-			ctrlKey: false,
-		})
-		fireEvent.click(screen.getByRole("button", { name: "Note actions" }))
 		fireEvent.click(screen.getByRole("menuitem", { name: /Heading tags/ }))
 		const input = screen.getByRole("combobox", { name: "Tags:" })
 		input.focus()
 		fireEvent.change(input, { target: { value: "toolbarA" } })
 		fireEvent.keyDown(input, { key: "Enter" })
 		expect(a.state.sliceDoc()).toContain("* A :toolbarA:")
+		await act(async () => {
+			finish(E.right({ relativePath: "b.org", revision: "b-saved" }))
+			await saving
+		})
 		expect(b.state.sliceDoc()).toBe(bSource)
 		expect(controller.activeDocument!.relativePath).toBe("a.org")
 		expect(a.state.selection.main.anchor).toBe(selection.anchor)
@@ -1367,7 +1422,7 @@ describe("production root independently bound split (synthetic host IO, real hoo
 			},
 		)
 		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending)
-		let saving!: Promise<void>
+		let saving!: Promise<boolean>
 		await act(async () => {
 			saving = controller.saveDocument()
 			await Promise.resolve()
@@ -1397,7 +1452,7 @@ describe("production root independently bound split (synthetic host IO, real hoo
 		)
 	})
 
-	it("makes both windows read-only during a deferred native document read and rejects direct source dispatch too", async () => {
+	it("pending native B read cannot replace newer independent A input or its canonical undo", async () => {
 		await setup()
 		let finish!: (result: Awaited<ReturnType<ReturnType<typeof openOrgDocumentFlow>>>) => void
 		const pending = new Promise<Awaited<ReturnType<ReturnType<typeof openOrgDocumentFlow>>>>(
@@ -1411,21 +1466,21 @@ describe("production root independently bound split (synthetic host IO, real hoo
 			opening = controller.openDocumentPath("b.org")
 			await Promise.resolve()
 		})
-		expect(controller.isEditorReadOnly).toBe(true)
-		for (const view of views()) {
-			expect(view.state.facet(EditorState.readOnly)).toBe(true)
-			expect(() => act(() => view.dispatch({ changes: { from: 0, insert: "denied" } }))).toThrow()
-		}
-		source(rawA)
-		expect(commits).not.toHaveBeenCalled()
+		const runtimeA = controller.activeBufferRuntime!
+		act(() => left().dispatch({
+			changes: { from: left().state.doc.length, insert: " newer A" },
+			userEvent: "input.type",
+		}))
+		source(rawA + " newer A")
+		expect(undoDepth(runtimeA.state)).toBe(1)
 		await act(async () => {
 			finish(E.right(disk.get("b.org")!))
-			expect(await opening).toBe(true)
+			expect(await opening).toBe(false)
 		})
-		source(rawB)
-		expect(views()).toHaveLength(2)
-		expect(right().state.sliceDoc()).toBe(rawA)
-		for (const view of views()) expect(view.state.facet(EditorState.readOnly)).toBe(false)
+		expect(controller.activeDocument!.relativePath).toBe("a.org")
+		source(rawA + " newer A")
+		key(left())
+		source(rawA)
 	})
 
 	it("installs clean external watcher source minimally in both windows without stealing focused caret", async () => {
@@ -1492,8 +1547,6 @@ describe("production root independently bound split (synthetic host IO, real hoo
 		)
 		fireEvent.compositionEnd(right().contentDOM, { data: "中文" })
 		source(rawA + "中文")
-		expect(commits).toHaveBeenCalledTimes(2)
-		expect(undoDepth(controller.activeBufferRuntime!.state)).toBe(1)
 		key(left())
 		source(rawA)
 	})

@@ -1,229 +1,162 @@
 import { describe, expect, it } from "vitest"
 import {
-	deriveOrgWorkspaceCommands,
-	guardOrgWorkspaceCommand,
-	isOrgWorkspaceCommandId,
-	orgWorkspaceCommandDefinitions,
-	resolveOrgWorkspaceKeyboardCommand,
-	type OrgWorkspaceCommandContext,
-	type OrgWorkspaceKeyboardInput,
+	deriveOrgCommands,
+	dispatchOrgCommand,
+	getOrgCommandDisabledReason,
+	getOrgParameterCommand,
+	type OrgCommandContext,
 } from "./org-workspace-command"
+import { DEFAULT_ORG_BEHAVIOR_CONFIGURATION } from "@/pipes/org/org-behavior-configuration.pipe"
 
-const context: OrgWorkspaceCommandContext = {
+const context: OrgCommandContext = {
 	hasWorkspace: true,
 	hasDocument: true,
 	isDirty: true,
 	isBusy: false,
 	sidebarVisible: false,
 	inspectorVisible: false,
-}
-const keyboard: OrgWorkspaceKeyboardInput = {
-	key: "o",
-	ctrlKey: true,
-	metaKey: false,
-	altKey: false,
-	shiftKey: false,
-	isComposing: false,
-	keyCode: 79,
-	defaultPrevented: false,
-	isParameterInput: false,
+	editor: { ownership: {}, revision: 0, available: true, readOnly: false, relativePath: "note.org", content: "* TODO Work\nbody\n", cursor: 2 },
 }
 
-const ids = [
-	"quick-open",
-	"save",
-	"buffer-switch",
-	"save-all",
-	"refresh",
-	"agenda",
-	"capture",
-	"diary",
-	"editor",
-	"sparse-tree",
-	"clear-sparse-tree",
-	"toggle-sidebar",
-	"toggle-inspector",
-]
-
-describe("workspace command definitions and guards", () => {
-	it("provides stable ordered IDs, existing labels/icon keys and optional shortcuts", () => {
-		expect(orgWorkspaceCommandDefinitions).toEqual([
-			{ id: "quick-open", label: "Quick open", icon: "quickOpen", shortcut: "Ctrl O" },
-			{ id: "save", label: "Save current note", icon: "save", shortcut: "Ctrl S" },
-			{ id: "buffer-switch", label: "Switch buffer", icon: "files", shortcut: "Ctrl Shift B" },
-			{ id: "save-all", label: "Save all buffers", icon: "save", shortcut: "Ctrl Shift S" },
-			{ id: "refresh", label: "Refresh workspace", icon: "refresh" },
-			{ id: "agenda", label: "Open agenda", icon: "agenda" },
-			{ id: "capture", label: "Quick capture", icon: "capture" },
-			{ id: "diary", label: "New diary (today)", icon: "diary" },
-			{ id: "editor", label: "Show editor", icon: "files" },
-			{ id: "sparse-tree", label: "Sparse tree", icon: "files", shortcut: "C-c /" },
-			{ id: "clear-sparse-tree", label: "Clear sparse tree", icon: "files" },
-			{ id: "toggle-sidebar", label: "Show file sidebar", icon: "sidebar" },
-			{ id: "toggle-inspector", label: "Show note inspector", icon: "inspector" },
-		])
-		expect(deriveOrgWorkspaceCommands(context).every((entry) => !entry.disabled)).toBe(true)
+describe("current-target command authority", () => {
+	it("rechecks current dirty, busy and document state before executing an effect", () => {
+		let current = context
+		let saves = 0
+		const dispatcher = { getContext: () => current, execute: () => { saves++; return true } }
+		const rendered = deriveOrgCommands(current).find((entry) => entry.id === "save")!
+		expect(rendered.disabled).toBe(false)
+		current = { ...context, isBusy: true }
+		expect(dispatchOrgCommand(rendered.id, dispatcher)).toBe(false)
+		current = { ...context, isDirty: false }
+		expect(dispatchOrgCommand(rendered.id, dispatcher)).toBe(false)
+		current = { ...context, hasDocument: false }
+		expect(dispatchOrgCommand(rendered.id, dispatcher)).toBe(false)
+		expect(saves).toBe(0)
+		current = context
+		expect(dispatchOrgCommand(rendered.id, dispatcher)).toBe(true)
+		expect(saves).toBe(1)
 	})
 
-	it("derives visibility labels without mutating context or definitions", () => {
-		const frozenContext = Object.freeze({
-			...context,
-			sidebarVisible: true,
-			inspectorVisible: true,
+	it("does not execute an editor command after its target is retired or made read-only", () => {
+		let current = context
+		let source = context.editor!.content
+		const dispatcher = { getContext: () => current, execute: () => { source = "changed"; return true } }
+		expect(deriveOrgCommands(current).find((entry) => entry.id === "tags")?.disabled).toBe(false)
+		current = { ...context, editor: { ...context.editor!, available: false } }
+		expect(dispatchOrgCommand("tags", dispatcher)).toBe(false)
+		current = { ...context, editor: { ...context.editor!, readOnly: true } }
+		expect(dispatchOrgCommand("tags", dispatcher)).toBe(false)
+		current = { ...context, blockedReason: "A parameter command owns this window" }
+		expect(dispatchOrgCommand("tags", dispatcher)).toBe(false)
+		expect(source).toBe(context.editor!.content)
+	})
+
+	it("uses real Org prerequisite readers for heading, checkbox, link and subtree commands", () => {
+		const at = (content: string, cursor = 0): OrgCommandContext => ({
+			...context, isDirty: false, editor: { ...context.editor!, content, cursor },
 		})
-		const original = structuredClone(orgWorkspaceCommandDefinitions)
-		const entries = deriveOrgWorkspaceCommands(frozenContext)
-		expect(entries.find((entry) => entry.id === "toggle-sidebar")?.label).toBe("Hide file sidebar")
-		expect(entries.find((entry) => entry.id === "toggle-inspector")?.label).toBe(
-			"Hide note inspector",
-		)
-		expect(orgWorkspaceCommandDefinitions).toEqual(original)
-		expect(
-			deriveOrgWorkspaceCommands(context).find((entry) => entry.id === "toggle-sidebar")?.label,
-		).toBe("Show file sidebar")
-		expect(entries).toEqual(deriveOrgWorkspaceCommands(frozenContext))
+		expect(getOrgCommandDisabledReason("tags", at("preamble"))).not.toBeNull()
+		expect(getOrgCommandDisabledReason("tags", at("* Heading\n#+begin_src\n* Fake\n#+end_src", 25))).not.toBeNull()
+		expect(getOrgCommandDisabledReason("checkbox", at("- [ ] item", 4))).toBeNull()
+		expect(getOrgCommandDisabledReason("checkbox", at("* Heading"))).not.toBeNull()
+		expect(getOrgCommandDisabledReason("link", at("[[file:other.org]]", 4))).toBeNull()
+		expect(getOrgCommandDisabledReason("link", at("* Heading"))).not.toBeNull()
+		expect(getOrgCommandDisabledReason("refile", at("* Heading\nbody", 11))).not.toBeNull()
+		expect(getOrgCommandDisabledReason("refile", at("* Heading\nbody", 2))).toBeNull()
+		expect(getOrgCommandDisabledReason("archive", { ...at("* Heading"), isDirty: true })).not.toBeNull()
+		expect(getOrgCommandDisabledReason("sparse-tree", at("preamble"))).toBeNull()
 	})
 
-	it("exhaustively derives guards across all context flag combinations", () => {
-		for (let mask = 0; mask < 256; mask++) {
-			const current: OrgWorkspaceCommandContext = {
-				hasWorkspace: Boolean(mask & 1),
-				hasDocument: Boolean(mask & 2),
-				hasBuffers: Boolean(mask & 64),
-				hasDirtyBuffers: Boolean(mask & 128),
-				isDirty: Boolean(mask & 4),
-				isBusy: Boolean(mask & 8),
-				sidebarVisible: Boolean(mask & 16),
-				inspectorVisible: Boolean(mask & 32),
-			}
-			const expectedEnabled = {
-				"quick-open": current.hasWorkspace,
-				"buffer-switch": current.hasWorkspace && Boolean(current.hasBuffers) && !current.isBusy,
-				"save-all": current.hasWorkspace && Boolean(current.hasDirtyBuffers) && !current.isBusy,
-				save: current.hasWorkspace && current.hasDocument && current.isDirty && !current.isBusy,
-				refresh: current.hasWorkspace && !current.isBusy,
-				agenda: current.hasWorkspace,
-				capture: current.hasWorkspace && !current.isBusy,
-				diary: current.hasWorkspace && !current.isBusy,
-				editor: true,
-				"sparse-tree": current.hasWorkspace && current.hasDocument && !current.isBusy,
-				"clear-sparse-tree": current.hasWorkspace && current.hasDocument && !current.isBusy,
-				"toggle-sidebar": true,
-				"toggle-inspector": current.hasWorkspace && current.hasDocument,
-			}
-			for (const entry of deriveOrgWorkspaceCommands(current)) {
-				expect(entry.disabled).toBe(!expectedEnabled[entry.id])
-				expect(guardOrgWorkspaceCommand(entry.id, current)).toBe(expectedEnabled[entry.id])
-			}
+	it("rejects malformed planning and property drawers before starting parameter input", () => {
+		for (const id of ["scheduled", "deadline", "property"] as const) {
+			const current = { ...context, editor: { ...context.editor!, content: "* Work\n:PROPERTIES:\n:ID: work\n", cursor: 2 } }
+			expect(getOrgCommandDisabledReason(id, current)).not.toBeNull()
 		}
+		const malformedDate = { ...context, editor: { ...context.editor!, content: "* Work\nSCHEDULED: <2026-99-42>", cursor: 2 } }
+		expect(getOrgCommandDisabledReason("scheduled", malformedDate)).not.toBeNull()
 	})
 
-	it("recognizes only exact own command IDs and rejects unknown dispatches", () => {
-		for (const id of ids) expect(isOrgWorkspaceCommandId(id)).toBe(true)
-		for (const id of [
-			undefined,
-			null,
-			1,
-			{},
-			"",
-			"SAVE",
-			"execute-command",
-			"metadata",
-			"toString",
-			"__proto__",
-		]) {
-			expect(isOrgWorkspaceCommandId(id)).toBe(false)
-			expect(guardOrgWorkspaceCommand(id, context)).toBe(false)
-		}
+
+	it("validates planning source before reading the default-day clock", () => {
+		let reads = 0
+		const command = getOrgParameterCommand("scheduled", "", () => {
+			reads++
+			return new Date(2026, 9, 5, 12)
+		})!
+		expect(command.prepare({ relativePath: "note.org", content: "preamble", cursor: 0 })).toMatchObject({ kind: "rejected" })
+		expect(reads).toBe(0)
+		expect(command.prepare(context.editor!)).toMatchObject({ kind: "ready" })
+		expect(reads).toBe(1)
+		const existing = { ...context.editor!, content: "* Work\nSCHEDULED: <2026-10-09>", cursor: 2 }
+		const prepared = command.prepare(existing)
+		if (prepared.kind !== "ready") throw new Error("Expected validated planning origin")
+		expect(command.execute(prepared.context, existing, "<2026-10-09>")).toMatchObject({ kind: "no-change" })
+		expect(reads).toBe(1)
 	})
 
-	it("rechecks guards against current rather than stale rendered state", () => {
-		expect(guardOrgWorkspaceCommand("save", context)).toBe(true)
-		expect(guardOrgWorkspaceCommand("save", { ...context, isBusy: true })).toBe(false)
+
+	it("fails closed for unrecognized commands and executor refusal", () => {
+		let calls = 0
+		const dispatcher = { getContext: () => context, execute: () => { calls++; return false } }
+		for (const id of [undefined, null, "__proto__", "toString", "SAVE", "execute-command"])
+			expect(dispatchOrgCommand(id, dispatcher)).toBe(false)
+		expect(calls).toBe(0)
+		expect(dispatchOrgCommand("save", dispatcher)).toBe(false)
+		expect(calls).toBe(1)
+	})
+
+	it("allows view toggles while busy", () => {
+		expect(getOrgCommandDisabledReason("toggle-sidebar", { ...context, isBusy: true })).toBeNull()
 	})
 })
 
-describe("workspace keyboard routing", () => {
-	it("routes both Ctrl and Meta variants, including uppercase event keys", () => {
-		for (const modifier of [
-			{ ctrlKey: true, metaKey: false },
-			{ ctrlKey: false, metaKey: true },
-			{ ctrlKey: true, metaKey: true },
-		]) {
-			for (const [key, expected] of [
-				["o", "quick-open"],
-				["p", "execute-command"],
-				["k", "execute-command"],
-				["s", "save"],
-			]) {
-				for (const variant of [key, key.toUpperCase()]) {
-					expect(
-						resolveOrgWorkspaceKeyboardCommand({ ...keyboard, ...modifier, key: variant }),
-					).toBe(expected)
-				}
-			}
+describe("Source-only parameter command metadata", () => {
+	it("keeps the new operations editor-scoped with no aliases or new default bindings", () => {
+		const source = { ...context, hasWorkspace: false }
+		for (const id of ["remove-scheduled", "remove-deadline", "todo-state", "complete-repeating"] as const) {
+			const command = deriveOrgCommands(source).find(command => command.id === id)!
+			expect(command.scope).toBe("editor")
+			expect(command.disabled).toBe(false)
+			expect(command.shortcut).toBeUndefined()
+			expect(command.prefix).toBeUndefined()
+			expect(command.requires).not.toContain("workspace")
+			expect(getOrgParameterCommand(id, "")).not.toBeNull()
+			expect(getOrgCommandDisabledReason(id, { ...source, editor: { ...source.editor!, readOnly: true } })).not.toBeNull()
+			expect(getOrgCommandDisabledReason(`org.heading.${id}`, source)).not.toBeNull()
 		}
 	})
 
-	it("routes explicit shifted buffer commands while respecting input ownership", () => {
-		for (const [key, expected] of [
-			["b", "buffer-switch"],
-			["s", "save-all"],
-		]) {
-			for (const modifier of [
-				{ ctrlKey: true, metaKey: false },
-				{ ctrlKey: false, metaKey: true },
-			]) {
-				const event = { ...keyboard, ...modifier, key, shiftKey: true }
-				expect(resolveOrgWorkspaceKeyboardCommand(event)).toBe(expected)
-				for (const guard of [
-					{ defaultPrevented: true },
-					{ isParameterInput: true },
-					{ isComposing: true },
-					{ keyCode: 229 },
-					{ altKey: true },
-				]) {
-					expect(resolveOrgWorkspaceKeyboardCommand({ ...event, ...guard })).toBeNull()
-				}
-			}
-		}
+	it("uses the actual configured TODO states and frozen logging setup in the shared factory", () => {
+		const content = "#+TODO: OPEN WAIT | FINISHED CANCELLED\r\n* OPEN Work\r\nraw\0😀\r\n"
+		const origin = { relativePath: "note.org", content, cursor: content.indexOf("* OPEN") + 2 }
+		const configuration = { ...DEFAULT_ORG_BEHAVIOR_CONFIGURATION,
+			logging: { ...DEFAULT_ORG_BEHAVIOR_CONFIGURATION.logging, done: "note" as const } }
+		const command = getOrgParameterCommand("todo-state", "", undefined, configuration)!
+		expect(command.prepare(origin)).toMatchObject({ kind: "ready", initialInput: "", candidates: ["OPEN", "WAIT", "FINISHED", "CANCELLED"] })
+		const stamp = "[2026-10-14 Wed 23:55]"
+		const setup = { today: "2026-10-14", logStamp: stamp }
+		const pending = command.execute(origin, origin, "FINISHED", setup)
+		expect(pending).toMatchObject({ kind: "needs-note", request: { stamp, input: "FINISHED", context: setup } })
+		const finished = command.execute(origin, origin, "FINISHED", { ...setup, note: "literal note\0😀" })
+		expect(finished.kind).toBe("batch")
 	})
 
-	it("ignores every supported key when any event ownership/modifier guard applies", () => {
-		const guards: Partial<OrgWorkspaceKeyboardInput>[] = [
-			{ defaultPrevented: true },
-			{ isComposing: true },
-			{ keyCode: 229 },
-			{ isParameterInput: true },
-			{ altKey: true },
-			{ ctrlKey: false, metaKey: false },
-		]
-		for (const key of ["o", "p", "k", "s"]) {
-			for (const guard of guards) {
-				expect(resolveOrgWorkspaceKeyboardCommand({ ...keyboard, key, ...guard })).toBeNull()
-			}
-		}
-	})
-
-	it("does not invent shifted variants for other commands", () => {
-		for (const key of ["o", "p", "k", "z"])
-			expect(resolveOrgWorkspaceKeyboardCommand({ ...keyboard, key, shiftKey: true })).toBeNull()
-	})
-
-	it("does not double-dispatch CodeMirror C-c C-p/C-o suffixes or Mod-S", () => {
-		for (const key of ["p", "o", "s"]) {
-			expect(
-				resolveOrgWorkspaceKeyboardCommand({ ...keyboard, key, defaultPrevented: true }),
-			).toBeNull()
-		}
-	})
-
-	it("ignores unrelated keys and does not mutate event-like input", () => {
-		for (const key of ["c", "Escape", "Enter", "Dead", "Process", "", "F1"]) {
-			expect(resolveOrgWorkspaceKeyboardCommand({ ...keyboard, key })).toBeNull()
-		}
-		const input = Object.freeze({ ...keyboard })
-		expect(resolveOrgWorkspaceKeyboardCommand(input)).toBe("quick-open")
-		expect(input).toEqual(keyboard)
+	it.each([
+		[1, 0, true, false],
+		[3, 1, false, true],
+	] as const)("separates default and replacement endpoints for a %s-dash range", (dashCount, gapOffset, rightDefault, rightTarget) => {
+		const left = "<2026-10-14 Wed 10:00 +1w>", right = "[2026-10-15 Thu 11:00 +2w]"
+		const content = `* Heading\r\n${left}${"-".repeat(dashCount)}${right}\r\nraw\0😀\n`
+		const origin = { relativePath: "note.org", content, cursor: content.indexOf(left) + left.length + gapOffset }
+		const command = getOrgParameterCommand("timestamp-active", "")!
+		const prepared = command.prepare(origin)
+		expect(prepared).toMatchObject({ kind: "ready", initialInput: rightDefault ? right : left })
+		if (prepared.kind !== "ready") throw new Error("Expected the selected timestamp endpoint")
+		const result = command.execute(prepared.context, origin, prepared.initialInput)
+		expect(result.kind).toBe("edit")
+		if (result.kind !== "edit") throw new Error("Expected one raw endpoint replacement")
+		expect([result.edit.from, result.edit.to]).toEqual([content.indexOf(rightTarget ? right : left), content.indexOf(rightTarget ? right : left) + (rightTarget ? right.length : left.length)])
+		expect(result.edit.insert).toBe(rightDefault ? "<2026-10-15 11:00 +2w>" : "<2026-10-14 10:00 +1w>")
 	})
 })
+

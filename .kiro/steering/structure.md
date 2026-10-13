@@ -8,7 +8,6 @@ grain-editor-monorepo/
 │   ├── desktop/          # Tauri 桌面应用（主应用）
 │   ├── api-rust/         # Warp HTTP API 服务器
 │   ├── web/              # Next.js 网站
-│   ├── mobile/           # Expo React Native 应用
 │   └── admin/            # 管理面板
 ├── packages/
 │   ├── rust-core/        # Rust 核心库（共享业务逻辑）

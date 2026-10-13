@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Menu, X } from "lucide-react";
 import { useMediaQuery } from "./hooks/use-media-query";
 import { useScrollbar } from "./hooks/use-scrollbar";
-import { useSafeLocalStorage } from "./hooks/use-safe-local-storage";
+import { useLocalStorageValue } from "./hooks/use-safe-local-storage";
 import { DocNav } from "./doc-nav";
 import { TableOfContents } from "./table-of-contents";
 import { DocSearch } from "./doc-search";
@@ -34,7 +33,6 @@ import { DocsErrorBoundary } from "./error-boundary";
 import { ShareButton } from "./share-button";
 import { DocumentTags } from "./document-tags";
 import { RelatedDocuments } from "./related-documents";
-import { PageTransition } from "./page-transition";
 import { DocumentStats } from "./document-stats";
 import { DocumentFeedback } from "./document-feedback";
 import { cn } from "@/lib/utils";
@@ -45,30 +43,27 @@ interface DocsLayoutProps {
 }
 
 export function DocsLayout({ children }: DocsLayoutProps) {
-  const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [focusMode, setFocusMode] = useState(false);
   const mainContentRef = useRef<HTMLElement>(null);
-  
-  // 使用响应式 hook
   const isMobile = useMediaQuery("(max-width: 1023px)");
-  const { get: getLocalStorage } = useSafeLocalStorage();
-
-  useEffect(() => {
-    // 从 localStorage 读取专注模式状态
-    const saved = getLocalStorage("docs-focus-mode");
-    if (saved === "true") {
-      setFocusMode(true);
-    }
-  }, [getLocalStorage]);
-
-  // 移动端切换时自动关闭侧边栏
-  useEffect(() => {
-    if (!isMobile) {
-      setSidebarOpen(false);
-    }
-  }, [isMobile]);
+  const [mobileSidebar, setMobileSidebar] = useState({ isMobile, open: false });
+  if (mobileSidebar.isMobile !== isMobile) {
+    setMobileSidebar({ isMobile, open: false });
+  }
+  const sidebarOpen = isMobile && mobileSidebar.open;
+  const [savedCollapsed, setCollapsed] = useLocalStorageValue("docs-sidebar-collapsed");
+  const [savedFocus, setFocus] = useLocalStorageValue("docs-focus-mode");
+  const [savedFontSize, setFontSize] = useLocalStorageValue("docs-font-size");
+  const fontSize = savedFontSize === "sm" || savedFontSize === "base" ||
+    savedFontSize === "lg" || savedFontSize === "xl" ? savedFontSize : "lg";
+  const sidebarCollapsed = savedCollapsed === "true";
+  const focusMode = savedFocus === "true";
+  const handleSidebarToggle = useCallback((collapsed: boolean) => {
+    setCollapsed(String(collapsed));
+    if (!collapsed) setFocus("false");
+  }, [setCollapsed, setFocus]);
+  const handleFocusToggle = useCallback((focused: boolean) => {
+    setFocus(String(focused));
+  }, [setFocus]);
 
   // 使用智能滚动条 Hook
   useScrollbar(mainContentRef);
@@ -88,7 +83,7 @@ export function DocsLayout({ children }: DocsLayoutProps) {
 
   return (
     <DocsErrorBoundary>
-      <div className="relative min-h-screen bg-white dark:bg-black">
+      <div className="docs-reader relative h-[calc(100dvh-4rem)] bg-white dark:bg-black" data-font-size={fontSize}>
       {/* Keyboard Navigation */}
       <KeyboardNavigation />
       
@@ -100,15 +95,6 @@ export function DocsLayout({ children }: DocsLayoutProps) {
       
       {/* Scroll Shadows */}
       <ScrollShadows />
-      
-      {/* Scroll To Top Button */}
-      <ScrollToTop />
-      
-      {/* Keyboard Help */}
-      <KeyboardHelp />
-      
-      {/* Focus Mode */}
-      <FocusMode onToggle={setFocusMode} />
       
       {/* Code Block Copy */}
       <CodeBlockCopy />
@@ -122,12 +108,6 @@ export function DocsLayout({ children }: DocsLayoutProps) {
       {/* Scroll Position Memory */}
       <ScrollPosition />
       
-      {/* Font Size Control */}
-      <FontSizeControl />
-      
-      {/* Share Button */}
-      <ShareButton />
-      
       {/* Print Styles */}
       <PrintStyles />
       
@@ -140,72 +120,69 @@ export function DocsLayout({ children }: DocsLayoutProps) {
       {/* Global Keyboard Search */}
       <KeyboardSearch />
 
-      {/* Mobile Sidebar Toggle */}
-      <div className="lg:hidden fixed top-16 left-0 right-0 z-40 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 px-4 py-3">
+      {/* Reading tools have their own row below the global header. */}
+      <div className="docs-reading-tools fixed left-0 right-0 z-40 flex items-center gap-1 sm:gap-2 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-black px-2 sm:px-4 print:hidden" role="region" aria-label="阅读工具">
+        <div className="hidden lg:block">
+          <SidebarToggle collapsed={sidebarCollapsed || focusMode} onToggle={handleSidebarToggle} />
+        </div>
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="flex items-center gap-2"
+          onClick={() => setMobileSidebar({ isMobile, open: !sidebarOpen })}
+          className="lg:hidden h-8 w-8 shrink-0 p-0"
+          aria-label={sidebarOpen ? "关闭文档导航" : "打开文档导航"}
+          aria-expanded={sidebarOpen}
+          aria-controls="docs-navigation"
         >
-          {sidebarOpen ? (
-            <>
-              <X className="w-5 h-5" />
-              <span>关闭导航</span>
-            </>
-          ) : (
-            <>
-              <Menu className="w-5 h-5" />
-              <span>打开导航</span>
-            </>
-          )}
+          {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
         </Button>
-      </div>
-
-      {/* Sidebar Toggle Button (Desktop) */}
-      <div className="hidden lg:block">
-        <SidebarToggle onToggle={setSidebarCollapsed} />
+        <div className="ml-auto flex items-center gap-1 sm:gap-2">
+          <FontSizeControl fontSize={fontSize} onFontSizeChange={setFontSize} />
+          <ShareButton />
+          <FocusMode isFocused={focusMode} onToggle={handleFocusToggle} />
+          <KeyboardHelp />
+          <div className="h-8 w-8 shrink-0">
+            <ScrollToTop />
+          </div>
+        </div>
       </div>
 
       {/* Layout Container - 使用固定定位实现两侧固定、中间滚动 */}
       <div className="flex relative">
+        {sidebarOpen && (
+          <div
+            className="docs-sidebar-overlay lg:hidden fixed inset-x-0 bottom-0 z-20 bg-black/50"
+            onClick={() => setMobileSidebar({ isMobile, open: false })}
+            aria-hidden="true"
+          />
+        )}
         {/* Left Sidebar - Navigation (固定定位) */}
         <aside
+          id="docs-navigation"
+          inert={isMobile ? !sidebarOpen : sidebarCollapsed || focusMode}
           className={cn(
             // 移动端：固定定位，可滑动
-            "fixed lg:fixed inset-y-0 left-0 z-50",
+            "docs-navigation-panel fixed bottom-0 left-0 z-30",
             "bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800",
-            "transform transition-all duration-300 ease-in-out",
-            "top-20 lg:top-16",
-            // 桌面端始终可见，移动端可切换
+            "transform transition-transform duration-300 ease-in-out",
             sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-            // 折叠状态
-            (sidebarCollapsed || focusMode) && "lg:-translate-x-full",
-            // 桌面端固定高度
-            "lg:h-[calc(100vh-4rem)]"
+            (sidebarCollapsed || focusMode) && "lg:-translate-x-full"
           )}
         >
           <DocNav />
-          {/* Mobile Overlay */}
-          {sidebarOpen && (
-            <div
-              className="lg:hidden fixed inset-0 bg-black/50 z-40 top-20"
-              onClick={() => setSidebarOpen(false)}
-            />
-          )}
         </aside>
 
         {/* Main Content Area (中间区域，独立滚动) */}
         <main 
           ref={mainContentRef}
+          inert={sidebarOpen}
           className={cn(
-            "flex-1 min-w-0",
+            "docs-main fixed left-0 right-0 bottom-0 min-w-0",
             // 为左侧导航栏留出空间（折叠或专注模式时不需要）
             (sidebarCollapsed || focusMode) ? "lg:ml-0" : "lg:ml-64",
             // 为右侧目录留出空间（仅大屏幕）
-            "xl:mr-64",
-            // 固定高度，启用独立滚动
-            "h-[calc(100vh-4rem)] overflow-y-auto",
+            focusMode ? "xl:mr-0" : "xl:mr-64",
+            "overflow-y-auto",
             // 平滑滚动
             "scroll-smooth",
             // 智能滚动条：默认隐藏，悬停或滚动时显示
@@ -215,7 +192,6 @@ export function DocsLayout({ children }: DocsLayoutProps) {
           )}
         >
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10 pb-24 lg:pb-24">
-            <PageTransition>
               {/* Breadcrumb */}
               <Breadcrumb />
               
@@ -236,9 +212,9 @@ export function DocsLayout({ children }: DocsLayoutProps) {
                 <DocSearch />
               </div>
 
-              <article className="docs-article prose prose-lg dark:prose-invert max-w-none 
+              <article className="docs-article prose dark:prose-invert max-w-none
                 prose-headings:scroll-mt-20 prose-headings:font-semibold
-                prose-p:text-gray-600 dark:prose-p:text-gray-400 prose-p:leading-7
+                prose-p:text-gray-600 dark:prose-p:text-gray-400
                 prose-a:text-blue-600 dark:prose-a:text-blue-400 hover:prose-a:text-blue-700 dark:hover:prose-a:text-blue-300 prose-a:no-underline hover:prose-a:underline
                 prose-strong:text-gray-900 dark:prose-strong:text-white prose-strong:font-semibold
                 prose-code:text-gray-900 dark:prose-code:text-gray-100 prose-code:bg-gray-100 dark:prose-code:bg-gray-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
@@ -254,16 +230,15 @@ export function DocsLayout({ children }: DocsLayoutProps) {
               
               {/* Chapter Navigation - 始终渲染，组件内部处理条件 */}
               <ChapterNavigation />
-            </PageTransition>
           </div>
         </main>
 
         {/* Right Sidebar - Table of Contents (固定定位) */}
         <aside 
+          inert={focusMode}
           className={cn(
             "hidden xl:block",
-            "fixed right-0 top-16",
-            "h-[calc(100vh-4rem)]",
+            "docs-toc-panel fixed right-0 bottom-0",
             "z-30",
             "transform transition-transform duration-300 ease-in-out",
             focusMode && "translate-x-full"

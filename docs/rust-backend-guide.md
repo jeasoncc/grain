@@ -333,8 +333,12 @@ API 服务和显式旧版桌面模式使用历史数据库：
 
 普通 Org 桌面启动在同一数据目录使用独立的 `grain-org-index.db`，不会因为历史
 `grain.db` 存在而打开它。只有以 `GRAIN_TAURI_LEGACY_MODE=1` 启动 Tauri 才会选择
-`grain.db`；该模式是读写模式，应仅用于获得授权的备份副本。API 服务仍可通过
-`GRAIN_DB_FILENAME` 配置文件名，但该变量不会绕过 Tauri 的默认隔离。
+历史只读来源；它只接受已存在的标准明文 SQLite，不创建或初始化 schema，不修改
+key/journal-mode PRAGMA，不提供历史 CRUD。WAL/SHM/journal 或不支持的文件锁条件会
+拒绝打开。请使用获得授权的隔离副本；两种模式都另建可写的 `grain-org-index.db`。
+Linux 数据根遵循绝对路径 `XDG_DATA_HOME`，未设置时才使用 `~/.local/share`。
+API 服务仍可通过 `GRAIN_DB_FILENAME` 配置读写数据库文件名，但该变量不会绕过
+Tauri 的默认隔离或历史只读边界。
 
 ## 备份位置
 

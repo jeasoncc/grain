@@ -18,6 +18,8 @@
 
 默认桌面界面直接打开真实本地目录并编辑其中的 `.org` 文件。新的 Org 索引、缓存和 UI 状态都可重建，不能成为 Org 正文的权威存储。
 
+文件打开期间，canonical 内存 buffer 是工作正文及撤销历史的唯一持有者；窗口只是无独立历史的投影。Agenda、Backlinks 和链接解析优先消费 live source，包含保存失败和 parked buffer 的未保存改动。已确认磁盘 revision 只作为 CAS 基线，不会覆盖更新的输入。
+
 旧 SQLite/Lexical 应用留下的历史 `grain.db` 是另一回事：其中可能仍保存尚未迁移作品的唯一副本，**绝不能将它视为可清空的派生状态**。旧应用目前只保留为明确隔离的迁移兼容界面，待经授权的历史数据库副本通过迁移与恢复验收后删除。
 
 ## 已实现功能
@@ -63,6 +65,7 @@ Documents/Grain/             用户作品，唯一事实来源
 - 拒绝路径穿越、绝对路径、反斜杠和非法文档目标。
 - 拒绝 symlink 越界，扫描器不会跟随 symlink 目录。
 - 普通写入必须提供 `expectedRevision`，过期内容会产生冲突。
+- 普通保存保留持久化、绑定文件身份的发布 journal；重新授权目录时先恢复再扫描。外来同名文件、身份不明产物和歧义状态保留并拒绝处理，不擅自覆盖或清除。
 - 支持的平台使用 staging 与原子 no-clobber 发布迁移结果。
 - Refile/Archive 采用 copy-first，部分失败时优先保留可恢复副本。
 - 默认 workspace 只在用户明确点击后创建；重启恢复不会静默重建被用户删除的目录。
@@ -74,7 +77,7 @@ Documents/Grain/             用户作品，唯一事实来源
 | 默认 `/`、`/org` | CodeMirror 6，直接持有 Org 原文 | 主路径 |
 | 显式 `/legacy` | Lexical，读取旧 SQLite 正文 | 迁移兼容 |
 
-`/legacy` 使用 lazy route，不再作为 Activity Bar 的同级主产品入口。只有历史数据库副本完成迁移与恢复验收后，才会移除最后的 Lexical 与 SQLite 正文写入代码。
+`/legacy` 的业务 provider、迁移选择器及编辑器样式仅在原生启动时固定的 `legacy` 模式授权后加载。需明确使用 `GRAIN_TAURI_LEGACY_MODE=1` 启动历史恢复环境；普通浏览器、无效模式及查询失败均不能授权。Activity Bar 保持 Org 主路径。只有历史数据库副本完成迁移与恢复验收后，才会移除最后的 Lexical 与 SQLite 正文写入代码。
 
 ## 项目结构
 
@@ -93,21 +96,27 @@ packages/editor-lexical/      旧系统兼容编辑器包
 
 ### 环境要求
 
-- Bun 1.1+
-- Node.js 20+
-- Rust stable
+- Bun 1.4.2（仓库包管理器与 CI 固定版本）
+- Node.js `^22.22.2 || ^24.15.0 || >=26.0.0`（CI 使用 24.21.0；本地验证使用 26.10.0）
+- Rust >= 1.94.0（验证使用 1.94.1）
 - Tauri 2 系统依赖
 - Linux 需要 WebKitGTK 4.1 开发包
 
 ### 安装与启动
 
 ```bash
-bun install
+bun install --frozen-lockfile
 cd apps/desktop
 bun run tauri dev
 ```
 
+JavaScript workspace 统一从仓库根目录安装，仅使用根 `bun.lock`。
+隔离链接使不同 workspace 的不兼容 peer 版本不会相互覆盖。
+独立实验 `experiments/doom-runtime` 保留自己的 npm 锁文件。
+
 开发时 Vite 在 `http://localhost:1420` 为 Tauri WebView 提供页面。该地址不是面向普通浏览器的本地文件访问方案。
+
+仓库根目录的 `bun run dev` 仅启动 desktop Vite，不再默认启动历史 Warp API；`bun run dev:all` 显式启动较大的 monorepo 开发栈。浏览器预览不能获取原生文件权限。
 
 ### 核心验证
 

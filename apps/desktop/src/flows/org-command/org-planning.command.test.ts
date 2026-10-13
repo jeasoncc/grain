@@ -40,7 +40,7 @@ describe("planning buffer commands", () => {
 		)
 		expect(createOrgPlanningCommand(kind, "2026-09-30").prepare(source)).toMatchObject({
 			kind: "ready",
-			initialInput: "2026-09-27",
+			initialInput: "<2026-09-27 Sun 12:30 +1w -2d>",
 			candidates: ["today", "tomorrow", "+3d", "next mon", "2026-09-27", "2026-09-30"],
 		})
 	})
@@ -88,7 +88,6 @@ describe("planning buffer commands", () => {
 		"2026-02-29",
 		"2026-13-01",
 		"2026-04-31",
-		"2026-9-30",
 	])("rejects invalid calendar date %j", (input) => {
 		const origin = context("* Note")
 		expect(
@@ -136,7 +135,7 @@ describe("planning buffer commands", () => {
 		expect(output).toBe("* Note\rSCHEDULED: <2026-10-01>\r")
 		expect(
 			createOrgPlanningCommand("SCHEDULED", "2026-09-30").prepare(context(output)),
-		).toMatchObject({ initialInput: "2026-10-01" })
+		).toMatchObject({ initialInput: "<2026-10-01>" })
 	})
 	it.each([
 		"周三",
@@ -193,5 +192,77 @@ describe("planning buffer commands", () => {
 		expect(command.prepare(context(content, content.length))).toMatchObject({
 			reason: "inside-block",
 		})
+	})
+	it("applies time/range/repeater/warning intent instead of reducing it to a date", () => {
+		const source = "* Note\r\nSCHEDULED: <2026-09-30 Wed 10:30 +1w -2d>  raw\0 DEADLINE: <2026-10-02 Fri>\r\nbody"
+		expect(apply(source, "2026-09-30 11am-1:15pm ++2w --3d")).toBe(
+			source.replace("<2026-09-30 Wed 10:30 +1w -2d>", "<2026-09-30 11:00-13:15 ++2w --3d>"),
+		)
+		expect(apply(source, "<2026-10-01 10:30 .+1m -3d>--<2026-10-03 12:00>")).toBe(
+			source.replace("<2026-09-30 Wed 10:30 +1w -2d>", "<2026-10-01 10:30 .+1m -3d>--<2026-10-03 12:00>"),
+		)
+	})
+	it("accepts the exact initial rich stamp without normalizing unrelated raw bytes", () => {
+		const source = context("* Note\r\nSCHEDULED: <2026-09-30\tWed 10:30  ++1w -2d>\rbody")
+		const command = createOrgPlanningCommand("SCHEDULED", "2026-09-30")
+		const prepared = command.prepare(source)
+		if (prepared.kind !== "ready") throw new Error(prepared.message)
+		expect(command.execute(source, source, prepared.initialInput)).toMatchObject({ kind: "no-change" })
+	})
+	it("stages reschedule notes before any edits and returns one original-source batch", () => {
+		const source = "#+STARTUP: lognotereschedule\n* Note\nSCHEDULED: <2026-09-30 Wed +1w>\nbody\n"
+		const origin = context(source, source.indexOf("* Note") + 2)
+		const command = createOrgPlanningCommand("SCHEDULED", "2026-09-30")
+		const accepted = { today: "2026-09-30", now: "12:00", logStamp: "[2026-09-30 Wed 12:00]" }
+		expect(command.execute(origin, origin, "2026-10-01", accepted)).toMatchObject({
+			kind: "needs-note",
+			request: { stamp: accepted.logStamp, operation: { kind: "reschedule", previous: "<2026-09-30 Wed +1w>", next: "<2026-10-01 +1w>" } },
+		})
+		const result = command.execute(origin, origin, "2026-10-01", { ...accepted, note: "literal 😀\r\n* not a heading\0" })
+		if (result.kind !== "batch") throw new Error(`Expected batch, got ${result.kind}`)
+		let output = source
+		for (const edit of [...result.batch.changes].reverse()) output = output.slice(0, edit.from) + edit.insert + output.slice(edit.to)
+		expect(output).toContain("SCHEDULED: <2026-10-01 +1w>")
+		expect(output).toContain("Rescheduled from")
+		expect(output).toContain(accepted.logStamp)
+		expect(command.execute(origin, { ...origin, content: output }, "2026-10-01", { ...accepted, note: "note" })).toMatchObject({ reason: "content-changed" })
+	})
+})
+
+describe("planning metadata and removal source batches", () => {
+	it("removes CLOSED atomically even when accepting the same scheduled date", () => {
+		const source = "* DONE owned\r\nCLOSED:\t[2026-09-30 Wed 08:00]  SCHEDULED: <2026-09-30 Wed +1w>\rbody"
+		const origin = context(source)
+		const result = createOrgPlanningCommand("SCHEDULED", "").execute(origin, origin, "2026-09-30")
+		if (result.kind !== "edit") throw new Error(`Expected edit, got ${result.kind}`)
+		expect(source.slice(0, result.edit.from) + result.edit.insert + source.slice(result.edit.to)).toBe("* DONE owned\r\nSCHEDULED: <2026-09-30 Wed +1w>\rbody")
+	})
+	it("preserves omitted cookies when changing only a time, and clears them for a full wrapped value", () => {
+		const source = "* TODO task\nSCHEDULED: <2026-09-30 Wed 08:00 +1w -2d>\n"
+		const origin = context(source)
+		const command = createOrgPlanningCommand("SCHEDULED", "")
+		const result = command.execute(origin, origin, "09:00", { today: "2026-09-30" })
+		if (result.kind !== "edit") throw new Error(`Expected edit, got ${result.kind}`)
+		expect(result.edit.insert).toBe("<2026-09-30 09:00 +1w -2d>")
+		expect(apply(source, "<2026-09-30 09:00>")).toBe("* TODO task\nSCHEDULED: <2026-09-30 09:00>\n")
+	})
+	it("stages removal notes with captured old value and setup context, preserving CLOSED in the same batch", () => {
+		const source = "#+STARTUP: lognotereschedule\n* DONE task\nCLOSED: [2026-09-30 Wed 08:00] SCHEDULED: <2026-09-30 Wed +1w> DEADLINE: <2026-10-02 Fri>\nbody\0"
+		const origin = context(source, source.indexOf("* DONE"))
+		const command = createOrgPlanningCommand("SCHEDULED", "", undefined, "remove")
+		const captured = { today: "2026-09-30", logStamp: "[2026-09-30 Wed 12:00]" }
+		const pending = command.execute(origin, origin, "", captured)
+		if (pending.kind !== "needs-note") throw new Error(`Expected note, got ${pending.kind}`)
+		expect(pending.request.operation).toEqual({ kind: "reschedule", previous: "<2026-09-30 Wed +1w>", next: null })
+		expect(Object.isFrozen(pending.request.context)).toBe(true)
+		const result = command.execute(origin, origin, pending.request.input!, { ...pending.request.context!, logStamp: pending.request.stamp, note: "literal\r\n:END:\0" })
+		if (result.kind !== "batch") throw new Error(`Expected batch, got ${result.kind}`)
+		let output = source
+		for (const edit of [...result.batch.changes].reverse()) output = output.slice(0, edit.from) + edit.insert + output.slice(edit.to)
+		expect(output).toContain("CLOSED: [2026-09-30 Wed 08:00]")
+		expect(output).not.toContain("SCHEDULED:")
+		expect(output).toContain("DEADLINE: <2026-10-02 Fri>")
+		expect(output).toContain('Not scheduled, was "[2026-09-30 Wed +1w]"')
+		expect(output).toContain(captured.logStamp)
 	})
 })

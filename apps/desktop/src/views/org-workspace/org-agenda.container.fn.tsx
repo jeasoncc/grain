@@ -1,77 +1,198 @@
 import * as E from "fp-ts/Either"
-import { memo, useEffect, useRef, useState } from "react"
-import { loadOrgAgendaFlow } from "@/flows/org-workspace"
+import { memo, useEffect, useLayoutEffect, useRef, useState } from "react"
+import { loadOrgAgendaFlow } from "@/flows/org-workspace/org-agenda.flow"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
-import type { OrgAgendaTodoNoteRequest, OrgTodoNoteResult } from "@/flows/org-command/org-todo-note"
+import { orgQuerySourcesFromController } from "@/hooks/org-query-sources"
+import type { OrgAgendaTodoNoteRequest } from "@/flows/org-command/org-todo-note"
 import type { OrgAgendaEntry } from "@/pipes/org"
 import { OrgAgendaView } from "./org-agenda.view.fn"
-import { OrgMinibuffer } from "./org-minibuffer.view.fn"
+import { useApplicationCommandHost, useApplicationParameterRegistration } from "@/views/application/application-command-provider"
+import type { ApplicationToolOrigin, ApplicationToolState } from "@/flows/application/application-tool-registry"
 import { useOrgAgendaParameters } from "@/hooks/use-org-agenda-parameters"
+import type { OrgAgendaCommand } from "@/types/org/org-agenda-command.types"
+import { getOrgAgendaConfiguration, subscribeOrgAgendaConfiguration, useOrgAgendaConfiguration } from "@/hooks/use-org-agenda-configuration"
+import { captureOrgCalendarContext, systemOrgNow } from "@/utils/org-date-clock"
+import { useOrgClockWorkflow } from "@/hooks/use-org-clock-workflow"
+import { OrgClockReportView } from "./org-clock-report.view.fn"
+import type { ApplicationCommandResult } from "@/views/application/application-command-provider"
+import { freezeOrgAgendaEntrySnapshot } from "@/pipes/org/org-agenda-command-plan.pipe"
+import { hasOrgAgendaActionOrigin, validateOrgAgendaOrigin } from "@/pipes/org/org-agenda.pipe"
 
+export interface OrgAgendaToolLifecycle {
+	readonly state: ApplicationToolState
+	readonly close: () => boolean
+	readonly ownsFocus: () => boolean
+	readonly dispose: () => Promise<void>
+}
 /** Derived rows are snapshots, never a second working-copy authority. */
 export const OrgAgendaContainer = memo(function OrgAgendaContainer({
 	controller,
 	onShowEditor,
 	onTodoNoteRequest,
 	now,
+	onToolLifecycle,
 }: {
 	readonly controller: OrgWorkspaceController
 	readonly onShowEditor: () => void
 	readonly onTodoNoteRequest?: (request: OrgAgendaTodoNoteRequest) => boolean | void
 	readonly now?: () => Date
+	readonly onToolLifecycle?: (lifecycle: OrgAgendaToolLifecycle) => void
 }) {
-	const [entries, setEntries] = useState<readonly OrgAgendaEntry[]>([])
-	const [error, setError] = useState<string | null>(null)
-	const [isLoading, setLoading] = useState(true)
+	const [query, setQuery] = useState<{
+		readonly key: string
+		readonly scope: string
+		readonly entries: readonly OrgAgendaEntry[]
+		readonly error: string | null
+		readonly isLoading: boolean
+	}>({ key: "", scope: "", entries: [], error: null, isLoading: true })
 	const [reload, setReload] = useState(0)
-	const [todoPending, setTodoPending] = useState(false)
-	const [todoStatus, setTodoStatus] = useState<string | null>(null)
-	const todoOwner = useRef<AbortController | null>(null)
-	const todoCommitting = useRef(false)
-	const todoAbortDeferred = useRef(false)
+	const [navigationError, setNavigationError] = useState<string | null>(null)
+	const configuration = useOrgAgendaConfiguration()
+	const [selection, setSelection] = useState({ id: "", revision: 0 })
+	const selectedViewId = selection.id
+	const projectionGeneration = useRef<object>({})
+	const views = configuration.configuration?.views ?? []
+	const selectedView = views.find(view => view.id === selectedViewId) ?? null
 	const surfaceRef = useRef<HTMLDivElement>(null)
+	const effects = useRef(new Set<Promise<unknown>>())
+	const queryRead = useRef<AbortController | null>(null)
+	const parameterOwner = useRef({}).current
 	const focusOrigin = useRef<{ key: string; action: string; element: HTMLElement } | null>(null)
-	const workspace = controller.workspace
-	const session = controller.workspaceSessionId
-	const scope = JSON.stringify([workspace?.rootPath, workspace?.capabilityToken, session])
-	const scopeRef = useRef(scope)
-	scopeRef.current = scope
+	const { workspace, session, scope, overlays, liveSnapshotKey, sourceKey } =
+		orgQuerySourcesFromController(controller)
+	const applicationHost = useApplicationCommandHost()
+	const liveApplicationHost = useRef(applicationHost)
+	liveApplicationHost.current = applicationHost
+	const projectionScope = JSON.stringify([scope, configuration.generation.revision, selection])
+	const queryKey = JSON.stringify([sourceKey, reload, projectionScope])
+	const queryKeyRef = useRef(queryKey)
+	queryKeyRef.current = queryKey
+	const sourceKeyRef = useRef(sourceKey)
+	sourceKeyRef.current = sourceKey
+	// Preserve focused same-session rows until replacement; never carry rows across grants/sessions.
+	const entries = !configuration.error && query.scope === projectionScope ? query.entries : []
+	const error = configuration.error ?? (views.length && !selectedView ? "Select an Agenda view to run its explicit file scope and calendar window." : query.key === queryKey ? query.error : null)
+	const isLoading = !error && !!workspace && (query.scope !== projectionScope || query.isLoading)
+	const scopeRef = useRef(projectionScope)
+	scopeRef.current = projectionScope
 	const openGeneration = useRef(0)
+	const openRead = useRef<AbortController | null>(null)
+	const cancelOpen = () => {
+		openGeneration.current += 1
+		openRead.current?.abort()
+		openRead.current = null
+	}
+	useLayoutEffect(() => subscribeOrgAgendaConfiguration(() => {
+		if (getOrgAgendaConfiguration().generation !== configuration.generation) {
+			queryRead.current?.abort()
+			cancelOpen()
+		}
+	}), [configuration.generation])
 	const disposedRef = useRef(false)
 	useEffect(() => {
 		disposedRef.current = false
-		setTodoPending(false)
-		setTodoStatus(null)
 		return () => {
 			disposedRef.current = true
-			openGeneration.current += 1
-			todoOwner.current?.abort()
-			todoOwner.current = null
+			cancelOpen()
 		}
-	}, [scope])
-	// The controller publishes fresh arrays. Depend on exact snapshot values, not array identity.
-	const overlays = controller.liveBuffers.map((buffer) => ({
-		workspaceRoot: workspace?.rootPath ?? "",
-		capabilityToken: workspace?.capabilityToken,
-		workspaceSessionId: session ?? undefined,
-		relativePath: buffer.document.relativePath,
-		content: buffer.content,
-		sourceRevision: buffer.bufferId,
-		diskRevision: buffer.document.revision,
-		runtimeIncarnation: buffer.runtimeIncarnation,
-		sourceGeneration: buffer.sourceGeneration,
-	}))
-	const liveSnapshotKey = JSON.stringify(overlays)
-	const sourceVersion = JSON.stringify([liveSnapshotKey, workspace, entries])
-	const sourceVersionRef = useRef(sourceVersion)
-	sourceVersionRef.current = sourceVersion
+	}, [projectionScope])
 
+	const captureRowOrigin = (entry: OrgAgendaEntry): ApplicationToolOrigin | null => {
+		// Retained focused rows may remain visible during a refresh, but are not fresh producers.
+		if (query.isLoading || query.key !== queryKeyRef.current || getOrgAgendaConfiguration().generation !== configuration.generation) return null
+		const root = surfaceRef.current
+		if (!root) return null
+		const focused = document.activeElement instanceof HTMLElement ? document.activeElement : null
+		const row = focused?.closest<HTMLElement>("[data-agenda-key]")
+		const rows = [...root.querySelectorAll<HTMLElement>("[data-agenda-key]")]
+		const matches = (candidate: HTMLElement) => candidate.dataset.agendaPath === entry.relativePath &&
+			candidate.dataset.agendaHeading === String(entry.origin?.heading?.from) &&
+			candidate.dataset.agendaKind === entry.kind &&
+			candidate.dataset.agendaTimestamp === String(entry.origin?.timestamp?.from ?? "") &&
+			candidate.dataset.agendaDate === (entry.date ?? "")
+		const exactRow = row && root.contains(row) && matches(row) ? row : rows.find(matches)
+		const element = exactRow?.contains(focused) ? focused : exactRow?.querySelector<HTMLElement>("[data-agenda-open]")
+		if (!element || !exactRow) return null
+		const action = element.dataset.agendaAction ?? "open"
+		const key = exactRow.dataset.agendaKey!
+		focusOrigin.current = { key: exactRow.dataset.agendaKey!, action, element }
+		const capturedScope = projectionScope
+		const capturedRoot = root
+		const capturedConfiguration = configuration.generation
+		const capturedProjection = projectionGeneration.current
+		return {
+			isLive: () => !disposedRef.current && scopeRef.current === capturedScope &&
+				getOrgAgendaConfiguration().generation === capturedConfiguration && projectionGeneration.current === capturedProjection &&
+				surfaceRef.current === capturedRoot && capturedRoot.isConnected,
+			restore: () => {
+				if (disposedRef.current || scopeRef.current !== capturedScope ||
+					getOrgAgendaConfiguration().generation !== capturedConfiguration || projectionGeneration.current !== capturedProjection ||
+					surfaceRef.current !== capturedRoot || !capturedRoot.isConnected) return
+				const row = [...capturedRoot.querySelectorAll<HTMLElement>("[data-agenda-key]")].find((candidate) => candidate.dataset.agendaKey === key)
+				const destination = row?.querySelector<HTMLElement>(`[data-agenda-action="${action}"]`) ??
+					row?.querySelector<HTMLElement>("[data-agenda-open]") ?? capturedRoot.querySelector<HTMLElement>("main")
+				destination?.focus({ preventScroll: true })
+			},
+		}
+	}
+	const clockWorkflow = useOrgClockWorkflow({ controller, getTarget: () => null, captureOrigin: () => null })
+	const controllerRef = useRef(controller)
+	controllerRef.current = controller
+	const [clockPending, setClockPending] = useState(false)
+	const commandPending = useRef(false)
+	const capturedRowCurrent = (origin: ApplicationToolOrigin, retainSourceGeneration: boolean) => {
+		const capturedScope = projectionScope
+		const capturedConfiguration = configuration.generation
+		const capturedProjection = projectionGeneration.current
+		const capturedSource = sourceKey
+		return () => !disposedRef.current && origin.isLive() && scopeRef.current === capturedScope &&
+			(!retainSourceGeneration || sourceKeyRef.current === capturedSource) &&
+			getOrgAgendaConfiguration().generation === capturedConfiguration && projectionGeneration.current === capturedProjection
+	}
+	const saveEntry = async (entry: OrgAgendaEntry, suppliedOrigin?: ApplicationToolOrigin | null): Promise<ApplicationCommandResult> => {
+		const origin = suppliedOrigin ?? captureRowOrigin(entry)
+		if (!origin || parameters.isPending() || commandPending.current) return { kind: "rejected", message: "The exact Agenda save origin is unavailable." }
+		const anchor = entry.origin
+		if (!hasOrgAgendaActionOrigin(anchor)) return { kind: "rejected", message: "The Agenda Save target has no captured Source origin." }
+		const target = { ...freezeOrgAgendaEntrySnapshot(entry), origin: Object.freeze(structuredClone(anchor)) }
+		const current = capturedRowCurrent(origin, true)
+		const root = controllerRef.current
+		const buffer = root.liveBuffers.find(buffer => buffer.document.relativePath === target.relativePath)
+		const save = buffer ? root.captureBufferSave(buffer.bufferId) : null
+		if (buffer && !save) return { kind: "rejected", message: "The selected Agenda buffer cannot be saved." }
+		commandPending.current = true
+		setClockPending(true)
+		const effect = (async (): Promise<ApplicationCommandResult> => {
+			const inspected = await root.prepareAgendaCommand(target, "todo-state")
+			if (!current() || inspected.kind !== "ready") return { kind: "rejected", message: "The selected Agenda row changed before Save." }
+			if (!buffer) return { kind: "success", message: "The selected disk Source is already saved; no working-copy write was needed." }
+			const latest = controllerRef.current
+			const live = latest.liveBuffers.find(live => live.runtime === buffer.runtime && live.bufferId === buffer.bufferId)
+			if (!live || buffer.runtime.closed || !validateOrgAgendaOrigin(target, buffer.runtime.source,
+				anchor.source === "live" ? buffer.bufferId : live.document.revision,
+				{ workspaceSessionId: latest.workspaceSessionId ?? undefined,
+					...(anchor.source === "live" ? { runtimeIncarnation: live.runtimeIncarnation, sourceGeneration: buffer.runtime.revision } : {}) }).valid)
+				return { kind: "rejected", message: "The selected canonical Agenda Source changed before Save." }
+			const saved = await save!()
+			return saved ? { kind: "success", message: "Selected Agenda Source saved." }
+				: { kind: "rejected", message: "Selected Agenda Source was not acknowledged as saved; its working copy was retained." }
+		})()
+		effects.current.add(effect)
+		try { return await effect } finally {
+			effects.current.delete(effect)
+			commandPending.current = false
+			if (!disposedRef.current) setClockPending(false)
+		}
+	}
 	const parameters = useOrgAgendaParameters({
 		controller,
 		scope,
 		sourceVersion: JSON.stringify([liveSnapshotKey, workspace, entries]),
+		getProjectionGeneration: () => projectionGeneration.current,
 		now,
 		reload: () => setReload((value) => value + 1),
+		captureOrigin: captureRowOrigin,
+		onTodoNoteRequest,
 		restoreFocus: () => {
 			const origin = focusOrigin.current
 			const root = surfaceRef.current
@@ -84,7 +205,7 @@ export const OrgAgendaContainer = memo(function OrgAgendaContainer({
 			)
 				return
 			requestAnimationFrame(() => {
-				if (disposedRef.current || scopeRef.current !== scope || !root.isConnected) return
+				if (disposedRef.current || scopeRef.current !== projectionScope || !root.isConnected) return
 				const current = document.activeElement
 				if (
 					current !== document.body &&
@@ -104,227 +225,153 @@ export const OrgAgendaContainer = memo(function OrgAgendaContainer({
 			})
 		},
 	})
-	const startTodo = (entry: OrgAgendaEntry) => {
-		const abort = new AbortController()
-		todoOwner.current = abort
-		todoCommitting.current = false
-		todoAbortDeferred.current = false
-		const version = sourceVersionRef.current
-		const current = () =>
-			!disposedRef.current &&
-			scopeRef.current === scope &&
-			todoOwner.current === abort &&
-			!abort.signal.aborted
-		const finish = (message: string, refresh = false) => {
-			if (!current()) return
-			todoOwner.current = null
-			setTodoPending(false)
-			setTodoStatus(message)
-			if (refresh) setReload((value) => value + 1)
-		}
-		setTodoPending(true)
-		setTodoStatus("Changing TODO state…")
-		void (async () => {
-			try {
-				const outcome = await controller.executeAgendaCommand(
-					entry,
-					{ kind: "cycle-todo" },
-					abort.signal,
-					{
-						onCommitStarted: () => {
-							todoCommitting.current = true
-						},
-					},
-				)
-				if (!current()) return
-				if (todoAbortDeferred.current && outcome.kind !== "confirmed") {
-					finish("Agenda action cancelled.")
-					abort.abort()
-					return
-				}
-				todoCommitting.current = false
-				if (outcome.kind !== "needs-note") {
-					finish(
-						outcome.kind === "confirmed"
-							? "TODO state changed in working copy. Save to write the file."
-							: outcome.kind === "unchanged"
-								? "TODO state unchanged."
-								: (outcome.message ?? "Agenda row changed or action rejected."),
-						true,
-					)
-					return
-				}
-				let accepting = false
-				const validate = (): OrgTodoNoteResult =>
-					current() && !accepting && sourceVersionRef.current === version
-						? { kind: "ready" }
-						: {
-								kind: "rejected",
-								reason: "Agenda row changed; select a refreshed row and try again.",
-							}
-				const request: OrgAgendaTodoNoteRequest = {
-					validate,
-					abort: () => {
-						if (todoCommitting.current) {
-							todoAbortDeferred.current = true
-							return
-						}
-						finish("Agenda action cancelled.")
-						abort.abort()
-					},
-					execute: async (note) => {
-						if (accepting) return { kind: "rejected", reason: "A workspace operation is running." }
-						const valid = validate()
-						if (valid.kind !== "ready") {
-							finish("Agenda row changed; select a refreshed row and try again.", true)
-							return valid
-						}
-						accepting = true
-						try {
-							const result = await controller.executeAgendaCommand(
-								outcome.entry,
-								{ kind: "cycle-todo", note },
-								abort.signal,
-								{
-									onCommitStarted: () => {
-										todoCommitting.current = true
-									},
-								},
-							)
-							if (result.kind === "confirmed") {
-								finish("TODO state changed in working copy. Save to write the file.", true)
-								return { kind: "applied" }
-							}
-							const reason =
-								"message" in result && result.message
-									? result.message
-									: "Agenda row changed or action rejected."
-							// Invalid notes and temporary locks retain this request's permission.
-							// Only a stale anchor is terminal (the shell retains its readonly draft).
-							if (result.kind === "stale") finish(reason, true)
-							else if (current()) setTodoStatus(reason)
-							return { kind: "rejected", reason }
-						} catch {
-							if (current()) setTodoStatus("TODO state change failed; no automatic retry.")
-							return { kind: "rejected", reason: "TODO state change failed." }
-						} finally {
-							accepting = false
-							if (todoOwner.current === abort) {
-								todoCommitting.current = false
-								if (todoAbortDeferred.current) {
-									finish("Agenda action cancelled.")
-									abort.abort()
-								}
-							}
-						}
-					},
-				}
-				if (!onTodoNoteRequest)
-					finish("This TODO transition requires a note; the state was not changed.")
-				else if (onTodoNoteRequest(request) === false) request.abort()
-			} catch {
-				finish("TODO state change failed; no automatic retry.", true)
-			}
-		})()
-	}
-	const startAction = (entry: OrgAgendaEntry, kind: "cycle-todo" | "schedule" | "deadline") => {
-		if (parameters.isPending() || todoOwner.current) return
-		openGeneration.current += 1
-		const element = document.activeElement as HTMLElement | null
-		const row = element?.closest<HTMLElement>("[data-agenda-key]")
-		focusOrigin.current =
-			element && row
-				? { key: row.dataset.agendaKey!, action: element.dataset.agendaAction ?? "open", element }
-				: null
-		setTodoStatus(null)
-		if (kind === "cycle-todo") startTodo(entry)
-		else parameters.start(entry, kind)
+	useApplicationParameterRegistration(parameterOwner, parameters.session, parameters.result)
+	useLayoutEffect(() => {
+		onToolLifecycle?.({
+			state: { dirty: false, pending: parameters.isCommitting() || clockPending, fence: projectionScope },
+			ownsFocus: () => !!parameters.session && liveApplicationHost.current.session === parameters.session && !!liveApplicationHost.current.hostRef.current?.contains(document.activeElement),
+			close: () => {
+				if (commandPending.current) return false
+				if (!parameters.close()) return false
+				queryRead.current?.abort()
+				cancelOpen()
+				return true
+			},
+			dispose: async () => {
+				queryRead.current?.abort()
+				cancelOpen()
+				await parameters.dispose()
+				await Promise.allSettled([...effects.current])
+			},
+		})
+	}, [onToolLifecycle, projectionScope, parameters.pending, parameters.session, clockPending])
+	const startAction = (entry: OrgAgendaEntry, kind: OrgAgendaCommand["kind"], origin?: ApplicationToolOrigin | null) => {
+		if (parameters.isPending() || getOrgAgendaConfiguration().generation !== configuration.generation) return
+		cancelOpen()
+		parameters.start(entry, kind, origin)
 	}
 
 	useEffect(() => {
-		let disposed = false
-		if (!workspace) {
-			setEntries([])
-			setError(null)
-			setLoading(false)
-			return () => {
-				disposed = true
-			}
+		if (!workspace || configuration.error || !configuration.behavior || views.length > 0 && !selectedView) return
+		const abort = new AbortController()
+		queryRead.current = abort
+		const capturedConfiguration = configuration.generation
+		const capturedProjection = projectionGeneration.current
+		const calendar = selectedView ? captureOrgCalendarContext(now ?? systemOrgNow) : null
+		if (calendar?.kind === "error") {
+			setQuery({ key: queryKey, scope: projectionScope, entries: [], error: calendar.message, isLoading: false })
+			return () => abort.abort()
 		}
-		setError(null)
-		void loadOrgAgendaFlow(workspace, undefined, undefined, overlays, {
-			workspaceSessionId: session ?? undefined,
-		})()
+		setQuery((current) => ({
+			key: current.key,
+			scope: projectionScope,
+			entries: current.scope === projectionScope ? current.entries : [],
+			error: null,
+			isLoading: current.scope !== projectionScope || current.isLoading,
+		}))
+		void loadOrgAgendaFlow(
+			workspace,
+			undefined,
+			undefined,
+			overlays,
+			{ workspaceSessionId: session ?? undefined },
+			abort.signal,
+			{ view: selectedView, calendar: calendar?.kind === "context" ? calendar.context : undefined,
+				inheritance: configuration.behavior.inheritance, captureClockContext: controller.clock.captureSparseContext },
+		)()
 			.then((result) => {
-				if (disposed) return
-				setLoading(false)
-				if (E.isLeft(result)) {
-					setEntries([])
-					setError(result.left.message)
-					return
-				}
-				setEntries(result.right)
+				if (abort.signal.aborted || queryKeyRef.current !== queryKey || getOrgAgendaConfiguration().generation !== capturedConfiguration || projectionGeneration.current !== capturedProjection) return
+				setQuery(
+					E.isLeft(result)
+						? { key: queryKey, scope: projectionScope, entries: [], error: result.left.message, isLoading: false }
+						: { key: queryKey, scope: projectionScope, entries: result.right, error: null, isLoading: false },
+				)
 			})
 			.catch(() => {
-				if (disposed) return
-				setLoading(false)
-				setError("Cannot load agenda.")
+				if (abort.signal.aborted || queryKeyRef.current !== queryKey || getOrgAgendaConfiguration().generation !== capturedConfiguration || projectionGeneration.current !== capturedProjection) return
+				setQuery({ key: queryKey, scope: projectionScope, entries: [], error: "Cannot load agenda.", isLoading: false })
 			})
-		return () => {
-			disposed = true
-		}
-	}, [workspace, session, liveSnapshotKey, reload])
+		return () => abort.abort()
+	}, [queryKey])
+
+	const openEntry = async (entry: OrgAgendaEntry, suppliedOrigin?: ApplicationToolOrigin | null): Promise<void> => {
+		if (parameters.isPending() || getOrgAgendaConfiguration().generation !== configuration.generation) return
+		const origin = suppliedOrigin ?? captureRowOrigin(entry)
+		if (!origin?.isLive()) return
+		setNavigationError(null)
+		cancelOpen()
+		const generation = openGeneration.current
+		const abort = new AbortController()
+		openRead.current = abort
+		// Opening a disk row intentionally installs its live Source overlay.
+		const rowCurrent = capturedRowCurrent(origin, false)
+		const current = () => rowCurrent() && !abort.signal.aborted && openGeneration.current === generation
+		const effect = (async () => {
+			try {
+				const opened = await controllerRef.current.openDocumentAt(entry.relativePath, entry.line, entry.origin?.diskRevision, current, abort.signal)
+				if (current() && opened) onShowEditor()
+			} catch {
+				if (current()) setNavigationError("Cannot open the selected Agenda Source.")
+			} finally {
+				if (openRead.current === abort) openRead.current = null
+			}
+		})()
+		effects.current.add(effect)
+		try { await effect } finally { effects.current.delete(effect) }
+	}
 
 	return (
 		<div ref={surfaceRef} className="flex min-h-0 flex-1 flex-col">
+			{navigationError ? <p role="alert" className="text-sm text-destructive">{navigationError}</p> : null}
+			{views.length > 0 && (
+				<label className="flex items-center gap-2 border-b px-4 py-2 text-sm">
+					Agenda view
+					<select aria-label="Agenda view" className="rounded border bg-background px-2 py-1" value={selectedView?.id ?? ""} disabled={parameters.isCommitting()} onChange={(event) => {
+						const id = event.target.value
+						projectionGeneration.current = {}
+						queryRead.current?.abort()
+						cancelOpen()
+						parameters.retireConfiguration()
+						setSelection(current => ({ id, revision: current.revision + 1 }))
+					}}>
+						<option value="">Select an Agenda view</option>
+						{views.map(view => <option key={view.id} value={view.id}>{view.name}</option>)}
+					</select>
+				</label>
+			)}
 			<OrgAgendaView
 				entries={entries}
-				focusScope={scope}
+				focusScope={projectionScope}
 				error={error}
 				isLoading={isLoading}
-				actionPending={parameters.pending || todoPending}
-				actionStatus={todoStatus ?? parameters.status}
-				onSchedule={(entry) => startAction(entry, "schedule")}
-				onDeadline={(entry) => startAction(entry, "deadline")}
-				onCancelAction={() => {
-					if (todoOwner.current) {
-						if (todoCommitting.current) {
-							todoAbortDeferred.current = true
-							return
-						}
-						todoOwner.current.abort()
-						todoOwner.current = null
-						setTodoPending(false)
-						setTodoStatus("Agenda action cancelled.")
-					} else parameters.cancel()
+				actionPending={parameters.pending || clockPending}
+				captureOrigin={captureRowOrigin}
+				onAction={startAction}
+				onCancelAction={parameters.cancel}
+				onSaveEntry={saveEntry}
+				onClockEntry={async (entry, operation, suppliedOrigin) => {
+					const origin = suppliedOrigin ?? captureRowOrigin(entry)
+					if (!origin || parameters.isPending() || commandPending.current) return { kind: "rejected", message: "The exact Agenda Clock origin is unavailable." }
+					const target = freezeOrgAgendaEntrySnapshot(entry)
+					const current = capturedRowCurrent(origin, true)
+					commandPending.current = true
+					setClockPending(true)
+					const effect = clockWorkflow.executeAgenda(target, operation, origin, current)
+					effects.current.add(effect)
+					try {
+						const result = await effect
+						if (current()) setReload(value => value + 1)
+						return result
+					} finally {
+						effects.current.delete(effect)
+						commandPending.current = false
+						if (!disposedRef.current) setClockPending(false)
+					}
 				}}
-				onCycleTodo={(entry) => startAction(entry, "cycle-todo")}
-				onOpenEntry={(entry) => {
-					if (parameters.isPending() || todoOwner.current) return
-					const generation = ++openGeneration.current
-					const requestScope = scope
-					// Root owns the file effect; this container independently owns navigation.
-					void (async () => {
-						try {
-							const opened = await controller.openDocumentAt(
-								entry.relativePath,
-								entry.line,
-								entry.origin?.diskRevision,
-							)
-							if (
-								!disposedRef.current &&
-								scopeRef.current === requestScope &&
-								openGeneration.current === generation &&
-								opened
-							)
-								onShowEditor()
-						} catch {
-							// Unexpected failures must not produce late navigation or error echoes.
-						}
-					})()
-				}}
+				onOpenEntry={entry => { void openEntry(entry) }}
+				onReturnSource={openEntry}
 			/>
-			<OrgMinibuffer session={parameters.session} />
+			{clockWorkflow.reports.map(tool => <OrgClockReportView key={tool.id} tool={tool} onClosed={clockWorkflow.closeReport} />)}
 		</div>
 	)
 })

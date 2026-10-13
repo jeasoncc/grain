@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { resolveOrgLoggingPolicy } from "./org-logging-policy.pipe"
 import { snapshotOrgLoggingScopes } from "./org-logging-scope.pipe"
-import { planOrgTodoTransition } from "./org-todo-logging.pipe"
+import { planOrgTodoTransition, planOrgOperationLogging, type OrgLoggingOperation } from "./org-todo-logging.pipe"
 
 const stamp = "[2025-04-01 Tue 09:07]"
 const props = (value: string) => `:PROPERTIES:\n${value}\n:END:`
@@ -35,12 +35,12 @@ const apply = (source: string, note?: string) => {
 }
 
 describe("explicit source logging property inheritance", () => {
-	it("nil disables file @ and all flags; child overlay re-enables only done", () => {
+	it("nil disables inherited state logging; child replaces done policy independently of drawer", () => {
 		const file = "#+TODO: TODO(!/@) NEXT(@/!) | DONE(@)\n#+STARTUP: lognotedone logdrawer\n"
 		const source = `${file}* parent\n${props(":LOGGING: nil")}\n** TODO child\n${props(":LOGGING: logdone")}`
-		expect(policy(source)).toEqual({
+		expect(policy(source)).toMatchObject({
 			done: "time",
-			drawer: null,
+			drawer: "LOGBOOK",
 			states: ["TODO", "NEXT", "DONE"].map((state) => ({ incoming: "", outgoing: "", state })),
 		})
 		const local = `${file}* TODO target\n${props(":LOGGING: nil")}`
@@ -50,17 +50,18 @@ describe("explicit source logging property inheritance", () => {
 			reason: "unexpected-note",
 		})
 	})
-	it("partial state and done overlays preserve every unrelated configured flag", () => {
+	it("every nonempty LOGGING property replaces state/done/repeat preferences", () => {
 		const source = `#+TODO: TODO(@/!) NEXT(!) | DONE(@)\n#+SEQ_TODO: WAIT(!/@) | FINISH(!)\n#+STARTUP: logdone\n* parent\n${props(":LOGGING: lognotedone")}\n** TODO child\n${props(":logging: nologdone TODO()")}`
-		expect(policy(source)).toEqual({
+		expect(policy(source)).toMatchObject({
 			done: "none",
+			repeat: "none",
 			drawer: null,
 			states: [
 				{ incoming: "", outgoing: "", state: "TODO" },
-				{ incoming: "!", outgoing: "", state: "NEXT" },
-				{ incoming: "!", outgoing: "@", state: "WAIT" },
-				{ incoming: "@", outgoing: "", state: "DONE" },
-				{ incoming: "!", outgoing: "", state: "FINISH" },
+				{ incoming: "", outgoing: "", state: "NEXT" },
+				{ incoming: "", outgoing: "", state: "WAIT" },
+				{ incoming: "", outgoing: "", state: "DONE" },
+				{ incoming: "", outgoing: "", state: "FINISH" },
 			],
 		})
 	})
@@ -87,13 +88,14 @@ describe("explicit source logging property inheritance", () => {
 			policy(`#+PROPERTY: LOGGING logdone\n${props(":LOGGING+: nologdone")}\n* TODO target`).done,
 		).toBe("none")
 	})
+	it.each(["nil logdone", "nil unknown logdone", "nil\n:LOGGING+: logdone"])("ignores GNU nil/unknown local tokens without rejecting %s", (value) => {
+		expect(policy(`* TODO target\n${props(`:LOGGING: ${value}`)}`).done).toBe("time")
+	})
+	it.each(["unknown", "todo(!)", "UNKNOWN(!)"])("clears only TODO logging for ignored word %s", (value) => {
+		expect(policy(`#+STARTUP: logdone logreschedule\n* TODO target\n${props(`:LOGGING: ${value}`)}`)).toMatchObject({ done: "none", repeat: "none", reschedule: "time" })
+	})
 	it.each([
-		":LOGGING: nil logdone",
-		":LOGGING: nil\n:LOGGING+: logdone",
 		":LOGGING: logdone\n:logging: nologdone",
-		":LOGGING: unsupported",
-		":LOGGING: todo(!)",
-		":LOGGING: UNKNOWN(!)",
 		":LOG_INTO_DRAWER: END",
 		":LOG_INTO_DRAWER: PROPERTIES",
 		":LOG_INTO_DRAWER: unsafe name",
@@ -138,7 +140,7 @@ describe("explicit source logging property inheritance", () => {
 			policy(
 				`* parent\n${props(":LOG_INTO_DRAWER: ancestor")}\n** TODO child\n${props(":LOGGING: logdrawer")}`,
 			).drawer,
-		).toBe("LOGBOOK")
+		).toBe("ancestor")
 		expect(
 			policy(
 				`* parent\n${props(":LOGGING: logdrawer")}\n** TODO child\n${props(":LOG_INTO_DRAWER: nil")}`,
@@ -151,7 +153,7 @@ describe("explicit source logging property inheritance", () => {
 		const { result } = apply(source, "multiline\n:END:\u0000")
 		expect(result.startsWith(prefix)).toBe(true)
 		expect(result).toContain(
-			`** DONE child\nCLOSED: ${stamp}\n${props(":OTHER: Ω\u0000")}\n:AUDIT:\n- State`,
+			`** DONE child\nCLOSED: ${stamp}\n${props(":OTHER: Ω\u0000")}\n:AUDIT:\n- CLOSING NOTE`,
 		)
 		expect(result).toContain('  : "multiline\\n"\n  : ":END:\\u0000"\n:END:\nbody')
 	})
@@ -216,5 +218,82 @@ describe("explicit source logging property inheritance", () => {
 		)
 		expect(JSON.stringify(snapshot)).not.toContain("* parent")
 		expect(resolve(source)).toEqual(result)
+	})
+})
+
+describe("standard repeat and operation logging controls", () => {
+	it("uses Org defaults without adding user-specific logging switches", () => {
+		expect(policy("* TODO target")).toMatchObject({
+			done: "none", repeat: "time", reschedule: "none", redeadline: "none", refile: "none",
+			drawer: null, reversed: true, repeatToState: null,
+		})
+	})
+	it.each(["repeat", "reschedule", "redeadline", "refile"] as const)("resolves ordered global STARTUP %s controls", (key) => {
+		expect(policy(`#+STARTUP: log${key} lognote${key}\n* TODO target`)[key]).toBe("note")
+		expect(policy(`#+STARTUP: lognote${key} nolog${key}\n* TODO target`)[key]).toBe("none")
+	})
+	it.each(["reschedule", "redeadline", "refile"] as const)("keeps %s outside the local TODO policy", (key) => {
+		expect(policy(`#+STARTUP: log${key}\n* parent\n${props(`:LOGGING: lognote${key}`)}\n** TODO child\n${props(":LOGGING: nil")}`)[key]).toBe("time")
+	})
+	it("nonempty LOGGING replaces TODO flags but preserves operation preferences and inherited drawer", () => {
+		const source = `#+TODO: TODO(@) | DONE(@)\n#+STARTUP: logrepeat logreschedule lognoteredeadline logrefile\n* parent\n${props(":LOGGING: logrepeat\n:LOG_INTO_DRAWER: AUDIT")}\n** TODO child\n${props(":LOGGING: lognoterefile")}`
+		expect(policy(source)).toMatchObject({
+			done: "none", repeat: "none", reschedule: "time", redeadline: "note", refile: "time", drawer: "AUDIT",
+			states: [{ state: "TODO", incoming: "", outgoing: "" }, { state: "DONE", incoming: "", outgoing: "" }],
+		})
+	})
+	it.each([
+		{ kind: "reschedule", previous: "<2025-03-01 Sat>", next: "<2025-04-02 Wed>", title: 'Rescheduled from "[2025-03-01 Sat]"' },
+		{ kind: "reschedule", previous: "<2025-03-01 Sat>", next: null, title: 'Not scheduled, was "[2025-03-01 Sat]"' },
+		{ kind: "redeadline", previous: "<2025-03-01 Sat>", next: "<2025-04-02 Wed>", title: 'New deadline from "[2025-03-01 Sat]"' },
+		{ kind: "redeadline", previous: "<2025-03-01 Sat>", next: null, title: 'Removed deadline, was "[2025-03-01 Sat]"' },
+	] as const)("plans real $kind log ranges for change and removal", ({ title, ...operation }) => {
+		const field = operation.kind === "reschedule" ? "SCHEDULED" : "DEADLINE"
+		const source = `#+STARTUP: log${operation.kind} logdrawer\n* TODO target\n${field}: ${operation.previous}\nbody\n** Child\nunchanged`
+		const cursor = source.indexOf("* TODO")
+		const plan = planOrgOperationLogging(source, cursor, stamp, operation)
+		if (plan.kind !== "edit") throw new Error(JSON.stringify(plan))
+		expect(plan.edits).toHaveLength(1)
+		const edit = plan.edits[0]
+		const result = source.slice(0, edit.from) + edit.insert + source.slice(edit.to)
+		expect(result).toContain(`:LOGBOOK:\n- ${title} on ${stamp}\n:END:\nbody\n** Child\nunchanged`)
+		expect(result).toContain(`${field}: ${operation.previous}`)
+		expect(source.slice(0, edit.from) + result.slice(edit.from + edit.insert.length)).toBe(source)
+	})
+	it("first planning insertion/nochange and disabled logging do not require an inferred clock", () => {
+		const source = "* TODO target\nbody"
+		expect(planOrgOperationLogging(source, 0, undefined, { kind: "reschedule", previous: null, next: "<2025-04-02 Wed>" })).toEqual({ kind: "noop" })
+		expect(planOrgOperationLogging(source, 0, undefined, { kind: "refile" })).toEqual({ kind: "noop" })
+		const configured = "#+STARTUP: logreschedule\n* TODO target\nSCHEDULED: <2025-03-01 Sat>"
+		expect(planOrgOperationLogging(configured, configured.indexOf("* TODO"), undefined, { kind: "reschedule", previous: "<2025-03-01 Sat>", next: "<2025-03-01 Sat>" })).toEqual({ kind: "noop" })
+		expect(planOrgOperationLogging(configured, configured.indexOf("* TODO"), undefined, { kind: "reschedule", previous: "<2025-03-01 Sat>", next: "<2025-04-02 Wed>" })).toMatchObject({ kind: "rejected", reason: "invalid-timestamp" })
+	})
+	it.each(["reschedule", "redeadline", "refile"] as const)("returns immutable continuation data and preserves literal notes for %s", (kind) => {
+		const operation: Exclude<OrgLoggingOperation, { kind: "todo" }> = kind === "refile" ? { kind } : { kind, previous: "<2025-03-01 Sat>", next: "<2025-04-02 Wed>" }
+		const source = `#+STARTUP: lognote${kind}\n* TODO target\n${kind === "reschedule" ? "SCHEDULED" : "DEADLINE"}: <2025-03-01 Sat>\nbody`
+		const cursor = source.indexOf("* TODO")
+		expect(planOrgOperationLogging(source, cursor, stamp, operation)).toEqual({ kind: "needs-note", request: { operation, cursor, stamp } })
+		const note = "* literal Ω\u0000\r\n:END:\n  "
+		const plan = planOrgOperationLogging(source, cursor, stamp, operation, note)
+		if (plan.kind !== "edit") throw new Error(JSON.stringify(plan))
+		const chunks = plan.edits[0].insert.split(/\r\n|\r|\n/).filter((line) => line.startsWith("  : "))
+		expect(chunks.map((line) => JSON.parse(line.slice(4))).join("")).toBe(note)
+		expect(planOrgOperationLogging(source, cursor, stamp, operation, note)).toEqual(plan)
+	})
+	it("logs newest-first by default and supports Org's explicit chronological order", () => {
+		for (const chronological of [false, true]) {
+			const source = `#+STARTUP: logrefile logdrawer${chronological ? " nologstatesreversed" : ""}\n* TODO target\n:LOGBOOK:\n- Refiled on [2025-03-01 Sat 08:00]\n:END:\nbody`
+			const plan = planOrgOperationLogging(source, source.indexOf("* TODO"), stamp, { kind: "refile" })
+			if (plan.kind !== "edit") throw new Error(JSON.stringify(plan))
+			const edit = plan.edits[0]
+			const result = source.slice(0, edit.from) + edit.insert + source.slice(edit.to)
+			expect(result).toContain(chronological ? `- Refiled on [2025-03-01 Sat 08:00]\n- Refiled on ${stamp}` : `- Refiled on ${stamp}\n- Refiled on [2025-03-01 Sat 08:00]`)
+		}
+	})
+	it("rejects stale operation anchors and applicable malformed drawers before note preparation", () => {
+		const source = "#+STARTUP: lognotereschedule\n* TODO target\nSCHEDULED: <2025-03-01 Sat>"
+		expect(planOrgOperationLogging(source, source.indexOf("* TODO"), stamp, { kind: "reschedule", previous: "<2025-03-02 Sun>", next: null })).toMatchObject({ kind: "rejected", reason: "stale-planning-log" })
+		const malformed = "#+STARTUP: lognoterefile\n* TODO target\n:LOGBOOK:\nunclosed"
+		expect(planOrgOperationLogging(malformed, malformed.indexOf("* TODO"), stamp, { kind: "refile" })).toMatchObject({ kind: "rejected" })
 	})
 })

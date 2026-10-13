@@ -1,12 +1,10 @@
-import * as E from "fp-ts/Either"
 import { FileKey2, Link2, ListTree, Search, X } from "lucide-react"
-import { memo, useEffect, useMemo, useRef, useState } from "react"
-import { loadOrgBacklinksFlow, type OrgBacklink } from "@/flows/org-workspace"
+import { memo, useEffect, useMemo, useState } from "react"
+import type { OrgBacklink } from "@/flows/org-workspace"
+import { useOrgBacklinks } from "@/hooks/use-org-backlinks"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
 import { parseOrgIndexHeadings } from "@/pipes/org/org-derived-index.pipe"
 import { Button } from "@/views/ui/button"
-
-const BACKLINK_DEBOUNCE_MS = 200
 
 type InspectorTab = "outline" | "properties" | "backlinks"
 
@@ -47,25 +45,28 @@ export const parseOrgInspectorProperties = (
 export const OrgInspector = memo(function OrgInspector({
 	controller,
 	onClose,
+	active = true,
 }: {
 	readonly controller: OrgWorkspaceController
 	readonly onClose: () => void
+	readonly active?: boolean
 }) {
 	const [tab, setTab] = useState<InspectorTab>("outline")
 	const [outlineQuery, setOutlineQuery] = useState("")
-	const [backlinks, setBacklinks] = useState<readonly OrgBacklink[]>([])
-	const [backlinkError, setBacklinkError] = useState<string | null>(null)
-	const [isLoading, setLoading] = useState(false)
-	const generationRef = useRef(0)
+	const { backlinks, error: backlinkError, isLoading } = useOrgBacklinks(controller, active && tab === "backlinks")
 	const activeDocument = controller.activeDocument
-	const workspace = controller.workspace
+	const activePath = activeDocument?.relativePath
 	const headings = useMemo(
-		() => parseOrgIndexHeadings(activeDocument?.relativePath ?? "", controller.content),
-		[activeDocument?.relativePath, controller.content],
+		() => active && tab === "outline" && activePath
+			? parseOrgIndexHeadings(activePath, controller.content)
+			: [],
+		[active, tab, activePath, controller.content],
 	)
 	const properties = useMemo(
-		() => parseOrgInspectorProperties(controller.content),
-		[controller.content],
+		() => active && tab === "properties" && activePath
+			? parseOrgInspectorProperties(controller.content)
+			: [],
+		[active, tab, activePath, controller.content],
 	)
 	const visibleHeadings = useMemo(() => {
 		const query = outlineQuery.trim().toLocaleLowerCase()
@@ -90,31 +91,6 @@ export const OrgInspector = memo(function OrgInspector({
 		setOutlineQuery("")
 	}, [activeDocument?.relativePath])
 
-	useEffect(() => {
-		const generation = ++generationRef.current
-		if (!workspace || !activeDocument || tab !== "backlinks") return
-		let disposed = false
-		setLoading(true)
-		setBacklinkError(null)
-		const timer = window.setTimeout(() => {
-			void loadOrgBacklinksFlow(workspace, activeDocument.relativePath, controller.content)().then(
-				(result) => {
-					if (disposed || generation !== generationRef.current) return
-					setLoading(false)
-					if (E.isLeft(result)) {
-						setBacklinks([])
-						setBacklinkError(result.left.message)
-						return
-					}
-					setBacklinks(result.right)
-				},
-			)
-		}, BACKLINK_DEBOUNCE_MS)
-		return () => {
-			disposed = true
-			window.clearTimeout(timer)
-		}
-	}, [activeDocument, controller.content, tab, workspace])
 
 	return (
 		<aside className="flex h-full min-w-0 flex-col bg-sidebar" aria-label="Note inspector">
@@ -134,15 +110,19 @@ export const OrgInspector = memo(function OrgInspector({
 							aria-label={label}
 							aria-pressed={tab === value}
 							onClick={() => setTab(value)}
-							className={`flex size-8 items-center justify-center rounded-md transition-colors duration-150 ${tab === value ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"}`}
+							className={`flex size-8 shrink-0 items-center justify-center rounded-md transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${tab === value ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"}`}
 						>
 							<Icon className="size-4" />
 						</button>
 					))}
+					<h2 className="min-w-0 truncate pl-1 text-xs font-medium text-muted-foreground">
+						{tab === "outline" ? "Outline" : tab === "properties" ? "Properties" : "Backlinks"}
+					</h2>
 				</div>
 				<Button
 					variant="ghost"
 					size="icon"
+					className="size-8 shrink-0"
 					aria-label="Close inspector"
 					title="Close inspector"
 					onClick={onClose}
@@ -152,8 +132,8 @@ export const OrgInspector = memo(function OrgInspector({
 			</div>
 
 			{tab === "outline" && activeDocument && (
-				<label className="mx-2 mt-2 flex h-8 shrink-0 items-center gap-2 rounded-md border border-transparent bg-background/60 px-2 text-muted-foreground focus-within:border-ring/40">
-					<Search className="size-3.5" />
+				<label className="mx-2 mt-2 flex h-8 min-w-0 shrink-0 items-center gap-2 rounded-md border border-transparent bg-background/60 px-2 text-muted-foreground focus-within:border-ring/40 focus-within:bg-background">
+					<Search className="size-3.5 shrink-0" />
 					<input
 						value={outlineQuery}
 						onChange={(event) => setOutlineQuery(event.target.value)}
@@ -164,7 +144,7 @@ export const OrgInspector = memo(function OrgInspector({
 					{outlineQuery && <span className="text-[10px]">{visibleHeadings.length}</span>}
 				</label>
 			)}
-			<div className="min-h-0 flex-1 overflow-auto p-2">
+			<div className="min-h-0 min-w-0 flex-1 overflow-auto p-2">
 				{!activeDocument ? (
 					<p className="px-2 py-3 text-xs text-muted-foreground">Open a note to inspect it.</p>
 				) : tab === "outline" ? (
@@ -174,8 +154,9 @@ export const OrgInspector = memo(function OrgInspector({
 								<li key={`${heading.line}:${heading.title}`}>
 									<button
 										type="button"
-										className="flex min-h-7 w-full items-center rounded-md pr-2 text-left text-xs text-muted-foreground hover:bg-accent/70 hover:text-foreground"
+										className="flex min-h-8 min-w-0 w-full items-center rounded-md pr-2 text-left text-xs text-muted-foreground hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
 										style={{ paddingLeft: `${Math.min(heading.level, 6) * 8}px` }}
+										title={heading.title}
 										onClick={() =>
 											void controller.openDocumentAt(activeDocument.relativePath, heading.line)
 										}
@@ -198,7 +179,7 @@ export const OrgInspector = memo(function OrgInspector({
 						<dl className="space-y-3 px-2 py-1">
 							{properties.map((property, index) => (
 								<div key={`${property.key}:${index}`} className="min-w-0">
-									<dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+									<dt className="break-words text-[11px] font-medium text-muted-foreground">
 										{property.key}
 									</dt>
 									<dd className="mt-0.5 break-words text-xs text-foreground">
@@ -222,7 +203,8 @@ export const OrgInspector = memo(function OrgInspector({
 							<li key={`${backlink.sourceRelativePath}:${backlink.line}:${backlink.column}`}>
 								<button
 									type="button"
-									className="w-full rounded-md px-2 py-2 text-left hover:bg-accent/70"
+									className="min-w-0 w-full rounded-md px-2 py-2 text-left hover:bg-sidebar-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+									title={`${backlink.sourceRelativePath}:${backlink.line}`}
 									onClick={() =>
 										void controller.openDocumentAt(backlink.sourceRelativePath, backlink.line)
 									}

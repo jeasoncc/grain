@@ -4,8 +4,10 @@ import { orgSparseTreeBufferCommand } from "@/flows/org-command/org-sparse-tree.
 import type { OrgEditorCommandTarget } from "@/views/org-editor/org-editor.types"
 import type { OrgWorkspaceController } from "./use-org-workspace"
 import { useOrgCommandMinibuffer } from "./use-org-command-minibuffer"
+import { createOrgClockOwner } from "@/flows/org-workspace/org-clock-owner"
 
 const controller = {
+	clock: createOrgClockOwner(),
 	workspace: { rootPath: "/workspace", capabilityToken: "G1", documents: [] },
 	workspaceSessionId: "G1",
 	activeBufferId: "note",
@@ -13,11 +15,19 @@ const controller = {
 	activeDocument: { relativePath: "note.org", revision: "one" },
 	isDirty: false,
 } as unknown as OrgWorkspaceController
-const target = (supported = true): OrgEditorCommandTarget => ({
-	applyEdit: vi.fn(() => true),
-	restoreFocus: vi.fn(),
-	applyView: supported ? vi.fn(() => true) : undefined,
-})
+const target = (supported = true): OrgEditorCommandTarget => {
+	const restoreFocus = vi.fn()
+	const ownership = {}
+	return {
+		getCommandContext: () => ({ ownership, revision: 0, available: true, content: controller.content, cursor: 0, readOnly: false, relativePath: "note.org" }),
+		executeCommand: () => false,
+		captureCommand: () => null,
+		captureFocus: () => () => { restoreFocus(); return true },
+		applyEdit: vi.fn(() => true),
+		restoreFocus,
+		applyView: supported ? vi.fn(() => true) : undefined,
+	}
+}
 describe("sparse parameter callback fences", () => {
 	it("rejects unsupported targets without editing or focus restoration", () => {
 		const port = target(false)

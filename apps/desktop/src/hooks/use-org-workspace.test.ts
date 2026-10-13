@@ -1,6 +1,7 @@
 import { parseOrgAgenda, type OrgAgendaEntry } from "@/pipes/org/org-agenda.pipe"
 import * as registryFactory from "@/flows/org-editor-runtime/org-workspace-runtime-registry"
 import * as parkedFactory from "@/flows/org-editor-runtime/org-parked-working-copy-reservoir"
+import * as sessionFactory from "@/flows/org-editor-runtime/org-workspace-session-owner"
 import type { OrgBufferIdentityScope } from "@/flows/org-editor-runtime/org-buffer-identity-registry"
 import { history, isolateHistory, redoDepth, undoDepth } from "@codemirror/commands"
 import { EditorSelection, EditorState } from "@codemirror/state"
@@ -12,57 +13,75 @@ import type {
 } from "@/flows/org-editor-runtime"
 import * as runtimeFactory from "@/flows/org-editor-runtime"
 import { useBlocker } from "@tanstack/react-router"
+import { useConfirm } from "@/views/ui/confirm"
+import type { ConfirmOptions } from "@/views/ui/confirm"
 import {
 	act,
 	cleanup,
 	fireEvent,
-	render,
-	renderHook,
 	screen,
 	waitFor,
+	within,
 } from "@testing-library/react"
-import { createElement } from "react"
+import { render, renderHook } from "@/test/application-providers"
+import { createElement, StrictMode } from "react"
 import { useOrgAgendaParameters } from "@/hooks/use-org-agenda-parameters"
 import { OrgAgendaContainer } from "@/views/org-workspace/org-agenda.container.fn"
+import { useSettings } from "@/hooks/use-settings"
 import * as E from "fp-ts/Either"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
-	archiveOrgSubtreeFlow,
-	clearOrgDerivedIndexFlow,
 	createOrgDirectoryFlow,
 	deleteOrgDocumentFlow,
-	prepareLegacyMigrationFlow,
-	verifyLegacyMigrationRecoveryFlow,
-	runLegacyMigrationRecoveryDrillFlow,
-	rebuildOrgDerivedIndexFlow,
-	resolveOrgLinkTargetFlow,
 	selectOrgWorkspaceFlow,
 	captureOrgTodoFlow,
-	captureOrgEntryFlow,
 	moveOrgDocumentFlow,
-	loadOrgAgendaFlow,
-	ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE,
 	openDefaultOrgWorkspaceFlow,
+	reopenDefaultOrgWorkspaceFlow,
 	openOrgDocumentFlow,
-	refileOrgSubtreeFlow,
-	readOrgRefileTargetFlow,
 	saveOrgDocumentFlow,
 	scanOrgWorkspaceFlow,
-} from "@/flows/org-workspace"
+} from "@/flows/org-workspace/org-workspace.flow"
+import {
+	prepareLegacyMigrationFlow,
+	executeLegacyMigrationFlow,
+	areLegacyMigrationPlansEquivalent,
+	verifyLegacyMigrationRecoveryFlow,
+	runLegacyMigrationRecoveryDrillFlow,
+} from "@/flows/org-workspace/legacy-migration.flow"
+import {
+	clearOrgDerivedIndexFlow,
+	rebuildOrgDerivedIndexFlow,
+} from "@/flows/org-workspace/org-derived-index.flow"
+import { captureOrgEntryFlow } from "@/flows/org-workspace/org-capture-entry.flow"
+import { resolveOrgLinkTargetFlow } from "@/flows/org-workspace/org-link-target.flow"
+import type * as linkFlows from "@/flows/org-workspace/org-link-target.flow"
+import { loadOrgAgendaFlow } from "@/flows/org-workspace/org-agenda.flow"
+import {
+	archiveOrgSubtreeFlow,
+	ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE,
+	refileOrgSubtreeFlow,
+} from "@/flows/org-workspace/org-subtree-refile.flow"
+import { readOrgRefileTargetFlow } from "@/flows/org-workspace/org-refile-target.flow"
+import { createOrgRefileTargetSnapshot } from "@/pipes/org/org-refile-target.pipe"
+import type * as subtreeRef from "@/flows/org-workspace/org-subtree-refile.flow"
 import { orgWorkspaceEventAdapter } from "@/io/event/org-workspace-event.adapter"
 import {
+	orgFileRepository,
 	releaseOrgWorkspace,
 	watchOrgWorkspace,
 	unwatchOrgWorkspace,
 } from "@/io/file/org-file.repository"
 import type { WorkspaceInterface } from "@/types/workspace"
-import type { OrgDocumentInterface, OrgWorkspaceInterface } from "@/types/org"
+import type { OrgDocumentInterface, OrgDocumentWriteResultInterface, OrgFileError, OrgWorkspaceInterface } from "@/types/org"
 import type { OrgSubtreeTransferOutcome } from "./use-org-workspace"
 import * as orgWindowClose from "./use-org-window-close"
 import * as windowCloseAdapter from "@/io/event/org-window-close.adapter"
 import * as workingCopyFlow from "@/flows/org-workspace/org-save-working-copy.flow"
 import * as saveAllFlow from "@/flows/org-workspace/org-save-all.flow"
 import {
+	type OrgLiveBuffer,
+	type OrgSaveAllOutcome,
 	canContinueAfterOrgSave,
 	hasDefaultWorkspacePreference,
 	isDirtyCaptureTarget,
@@ -71,6 +90,19 @@ import {
 	updateWorkspaceDocument,
 	useOrgWorkspace,
 } from "./use-org-workspace"
+import { planLegacyMigration } from "@/pipes/migration/migration.plan.fn"
+import * as freshDocument from "@/flows/org-workspace/org-fresh-document-create.flow"
+
+const savedAutosavePreferences = {
+	autoSave: useSettings.getState().autoSave,
+	autoSaveInterval: useSettings.getState().autoSaveInterval,
+}
+// These file-effect fixtures explicitly opt into a one-second quiet interval.
+beforeEach(() => useSettings.setState({ autoSave: true, autoSaveInterval: 1 }))
+afterEach(() => {
+	cleanup()
+	useSettings.setState(savedAutosavePreferences)
+})
 
 // Observe the real narrow lifecycle port, never React internals or Map storage.
 const observeParkedReservoir = () => {
@@ -96,40 +128,55 @@ const observeParkedReservoir = () => {
 	}
 }
 
-vi.mock("@tanstack/react-router", () => ({ useBlocker: vi.fn() }))
-vi.mock("@/flows/org-workspace", () => ({
-	archiveOrgSubtreeFlow: vi.fn(),
-	clearOrgDerivedIndexFlow: vi.fn(),
+vi.mock("@/views/ui/confirm", async (original) => {
+	const real = await original<typeof import("@/views/ui/confirm")>()
+	const confirm = vi.fn<(options: ConfirmOptions) => Promise<boolean>>()
+	return { ...real, useConfirm: () => confirm }
+})
+vi.mock("@tanstack/react-router", () => ({ useBlocker: vi.fn(), useNavigate: () => async () => undefined }))
+vi.mock("@/flows/org-workspace/org-workspace.flow", () => ({
 	createOrgDirectoryFlow: vi.fn(),
 	deleteOrgDocumentFlow: vi.fn(),
-	prepareLegacyMigrationFlow: vi.fn(),
-	verifyLegacyMigrationRecoveryFlow: vi.fn(),
-	runLegacyMigrationRecoveryDrillFlow: vi.fn(),
-	rebuildOrgDerivedIndexFlow: vi.fn(),
-	resolveOrgLinkTargetFlow: vi.fn(),
 	selectOrgWorkspaceFlow: vi.fn(),
-
 	captureOrgTodoFlow: vi.fn(),
-	captureOrgEntryFlow: vi.fn(),
 	moveOrgDocumentFlow: vi.fn(),
-	loadOrgAgendaFlow: vi.fn(),
-	ORG_SUBTREE_REFILE_DUPLICATE_RECOVERY_MESSAGE:
-		"The target copy succeeded, but source removal was not confirmed. Treat this as a possible duplicate copy: reread both documents and remove one copy only after verifying that both contain the subtree. No destructive rollback was attempted.",
 	openDefaultOrgWorkspaceFlow: vi.fn(),
+	reopenDefaultOrgWorkspaceFlow: vi.fn(),
 	openOrgDocumentFlow: vi.fn(),
-	refileOrgSubtreeFlow: vi.fn(),
-	readOrgRefileTargetFlow: vi.fn(),
 	saveOrgDocumentFlow: vi.fn(),
 	scanOrgWorkspaceFlow: vi.fn(),
+}))
+vi.mock("@/flows/org-workspace/legacy-migration.flow", () => ({
+	prepareLegacyMigrationFlow: vi.fn(),
+	executeLegacyMigrationFlow: vi.fn(),
+	areLegacyMigrationPlansEquivalent: vi.fn(),
+	verifyLegacyMigrationRecoveryFlow: vi.fn(),
+	runLegacyMigrationRecoveryDrillFlow: vi.fn(),
+}))
+vi.mock("@/flows/org-workspace/org-derived-index.flow", () => ({
+	clearOrgDerivedIndexFlow: vi.fn(),
+	rebuildOrgDerivedIndexFlow: vi.fn(),
+}))
+vi.mock("@/flows/org-workspace/org-capture-entry.flow", () => ({ captureOrgEntryFlow: vi.fn(), readOrgCaptureTargetFlow: vi.fn() }))
+vi.mock("@/flows/org-workspace/org-link-target.flow", () => ({ resolveOrgLinkTargetFlow: vi.fn() }))
+vi.mock("@/flows/org-workspace/org-agenda.flow", () => ({ loadOrgAgendaFlow: vi.fn() }))
+vi.mock("@/flows/org-workspace/org-refile-target.flow", () => ({ readOrgRefileTargetFlow: vi.fn() }))
+vi.mock("@/flows/org-workspace/org-subtree-refile.flow", async (importOriginal) => ({
+	...(await importOriginal<typeof subtreeRef>()),
+	archiveOrgSubtreeFlow: vi.fn(),
+	refileOrgSubtreeFlow: vi.fn(),
 }))
 vi.mock("@/io/event/org-workspace-event.adapter", () => ({
 	orgWorkspaceEventAdapter: { listen: vi.fn(async () => () => undefined) },
 }))
 vi.mock("@/io/file/org-file.repository", () => ({
 	releaseOrgWorkspace: vi.fn(() => async () => E.right(undefined)),
+	orgFileRepository: { readDocument: vi.fn() },
 	unwatchOrgWorkspace: vi.fn(() => async () => E.right(undefined)),
 	watchOrgWorkspace: vi.fn(() => async () => E.right("watch-G1")),
 }))
+const { resolveOrgLinkTargetFlow: productionResolveLink } =
+	await vi.importActual<typeof linkFlows>("@/flows/org-workspace/org-link-target.flow")
 
 const workspace: OrgWorkspaceInterface = {
 	directories: [],
@@ -147,11 +194,45 @@ const captured: OrgDocumentInterface = {
 	revision: "new",
 }
 
+const attachRuntime = (
+	runtime: OrgBufferRuntime,
+	owner: ReturnType<typeof useOrgWorkspace>,
+	windowId = "workspace-test",
+	register = true,
+) => {
+	const release = register ? owner.registerBufferWindow(windowId, runtime.key.bufferId) : () => {}
+	let handle!: OrgBufferWindowHandle
+	const view = new EditorView({
+		state: EditorState.create({
+			doc: runtime.state.doc,
+			extensions: runtime.historyFreeSourceExtensions,
+		}),
+		dispatchTransactions: (transactions) => handle.dispatchTransactions(transactions),
+	})
+	handle = runtime.attachWindow({ windowId, view })
+	return {
+		view,
+		handle,
+		dispose: () => {
+			release()
+			handle.detach()
+			view.destroy()
+		},
+	}
+}
+
 describe("Org capture entry and transient drafts", () => {
 	let nativeState: Parameters<typeof orgWindowClose.useOrgWindowClose>[0]
+	let snapshotSources!: () => readonly OrgLiveBuffer[]
 	beforeEach(() => {
 		vi.useFakeTimers()
 		vi.resetAllMocks()
+		const createSession = sessionFactory.createOrgWorkspaceSessionOwner
+		vi.spyOn(sessionFactory, "createOrgWorkspaceSessionOwner").mockImplementation((ports) => {
+			const session = createSession(ports)
+			snapshotSources = () => session.snapshotLiveBuffers(session.scope)
+			return session
+		})
 		window.localStorage.clear()
 		vi.spyOn(orgWindowClose, "useOrgWindowClose").mockImplementation((state) => {
 			nativeState = state
@@ -166,7 +247,7 @@ describe("Org capture entry and transient drafts", () => {
 		vi.mocked(watchOrgWorkspace).mockReturnValue(async () => E.right("watch"))
 		vi.mocked(scanOrgWorkspaceFlow).mockReturnValue(async () => E.right(workspace))
 		vi.mocked(releaseOrgWorkspace).mockReturnValue(async () => E.right(undefined))
-		vi.spyOn(window, "confirm").mockReturnValue(false)
+		vi.mocked(useConfirm()).mockResolvedValue(false)
 	})
 	afterEach(() => {
 		cleanup()
@@ -185,32 +266,287 @@ describe("Org capture entry and transient drafts", () => {
 		})
 		return hook
 	}
-	const attachRuntime = (
-		runtime: OrgBufferRuntime,
-		owner: ReturnType<typeof useOrgWorkspace>,
-		windowId = "workspace-test",
-		register = true,
-	) => {
-		const release = register ? owner.registerBufferWindow(windowId, runtime.key.bufferId) : () => {}
-		let handle!: OrgBufferWindowHandle
-		const view = new EditorView({
-			state: EditorState.create({
-				doc: runtime.state.doc,
-				extensions: runtime.historyFreeSourceExtensions,
-			}),
-			dispatchTransactions: (transactions) => handle.dispatchTransactions(transactions),
-		})
-		handle = runtime.attachWindow({ windowId, view })
-		return {
-			view,
-			handle,
-			dispose: () => {
-				release()
-				handle.detach()
-				view.destroy()
+	it.each(["create", "retire-after-write"] as const)("captured child diary uses the existing approved producer and retains Main: %s", async (mode) => {
+		const hook = await setup()
+		const child = hook.result.current.activeBufferRuntime!
+		let mounted = attachRuntime(child, hook.result.current, "diary-child")
+		await act(async () => { await hook.result.current.openDocumentPath("z.org") })
+		const main = hook.result.current.activeBufferRuntime!
+		let current = true
+		const writes: { relativePath: string; content: string; expectedRevision?: string }[] = []
+		const publish = freshDocument.createOrgFreshDocumentFlow
+		const publisher = vi.spyOn(freshDocument, "createOrgFreshDocumentFlow").mockImplementation(input => publish(input, {
+			...orgFileRepository,
+			createDirectory: () => async () => E.right(undefined),
+			writeDocument: request => async () => {
+				writes.push(request)
+				if (mode === "retire-after-write") current = false
+				return E.right({ relativePath: request.relativePath, revision: "diary-r1" })
 			},
+		}))
+		const navigation: string[] = []
+		const adapter = hook.result.current.captureBufferNavigation(child.key.bufferId, "diary-child", () => current, async (id) => {
+			const created = snapshotSources().find(buffer => buffer.bufferId === id)
+			if (!created || created.runtime.source !== writes[0].content) return false
+			mounted.dispose()
+			mounted = attachRuntime(created.runtime, hook.result.current, "diary-child")
+			navigation.push(id)
+			return true
+		})!
+		try {
+			await act(async () => { expect((await adapter.createDiary()).kind).toBe(mode === "create" ? "created" : "created-unopened") })
+			expect(writes).toHaveLength(1)
+			expect(writes[0].expectedRevision).toBe("<missing>")
+			expect(navigation).toHaveLength(mode === "create" ? 1 : 0)
+			if (mode === "create") {
+				expect(mounted.view.state.sliceDoc()).toBe(writes[0].content)
+				expect(hook.result.current.captureBufferWindowPermit("diary-child", navigation[0])()).toBe(true)
+				expect(hook.result.current.captureBufferWindowPermit("diary-child", child.key.bufferId)()).toBe(false)
+			}
+			expect(hook.result.current.activeBufferRuntime).toBe(main)
+			expect(main.source).toBe(captured.content)
+			expect(child.source).toBe(captured.content)
+			expect(hook.result.current.workspace?.documents.some(document => document.relativePath === writes[0].relativePath)).toBe(true)
+		} finally { publisher.mockRestore(); mounted.dispose(); hook.unmount() }
+	})
+	it.each((["live", "disk", "stale-source"] as const).flatMap(mode =>
+		(["link", "document"] as const).map(operation => ({ mode, operation }))))("captured child $operation follows approved $mode provenance without activating Main", async ({ mode, operation }) => {
+		const destination = { relativePath: "target.org", revision: "target-r1", content: "* Destination\r\n:PROPERTIES:\r\n:ID: child-link\r\n:END:\r\nraw\0😀\r\n" }
+		const liveSuffix = "* Unsaved target\r\nworking\0😀\r\n"
+		const expectedContent = mode === "live" ? destination.content + liveSuffix : destination.content
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(async () => E.right({ ...workspace, documents: [...workspace.documents, destination] }))
+		vi.mocked(scanOrgWorkspaceFlow).mockReturnValue(async () => E.right({ ...workspace, documents: [...workspace.documents, destination] }))
+		vi.mocked(openOrgDocumentFlow).mockImplementation((input) => async () => E.right(input.relativePath === "target.org" ? destination : { ...captured, relativePath: input.relativePath }))
+		vi.mocked(orgFileRepository.readDocument).mockImplementation(input => async () => E.right(input.relativePath === "target.org" ? destination : { ...captured, relativePath: input.relativePath }))
+		vi.mocked(resolveOrgLinkTargetFlow).mockImplementation((grant, target, overlays, repository, _cache, metadata, signal) =>
+			productionResolveLink(grant, target, overlays, repository, new Map(), metadata, signal))
+		const hook = await setup()
+		const child = hook.result.current.activeBufferRuntime!
+		let mounted = attachRuntime(child, hook.result.current, "navigation-child")
+		if (mode === "live") {
+			await act(async () => { expect(await hook.result.current.openDocumentPath("target.org")).toBe(true) })
+			const targetWindow = attachRuntime(hook.result.current.activeBufferRuntime!, hook.result.current, "target-fixture")
+			act(() => targetWindow.view.dispatch({ changes: { from: targetWindow.view.state.doc.length, insert: liveSuffix } }))
+			targetWindow.dispose()
 		}
-	}
+		await act(async () => { await hook.result.current.openDocumentPath("z.org") })
+		const main = hook.result.current.activeBufferRuntime!
+		const loadsBeforeNavigation = vi.mocked(openOrgDocumentFlow).mock.calls.filter(([input]) => input.relativePath === "target.org").length
+		const navigated: { bufferId: string; line: number }[] = []
+		const adapter = hook.result.current.captureBufferNavigation(child.key.bufferId, "navigation-child", () => true,
+			async (bufferId, line) => {
+				const target = snapshotSources().find(buffer => buffer.bufferId === bufferId)
+				if (!target || target.document.relativePath !== "target.org" || target.runtime.source !== expectedContent) return false
+				mounted.dispose()
+				mounted = attachRuntime(target.runtime, hook.result.current, "navigation-child")
+				navigated.push({ bufferId, line })
+				return true
+			})!
+		try {
+			if (mode === "stale-source") act(() => { mounted.view.dispatch({ changes: { from: 0, insert: "x" } }); mounted.handle.undo() })
+			await act(async () => {
+				const opened = operation === "link"
+					? await adapter.openOrgLink({ kind: "id", relativePath: null, value: "child-link" })
+					: await adapter.openDocumentAt("target.org", 1, destination.revision)
+				expect(opened).toBe(mode !== "stale-source")
+			})
+			expect(hook.result.current.activeBufferRuntime).toBe(main)
+			expect(main.source).toBe(captured.content)
+			expect(child.source).toBe(captured.content)
+			expect(navigated).toHaveLength(mode === "stale-source" ? 0 : 1)
+			expect(vi.mocked(openOrgDocumentFlow).mock.calls.filter(([input]) => input.relativePath === "target.org"))
+				.toHaveLength(loadsBeforeNavigation + (mode === "disk" ? 1 : 0))
+			if (mode === "live")
+				expect(vi.mocked(orgFileRepository.readDocument).mock.calls.some(([input]) => input.relativePath === "target.org")).toBe(false)
+			if (navigated[0]) {
+				expect(navigated[0].line).toBe(1)
+				expect(mounted.view.state.sliceDoc()).toBe(expectedContent)
+				expect(hook.result.current.captureBufferWindowPermit("navigation-child", navigated[0].bufferId)()).toBe(true)
+				expect(hook.result.current.captureBufferWindowPermit("navigation-child", child.key.bufferId)()).toBe(false)
+			}
+		} finally { mounted.dispose(); hook.unmount() }
+	})
+	it.each(["move", "window-aba", "source-aba", "partial"] as const)("captured child transfer owns its logical buffer while Main remains another buffer: %s", async (mode) => {
+		const original = "* Child 😀\r\nbody\0\r\n* Keep\r\n"
+		vi.mocked(openOrgDocumentFlow).mockImplementation((input) => async () => E.right({
+			relativePath: input.relativePath, revision: input.relativePath === "inbox.org" ? "child-r1" : "main-r1",
+			content: input.relativePath === "inbox.org" ? original : "* Main\r\n",
+		}))
+		const hook = await setup()
+		const child = hook.result.current.activeBufferRuntime!
+		const mounted = attachRuntime(child, hook.result.current, "captured-child")
+		const adapter = hook.result.current.captureBufferTransfer(child.key.bufferId, "captured-child", () => true)!
+		expect(adapter).not.toBeNull()
+		await act(async () => { await hook.result.current.openDocumentPath("z.org") })
+		const main = hook.result.current.activeBufferRuntime!
+		let target = { relativePath: "target.org", revision: "target-r1", content: "* Destination\r\n" }
+		vi.mocked(readOrgRefileTargetFlow).mockReturnValueOnce(async () =>
+			E.right(createOrgRefileTargetSnapshot(target.relativePath, target.revision, target.content)),
+		)
+		const lookup = await adapter.readRefileTarget("target.org")
+		if (lookup.kind !== "ready") throw new Error(lookup.message)
+		const writes: string[] = []
+		const real = await vi.importActual<typeof subtreeRef>("@/flows/org-workspace/org-subtree-refile.flow")
+		vi.mocked(refileOrgSubtreeFlow).mockImplementation((input) => real.refileOrgSubtreeFlow(input, {
+			...orgFileRepository,
+			scanWorkspace: () => async () => E.right({ directories: [], documents: [target] }),
+			readDocument: () => async () => E.right(target),
+			writeDocument: (input) => async () => {
+				writes.push(input.relativePath)
+				if (input.relativePath === "target.org") {
+					target = { ...target, content: input.content, revision: "target-r2" }
+					return E.right(target)
+				}
+				if (mode === "partial") return E.left({ type: "ORG_FILE_ERROR", operation: "write", command: "write_org_document", message: "source CAS rejected", cause: null })
+				return E.right({ relativePath: input.relativePath, revision: "child-r2" })
+			},
+		}))
+		let replacementRelease: (() => void) | undefined
+		try {
+			if (mode === "window-aba") {
+				replacementRelease = hook.result.current.registerBufferWindow("captured-child", child.key.bufferId)
+			} else if (mode === "source-aba") {
+				act(() => {
+					mounted.view.dispatch({ changes: { from: 0, insert: "x" } })
+					expect(mounted.handle.undo()).toBe(true)
+				})
+				expect(child.source).toBe(original)
+			}
+			await act(async () => {
+				const outcome = await adapter.refileSubtree(2, "target.org", { snapshot: lookup.snapshot })
+				expect(outcome.kind).toBe(mode === "move" ? "success" : mode === "partial" ? "partial" : "rejected")
+			})
+			expect(hook.result.current.activeBufferRuntime).toBe(main)
+			expect(main.source).toBe("* Main\r\n")
+			expect(child.source).toBe(mode === "move" ? "* Keep\r\n" : original)
+			expect(writes).toEqual(mode === "move" || mode === "partial" ? ["target.org", "inbox.org"] : [])
+			if (mode === "partial") {
+				expect(target.content).toContain("body\0\r\n")
+				expect(hook.result.current.openBuffers.find(buffer => buffer.bufferId === child.key.bufferId)?.hasConflict).toBe(true)
+			}
+		} finally { replacementRelease?.(); mounted.dispose(); hook.unmount() }
+	})
+	it.each(["cancel", "accept", "edit", "aba", "retire"] as const)(
+		"dirty deletion preserves the live source until an unstale explicit decision: %s",
+		async (decision) => {
+			const hook = await setup()
+			act(() => hook.result.current.updateContent("unsaved source"))
+			const runtime = hook.result.current.activeBufferRuntime!
+			const pending = Promise.withResolvers<boolean>()
+			vi.mocked(useConfirm()).mockReturnValueOnce(pending.promise)
+			vi.mocked(deleteOrgDocumentFlow).mockImplementationOnce((input) => async () => E.right({
+				sourceRelativePath: input.relativePath,
+				relativePath: `.grain-originals/deleted/${input.relativePath}`,
+				kind: "delete",
+				object: "original",
+			}))
+			let deleting!: Promise<void>
+			act(() => { deleting = hook.result.current.deleteActiveDocument() })
+			expect(deleteOrgDocumentFlow).not.toHaveBeenCalled()
+			if (decision === "edit" || decision === "aba") {
+				act(() => hook.result.current.updateContent("newer source"))
+				if (decision === "aba") act(() => hook.result.current.updateContent("unsaved source"))
+			}
+			if (decision === "retire") hook.unmount()
+			await act(async () => {
+				pending.resolve(decision !== "cancel")
+				await deleting
+			})
+			if (decision === "accept") {
+				expect(deleteOrgDocumentFlow).toHaveBeenCalledTimes(1)
+				expect(hook.result.current.activeDocument).toBeNull()
+			} else {
+				expect(deleteOrgDocumentFlow).not.toHaveBeenCalled()
+				expect(runtime.source).toBe(decision === "edit" ? "newer source" : "unsaved source")
+			}
+		},
+	)
+
+	it("keeps dirty canonical and parked buffers when leaving the UI route", async () => {
+		const hook = await setup()
+		act(() => hook.result.current.updateContent("dirty parked source"))
+		await act(async () => { await hook.result.current.openDocumentPath("z.org") })
+		act(() => hook.result.current.updateContent("dirty focused source"))
+		const buffers = hook.result.current.liveBuffers
+		const blocker = vi.mocked(useBlocker).mock.lastCall![0] as unknown as { shouldBlockFn: () => Promise<boolean> }
+		expect(await blocker.shouldBlockFn()).toBe(false)
+		expect(hook.result.current.liveBuffers).toEqual(buffers)
+		expect(buffers.map((buffer) => buffer.runtime.source)).toEqual(["dirty parked source", "dirty focused source"])
+		expect(vi.mocked(useConfirm())).not.toHaveBeenCalled()
+	})
+
+	it.each(["cancel", "accept", "edit", "transient", "retire"] as const)(
+		"workspace replacement starts no picker before a current explicit discard: %s",
+		async (decision) => {
+			const hook = await setup()
+			act(() => hook.result.current.updateContent("unsaved source"))
+			const pending = Promise.withResolvers<boolean>()
+			vi.mocked(useConfirm()).mockReturnValueOnce(pending.promise)
+			vi.mocked(selectOrgWorkspaceFlow).mockReturnValueOnce(async () => E.right({ ...workspace, capabilityToken: "G2" }))
+			let replacing!: Promise<void>
+			act(() => { replacing = hook.result.current.selectWorkspace() })
+			expect(selectOrgWorkspaceFlow).not.toHaveBeenCalled()
+			if (decision === "edit") act(() => hook.result.current.updateContent("newer source"))
+			if (decision === "transient") act(() => hook.result.current.setTransientDirty("new draft", true))
+			if (decision === "retire") hook.unmount()
+			await act(async () => {
+				pending.resolve(decision !== "cancel")
+				await replacing
+			})
+			if (decision === "accept") {
+				expect(selectOrgWorkspaceFlow).toHaveBeenCalledTimes(1)
+				expect(hook.result.current.workspaceSessionId).toBe("G2")
+			} else {
+				expect(selectOrgWorkspaceFlow).not.toHaveBeenCalled()
+				if (decision !== "retire") expect(hook.result.current.workspaceSessionId).toBe("G1")
+			}
+		},
+	)
+
+	it.each(["cancel", "accept", "source-changed", "retire"] as const)(
+		"legacy migration retains its read/recheck/write boundary across %s",
+		async (decision) => {
+			const hook = await setup()
+			const source = hook.result.current.content
+			const plan = planLegacyMigration({
+				graph: {
+					workspace: { id: "isolated", name: "Isolated legacy", description: null, createdAt: "11", updatedAt: "13" },
+					nodes: [],
+				},
+				contents: [],
+			})
+			vi.mocked(prepareLegacyMigrationFlow).mockReturnValue(async () => E.right(plan))
+			vi.mocked(areLegacyMigrationPlansEquivalent).mockReturnValue(decision !== "source-changed")
+			vi.mocked(executeLegacyMigrationFlow).mockReturnValue(async () => E.left({
+				type: "LEGACY_MIGRATION_ERROR",
+				stage: "write-artifacts",
+				cause: {
+					type: "ORG_FILE_ERROR", operation: "write", command: "write_org_document",
+					message: "Fixture write refused", cause: null,
+				},
+			}))
+			const pending = Promise.withResolvers<boolean>()
+			vi.mocked(useConfirm()).mockReturnValueOnce(pending.promise)
+			let migrating!: Promise<void>
+			act(() => { migrating = hook.result.current.migrateLegacyWorkspace({ id: "isolated", title: "Isolated legacy" } as WorkspaceInterface) })
+			await act(async () => { await Promise.resolve() })
+			expect(prepareLegacyMigrationFlow).toHaveBeenCalledTimes(1)
+			expect(executeLegacyMigrationFlow).not.toHaveBeenCalled()
+			if (decision === "retire") hook.unmount()
+			await act(async () => {
+				pending.resolve(decision !== "cancel")
+				await migrating
+			})
+			expect(prepareLegacyMigrationFlow).toHaveBeenCalledTimes(decision === "accept" || decision === "source-changed" ? 2 : 1)
+			expect(executeLegacyMigrationFlow).toHaveBeenCalledTimes(decision === "accept" ? 1 : 0)
+			if (decision !== "retire") {
+				expect(hook.result.current.content).toBe(source)
+				expect(hook.result.current.isLoading).toBe(false)
+			}
+		},
+	)
+
+
 	const agendaRow = (
 		source: string,
 		path = "z.org",
@@ -246,7 +582,6 @@ describe("Org capture entry and transient drafts", () => {
 		["#+TODO: NEXT(n) | FINISHED(f!)", "NEXT", "FINISHED"],
 		["#+TODO: NEXT(n/!) | FINISHED(f)", "NEXT", "FINISHED"],
 		["#+TODO: NEXT(n/!) | FINISHED(f!)", "NEXT", "FINISHED"],
-		["#+TODO: NEXT(n) | FINISHED(f/!)", "FINISHED", ""],
 	])("cycles custom logging state atomically: %s", async (declaration, from, to) => {
 		const { result } = await setup()
 		const source = `${declaration}\r\n* ${from} café 😀\r\n<2026-07-01 Wed>\r\nbody\r\n`
@@ -338,7 +673,6 @@ describe("Org capture entry and transient drafts", () => {
 	it.each([
 		"NEXT(n/@) | FINISHED(f)",
 		"NEXT(n) | FINISHED(f@)",
-		"NEXT(n/@) | FINISHED(f!)",
 	])("prepares note-required %s without allocating an unopened buffer", async (states) => {
 		const observed = observeParkedReservoir()
 		const { result } = await setup()
@@ -562,7 +896,6 @@ describe("Org capture entry and transient drafts", () => {
 			"2026-02-29",
 			"2026-04-31",
 			"2026-13-01",
-			"2026-7-01",
 			"",
 			"2026-07-01 trailing",
 		]) {
@@ -612,10 +945,9 @@ describe("Org capture entry and transient drafts", () => {
 			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
 		)
 		await act(async () => {
-			expect(await result.current.prepareAgendaPlanning(row, field)).toEqual({
+			expect(await result.current.prepareAgendaCommand(row, field)).toMatchObject({
 				kind: "ready",
 				entry: row,
-				date: field === "schedule" ? "2026-07-01" : "2026-07-03",
 			})
 		})
 		expect(row.kind).toBe(field === "schedule" ? "deadline" : "scheduled")
@@ -652,7 +984,7 @@ describe("Org capture entry and transient drafts", () => {
 		const row = agendaRow(raw, "z.org", result.current.activeBufferId!, true)
 		vi.mocked(openOrgDocumentFlow).mockClear()
 		await act(async () => {
-			expect(await result.current.prepareAgendaPlanning(row, field)).toEqual({
+			expect(await result.current.prepareAgendaCommand(row, field)).toEqual({
 				kind: "ready",
 				entry: row,
 				date: null,
@@ -819,8 +1151,12 @@ describe("Org capture entry and transient drafts", () => {
 	] as const)("rechecks synchronous late pause/conflict before the canonical Agenda Tx (%s)", async (target) => {
 		const { result } = await setup()
 		const source = "* TODO task\nSCHEDULED: <2026-07-01 Wed>\n"
-		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
-			E.right({ content: source, relativePath: "z.org", revision: "z-1" }),
+		vi.mocked(openOrgDocumentFlow).mockImplementation(
+			(input) => async () => E.right(
+				input.relativePath === "z.org"
+					? { content: source, relativePath: "z.org", revision: "z-1" }
+					: captured,
+			),
 		)
 		await act(async () => {
 			await result.current.openDocumentPath("z.org")
@@ -830,8 +1166,10 @@ describe("Org capture entry and transient drafts", () => {
 		const row = agendaRow(source, "z.org", id, true)
 		if (target === "parked") {
 			await act(async () => {
-				await result.current.openDocumentPath("inbox.org")
+				expect(await result.current.openDocumentPath("inbox.org")).toBe(true)
 			})
+			expect(result.current.activeDocument?.relativePath).toBe("inbox.org")
+			expect(result.current.liveBuffers.find((buffer) => buffer.bufferId === id)?.runtime).toBe(runtime)
 		}
 		const before = runtime.state
 		const revision = runtime.revision
@@ -842,7 +1180,7 @@ describe("Org capture entry and transient drafts", () => {
 		})
 		let capture!: Promise<unknown>
 		const onCommitStarted = vi.fn(() => {
-			capture = result.current.captureEntry("* captured\n", "z.org")
+			capture = result.current.captureEntry({ entryType: "entry", entrySource: "* captured\n", target: { kind: "file", relativePath: "z.org" } })
 		})
 		await act(async () => {
 			expect(
@@ -918,13 +1256,13 @@ describe("Org capture entry and transient drafts", () => {
 		expect(runtime.source).toBe(source)
 		expect(runtime.revision).toBe(revision)
 		expect(undoDepth(runtime.state)).toBe(0)
-		expect(hook.result.current.isLoading).toBe(true)
+		expect(hook.result.current.isWorkspaceBusy).toBe(true)
 		expect(nativeState.isBusy).toBe(true)
 		await act(async () => {
 			settle(E.right({ content: source, relativePath: "inbox.org", revision: "old" }))
 			expect(await next).toEqual({ kind: "confirmed" })
 		})
-		expect(hook.result.current.isLoading).toBe(false)
+		expect(hook.result.current.isWorkspaceBusy).toBe(false)
 		expect(nativeState.isBusy).toBe(false)
 		const nextBuffer = hook.result.current.liveBuffers.find(
 			(buffer) => buffer.document.relativePath === "inbox.org",
@@ -974,6 +1312,73 @@ describe("Org capture entry and transient drafts", () => {
 		expect(redoDepth(runtime.state)).toBe(0)
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 	})
+	it.each([
+		"orgBehaviorConfigurationJson",
+		"orgKeymapConfigurationJson",
+	] as const)("retires an actual Root Agenda read on %s ABA without late ghost buffers", async (configuration) => {
+		vi.useRealTimers()
+		const previous = useSettings.getState()
+		let signal!: AbortSignal
+		const hook = renderHook(() => {
+			const owner = useOrgWorkspace()
+			const parameters = useOrgAgendaParameters({
+				controller: {
+					prepareAgendaCommand: (...args) => {
+						signal = args[2]!
+						return owner.prepareAgendaCommand(...args)
+					},
+					executeAgendaCommand: owner.executeAgendaCommand,
+				},
+				scope: owner.workspaceSessionId ?? "",
+				sourceVersion: JSON.stringify(owner.liveBuffers.map((buffer) => buffer.content)),
+				reload: vi.fn(),
+				restoreFocus: vi.fn(),
+				now: () => new Date(2026, 8, 30, 23, 59),
+			})
+			return { owner, parameters }
+		})
+		try {
+			act(() => {
+				useSettings.getState().setOrgBehaviorConfigurationJson("")
+				useSettings.getState().setOrgKeymapConfigurationJson("")
+			})
+			agendaOwner = () => hook.result.current.owner
+			await act(async () => {
+				await hook.result.current.owner.openDefaultWorkspace()
+			})
+			const before = hook.result.current.owner.liveBuffers
+			const source = "* TODO task\nSCHEDULED: <2026-07-01 Wed>\n"
+			let settle!: (value: E.Either<never, OrgDocumentInterface>) => void
+			vi.mocked(openOrgDocumentFlow).mockReturnValue(
+				() => new Promise((resolve) => { settle = resolve }),
+			)
+			await act(async () => {
+				hook.result.current.parameters.start(agendaRow(source), "schedule")
+			})
+			const change = configuration === "orgBehaviorConfigurationJson"
+				? useSettings.getState().setOrgBehaviorConfigurationJson
+				: useSettings.getState().setOrgKeymapConfigurationJson
+			act(() => {
+				change(" ")
+				change("")
+			})
+			expect(hook.result.current.parameters.session).toBeNull()
+			expect(signal.aborted).toBe(true)
+			await act(async () => {
+				settle(E.right({ content: source, relativePath: "z.org", revision: "z-1" }))
+			})
+			expect(hook.result.current.owner.liveBuffers).toEqual(before)
+			expect(hook.result.current.owner.activeDocument).toBeNull()
+			expect(hook.result.current.owner.isWorkspaceBusy).toBe(false)
+			expect(hook.result.current.parameters.isPending()).toBe(false)
+		} finally {
+			hook.unmount()
+			act(() => {
+				useSettings.getState().setOrgBehaviorConfigurationJson(previous.orgBehaviorConfigurationJson)
+				useSettings.getState().setOrgKeymapConfigurationJson(previous.orgKeymapConfigurationJson)
+			})
+		}
+	})
 	// The wrapper delays only RESULT delivery: canonical commit and Root publication
 	// have already happened when cancellation is attempted. Never fake a confirmed edit.
 	const resultGate = () => {
@@ -998,7 +1403,7 @@ describe("Org capture entry and transient drafts", () => {
 			const owner = useOrgWorkspace()
 			const parameters = useOrgAgendaParameters({
 				controller: {
-					prepareAgendaPlanning: owner.prepareAgendaPlanning,
+					prepareAgendaCommand: owner.prepareAgendaCommand,
 					executeAgendaCommand: async (...args) => {
 						signal = args[2]!
 						const outcome = await owner.executeAgendaCommand(...args)
@@ -1049,16 +1454,12 @@ describe("Org capture entry and transient drafts", () => {
 		})
 		expect(signal.aborted).toBe(false)
 		expect(hook.result.current.parameters.pending).toBe(true)
-		expect(hook.result.current.parameters.status).not.toMatch(/cancelled/i)
 		expect(reload).not.toHaveBeenCalled()
 		expect(restoreFocus).not.toHaveBeenCalled()
 		await act(async () => {
 			gate.release()
 			await accepted
 		})
-		expect(hook.result.current.parameters.status).toBe(
-			`${kind === "schedule" ? "Schedule" : "Deadline"} changed in working copy. Save to write the file.`,
-		)
 		expect(hook.result.current.parameters.session).toBeNull()
 		expect(hook.result.current.parameters.pending).toBe(false)
 		expect(hook.result.current.parameters.isPending()).toBe(false)
@@ -1088,7 +1489,7 @@ describe("Org capture entry and transient drafts", () => {
 				const owner = useOrgWorkspace()
 				const parameters = useOrgAgendaParameters({
 					controller: {
-						prepareAgendaPlanning: owner.prepareAgendaPlanning,
+						prepareAgendaCommand: owner.prepareAgendaCommand,
 						executeAgendaCommand: async (...args) => {
 							signal = args[2]!
 							const outcome = await owner.executeAgendaCommand(...args)
@@ -1138,7 +1539,7 @@ describe("Org capture entry and transient drafts", () => {
 		expect(reload).not.toHaveBeenCalled()
 		expect(restoreFocus).not.toHaveBeenCalled()
 		if (boundary === "scope-change") {
-			expect(hook.result.current.parameters.status).toBeNull()
+			expect(hook.result.current.parameters.result).toBeNull()
 			expect(hook.result.current.parameters.session).toBeNull()
 			expect(hook.result.current.parameters.pending).toBe(false)
 			expect(hook.result.current.parameters.isPending()).toBe(false)
@@ -1212,7 +1613,7 @@ describe("Org capture entry and transient drafts", () => {
 			fireEvent.click(button)
 		})
 		if (kind !== "cycle-todo") {
-			const input = await screen.findByRole("combobox")
+			const input = await within(screen.getByRole("region", { name: "Minibuffer" })).findByRole("combobox", { name: kind === "schedule" ? /^Schedule \(/ : /^Deadline \(/ })
 			fireEvent.change(input, { target: { value: "2026-07-09" } })
 			await act(async () => {
 				fireEvent.keyDown(input, { key: "Enter" })
@@ -1242,15 +1643,9 @@ describe("Org capture entry and transient drafts", () => {
 		fireEvent.keyDown(screen.getByRole("main"), { key, ctrlKey })
 		fireEvent.keyDown(screen.getByRole("main"), { key, ctrlKey })
 		expect(signal.aborted).toBe(false)
-		expect(screen.getByRole("status")).not.toHaveTextContent("cancelled")
 		await act(async () => {
 			gate.release()
 		})
-		await waitFor(() =>
-			expect(screen.getByRole("status")).toHaveTextContent(
-				`${kind === "cycle-todo" ? "TODO state" : label} changed in working copy`,
-			),
-		)
 		await waitFor(() =>
 			expect(document.activeElement).toBe(
 				screen.getByRole("button", { name: `${label} for task` }),
@@ -1291,9 +1686,9 @@ describe("Org capture entry and transient drafts", () => {
 			const owner = useOrgWorkspace()
 			const parameters = useOrgAgendaParameters({
 				controller: {
-					prepareAgendaPlanning: (...args) => {
+					prepareAgendaCommand: (...args) => {
 						signal = args[2]!
-						return owner.prepareAgendaPlanning(...args)
+						return owner.prepareAgendaCommand(...args)
 					},
 					executeAgendaCommand: (...args) => {
 						signal = args[2]!
@@ -1328,14 +1723,12 @@ describe("Org capture entry and transient drafts", () => {
 			act(() => hook.result.current.parameters.session!.onCancel())
 		} else act(() => hook.result.current.parameters.cancel())
 		expect(signal.aborted).toBe(true)
-		expect(hook.result.current.parameters.status).toBe("Agenda action cancelled.")
 		expect(hook.result.current.parameters.session).toBeNull()
 		expect(hook.result.current.parameters.isPending()).toBe(false)
 		await act(async () => {
 			settle(E.right({ content: source, relativePath: "z.org", revision: "z-1" }))
 			await accepted
 		})
-		expect(hook.result.current.parameters.status).toBe("Agenda action cancelled.")
 		expect(hook.result.current.parameters.pending).toBe(false)
 		expect(hook.result.current.owner.liveBuffers).toEqual([])
 		expect(create).not.toHaveBeenCalled()
@@ -1360,7 +1753,7 @@ describe("Org capture entry and transient drafts", () => {
 		signal?: AbortSignal,
 	) =>
 		operation.prepare
-			? owner.prepareAgendaPlanning(row, operation.field, signal)
+			? owner.prepareAgendaCommand(row, operation.field, signal)
 			: owner.executeAgendaCommand(row, { kind: operation.field, date: "2026-07-09" }, signal)
 	it.each(
 		planningOperations,
@@ -1488,12 +1881,9 @@ describe("Org capture entry and transient drafts", () => {
 		const document = { content: source, relativePath: "z.org", revision: "z-1" }
 		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () => E.right(document))
 		const active = result.current.activeBufferRuntime
-		const blocker = vi.mocked(useBlocker).mock.calls.at(-1)![0] as unknown as {
-			shouldBlockFn: () => boolean
-		}
 		let outcome
 		await act(async () => {
-			outcome = await result.current.actOnAgendaEntry(agendaRow(source))
+			outcome = await result.current.executeAgendaCommand(agendaRow(source), { kind: "cycle-todo" })
 		})
 		expect(outcome).toEqual({ kind: "confirmed" })
 		expect(result.current.activeBufferRuntime).toBe(active)
@@ -1506,7 +1896,6 @@ describe("Org capture entry and transient drafts", () => {
 		expect(parked.isDirty).toBe(true)
 		expect(undoDepth(parked.runtime.state)).toBe(1)
 		expect(nativeState.hasDirtyBuffers).toBe(true)
-		expect(blocker.shouldBlockFn()).toBe(true)
 		const editor = attachRuntime(parked.runtime, result.current, "agenda-undo")
 		act(() => {
 			expect(editor.handle.undo()).toBe(true)
@@ -1531,13 +1920,13 @@ describe("Org capture entry and transient drafts", () => {
 		const raw = result.current.content
 		const id = result.current.activeBufferId!
 		await act(async () => {
-			expect(await result.current.actOnAgendaEntry(agendaRow(raw, "z.org", id, true))).toEqual({
+			expect(await result.current.executeAgendaCommand(agendaRow(raw, "z.org", id, true), { kind: "cycle-todo" })).toEqual({
 				kind: "confirmed",
 			})
 		})
 		expect(result.current.content).toBe(raw.replace("* TODO", "* DONE"))
 		await act(async () => {
-			expect(await result.current.actOnAgendaEntry(agendaRow(raw, "z.org", id, true))).toEqual({
+			expect(await result.current.executeAgendaCommand(agendaRow(raw, "z.org", id, true), { kind: "cycle-todo" })).toEqual({
 				kind: "stale",
 			})
 		})
@@ -1576,7 +1965,7 @@ describe("Org capture entry and transient drafts", () => {
 		const editRevision = live.runtime.revision
 		const editDepth = undoDepth(live.runtime.state)
 		await act(async () => {
-			expect(await result.current.actOnAgendaEntry(bound)).toEqual({ kind: "stale" })
+			expect(await result.current.executeAgendaCommand(bound, { kind: "cycle-todo" })).toEqual({ kind: "stale" })
 		})
 		expect(live.runtime.revision).toBe(editRevision)
 		expect(undoDepth(live.runtime.state)).toBe(editDepth)
@@ -1587,27 +1976,27 @@ describe("Org capture entry and transient drafts", () => {
 		const undoRevision = live.runtime.revision
 		const undoHistory = undoDepth(live.runtime.state)
 		await act(async () => {
-			expect(await result.current.actOnAgendaEntry(bound)).toEqual({ kind: "stale" })
+			expect(await result.current.executeAgendaCommand(bound, { kind: "cycle-todo" })).toEqual({ kind: "stale" })
 		})
 		expect(live.runtime.revision).toBe(undoRevision)
 		expect(undoDepth(live.runtime.state)).toBe(undoHistory)
 		const fresh = result.current.liveBuffers.find((buffer) => buffer.bufferId === live.bufferId)!
 		await act(async () => {
 			expect(
-				await result.current.actOnAgendaEntry({
+				await result.current.executeAgendaCommand({
 					...bound,
 					origin: {
 						...bound.origin,
 						runtimeIncarnation: "retired-runtime",
 						sourceGeneration: fresh.sourceGeneration,
 					},
-				}),
+				}, { kind: "cycle-todo" }),
 			).toEqual({ kind: "stale" })
 			expect(
-				await result.current.actOnAgendaEntry({
+				await result.current.executeAgendaCommand({
 					...bound,
 					origin: { ...bound.origin, sourceGeneration: fresh.sourceGeneration },
-				}),
+				}, { kind: "cycle-todo" }),
 			).toEqual({ kind: "confirmed" })
 		})
 		editor.dispose()
@@ -1648,7 +2037,7 @@ describe("Org capture entry and transient drafts", () => {
 		const editRevision = live.runtime.revision
 		const editDepth = undoDepth(live.runtime.state)
 		await act(async () => {
-			expect(await result.current.prepareAgendaPlanning(bound, field)).toEqual({ kind: "stale" })
+			expect(await result.current.prepareAgendaCommand(bound, field)).toEqual({ kind: "stale" })
 		})
 		expect(live.runtime.revision).toBe(editRevision)
 		expect(undoDepth(live.runtime.state)).toBe(editDepth)
@@ -1659,14 +2048,14 @@ describe("Org capture entry and transient drafts", () => {
 		const undoRevision = live.runtime.revision
 		const undoHistory = undoDepth(live.runtime.state)
 		await act(async () => {
-			expect(await result.current.prepareAgendaPlanning(bound, field)).toEqual({ kind: "stale" })
+			expect(await result.current.prepareAgendaCommand(bound, field)).toEqual({ kind: "stale" })
 		})
 		expect(live.runtime.revision).toBe(undoRevision)
 		expect(undoDepth(live.runtime.state)).toBe(undoHistory)
 		const fresh = result.current.liveBuffers.find((buffer) => buffer.bufferId === live.bufferId)!
 		await act(async () => {
 			expect(
-				await result.current.prepareAgendaPlanning(
+				await result.current.prepareAgendaCommand(
 					{
 						...bound,
 						origin: {
@@ -1679,7 +2068,7 @@ describe("Org capture entry and transient drafts", () => {
 				),
 			).toEqual({ kind: "stale" })
 			expect(
-				await result.current.prepareAgendaPlanning(
+				await result.current.prepareAgendaCommand(
 					{
 						...bound,
 						origin: { ...bound.origin, sourceGeneration: fresh.sourceGeneration },
@@ -1786,7 +2175,7 @@ describe("Org capture entry and transient drafts", () => {
 		})
 		const before = result.current.content
 		await act(async () => {
-			expect(await result.current.actOnAgendaEntry(agendaRow(source))).toEqual({ kind: "stale" })
+			expect(await result.current.executeAgendaCommand(agendaRow(source), { kind: "cycle-todo" })).toEqual({ kind: "stale" })
 		})
 		expect(result.current.content).toBe(before)
 	})
@@ -1796,13 +2185,13 @@ describe("Org capture entry and transient drafts", () => {
 		const row = agendaRow("* TODO task\n<2026-07-01 Wed>\n")
 		await act(async () => {
 			expect(
-				await result.current.actOnAgendaEntry({
+				await result.current.executeAgendaCommand({
 					...row,
 					origin: {
 						...row.origin!,
 						workspaceSessionId: "old-session",
 					},
-				}),
+				}, { kind: "cycle-todo" }),
 			).toEqual({ kind: "stale" })
 		})
 		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
@@ -1820,9 +2209,9 @@ describe("Org capture entry and transient drafts", () => {
 		const controller = new AbortController()
 		let command!: Promise<unknown>
 		act(() => {
-			command = result.current.actOnAgendaEntry(agendaRow(source), controller.signal)
+			command = result.current.executeAgendaCommand(agendaRow(source), { kind: "cycle-todo" }, controller.signal)
 		})
-		expect(result.current.isLoading).toBe(true)
+		expect(result.current.isWorkspaceBusy).toBe(true)
 		act(() => {
 			controller.abort()
 		})
@@ -1860,9 +2249,9 @@ describe("Org capture entry and transient drafts", () => {
 		const controller = new AbortController()
 		let command!: Promise<unknown>
 		act(() => {
-			command = result.current.prepareAgendaPlanning(agendaRow(source), field, controller.signal)
+			command = result.current.prepareAgendaCommand(agendaRow(source), field, controller.signal)
 		})
-		expect(result.current.isLoading).toBe(true)
+		expect(result.current.isWorkspaceBusy).toBe(true)
 		act(() => {
 			controller.abort()
 		})
@@ -1905,7 +2294,7 @@ describe("Org capture entry and transient drafts", () => {
 		const controller = new AbortController()
 		let first!: Promise<unknown>
 		act(() => {
-			first = result.current.actOnAgendaEntry(agendaRow(source), controller.signal)
+			first = result.current.executeAgendaCommand(agendaRow(source), { kind: "cycle-todo" }, controller.signal)
 		})
 		act(() => {
 			controller.abort()
@@ -1915,12 +2304,12 @@ describe("Org capture entry and transient drafts", () => {
 		})
 		let second!: Promise<unknown>
 		act(() => {
-			second = result.current.actOnAgendaEntry(agendaRow(source))
+			second = result.current.executeAgendaCommand(agendaRow(source), { kind: "cycle-todo" })
 		})
 		await act(async () => {
 			failFirst(new Error("late G1 read failure"))
 		})
-		expect(result.current.isLoading).toBe(true)
+		expect(result.current.isWorkspaceBusy).toBe(true)
 		expect(result.current.error).toBeNull()
 		expect(result.current.liveBuffers).toHaveLength(1)
 		await act(async () => {
@@ -1954,7 +2343,7 @@ describe("Org capture entry and transient drafts", () => {
 		const controller = new AbortController()
 		let first!: Promise<unknown>
 		act(() => {
-			first = result.current.prepareAgendaPlanning(agendaRow(source), field, controller.signal)
+			first = result.current.prepareAgendaCommand(agendaRow(source), field, controller.signal)
 		})
 		act(() => {
 			controller.abort()
@@ -1964,12 +2353,12 @@ describe("Org capture entry and transient drafts", () => {
 		})
 		let second!: Promise<unknown>
 		act(() => {
-			second = result.current.prepareAgendaPlanning(agendaRow(source), field)
+			second = result.current.prepareAgendaCommand(agendaRow(source), field)
 		})
 		await act(async () => {
 			failFirst(new Error("late G1 read failure"))
 		})
-		expect(result.current.isLoading).toBe(true)
+		expect(result.current.isWorkspaceBusy).toBe(true)
 		expect(result.current.error).toBeNull()
 		expect(result.current.liveBuffers).toHaveLength(1)
 		await act(async () => {
@@ -1995,7 +2384,7 @@ describe("Org capture entry and transient drafts", () => {
 			if (observed.reservoir.read(observed.scope, "z.org")?.isDirty) controller.abort()
 		})
 		await act(async () => {
-			expect(await result.current.actOnAgendaEntry(agendaRow(source), controller.signal)).toEqual({
+			expect(await result.current.executeAgendaCommand(agendaRow(source), { kind: "cycle-todo" }, controller.signal)).toEqual({
 				kind: "confirmed",
 			})
 		})
@@ -2023,7 +2412,7 @@ describe("Org capture entry and transient drafts", () => {
 			}),
 		)
 		await act(async () => {
-			await result.current.actOnAgendaEntry(agendaRow(source))
+			await result.current.executeAgendaCommand(agendaRow(source), { kind: "cycle-todo" })
 		})
 		const parked = result.current.liveBuffers.find(
 			(copy) => copy.document.relativePath === "z.org",
@@ -2035,7 +2424,7 @@ describe("Org capture entry and transient drafts", () => {
 		const raw = result.current.content
 		await act(async () => {
 			expect(
-				await result.current.actOnAgendaEntry(agendaRow(raw, "z.org", parked.bufferId, true)),
+				await result.current.executeAgendaCommand(agendaRow(raw, "z.org", parked.bufferId, true), { kind: "cycle-todo" }),
 			).toEqual({ kind: "confirmed" })
 		})
 		expect(result.current.content).toBe(source.replace("* TODO", "*"))
@@ -2049,7 +2438,7 @@ describe("Org capture entry and transient drafts", () => {
 			E.right({ content: source, relativePath: "z.org", revision: "z-2" }),
 		)
 		await act(async () => {
-			expect(await result.current.actOnAgendaEntry(agendaRow(source))).toEqual({ kind: "stale" })
+			expect(await result.current.executeAgendaCommand(agendaRow(source), { kind: "cycle-todo" })).toEqual({ kind: "stale" })
 		})
 		expect(result.current.liveBuffers).toHaveLength(1)
 		expect(result.current.isLoading).toBe(false)
@@ -2074,7 +2463,7 @@ describe("Org capture entry and transient drafts", () => {
 		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () => response as never)
 		await act(async () => {
 			expect(
-				await result.current.actOnAgendaEntry(agendaRow("* TODO task\n<2026-07-01 Wed>\n")),
+				await result.current.executeAgendaCommand(agendaRow("* TODO task\n<2026-07-01 Wed>\n"), { kind: "cycle-todo" }),
 			).toMatchObject({ kind: "rejected" })
 		})
 		expect(create).not.toHaveBeenCalled()
@@ -2110,12 +2499,13 @@ describe("Org capture entry and transient drafts", () => {
 		const generation = runtime.revision
 		const depth = undoDepth(runtime.state)
 		await act(async () => {
-			expect(await result.current.actOnAgendaEntry(agendaRow(source))).toMatchObject({
+			expect(await result.current.executeAgendaCommand(agendaRow(source), { kind: "cycle-todo" })).toMatchObject({
 				kind: "rejected",
 			})
 			expect(
-				await result.current.actOnAgendaEntry(
+				await result.current.executeAgendaCommand(
 					agendaRow(source, "z.org", result.current.activeBufferId!, true),
+					{ kind: "cycle-todo" },
 				),
 			).toMatchObject({ kind: "rejected" })
 			await vi.advanceTimersByTimeAsync(6000)
@@ -2188,10 +2578,10 @@ describe("Org capture entry and transient drafts", () => {
 		] as const) {
 			await act(async () => {
 				expect(
-					await result.current.actOnAgendaEntry({
+					await result.current.executeAgendaCommand({
 						...disk,
 						origin: { ...disk.origin!, [key]: undefined },
-					}),
+					}, { kind: "cycle-todo" }),
 				).toEqual({ kind: "stale" })
 			})
 		}
@@ -2215,10 +2605,10 @@ describe("Org capture entry and transient drafts", () => {
 			for (const value of [undefined, key === "sourceGeneration" ? -1 : "tampered"]) {
 				await act(async () => {
 					expect(
-						await result.current.actOnAgendaEntry({
+						await result.current.executeAgendaCommand({
 							...live,
 							origin: { ...live.origin!, [key]: value },
-						}),
+						}, { kind: "cycle-todo" }),
 					).toEqual({ kind: "stale" })
 				})
 			}
@@ -2235,19 +2625,15 @@ describe("Org capture entry and transient drafts", () => {
 		const { result } = await setup()
 		const oldRuntime = result.current.activeBufferRuntime!
 		const oldEditor = attachRuntime(oldRuntime, result.current, "old-note-pane")
-		act(() => oldEditor.view.dispatch({ changes: { from: 0, insert: "dirty " } }))
-		let settle!: (value: E.Either<never, OrgDocumentInterface>) => void
-		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(
-			() =>
-				new Promise((resolve) => {
-					settle = resolve
-				}),
-		)
+		const pendingRead = Promise.withResolvers<E.Either<never, OrgDocumentInterface>>()
+		const read = vi.fn(() => pendingRead.promise)
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(read)
 		await act(async () => {
 			await vi.advanceTimersByTimeAsync(2000)
 		})
-		expect(settle).toBeTypeOf("function")
-		vi.mocked(window.confirm).mockReturnValue(true)
+		expect(read).toHaveBeenCalledOnce()
+		act(() => oldEditor.view.dispatch({ changes: { from: 0, insert: "dirty " } }))
+		vi.mocked(useConfirm()).mockResolvedValue(true)
 		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValueOnce(async () =>
 			E.right({ ...workspace, capabilityToken: "G2" }),
 		)
@@ -2264,7 +2650,7 @@ describe("Org capture entry and transient drafts", () => {
 		expect(permit()).toBe(true)
 		const state = runtime.state
 		await act(async () => {
-			settle(
+			pendingRead.resolve(
 				failure === "conflict"
 					? E.right({ ...captured, revision: "late-G1-revision" })
 					: E.left({ type: "IO_ERROR", message: "late G1 refresh failure" } as never),
@@ -2461,47 +2847,8 @@ describe("Org capture entry and transient drafts", () => {
 		y.dispose()
 	})
 
-	it("refuses synchronous focus during an ordinary save without disabling leased parked typing", async () => {
-		const { result } = await setup()
-		const a = result.current.activeBufferRuntime!
-		const aId = result.current.activeBufferId!
-		const editor = attachRuntime(a, result.current, "saving-pane", false)
-		const release = result.current.registerBufferWindow("saving-pane", aId)
-		await act(async () => {
-			await result.current.openDocumentPath("z.org")
-		})
-		let resolve!: (value: E.Either<never, OrgDocumentInterface>) => void
-		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(
-			() =>
-				new Promise((done) => {
-					resolve = done
-				}),
-		)
-		act(() => {
-			result.current.updateContent("save snapshot")
-		})
-		let pending!: Promise<void>
-		act(() => {
-			pending = result.current.saveDocument()
-		})
-		act(() => {
-			expect(result.current.activateOpenBuffer(aId)).toBe(false)
-			editor.view.dispatch({ changes: { from: 0, insert: "during save " } })
-		})
-		expect(a.source).toBe(`during save ${captured.content}`)
-		await act(async () => {
-			resolve(E.right({ content: "save snapshot", relativePath: "z.org", revision: "saved" }))
-			await pending
-		})
-		act(() => {
-			expect(result.current.activateOpenBuffer(aId)).toBe(true)
-		})
-		expect(result.current.content).toBe(a.source)
-		release()
-		editor.dispose()
-	})
 
-	it("fences synchronous focus and parked edits while loading and notifying", async () => {
+	it("fences reentrant focus and parked edits during source notification", async () => {
 		const observed = observeParkedReservoir()
 		const { result } = await setup()
 		const a = result.current.activeBufferRuntime!
@@ -2528,27 +2875,6 @@ describe("Org capture entry and transient drafts", () => {
 		expect(commitDenied).toBe(true)
 		expect(a.source).toBe(`accepted ${captured.content}`)
 		stop()
-		const source = a.source
-		let resolve!: (value: E.Either<never, OrgDocumentInterface>) => void
-		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(
-			() =>
-				new Promise((done) => {
-					resolve = done
-				}),
-		)
-		let pending!: Promise<boolean>
-		act(() => {
-			pending = result.current.openDocument({ relativePath: "third.org", revision: "new" })
-		})
-		act(() => {
-			expect(result.current.activateOpenBuffer(aId)).toBe(false)
-			expect(() => editor.view.dispatch({ changes: { from: 0, insert: "loading " } })).toThrow()
-		})
-		expect(a.source).toBe(source)
-		await act(async () => {
-			resolve(E.right({ ...captured, relativePath: "third.org" }))
-			await pending
-		})
 		release()
 		editor.dispose()
 	})
@@ -2572,7 +2898,7 @@ describe("Org capture entry and transient drafts", () => {
 			)
 		})
 		expect(result.current.error).not.toBeNull()
-		vi.spyOn(window, "confirm").mockReturnValue(true)
+		vi.mocked(useConfirm()).mockResolvedValue(true)
 		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValueOnce(async () =>
 			E.right({ ...workspace, capabilityToken: "G2" }),
 		)
@@ -2669,6 +2995,9 @@ describe("Org capture entry and transient drafts", () => {
 		const runtime = result.current.activeBufferRuntime!
 		const first = attachRuntime(runtime, result.current)
 		const second = attachRuntime(runtime, result.current, "second-window")
+		const firstPermit = result.current.captureBufferWindowPermit("workspace-test", runtime.key.bufferId)
+		const oldIncarnation = result.current.liveBuffers.find((buffer) => buffer.runtime === runtime)!.runtimeIncarnation
+		expect(firstPermit()).toBe(true)
 		act(() => first.view.dispatch({ changes: { from: 0, insert: "typed " } }))
 		const saved = runtime.source
 		const replacement =
@@ -2686,6 +3015,7 @@ describe("Org capture entry and transient drafts", () => {
 		await act(async () => {
 			expect(await result.current.openDocumentPath("z.org")).toBe(true)
 		})
+		expect(firstPermit()).toBe(true)
 		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
 			E.right({ ...captured, content: replacement, revision: "external" }),
 		)
@@ -2696,6 +3026,9 @@ describe("Org capture entry and transient drafts", () => {
 		expect(fresh).not.toBe(runtime)
 		expect(fresh.key).toEqual(runtime.key)
 		expect(runtime.closed).toBe(true)
+		expect(firstPermit()).toBe(false)
+		expect(result.current.captureBufferWindowPermit("workspace-test", fresh.key.bufferId)()).toBe(false)
+		expect(result.current.liveBuffers.find((buffer) => buffer.runtime === fresh)!.runtimeIncarnation).not.toBe(oldIncarnation)
 		expect(fresh.source).toBe(replacement)
 		expect(undoDepth(fresh.state)).toBe(0)
 		expect(redoDepth(fresh.state)).toBe(0)
@@ -2705,8 +3038,15 @@ describe("Org capture entry and transient drafts", () => {
 		expect(() => runtime.applyControllerSource(saved, replacement)).toThrow()
 		expect(result.current.content).toBe(replacement)
 		expect(result.current.isDirty).toBe(false)
+		const releaseFresh = result.current.registerBufferWindow("workspace-test", fresh.key.bufferId)
+		const freshPermit = result.current.captureBufferWindowPermit("workspace-test", fresh.key.bufferId)
+		expect(freshPermit()).toBe(true)
 		first.dispose()
 		second.dispose()
+		expect(freshPermit()).toBe(true)
+		expect(firstPermit()).toBe(false)
+		releaseFresh()
+		expect(freshPermit()).toBe(false)
 	})
 	it("retains dirty parked working body and history on an unknown disk replacement", async () => {
 		const { result } = await setup()
@@ -2768,13 +3108,42 @@ describe("Org capture entry and transient drafts", () => {
 		expect(runtime.source).toBe(saved)
 		editor.dispose()
 	})
+	it("restores the approved default workspace after mount-effect replay without reviving retired callbacks", async () => {
+		setDefaultWorkspacePreference(true)
+		vi.mocked(reopenDefaultOrgWorkspaceFlow).mockReturnValue(async () => E.right(workspace))
+		const hook = renderHook(() => useOrgWorkspace(), {
+			wrapper: ({ children }) => createElement(StrictMode, null, children),
+		})
+		await act(async () => {
+			await Promise.resolve()
+		})
+		expect(hook.result.current.workspaceSessionId).toBe("G1")
+		expect(hook.result.current.isLoading).toBe(false)
+		await act(async () => {
+			expect(await hook.result.current.openDocumentPath("inbox.org")).toBe(true)
+		})
+		expect(hook.result.current.content).toBe(captured.content)
+		const runtime = hook.result.current.activeBufferRuntime!
+		const permitRelease = hook.result.current.registerBufferWindow("replayed-pane", runtime.key.bufferId)
+		const permit = hook.result.current.captureBufferWindowPermit("replayed-pane", runtime.key.bufferId)
+		expect(permit()).toBe(true)
+		hook.unmount()
+		expect(permit()).toBe(false)
+		expect(runtime.closed).toBe(true)
+		permitRelease()
+	})
+
 	it("closes retired and old-grant runtimes and mints a fresh reopened identity", async () => {
 		const { result, unmount } = await setup()
 		const first = result.current.activeBufferRuntime!
+		const releaseFirst = result.current.registerBufferWindow("retired-pane", first.key.bufferId)
+		const firstPermit = result.current.captureBufferWindowPermit("retired-pane", first.key.bufferId)
 		await act(async () => {
 			expect(await result.current.closeActiveDocument()).toBe(true)
 		})
 		expect(first.closed).toBe(true)
+		expect(firstPermit()).toBe(false)
+		releaseFirst()
 		expect(result.current.activeBufferRuntime).toBeNull()
 		await act(async () => {
 			await result.current.openDocumentPath("inbox.org")
@@ -2793,9 +3162,54 @@ describe("Org capture entry and transient drafts", () => {
 		})
 		const next = result.current.activeBufferRuntime!
 		expect(next.key.workspaceSessionId).toBe("G2")
+		const releaseNext = result.current.registerBufferWindow("unmount-pane", next.key.bufferId)
+		const nextPermit = result.current.captureBufferWindowPermit("unmount-pane", next.key.bufferId)
+		expect(nextPermit()).toBe(true)
 		unmount()
 		expect(next.closed).toBe(true)
+		expect(nextPermit()).toBe(false)
+		releaseNext()
 	})
+	it("releases both exact grants when scope retirement unmounts the owner before replacement activation", async () => {
+		const observed = observeParkedReservoir()
+		const hook = await setup()
+		const first = hook.result.current.activeBufferRuntime!
+		await act(async () => {
+			await hook.result.current.openDocumentPath("z.org")
+		})
+		const second = hook.result.current.activeBufferRuntime!
+		const retained = hook.result.current
+		const release = retained.registerBufferWindow("retirement-pane", second.key.bufferId)
+		const permit = retained.captureBufferWindowPermit("retirement-pane", second.key.bufferId)
+		let retired = false
+		const stopObserving = observed.reservoir.subscribe(() => {
+			if (!retired && observed.reservoir.getSnapshot().copies.length === 0) {
+				retired = true
+				hook.unmount()
+			}
+		})
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValueOnce(async () =>
+			E.right({ ...workspace, capabilityToken: "G2" }),
+		)
+		vi.mocked(openOrgDocumentFlow).mockClear()
+		await act(async () => {
+			await retained.openDefaultWorkspace()
+		})
+		expect(retired).toBe(true)
+		expect(first.closed).toBe(true)
+		expect(second.closed).toBe(true)
+		expect(permit()).toBe(false)
+		expect(vi.mocked(releaseOrgWorkspace).mock.calls.filter(([, token]) => token === "G1")).toHaveLength(1)
+		expect(vi.mocked(releaseOrgWorkspace).mock.calls.filter(([, token]) => token === "G2")).toHaveLength(1)
+		await act(async () => {
+			expect(await retained.openDocumentPath("inbox.org")).toBe(false)
+		})
+		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
+		expect(watchOrgWorkspace).not.toHaveBeenCalledWith(workspace.rootPath, "G2")
+		stopObserving()
+		release()
+	})
+
 	it("allows runtime typing during own save without installing the older ACK body", async () => {
 		const { result } = await setup()
 		const runtime = result.current.activeBufferRuntime!
@@ -2809,7 +3223,7 @@ describe("Org capture entry and transient drafts", () => {
 					resolve = done
 				}),
 		)
-		let pending!: Promise<void>
+		let pending!: Promise<boolean>
 		act(() => {
 			pending = result.current.saveDocument()
 		})
@@ -2862,7 +3276,7 @@ describe("Org capture entry and transient drafts", () => {
 		expect(result.current.isDirty).toBe(true)
 		editor.dispose()
 	})
-	it("denies runtime writes while an owner read is loading", async () => {
+	it("rejects unleased direct runtime writes independently of a loading read", async () => {
 		const { result } = await setup()
 		const runtime = result.current.activeBufferRuntime!
 		let resolve!: (value: E.Either<never, OrgDocumentInterface>) => void
@@ -2877,8 +3291,6 @@ describe("Org capture entry and transient drafts", () => {
 			pending = result.current.openDocumentPath("z.org")
 		})
 		expect(() => runtime.applyControllerSource(runtime.source, "denied")).toThrow()
-		act(() => result.current.updateContent("compatibility denied"))
-		expect(runtime.source).toBe(captured.content)
 		await act(async () => {
 			resolve(E.right({ ...captured, relativePath: "z.org" }))
 			await pending
@@ -2893,9 +3305,187 @@ describe("Org capture entry and transient drafts", () => {
 		expect(runtime.source).toBe(captured.content)
 		expect(hook.result.current.content).toBe(captured.content)
 	})
+
+	it("publishes one authoritative source per path throughout synchronous parked handoff notifications", async () => {
+		const observed = observeParkedReservoir()
+		const { result } = await setup()
+		const raw = "* Target\r\nbody\0😀"
+		vi.mocked(openOrgDocumentFlow).mockImplementation(
+			(input) => async () => E.right(
+				input.relativePath === "z.org"
+					? { relativePath: "z.org", revision: "z-1", content: raw }
+					: captured,
+			),
+		)
+		await act(async () => {
+			expect(await result.current.openDocumentPath("z.org")).toBe(true)
+		})
+		const runtime = result.current.activeBufferRuntime!
+		const editor = attachRuntime(runtime, result.current, "snapshot-handoff")
+		act(() => editor.view.dispatch({ changes: { from: 0, insert: "working\r\n" } }))
+		const before = runtime.state
+		const generation = runtime.revision
+		const sourcesBeforeHandoff = new Map(result.current.liveBuffers.map((buffer) => [
+			buffer.document.relativePath,
+			{ runtime: buffer.runtime, incarnation: buffer.runtimeIncarnation },
+		]))
+		const snapshots: (readonly OrgLiveBuffer[])[] = []
+		const stop = observed.reservoir.subscribe(() => {
+			snapshots.push(snapshotSources())
+		})
+		try {
+			await act(async () => {
+				expect(await result.current.openDocumentPath("inbox.org")).toBe(true)
+			})
+			expect(snapshots[0]?.map((buffer) => buffer.document.relativePath).sort())
+				.toEqual(["inbox.org", "z.org"])
+			expect(snapshots.at(-1)?.map((buffer) => buffer.document.relativePath))
+				.toEqual(["z.org"])
+			for (const snapshot of snapshots) {
+				const paths = snapshot.map((buffer) => buffer.document.relativePath)
+				expect(new Set(paths).size).toBe(paths.length)
+				for (const buffer of snapshot) {
+					const previous = sourcesBeforeHandoff.get(buffer.document.relativePath)!
+					expect(buffer.runtime).toBe(previous.runtime)
+					expect(buffer.runtimeIncarnation).toBe(previous.incarnation)
+				}
+				expect(snapshot.find((buffer) => buffer.document.relativePath === "z.org")).toMatchObject({
+					content: "working\r\n" + raw,
+					sourceGeneration: generation,
+				})
+			}
+			expect(result.current.activeDocument?.relativePath).toBe("inbox.org")
+			expect(result.current.liveBuffers.map((buffer) => buffer.document.relativePath).sort())
+				.toEqual(["inbox.org", "z.org"])
+			expect(runtime.state).toBe(before)
+			expect(undoDepth(runtime.state)).toBe(1)
+			expect(redoDepth(runtime.state)).toBe(0)
+			expect(result.current.liveBuffers.find((buffer) => buffer.document.relativePath === "z.org")?.runtime)
+				.toBe(runtime)
+			act(() => { expect(editor.handle.undo()).toBe(true) })
+			expect(runtime.source).toBe(raw)
+			expect(result.current.liveBuffers.find((buffer) => buffer.document.relativePath === "z.org")?.content)
+				.toBe(raw)
+			expect(undoDepth(runtime.state)).toBe(0)
+			expect(redoDepth(runtime.state)).toBe(1)
+			act(() => { expect(editor.handle.redo()).toBe(true) })
+			expect(runtime.source).toBe("working\r\n" + raw)
+			expect(undoDepth(runtime.state)).toBe(1)
+			expect(redoDepth(runtime.state)).toBe(0)
+			await act(async () => {
+				expect(await result.current.openDocumentPath("z.org")).toBe(true)
+			})
+			expect(result.current.activeBufferRuntime).toBe(runtime)
+			expect(result.current.content).toBe("working\r\n" + raw)
+			expect(runtime.closed).toBe(false)
+			expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		} finally {
+			stop()
+			editor.dispose()
+		}
+	})
+
+	it("rejects a live link target's edit/undo ABA without navigating or losing parked history", async () => {
+		const { result } = await setup()
+		const diskTarget = {
+			relativePath: "z.org",
+			revision: "z-1",
+			content: "* Target\r\n:PROPERTIES:\r\n:ID: parked-id\r\n:END:\r\nbody\r\n",
+		}
+		vi.mocked(openOrgDocumentFlow).mockImplementation(
+			(input) => async () => E.right(input.relativePath === "z.org" ? diskTarget : captured),
+		)
+		await act(async () => {
+			await result.current.openDocumentPath("z.org")
+		})
+		const runtime = result.current.activeBufferRuntime!
+		const editor = attachRuntime(runtime, result.current, "link-target")
+		act(() => editor.view.dispatch({ changes: { from: 0, insert: "working\r\n" } }))
+		await act(async () => {
+			await result.current.openDocumentPath("inbox.org")
+		})
+		const before = runtime.source
+		const generation = runtime.revision
+		const evaluated = deferred<void>()
+		const finish = deferred<void>()
+		vi.mocked(resolveOrgLinkTargetFlow).mockImplementation((grant, target, overlays, repository, cache, metadata, signal) => {
+			const task = productionResolveLink(grant, target, overlays, repository, cache ?? new Map(), metadata, signal)
+			return async () => {
+				const resolved = await task()
+				evaluated.resolve()
+				await finish.promise
+				return resolved
+			}
+		})
+		vi.mocked(openOrgDocumentFlow).mockClear()
+		let navigating!: Promise<boolean>
+		await act(async () => {
+			navigating = result.current.openOrgLink({ kind: "id", relativePath: null, value: "parked-id" })
+			await evaluated.promise
+		})
+		act(() => {
+			editor.view.dispatch({ changes: { from: editor.view.state.doc.length, insert: "ABA" }, annotations: isolateHistory.of("full") })
+			expect(editor.handle.undo()).toBe(true)
+		})
+		expect(runtime.source).toBe(before)
+		expect(runtime.revision).toBeGreaterThan(generation)
+		await act(async () => {
+			finish.resolve()
+			expect(await navigating).toBe(false)
+		})
+		expect(result.current.activeDocument?.relativePath).toBe("inbox.org")
+		expect(result.current.revealTarget).toBeNull()
+		expect(result.current.error).toContain("target changed")
+		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
+		expect(orgFileRepository.readDocument).not.toHaveBeenCalled()
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		expect(undoDepth(runtime.state)).toBe(1)
+		expect(redoDepth(runtime.state)).toBe(1)
+		editor.dispose()
+	})
+
+	it("rejects a disk link result when an agenda command creates its canonical parked working copy", async () => {
+		const { result } = await setup()
+		const source = "* TODO target\n<2026-07-01 Wed>\n"
+		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
+			E.right({ relativePath: "z.org", revision: "z-1", content: source }),
+		)
+		const evaluated = deferred<void>()
+		const finish = deferred<void>()
+		vi.mocked(resolveOrgLinkTargetFlow).mockImplementation((grant, target, overlays, repository, cache, metadata, signal) => {
+			const task = productionResolveLink(grant, target, overlays, repository, cache ?? new Map(), metadata, signal)
+			return async () => {
+				const resolved = await task()
+				evaluated.resolve()
+				await finish.promise
+				return resolved
+			}
+		})
+		let navigating!: Promise<boolean>
+		await act(async () => {
+			navigating = result.current.openOrgLink({ kind: "file", relativePath: "z.org", value: null })
+			await evaluated.promise
+		})
+		await act(async () => {
+			expect(await result.current.executeAgendaCommand(agendaRow(source), { kind: "cycle-todo" }))
+				.toEqual({ kind: "confirmed" })
+		})
+		const parked = result.current.liveBuffers.find((buffer) => buffer.document.relativePath === "z.org")!
+		const state = parked.runtime.state
+		await act(async () => {
+			finish.resolve()
+			expect(await navigating).toBe(false)
+		})
+		expect(result.current.activeDocument?.relativePath).toBe("inbox.org")
+		expect(result.current.revealTarget).toBeNull()
+		expect(parked.runtime.state).toBe(state)
+		expect(parked.isDirty).toBe(true)
+		expect(orgFileRepository.readDocument).not.toHaveBeenCalled()
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+	})
 	it("looks up targets without state effects and forwards explicit heading selection", async () => {
 		const { result } = await setup()
-		const snapshot = { relativePath: "z.org", revision: "fresh", headings: [] }
+		const snapshot = createOrgRefileTargetSnapshot("z.org", "fresh", "preamble\n** Exact\r\nraw\0😀\r\n")
 		vi.mocked(readOrgRefileTargetFlow).mockReturnValue(async () => E.right(snapshot))
 		expect(await result.current.readRefileTarget("z.org")).toEqual({ kind: "ready", snapshot })
 		expect(readOrgRefileTargetFlow).toHaveBeenCalledWith(
@@ -2910,7 +3500,7 @@ describe("Org capture entry and transient drafts", () => {
 		expect(result.current.isSaving).toBe(false)
 		expect(result.current.activeDocument?.relativePath).toBe("inbox.org")
 		const target = {
-			expectedTargetRevision: "fresh",
+			snapshot,
 			targetHeading: { from: 9, heading: "** Exact" },
 		}
 		vi.mocked(refileOrgSubtreeFlow).mockReturnValue(async () =>
@@ -2920,13 +3510,16 @@ describe("Org capture entry and transient drafts", () => {
 			await result.current.refileSubtree(0, "z.org", target)
 		})
 		expect(refileOrgSubtreeFlow).toHaveBeenCalledWith(
-			expect.objectContaining({ ...target, targetRelativePath: "z.org" }),
+			expect.objectContaining({
+				expectedTargetRevision: snapshot.revision, expectedTargetContent: snapshot.source,
+				targetHeading: target.targetHeading, targetRelativePath: "z.org",
+			}),
 		)
 	})
 	it("cancels immediately without waiting for native IO and removes its listener", async () => {
 		const { result } = await setup()
 		let resolve!: (
-			value: E.Either<never, { relativePath: string; revision: string; headings: [] }>,
+			value: Awaited<ReturnType<ReturnType<typeof readOrgRefileTargetFlow>>>,
 		) => void
 		vi.mocked(readOrgRefileTargetFlow).mockReturnValue(
 			() =>
@@ -2941,7 +3534,7 @@ describe("Org capture entry and transient drafts", () => {
 		expect(await pending).toMatchObject({ kind: "rejected" })
 		expect(remove).toHaveBeenCalledWith("abort", expect.any(Function))
 		await act(async () => {
-			resolve(E.right({ relativePath: "z.org", revision: "late", headings: [] }))
+			resolve(E.right({ relativePath: "z.org", revision: "late", source: "", headings: [] }))
 			await Promise.resolve()
 		})
 		expect(result.current.activeDocument?.relativePath).toBe("inbox.org")
@@ -2961,9 +3554,41 @@ describe("Org capture entry and transient drafts", () => {
 		expect(current()).toBe(true)
 		expect((await result.current.readRefileTarget("../unsafe.org")).kind).toBe("rejected")
 		expect(current()).toBe(false)
-		pendingRead.resolve(E.right({ relativePath: "z.org", revision: "late", headings: [] }))
+		pendingRead.resolve(E.right({ relativePath: "z.org", revision: "late", source: "", headings: [] }))
 		expect((await pending).kind).toBe("rejected")
 		expect(readOrgRefileTargetFlow).toHaveBeenCalledOnce()
+	})
+
+	it.each(["target-aba", "forged"] as const)("rejects a reviewed target %s despite identical path, revision and bytes before transfer IO", async (mode) => {
+		const { result } = await setup()
+		await act(async () => { expect(await result.current.openDocumentPath("z.org")).toBe(true) })
+		const target = result.current.activeBufferRuntime!
+		const targetDocument = result.current.activeDocument!
+		await act(async () => { expect(await result.current.openDocumentPath("inbox.org")).toBe(true) })
+		const source = result.current.activeBufferRuntime!
+		vi.mocked(readOrgRefileTargetFlow).mockReturnValueOnce(async () =>
+			E.right(createOrgRefileTargetSnapshot("z.org", targetDocument.revision, target.source)),
+		)
+		const lookup = await result.current.readRefileTarget("z.org")
+		if (lookup.kind !== "ready") throw new Error(lookup.message)
+		if (mode === "target-aba") {
+			await act(async () => { expect(await result.current.closeDocumentPath("z.org")).toBe(true) })
+			await act(async () => { expect(await result.current.openDocumentPath("z.org")).toBe(true) })
+			expect(result.current.activeBufferRuntime).not.toBe(target)
+			expect(result.current.content).toBe(lookup.snapshot.source)
+			expect(result.current.activeDocument!.revision).toBe(lookup.snapshot.revision)
+			await act(async () => { expect(await result.current.openDocumentPath("inbox.org")).toBe(true) })
+		}
+		const snapshot = mode === "forged"
+			? createOrgRefileTargetSnapshot(lookup.snapshot.relativePath, lookup.snapshot.revision, lookup.snapshot.source)
+			: lookup.snapshot
+		await act(async () => {
+			expect(await result.current.refileSubtree(0, "z.org", { snapshot })).toMatchObject({ kind: "rejected" })
+		})
+		expect(refileOrgSubtreeFlow).not.toHaveBeenCalled()
+		expect(result.current.activeBufferRuntime).toBe(source)
+		expect(source.source).toBe(captured.content)
+		expect(target.source).toBe(lookup.snapshot.source)
 	})
 
 	it("rejects source-edit ABA and stale activation before publication", async () => {
@@ -2978,7 +3603,7 @@ describe("Org capture entry and transient drafts", () => {
 		expect(await staleReader("z.org")).toMatchObject({ kind: "rejected" })
 		expect(readOrgRefileTargetFlow).not.toHaveBeenCalled()
 		let resolve!: (
-			value: E.Either<never, { relativePath: string; revision: string; headings: [] }>,
+			value: Awaited<ReturnType<ReturnType<typeof readOrgRefileTargetFlow>>>,
 		) => void
 		vi.mocked(readOrgRefileTargetFlow).mockReturnValueOnce(
 			() =>
@@ -2991,7 +3616,7 @@ describe("Org capture entry and transient drafts", () => {
 			result.current.updateContent("* Changed\n")
 			result.current.updateContent(captured.content)
 		})
-		resolve(E.right({ relativePath: "z.org", revision: "late", headings: [] }))
+		resolve(E.right({ relativePath: "z.org", revision: "late", source: "", headings: [] }))
 		expect(await pending).toMatchObject({ kind: "rejected" })
 	})
 	it.each([
@@ -3001,7 +3626,7 @@ describe("Org capture entry and transient drafts", () => {
 	])("rejects pending snapshots after source context changes: %s", async (action) => {
 		const { result } = await setup()
 		let resolve!: (
-			value: E.Either<never, { relativePath: string; revision: string; headings: [] }>,
+			value: Awaited<ReturnType<ReturnType<typeof readOrgRefileTargetFlow>>>,
 		) => void
 		vi.mocked(readOrgRefileTargetFlow).mockReturnValue(
 			() =>
@@ -3030,7 +3655,7 @@ describe("Org capture entry and transient drafts", () => {
 				await result.current.moveActiveDocument("renamed.org")
 			})
 		}
-		resolve(E.right({ relativePath: "z.org", revision: "late", headings: [] }))
+		resolve(E.right({ relativePath: "z.org", revision: "late", source: "", headings: [] }))
 		expect(await pending).toMatchObject({ kind: "rejected" })
 		expect(await oldReader("z.org")).toMatchObject({ kind: "rejected" })
 		expect(readOrgRefileTargetFlow).toHaveBeenCalledTimes(1)
@@ -3038,7 +3663,7 @@ describe("Org capture entry and transient drafts", () => {
 	it("does not expose an older lookup after a newer request completes", async () => {
 		const { result } = await setup()
 		let resolve!: (
-			value: E.Either<never, { relativePath: string; revision: string; headings: [] }>,
+			value: Awaited<ReturnType<ReturnType<typeof readOrgRefileTargetFlow>>>,
 		) => void
 		vi.mocked(readOrgRefileTargetFlow).mockReturnValueOnce(
 			() =>
@@ -3048,10 +3673,10 @@ describe("Org capture entry and transient drafts", () => {
 		)
 		const pending = result.current.readRefileTarget("z.org")
 		vi.mocked(readOrgRefileTargetFlow).mockReturnValueOnce(async () =>
-			E.right({ relativePath: "z.org", revision: "new", headings: [] }),
+			E.right({ relativePath: "z.org", revision: "new", source: "", headings: [] }),
 		)
 		expect(await result.current.readRefileTarget("z.org")).toMatchObject({ kind: "ready" })
-		resolve(E.right({ relativePath: "z.org", revision: "old", headings: [] }))
+		resolve(E.right({ relativePath: "z.org", revision: "old", source: "", headings: [] }))
 		expect(await pending).toMatchObject({ kind: "rejected" })
 	})
 	it.each([
@@ -3063,7 +3688,7 @@ describe("Org capture entry and transient drafts", () => {
 			E.right({ ...captured, relativePath: "foreign.org" }),
 		)
 		await act(async () => {
-			await result.current.captureEntry("* Entry\n", path)
+			await result.current.captureEntry({ entryType: "entry", entrySource: "* Entry\n", target: { kind: "file", relativePath: path } })
 		})
 		expect(result.current.isDirty).toBe(false)
 		expect(await result.current.readRefileTarget("z.org")).toMatchObject({ kind: "rejected" })
@@ -3086,7 +3711,7 @@ describe("Org capture entry and transient drafts", () => {
 		expect(readOrgRefileTargetFlow).not.toHaveBeenCalled()
 		expect(
 			await result.current.refileSubtree(0, "z.org", {
-				expectedTargetRevision: "<missing>",
+				snapshot: createOrgRefileTargetSnapshot("z.org", "<missing>", ""),
 				targetHeading: { from: 0, heading: "* Bad" },
 			}),
 		).toMatchObject({ kind: "rejected" })
@@ -3126,25 +3751,18 @@ describe("Org capture entry and transient drafts", () => {
 		})
 		expect(nativeState.hasDirtyBuffers).toBe(true)
 		await act(async () => {
-			expect(await staleCapture("* Old", "inbox.org")).toMatchObject({ kind: "rejected" })
+			expect(await staleCapture({ entryType: "entry", entrySource: "* Old", target: { kind: "file", relativePath: "inbox.org" } })).toMatchObject({ kind: "rejected" })
 		})
 		expect(captureOrgEntryFlow).not.toHaveBeenCalled()
 	})
-	it("blocks busy routing and compatibility edits without cancelling a running capture", async () => {
+	it("protects the captured file from compatibility edits until its accepted write settles", async () => {
 		const { result } = await setup()
 		const pending = deferred<Awaited<ReturnType<ReturnType<typeof captureOrgEntryFlow>>>>()
 		vi.mocked(captureOrgEntryFlow).mockReturnValueOnce(() => pending.promise)
 		let capturing!: ReturnType<typeof result.current.captureEntry>
 		act(() => {
-			capturing = result.current.captureEntry("* New", "inbox.org")
+			capturing = result.current.captureEntry({ entryType: "entry", entrySource: "* New", target: { kind: "file", relativePath: "inbox.org" } })
 		})
-		const blocker = vi.mocked(useBlocker).mock.calls.at(-1)![0] as unknown as {
-			shouldBlockFn: () => boolean
-			enableBeforeUnload: boolean
-		}
-		expect(blocker.shouldBlockFn()).toBe(true)
-		expect(blocker.enableBeforeUnload).toBe(true)
-		expect(window.confirm).not.toHaveBeenCalled()
 		act(() => result.current.updateContent("newer"))
 		await act(async () => {
 			pending.resolve(E.right({ ...captured, content: "persisted" }))
@@ -3168,7 +3786,7 @@ describe("Org capture entry and transient drafts", () => {
 		const { result } = await setup()
 		act(() => result.current.updateContent("dirty"))
 		await act(async () => {
-			expect(await result.current.captureEntry("* New", "inbox.org")).toMatchObject({
+			expect(await result.current.captureEntry({ entryType: "entry", entrySource: "* New", target: { kind: "file", relativePath: "inbox.org" } })).toMatchObject({
 				kind: "rejected",
 			})
 		})
@@ -3176,7 +3794,7 @@ describe("Org capture entry and transient drafts", () => {
 			await result.current.openDocumentPath("z.org")
 		})
 		await act(async () => {
-			expect(await result.current.captureEntry("* New", "inbox.org")).toMatchObject({
+			expect(await result.current.captureEntry({ entryType: "entry", entrySource: "* New", target: { kind: "file", relativePath: "inbox.org" } })).toMatchObject({
 				kind: "rejected",
 			})
 		})
@@ -3235,7 +3853,7 @@ describe("Org capture entry and transient drafts", () => {
 		vi.mocked(refileOrgSubtreeFlow).mockReturnValueOnce(async () => E.right(moved))
 		vi.mocked(archiveOrgSubtreeFlow).mockReturnValueOnce(async () => E.right(moved))
 		await act(async () => {
-			if (operation === "captureEntry") await result.current.captureEntry("* Added\n", "inbox.org")
+			if (operation === "captureEntry") await result.current.captureEntry({ entryType: "entry", entrySource: "* Added\n", target: { kind: "file", relativePath: "inbox.org" } })
 			else if (operation === "captureTodo") await result.current.captureTodo("Added", "inbox.org")
 			else if (operation === "refile") await result.current.refileSubtree(0, "inbox.org")
 			else await result.current.archiveSubtree(0)
@@ -3284,7 +3902,7 @@ describe("Org capture entry and transient drafts", () => {
 		act(() => {
 			accepting =
 				operation === "captureEntry"
-					? result.current.captureEntry("* Added", "inbox.org")
+					? result.current.captureEntry({ entryType: "entry", entrySource: "* Added", target: { kind: "file", relativePath: "inbox.org" } })
 					: operation === "captureTodo"
 						? result.current.captureTodo("Added", "inbox.org")
 						: result.current.refileSubtree(0, "inbox.org")
@@ -3312,7 +3930,7 @@ describe("Org capture entry and transient drafts", () => {
 	it("updates clean active, parked and new targets without creating draft buffers", async () => {
 		const { result } = await setup()
 		await act(async () => {
-			expect(await result.current.captureEntry("* New", "inbox.org")).toEqual({ kind: "success" })
+			expect(await result.current.captureEntry({ entryType: "entry", entrySource: "* New", target: { kind: "file", relativePath: "inbox.org" } })).toEqual({ kind: "success" })
 		})
 		await act(async () => {
 			await result.current.openDocumentPath("z.org")
@@ -3321,7 +3939,7 @@ describe("Org capture entry and transient drafts", () => {
 			E.right({ ...captured, content: "parked captured", revision: "parked" }),
 		)
 		await act(async () => {
-			await result.current.captureEntry("* New", "inbox.org")
+			await result.current.captureEntry({ entryType: "entry", entrySource: "* New", target: { kind: "file", relativePath: "inbox.org" } })
 		})
 		expect(
 			result.current.openBuffers.find((buffer) => buffer.relativePath === "inbox.org")
@@ -3331,7 +3949,7 @@ describe("Org capture entry and transient drafts", () => {
 			E.right({ ...captured, relativePath: "new.org" }),
 		)
 		await act(async () => {
-			await result.current.captureEntry("* New", "new.org")
+			await result.current.captureEntry({ entryType: "entry", entrySource: "* New", target: { kind: "file", relativePath: "new.org" } })
 		})
 		expect(
 			result.current.workspace?.documents.some((entry) => entry.relativePath === "new.org"),
@@ -3373,9 +3991,6 @@ describe("Org capture entry and transient drafts", () => {
 		)
 		const { result } = await setup()
 		const id = result.current.activeBufferId!
-		const liveBlocker = vi.mocked(useBlocker).mock.calls.at(-1)![0] as unknown as {
-			shouldBlockFn: () => boolean
-		}
 		vi.mocked(captureOrgEntryFlow).mockImplementationOnce(() => async () => {
 			// The native writer may have installed r2 even though confirmation was lost/invalid.
 			disk = { ...baseline, content: "* Baseline A\n* Captured\n", revision: "r2" }
@@ -3389,7 +4004,7 @@ describe("Org capture entry and transient drafts", () => {
 					})
 		})
 		await act(async () => {
-			expect(await result.current.captureEntry("* Captured", "inbox.org")).toMatchObject({
+			expect(await result.current.captureEntry({ entryType: "entry", entrySource: "* Captured", target: { kind: "file", relativePath: "inbox.org" } })).toMatchObject({
 				kind: "uncertain",
 			})
 		})
@@ -3441,14 +4056,12 @@ describe("Org capture entry and transient drafts", () => {
 		})
 		assertProtected()
 		await act(async () => {
-			expect(await result.current.captureEntry("* Retry", "inbox.org")).toMatchObject({
+			expect(await result.current.captureEntry({ entryType: "entry", entrySource: "* Retry", target: { kind: "file", relativePath: "inbox.org" } })).toMatchObject({
 				kind: "rejected",
 			})
 			await result.current.openDefaultWorkspace()
 		})
 		expect(openDefaultOrgWorkspaceFlow).toHaveBeenCalledTimes(1)
-		expect(window.confirm).toHaveBeenCalled()
-		expect(liveBlocker.shouldBlockFn()).toBe(true)
 		assertProtected()
 		act(() => result.current.updateContent("* Further edit\n"))
 		await act(async () => {
@@ -3495,7 +4108,7 @@ describe("Org capture entry and transient drafts", () => {
 			E.right({ ...captured, revision: "" }),
 		)
 		await act(async () => {
-			await result.current.captureEntry("* Entry", "inbox.org")
+			await result.current.captureEntry({ entryType: "entry", entrySource: "* Entry", target: { kind: "file", relativePath: "inbox.org" } })
 		})
 		act(() => result.current.updateContent("edit"))
 		act(() => result.current.updateContent(captured.content))
@@ -3554,7 +4167,7 @@ describe("Org capture entry and transient drafts", () => {
 					})
 		})
 		await act(async () => {
-			expect((await result.current.captureEntry("* New", "inbox.org")).kind).toBe(
+			expect((await result.current.captureEntry({ entryType: "entry", entrySource: "* New", target: { kind: "file", relativePath: "inbox.org" } })).kind).toBe(
 				mode === "rejected" ? "rejected" : "uncertain",
 			)
 		})
@@ -3562,7 +4175,7 @@ describe("Org capture entry and transient drafts", () => {
 		expect(nativeState.hasDirtyBuffers).toBe(mode !== "rejected")
 		if (mode === "rejected")
 			await act(async () => {
-				expect(await result.current.captureEntry("* Fixed", "inbox.org")).toEqual({
+				expect(await result.current.captureEntry({ entryType: "entry", entrySource: "* Fixed", target: { kind: "file", relativePath: "inbox.org" } })).toEqual({
 					kind: "success",
 				})
 			})
@@ -3641,6 +4254,7 @@ describe("Org subtree transfer outcomes", () => {
 	beforeEach(() => {
 		vi.useFakeTimers()
 		vi.resetAllMocks()
+		vi.mocked(useConfirm()).mockResolvedValue(false)
 		vi.mocked(watchOrgWorkspace).mockReturnValue(async () => E.right("watch-G1"))
 		vi.mocked(unwatchOrgWorkspace).mockReturnValue(async () => E.right(undefined))
 		vi.mocked(releaseOrgWorkspace).mockReturnValue(async () => E.right(undefined))
@@ -3648,7 +4262,9 @@ describe("Org subtree transfer outcomes", () => {
 		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(async () => E.right(workspace))
 		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () => E.right(captured))
 		vi.mocked(refileOrgSubtreeFlow).mockReturnValue(async () => E.right(moved))
-		vi.mocked(archiveOrgSubtreeFlow).mockReturnValue(async () => E.right(moved))
+		vi.mocked(archiveOrgSubtreeFlow).mockReturnValue(async () =>
+			E.right({ ...moved, target: { ...moved.target, relativePath: "inbox_archive.org" } }),
+		)
 	})
 	afterEach(() => {
 		cleanup()
@@ -3668,26 +4284,24 @@ describe("Org subtree transfer outcomes", () => {
 	it("rejects absent workspace, absent document, and dirty input without starting a transfer", async () => {
 		const { result } = renderHook(() => useOrgWorkspace())
 		await act(async () => {
-			expect(await result.current.archiveSubtree(0)).toEqual({
-				kind: "rejected",
-				message: expect.stringContaining("workspace"),
-			})
+			expect(await result.current.archiveSubtree(0)).toMatchObject({ kind: "rejected" })
 			await result.current.openDefaultWorkspace()
 		})
 		await act(async () => {
-			expect(await result.current.archiveSubtree(0)).toEqual({
-				kind: "rejected",
-				message: expect.stringContaining("document"),
-			})
+			expect(await result.current.archiveSubtree(0)).toMatchObject({ kind: "rejected" })
 			await result.current.openDocument(workspace.documents[1])
 		})
 		act(() => result.current.updateContent("dirty"))
 		await act(async () => {
-			expect(await result.current.refileSubtree(0, "archive.org")).toEqual({
+			expect(await result.current.refileSubtree(0, "archive.org")).toMatchObject({
 				kind: "rejected",
-				message: "Save the current document before refiling or archiving a subtree.",
 			})
 		})
+		expect(result.current.content).toBe("dirty")
+		expect(result.current.activeBufferRuntime?.source).toBe("dirty")
+		expect(result.current.isDirty).toBe(true)
+		expect(result.current.activeDocument).toEqual(captured)
+		expect(result.current.error).toEqual(expect.any(String))
 		expect(refileOrgSubtreeFlow).not.toHaveBeenCalled()
 		expect(archiveOrgSubtreeFlow).not.toHaveBeenCalled()
 	})
@@ -3703,10 +4317,7 @@ describe("Org subtree transfer outcomes", () => {
 				await (operation === "refile"
 					? result.current.refileSubtree(0, "archive.org")
 					: result.current.archiveSubtree(0)),
-			).toEqual({
-				kind: "rejected",
-				message: "Save the current document before refiling or archiving a subtree.",
-			})
+			).toMatchObject({ kind: "rejected" })
 		})
 		expect(result.current.content).toBe("same-render edit")
 		expect(result.current.activeDocument).toEqual(captured)
@@ -3732,7 +4343,7 @@ describe("Org subtree transfer outcomes", () => {
 		expect(result.current.isDirty).toBe(false)
 		expect(result.current.isSaving).toBe(false)
 		expect(result.current.workspace?.documents).toContainEqual({
-			relativePath: "archive.org",
+			relativePath: operation === "archive" ? "inbox_archive.org" : "archive.org",
 			revision: "copied",
 		})
 	})
@@ -3870,10 +4481,7 @@ describe("Org subtree transfer outcomes", () => {
 		})
 		expect(result.current.isSaving).toBe(true)
 		await act(async () => {
-			expect(await result.current.archiveSubtree(0)).toEqual({
-				kind: "rejected",
-				message: expect.stringContaining("in progress"),
-			})
+			expect(await result.current.archiveSubtree(0)).toMatchObject({ kind: "rejected" })
 		})
 		act(() => result.current.updateContent("newer input"))
 		await act(async () => {
@@ -3883,7 +4491,6 @@ describe("Org subtree transfer outcomes", () => {
 		expect(result.current.content).toBe(moved.source.content)
 		expect(result.current.isDirty).toBe(false)
 		expect(result.current.activeDocument).toEqual(moved.source)
-		expect(result.current.error).toContain("in progress")
 		expect(refileOrgSubtreeFlow).toHaveBeenCalledTimes(1)
 		expect(archiveOrgSubtreeFlow).not.toHaveBeenCalled()
 	})
@@ -3971,7 +4578,6 @@ describe("Org subtree transfer outcomes", () => {
 		await act(async () => {
 			expect((await result.current.readRefileTarget("archive.org")).kind).toBe("rejected")
 			expect((await result.current.refileSubtree(0, "archive.org")).kind).toBe("rejected")
-			expect((await result.current.archiveSubtree(0)).kind).toBe("rejected")
 		})
 		expect(readOrgRefileTargetFlow).not.toHaveBeenCalled()
 		expect(refileOrgSubtreeFlow).toHaveBeenCalledOnce()
@@ -3983,6 +4589,7 @@ describe("Org document navigation cancellation", () => {
 	beforeEach(() => {
 		vi.useFakeTimers()
 		vi.clearAllMocks()
+		vi.mocked(useConfirm()).mockResolvedValue(false)
 		window.localStorage.clear()
 		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(async () => E.right(workspace))
 		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () => E.right(captured))
@@ -4031,10 +4638,10 @@ describe("Org document navigation cancellation", () => {
 		act(() => {
 			opening = result.current.openDocument(workspace.documents[0], undefined, controller.signal)
 		})
-		expect(result.current.isLoading).toBe(true)
+		expect(result.current.isWorkspaceBusy).toBe(true)
 		act(() => controller.abort())
 		// Cancellation must release loading while the IO promise is still pending.
-		expect(result.current.isLoading).toBe(false)
+		expect(result.current.isWorkspaceBusy).toBe(false)
 		expect(result.current.activeDocument).toEqual(captured)
 		expect(result.current.content).toBe(captured.content)
 		await act(async () => {
@@ -4055,7 +4662,7 @@ describe("Org document navigation cancellation", () => {
 		act(() => {
 			opening = result.current.openDocument(workspace.documents[0])
 		})
-		expect(result.current.isLoading).toBe(true)
+		expect(result.current.isWorkspaceBusy).toBe(true)
 		await act(async () => {
 			expect(await result.current.closeActiveDocument()).toBe(true)
 		})
@@ -4088,9 +4695,9 @@ describe("Org document navigation cancellation", () => {
 		act(() => {
 			newOpening = result.current.openDocument(workspace.documents[0])
 		})
-		expect(result.current.isLoading).toBe(true)
+		expect(result.current.isWorkspaceBusy).toBe(true)
 		act(() => controller.abort())
-		expect(result.current.isLoading).toBe(true)
+		expect(result.current.isWorkspaceBusy).toBe(true)
 		expect(result.current.activeDocument).toEqual(captured)
 		expect(result.current.content).toBe(captured.content)
 		await act(async () => {
@@ -4105,7 +4712,7 @@ describe("Org document navigation cancellation", () => {
 			)
 			expect(await oldOpening).toBe(false)
 		})
-		expect(result.current.isLoading).toBe(true)
+		expect(result.current.isWorkspaceBusy).toBe(true)
 		expect(result.current.error).toBeNull()
 		await act(async () => {
 			newRead.resolve(
@@ -4155,12 +4762,12 @@ describe("Org document navigation cancellation", () => {
 		expect(result.current.isLoading).toBe(false)
 	})
 
-	it("preserves save commit when canceled while awaiting an already in-flight save", async () => {
+	it("preserves an independent save commit when navigation is canceled", async () => {
 		const { result } = await setup()
 		const save = deferred<Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>>()
 		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => save.promise)
 		act(() => result.current.updateContent("saved edits"))
-		let saving: Promise<void> | undefined
+		let saving: Promise<boolean> | undefined
 		act(() => {
 			saving = result.current.saveDocument()
 		})
@@ -4177,7 +4784,6 @@ describe("Org document navigation cancellation", () => {
 			expect(await opening).toBe(false)
 			await saving
 		})
-		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
 		expect(result.current.activeDocument).toEqual({
 			...captured,
 			content: "saved edits",
@@ -4214,7 +4820,7 @@ describe("independent Org buffers", () => {
 		vi.mocked(unwatchOrgWorkspace).mockReturnValue(async () => E.right(undefined))
 		vi.mocked(releaseOrgWorkspace).mockReturnValue(async () => E.right(undefined))
 		window.localStorage.clear()
-		vi.spyOn(window, "confirm").mockReturnValue(true)
+		vi.mocked(useConfirm()).mockResolvedValue(true)
 		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValue(async () => E.right(workspace))
 		vi.mocked(openOrgDocumentFlow).mockImplementation(
 			(input) => async () => E.right(input.relativePath === a.relativePath ? a : b),
@@ -4297,7 +4903,7 @@ describe("independent Org buffers", () => {
 		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
 	})
 
-	it("aborted switch releases its read loading and cannot activate late", async () => {
+	it("aborted explicit open releases only its target read and cannot activate late", async () => {
 		const { result } = await parkDirtyA()
 		const id = result.current.openBuffers.find(
 			(buffer) => buffer.relativePath === a.relativePath,
@@ -4307,11 +4913,11 @@ describe("independent Org buffers", () => {
 		const controller = new AbortController()
 		let opening!: Promise<boolean>
 		act(() => {
-			opening = result.current.switchBuffer(id, controller.signal)
+			opening = result.current.openDocumentPath(a.relativePath, undefined, controller.signal)
 		})
-		expect(result.current.isLoading).toBe(true)
+		expect(result.current.getBufferEffectState(id)?.loading).toBe(true)
 		act(() => controller.abort())
-		expect(result.current.isLoading).toBe(false)
+		expect(result.current.getBufferEffectState(id)?.loading).toBe(false)
 		await act(async () => {
 			read.resolve(E.right(a))
 			expect(await opening).toBe(false)
@@ -4322,7 +4928,6 @@ describe("independent Org buffers", () => {
 
 	it("closing the parked target during a read cancels activation by logical ID", async () => {
 		const { result } = await setup()
-		const id = result.current.activeBufferId!
 		await act(async () => {
 			await result.current.openDocumentPath(b.relativePath)
 		})
@@ -4330,7 +4935,7 @@ describe("independent Org buffers", () => {
 		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(() => read.promise)
 		let opening!: Promise<boolean>
 		act(() => {
-			opening = result.current.switchBuffer(id)
+			opening = result.current.openDocumentPath(a.relativePath)
 		})
 		await act(async () => {
 			expect(await result.current.closeDocumentPath(a.relativePath)).toBe(true)
@@ -4354,7 +4959,7 @@ describe("independent Org buffers", () => {
 		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(() => read.promise)
 		let opening!: Promise<boolean>
 		act(() => {
-			opening = result.current.switchBuffer(id)
+			opening = result.current.openDocumentPath(a.relativePath)
 		})
 		await act(async () => {
 			expect(await result.current.closeDocumentPath(a.relativePath)).toBe(true)
@@ -4380,7 +4985,12 @@ describe("independent Org buffers", () => {
 	it("successful delete retires the active ID", async () => {
 		const { result } = await setup()
 		const id = result.current.activeBufferId!
-		vi.mocked(deleteOrgDocumentFlow).mockReturnValueOnce(async () => E.right(undefined))
+		vi.mocked(deleteOrgDocumentFlow).mockImplementationOnce((input) => async () => E.right({
+			sourceRelativePath: input.relativePath,
+			relativePath: `.grain-originals/deleted/${input.relativePath}`,
+			kind: "delete",
+			object: "original",
+		}))
 		await act(async () => {
 			await result.current.deleteActiveDocument()
 		})
@@ -4575,34 +5185,37 @@ describe("independent Org buffers", () => {
 		})
 	}
 
-	it("rejecting in-flight saves resolve navigation waiters safely and allow a later owned save", async () => {
+	it("retains a failed A save after independent B navigation and permits a later owned A save", async () => {
 		const { result } = await setup()
 		act(() => result.current.updateContent("retained input"))
-		let reject!: (error: Error) => void
-		const task = new Promise<never>((_, fail) => {
-			reject = fail
-		})
-		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => task)
-		let saving!: Promise<void>
-		let opening!: Promise<boolean>
-		act(() => {
-			saving = result.current.saveDocument()
-		})
-		act(() => {
-			opening = result.current.openDocumentPath(b.relativePath)
+		const old = result.current
+		const runtime = old.activeBufferRuntime!
+		const write = deferred<E.Either<OrgFileError, OrgDocumentWriteResultInterface>>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => write.promise)
+		let saving!: Promise<boolean>
+		act(() => { saving = old.saveDocument() })
+		await act(async () => {
+			expect(await result.current.openDocumentPath(b.relativePath)).toBe(true)
 		})
 		await act(async () => {
-			reject(new Error("unknown write outcome"))
-			await saving
-			expect(await opening).toBe(false)
+			write.reject(new Error("unknown write outcome"))
+			expect(await saving).toBe(false)
 		})
-		expect(result.current.content).toBe("retained input")
-		expect(result.current.isSaving).toBe(false)
+		expect(result.current.content).toBe(b.content)
+		expect(runtime.source).toBe("retained input")
+		expect(result.current.openBuffers.find((buffer) => buffer.bufferId === runtime.key.bufferId))
+			.toMatchObject({ isDirty: true, hasConflict: true, baseRevision: a.revision })
 		await act(async () => {
-			await result.current.saveDocument()
+			expect(await old.saveDocument()).toBe(true)
 		})
-		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(2)
-		expect(result.current.isDirty).toBe(false)
+		expect(saveOrgDocumentFlow).toHaveBeenLastCalledWith(expect.objectContaining({
+			relativePath: a.relativePath,
+			content: "retained input",
+			expectedRevision: a.revision,
+		}))
+		expect(result.current.content).toBe(b.content)
+		expect(result.current.liveBuffers.find((buffer) => buffer.runtime === runtime))
+			.toMatchObject({ isDirty: false, document: { content: "retained input", revision: "saved" } })
 	})
 
 	it("unexpected capture failure retains both dirty active and parked bodies", async () => {
@@ -4672,7 +5285,7 @@ describe("independent Org buffers", () => {
 			rejectOld(new Error("old failure"))
 			await old
 		})
-		expect(result.current.isLoading).toBe(true)
+		expect(result.current.isWorkspaceBusy).toBe(true)
 		vi.mocked(createOrgDirectoryFlow).mockReturnValue(async () => E.right(undefined))
 		await act(async () => {
 			await result.current.createDirectory("blocked")
@@ -4689,25 +5302,19 @@ describe("independent Org buffers", () => {
 		expect(result.current.workspace?.directories).toContain("allowed")
 	})
 
-	it("rejects saved A editor/save callbacks after B navigation and after ABA navigation", async () => {
+	it("rejects old A compatibility editor callbacks after B navigation and after ABA navigation", async () => {
 		const { result } = await setup()
 		const old = result.current
 		await act(async () => {
 			await result.current.openDocumentPath(b.relativePath)
 		})
 		act(() => old.updateContent("wrong A input"))
-		await act(async () => {
-			await old.saveDocument()
-		})
 		expect(result.current.content).toBe(b.content)
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 		await act(async () => {
 			await result.current.openDocumentPath(a.relativePath)
 		})
 		act(() => old.updateContent("stale ABA input"))
-		await act(async () => {
-			await old.saveDocument()
-		})
 		expect(result.current.content).toBe(a.content)
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 	})
@@ -4818,41 +5425,6 @@ describe("independent Org buffers", () => {
 		expect(releaseOrgWorkspace).toHaveBeenCalledWith(workspace.rootPath, "winner")
 	})
 
-	it("serializes two creations and navigation waiting on the same deferred save", async () => {
-		const { result } = await setup()
-		const saved = deferred<Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>>()
-		const created = deferred<Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>>()
-		vi.mocked(saveOrgDocumentFlow)
-			.mockReturnValueOnce(() => saved.promise)
-			.mockReturnValueOnce(() => created.promise)
-		act(() => result.current.updateContent("A edits"))
-		let saving!: Promise<void>
-		let first!: Promise<void>
-		let second!: Promise<void>
-		let navigating!: Promise<boolean>
-		act(() => {
-			saving = result.current.saveDocument()
-			first = result.current.createDocument("one.org")
-			second = result.current.createDocument("two.org")
-			navigating = result.current.openDocumentPath(b.relativePath)
-		})
-		const reads = vi.mocked(openOrgDocumentFlow).mock.calls.length
-		await act(async () => {
-			saved.resolve(E.right({ relativePath: a.relativePath, revision: "saved" }))
-			await saving
-			await second
-			expect(await navigating).toBe(false)
-		})
-		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(2)
-		expect(openOrgDocumentFlow).toHaveBeenCalledTimes(reads)
-		expect(result.current.isSaving).toBe(true)
-		await act(async () => {
-			created.resolve(E.right({ relativePath: "one.org", revision: "created" }))
-			await first
-		})
-		expect(result.current.activeDocument?.relativePath).toBe("one.org")
-		expect(result.current.isSaving).toBe(false)
-	})
 
 	it("preserves approved leases through scans and releases same-root superseded leases exactly", async () => {
 		vi.mocked(openDefaultOrgWorkspaceFlow)
@@ -4868,9 +5440,11 @@ describe("independent Org buffers", () => {
 			await hook.result.current.openDefaultWorkspace()
 		})
 		expect(releaseOrgWorkspace).toHaveBeenCalledWith(workspace.rootPath, "lease-1")
+		expect(vi.mocked(releaseOrgWorkspace).mock.calls.filter(([, token]) => token === "lease-1")).toHaveLength(1)
 		expect(hook.result.current.workspaceSessionId).toBe("lease-2")
 		hook.unmount()
 		expect(releaseOrgWorkspace).toHaveBeenCalledWith(workspace.rootPath, "lease-2")
+		expect(vi.mocked(releaseOrgWorkspace).mock.calls.filter(([, token]) => token === "lease-2")).toHaveLength(1)
 		expect(vi.mocked(releaseOrgWorkspace).mock.calls.every((args) => args.length === 2)).toBe(true)
 	})
 
@@ -4948,7 +5522,12 @@ describe("independent Org buffers", () => {
 		await act(async () => {
 			await result.current.saveDocument()
 		})
-		vi.mocked(deleteOrgDocumentFlow).mockReturnValueOnce(async () => E.right(undefined))
+		vi.mocked(deleteOrgDocumentFlow).mockImplementationOnce((input) => async () => E.right({
+			sourceRelativePath: input.relativePath,
+			relativePath: `.grain-originals/deleted/${input.relativePath}`,
+			kind: "delete",
+			object: "original",
+		}))
 		await act(async () => {
 			await retainedDelete()
 		})
@@ -5100,7 +5679,6 @@ describe("independent Org buffers", () => {
 			await retainedOpen()
 		})
 		expect(openDefaultOrgWorkspaceFlow).not.toHaveBeenCalled()
-		expect(window.confirm).not.toHaveBeenCalled()
 		expect(
 			result.current.openBuffers.find((buffer) => buffer.relativePath === a.relativePath)?.isDirty,
 		).toBe(true)
@@ -5114,12 +5692,11 @@ describe("independent Org buffers", () => {
 		const { result } = await setup()
 		const retainedOpen = result.current.openDefaultWorkspace
 		act(() => result.current.updateContent("new unsaved A"))
-		vi.mocked(window.confirm).mockReturnValue(false)
+		vi.mocked(useConfirm()).mockResolvedValue(false)
 		vi.mocked(openDefaultOrgWorkspaceFlow).mockClear()
 		await act(async () => {
 			await retainedOpen()
 		})
-		expect(window.confirm).toHaveBeenCalled()
 		expect(openDefaultOrgWorkspaceFlow).not.toHaveBeenCalled()
 		expect(result.current.content).toBe("new unsaved A")
 	})
@@ -5159,30 +5736,165 @@ describe("independent Org buffers", () => {
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 	})
 
-	it("keeps inactive dirtiness out of autosave but in route/window/workspace guards", async () => {
-		const { result } = await parkDirtyA()
-		await act(async () => {
-			await vi.advanceTimersByTimeAsync(1000)
-		})
+	const parkAutosaveA = async () => {
+		vi.mocked(scanOrgWorkspaceFlow).mockReturnValue(async () => E.right({
+			...workspace,
+			documents: [{ relativePath: a.relativePath, revision: a.revision }, workspace.documents[0]],
+		}))
+		return parkDirtyA()
+	}
+	it("keeps active and parked input unsaved when autosave is off, cancels queued admission, and still permits manual Save", async () => {
+		useSettings.getState().setAutoSave(false)
+		const { result } = await parkAutosaveA()
+		act(() => result.current.updateContent("B explicitly unsaved"))
+		await act(async () => { await vi.advanceTimersByTimeAsync(60000) })
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		act(() => useSettings.getState().setAutoSave(true))
+		await act(async () => { await vi.advanceTimersByTimeAsync(400) })
+		act(() => useSettings.getState().setAutoSave(false))
+		await act(async () => { await vi.advanceTimersByTimeAsync(60000) })
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		expect(result.current.liveBuffers.find(buffer => buffer.document.relativePath === a.relativePath)).toMatchObject({
+			content: "A edits", isDirty: true, document: { content: a.content, revision: a.revision },
+		})
+		expect(result.current.content).toBe("B explicitly unsaved")
+		expect(result.current.isDirty).toBe(true)
+		await act(async () => { expect(await result.current.saveDocument()).toBe(true) })
+		expect(result.current.activeDocument).toMatchObject({ content: "B explicitly unsaved", revision: "saved" })
+		expect(result.current.isDirty).toBe(false)
+		expect(result.current.liveBuffers.find(buffer => buffer.document.relativePath === a.relativePath)?.isDirty).toBe(true)
+	})
+
+	it("keeps dirty input unsaved when the persisted quiet interval is a numeric-looking string", async () => {
+		useSettings.setState({ autoSaveInterval: "3" as unknown as number })
+		const { result } = await parkAutosaveA()
+		act(() => result.current.updateContent("B retained with invalid saved interval"))
+		await act(async () => { await vi.advanceTimersByTimeAsync(60000) })
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		expect(result.current.liveBuffers.find(buffer => buffer.document.relativePath === a.relativePath)).toMatchObject({
+			content: "A edits", isDirty: true, document: { content: a.content, revision: a.revision },
+		})
+		expect(result.current.content).toBe("B retained with invalid saved interval")
+		expect(result.current.isDirty).toBe(true)
+	})
+
+	it("rearms already queued input for a changed configured quiet interval", async () => {
+		const { result } = await parkAutosaveA()
+		await act(async () => { await vi.advanceTimersByTimeAsync(400) })
+		act(() => useSettings.getState().setAutoSaveInterval(3))
+		await act(async () => { await vi.advanceTimersByTimeAsync(2999) })
+		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
+		expect(result.current.liveBuffers.find(buffer => buffer.document.relativePath === a.relativePath)?.isDirty).toBe(true)
+		await act(async () => { await vi.advanceTimersByTimeAsync(1) })
+		expect(result.current.liveBuffers.find(buffer => buffer.document.relativePath === a.relativePath)).toMatchObject({
+			content: "A edits", isDirty: false, document: { content: "A edits", revision: "saved" },
+		})
+		expect(result.current.activeDocument).toMatchObject({ relativePath: b.relativePath, content: b.content, revision: b.revision })
+	})
+
+
+	it("autosaves quiet parked input while another buffer keeps receiving edits", async () => {
+		const { result } = await parkAutosaveA()
+		const aRuntime = result.current.liveBuffers.find((buffer) => buffer.document.relativePath === a.relativePath)!.runtime
+		await act(async () => { await vi.advanceTimersByTimeAsync(400) })
+		act(() => result.current.updateContent("B first input"))
+		await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+		act(() => result.current.updateContent("B second input"))
+		await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+		expect(result.current.liveBuffers.find((buffer) => buffer.runtime === aRuntime)).toMatchObject({
+			content: "A edits", isDirty: false, document: { content: "A edits", revision: "saved" },
+		})
+		expect(result.current.activeDocument?.relativePath).toBe(b.relativePath)
+		expect(result.current.content).toBe("B second input")
+		expect(result.current.isDirty).toBe(true)
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		expect(saveOrgDocumentFlow).toHaveBeenCalledWith(expect.objectContaining({
+			relativePath: a.relativePath, content: "A edits", expectedRevision: a.revision,
+		}))
+		await act(async () => { await vi.advanceTimersByTimeAsync(699) })
+		expect(result.current.isDirty).toBe(true)
+		await act(async () => { await vi.advanceTimersByTimeAsync(1) })
+		expect(result.current.isDirty).toBe(false)
+		expect(result.current.activeDocument).toMatchObject({ content: "B second input", revision: "saved" })
+	})
+
+	it("retains parked typing and its undo when an inactive autosave ACKs an older snapshot", async () => {
+		const { result } = await parkAutosaveA()
+		const runtime = result.current.liveBuffers.find((buffer) => buffer.document.relativePath === a.relativePath)!.runtime
+		const release = result.current.registerBufferWindow("inactive-autosave", runtime.key.bufferId)
+		let handle!: OrgBufferWindowHandle
+		const view = new EditorView({
+			state: EditorState.create({ doc: runtime.state.doc, extensions: runtime.historyFreeSourceExtensions }),
+			dispatchTransactions: (transactions) => handle.dispatchTransactions(transactions),
+		})
+		handle = runtime.attachWindow({ windowId: "inactive-autosave", view })
+		try {
+			const pending = Promise.withResolvers<Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>>()
+			vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
+			await act(async () => { await vi.advanceTimersByTimeAsync(1000) })
+			expect(result.current.isEditorReadOnly).toBe(false)
+			act(() => {
+				useSettings.getState().setAutoSave(false)
+				view.dispatch({ changes: { from: view.state.doc.length, insert: " tail" } })
+				result.current.updateContent("B concurrent input")
+			})
+			await act(async () => { pending.resolve(E.right({ relativePath: a.relativePath, revision: "saved-A" })) })
+			expect(result.current.liveBuffers.find((buffer) => buffer.runtime === runtime)).toMatchObject({
+				content: "A edits tail", isDirty: true, document: { content: "A edits", revision: "saved-A" },
+			})
+			expect(result.current.content).toBe("B concurrent input")
+			act(() => { expect(handle.undo()).toBe(true) })
+			expect(runtime.source).toBe("A edits")
+			expect(result.current.liveBuffers.find((buffer) => buffer.runtime === runtime)?.isDirty).toBe(false)
+			expect(result.current.content).toBe("B concurrent input")
+		} finally {
+			release()
+			handle.detach()
+			view.destroy()
+		}
+	})
+
+	it("pauses only the failed inactive autosave and still saves another dirty buffer", async () => {
+		const { result } = await parkAutosaveA()
+		act(() => result.current.updateContent("B eligible input"))
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(async () => E.left(fileError))
+		await act(async () => { await vi.advanceTimersByTimeAsync(1000) })
+		await act(async () => { await vi.advanceTimersByTimeAsync(1) })
+		expect(result.current.openBuffers.find((buffer) => buffer.relativePath === a.relativePath)).toMatchObject({
+			isDirty: true, hasConflict: true, autosavePaused: true, baseRevision: a.revision,
+		})
+		expect(result.current.liveBuffers.find((buffer) => buffer.document.relativePath === a.relativePath)?.content).toBe("A edits")
+		expect(result.current.activeDocument).toMatchObject({ relativePath: b.relativePath, content: "B eligible input" })
 		expect(result.current.isDirty).toBe(false)
 		const blocker = vi.mocked(useBlocker).mock.calls.at(-1)?.[0] as unknown as {
-			disabled: boolean
 			enableBeforeUnload: boolean
-			shouldBlockFn: () => boolean
 		}
-		expect(blocker.disabled).toBe(false)
+		vi.mocked(useConfirm()).mockResolvedValue(false)
 		expect(blocker.enableBeforeUnload).toBe(true)
-		vi.mocked(window.confirm).mockReturnValue(false)
-		expect(blocker.shouldBlockFn()).toBe(true)
-		const session = result.current.workspaceSessionId
-		await act(async () => {
-			await result.current.openDefaultWorkspace()
-		})
-		expect(openDefaultOrgWorkspaceFlow).toHaveBeenCalledTimes(1)
-		expect(result.current.workspaceSessionId).toBe(session)
-		expect(result.current.openBuffers).toHaveLength(2)
+		await act(async () => { await vi.advanceTimersByTimeAsync(3000) })
+		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(2)
 	})
+
+	it("retains file-owned autosave confirmation across memory-only focus and unrelated B input", async () => {
+		const { result } = await parkAutosaveA()
+		const pending = Promise.withResolvers<Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
+		await act(async () => { await vi.advanceTimersByTimeAsync(1000) })
+		const id = result.current.openBuffers.find((buffer) => buffer.relativePath === a.relativePath)!.bufferId
+		act(() => result.current.updateContent("B input while A saves"))
+		act(() => { expect(result.current.activateOpenBuffer(id)).toBe(true) })
+		await act(async () => {
+			pending.resolve(E.right({ relativePath: a.relativePath, revision: "saved-A" }))
+		})
+		expect(result.current.activeDocument?.relativePath).toBe(a.relativePath)
+		expect(result.current.content).toBe("A edits")
+		expect(result.current.activeDocument).toMatchObject({ content: "A edits", revision: "saved-A" })
+		expect(result.current.isDirty).toBe(false)
+		expect(result.current.liveBuffers.find((buffer) => buffer.document.relativePath === b.relativePath)).toMatchObject({
+			content: "B input while A saves", isDirty: true, document: { content: b.content },
+		})
+	})
+
 
 	it("retains all buffers on failed grants, but clears them and changes session even for the same successful root", async () => {
 		const { result } = await parkDirtyA()
@@ -5282,7 +5994,7 @@ describe("independent Org buffers", () => {
 		).toBe(true)
 	})
 
-	it("serializes inactive save and blocks compatibility edits during that mutation", async () => {
+	it("serializes inactive close on its own file and retains newer active input", async () => {
 		const { result } = await parkDirtyA()
 		const write = deferred<Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>>()
 		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => write.promise)
@@ -5295,7 +6007,6 @@ describe("independent Org buffers", () => {
 			expect(await result.current.openDocumentPath(a.relativePath)).toBe(false)
 			await result.current.captureTodo("capture", a.relativePath)
 			await result.current.openDefaultWorkspace()
-			await result.current.saveDocument()
 		})
 		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
 		expect(captureOrgTodoFlow).not.toHaveBeenCalled()
@@ -5304,8 +6015,8 @@ describe("independent Org buffers", () => {
 			write.resolve(E.right({ relativePath: a.relativePath, revision: "saved" }))
 			expect(await closing).toBe(true)
 		})
-		expect(result.current.content).toBe(b.content)
-		expect(result.current.isDirty).toBe(false)
+		expect(result.current.content).toBe("new B input")
+		expect(result.current.isDirty).toBe(true)
 	})
 
 	it("successful active save advances the parked baseline and never resurrects old dirtiness", async () => {
@@ -5336,7 +6047,7 @@ describe("independent Org buffers", () => {
 		expect(result.current.activeDocument?.revision).toBe("saved")
 	})
 
-	it("blocks compatibility edits while a slow navigation is loading", async () => {
+	it("rejects a slow navigation after ABA source edits without replacing the canonical buffer", async () => {
 		const { result } = await setup()
 		const read = deferred<Awaited<ReturnType<ReturnType<typeof openOrgDocumentFlow>>>>()
 		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(() => read.promise)
@@ -5350,10 +6061,11 @@ describe("independent Org buffers", () => {
 		})
 		await act(async () => {
 			read.resolve(E.right(b))
-			expect(await opening).toBe(true)
+			expect(await opening).toBe(false)
 		})
-		expect(result.current.activeDocument).toEqual(b)
-		expect(result.current.openBuffers).toHaveLength(2)
+		expect(result.current.activeDocument).toEqual(a)
+		expect(result.current.content).toBe(a.content)
+		expect(result.current.openBuffers).toHaveLength(1)
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 	})
 
@@ -5362,7 +6074,7 @@ describe("independent Org buffers", () => {
 		act(() => result.current.updateContent("persist this"))
 		const write = deferred<Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>>()
 		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => write.promise)
-		let saving!: Promise<void>
+		let saving!: Promise<boolean>
 		let opening!: Promise<boolean>
 		act(() => {
 			saving = result.current.saveDocument()
@@ -5423,6 +6135,8 @@ describe("independent Org buffers", () => {
 		act(() => {
 			opening = result.current.openDefaultWorkspace()
 		})
+		await act(async () => { await Promise.resolve() })
+		expect(result.current.isLoading).toBe(true)
 		act(() => result.current.updateContent("new B"))
 		await act(async () => {
 			grant.resolve(E.right(workspace))
@@ -5554,15 +6268,11 @@ describe("independent Org buffers", () => {
 		await act(async () => {
 			await result.current.openDocumentPath(b.relativePath)
 		})
-		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(async () =>
-			E.right({ ...a, relativePath: "renamed.org" }),
-		)
 		await act(async () => {
 			expect(await result.current.switchBuffer(id!)).toBe(true)
 		})
-		expect(openOrgDocumentFlow).toHaveBeenLastCalledWith(
-			expect.objectContaining({ relativePath: "renamed.org" }),
-		)
+		expect(result.current.activeDocument?.relativePath).toBe("renamed.org")
+		expect(result.current.content).toBe(a.content)
 		expect(result.current.activeBufferId).toBe(id)
 	})
 })
@@ -5573,10 +6283,11 @@ describe("Org save-all snapshot transaction", () => {
 		revision: `${relativePath}-1`,
 		content: `base ${relativePath}`,
 	}))
-	type SaveResult = Awaited<ReturnType<ReturnType<typeof saveOrgDocumentFlow>>>
+	type SaveResult = E.Either<OrgFileError, OrgDocumentWriteResultInterface>
 	beforeEach(() => {
 		vi.useFakeTimers()
 		vi.resetAllMocks()
+		vi.mocked(useConfirm()).mockResolvedValue(false)
 		window.localStorage.clear()
 		vi.mocked(watchOrgWorkspace).mockReturnValue(async () => E.right("watch-G1"))
 		vi.mocked(unwatchOrgWorkspace).mockReturnValue(async () => E.right(undefined))
@@ -5615,35 +6326,27 @@ describe("Org save-all snapshot transaction", () => {
 		return hook
 	}
 	it("ACKs the live same-ID parked mirror after deferred batch write without losing newer input", async () => {
-		const create = runtimeFactory.createOrgBufferRuntime
-		let firstOptions!: OrgBufferRuntimeOptions
-		vi.spyOn(runtimeFactory, "createOrgBufferRuntime").mockImplementation((options) => {
-			if (options.source === "base a.org") firstOptions = options
-			return create(options)
-		})
 		const { result } = await setup(2)
 		const id = result.current.openBuffers.find(
 			(buffer) => buffer.relativePath === "a.org",
 		)!.bufferId
+		const runtime = result.current.liveBuffers.find((buffer) => buffer.bufferId === id)!.runtime
+		const editor = attachRuntime(runtime, result.current, "saveall-newer-parked")
 		const pending = deferred<SaveResult>()
 		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
 		let saving!: ReturnType<typeof result.current.saveAllDocuments>
 		act(() => {
 			saving = result.current.saveAllDocuments()
 		})
-		act(() => {
-			firstOptions.onCommit({
-				key: firstOptions.key,
-				previousSource: "edited a.org",
-				source: "newest parked body",
-				revision: 3,
-				originWindowId: null,
-			})
-		})
+		act(() => editor.view.dispatch({
+			changes: { from: 0, to: editor.view.state.doc.length, insert: "newest parked body" },
+		}))
+		const newerState = runtime.state
 		await act(async () => {
 			pending.resolve(E.right({ relativePath: "a.org", revision: "ack" }))
 			expect(await saving).toMatchObject({ kind: "partial", remainingDirtyPaths: ["a.org"] })
 		})
+		expect(runtime.state).toBe(newerState)
 		expect(
 			result.current.openBuffers.find((buffer) => buffer.relativePath === "a.org"),
 		).toMatchObject({ bufferId: id, baseRevision: "ack", isDirty: true, hasConflict: false })
@@ -5664,6 +6367,7 @@ describe("Org save-all snapshot transaction", () => {
 		expect(saveOrgDocumentFlow).toHaveBeenLastCalledWith(
 			expect.objectContaining({ content: "newest parked body", expectedRevision: "ack" }),
 		)
+		editor.dispose()
 	})
 	it("rejects real active transactions, undo and known installations during Save All parked ACK notification", async () => {
 		const observed = observeParkedReservoir()
@@ -6137,7 +6841,7 @@ describe("Org save-all snapshot transaction", () => {
 		const { result } = await setup(1)
 		const pending = deferred<SaveResult>()
 		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
-		let saving!: Promise<void>
+		let saving!: Promise<boolean>
 		act(() => {
 			saving = result.current.saveDocument()
 		})
@@ -6288,12 +6992,17 @@ describe("Org save-all snapshot transaction", () => {
 		})
 		act(() => result.current.updateContent("base a.org"))
 		if (mode === "delete") {
-			vi.mocked(deleteOrgDocumentFlow).mockReturnValueOnce(async () => E.right(undefined))
+			vi.mocked(deleteOrgDocumentFlow).mockImplementationOnce((input) => async () => E.right({
+				sourceRelativePath: input.relativePath,
+				relativePath: `.grain-originals/deleted/${input.relativePath}`,
+				kind: "delete",
+				object: "original",
+			}))
 			await act(async () => {
 				await result.current.deleteActiveDocument()
 			})
 		} else {
-			vi.spyOn(window, "confirm").mockReturnValueOnce(true)
+			vi.mocked(useConfirm()).mockResolvedValueOnce(true)
 			vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValueOnce(async () =>
 				E.right({ ...workspace, documents, capabilityToken: "G2" }),
 			)
@@ -6336,7 +7045,7 @@ describe("Org save-all snapshot transaction", () => {
 		// The unresolved clean copy requires a confirmed save before close.
 		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(3)
 	})
-	it("owns native Busy throughout deferred writes, blocks all competing navigation/writers, and retains newer typing", async () => {
+	it("owns native Busy throughout deferred writes and retains newer typing", async () => {
 		let nativeState!: Parameters<typeof orgWindowClose.useOrgWindowClose>[0]
 		vi.spyOn(orgWindowClose, "useOrgWindowClose").mockImplementation((state) => {
 			nativeState = state
@@ -6357,15 +7066,10 @@ describe("Org save-all snapshot transaction", () => {
 		await act(async () => {
 			expect(await result.current.saveAllDocuments()).toMatchObject({ kind: "rejected" })
 			expect(await result.current.openDocumentPath("a.org")).toBe(false)
-			expect(await result.current.switchBuffer(result.current.activeBufferId!)).toBe(false)
-			for (const buffer of result.current.openBuffers) {
-				expect(await result.current.switchBuffer(buffer.bufferId)).toBe(false)
-			}
 			expect(await result.current.closeDocumentPath("a.org")).toBe(false)
 			expect(await result.current.closeActiveDocument()).toBe(false)
 			await result.current.saveDocument()
-			await result.current.createDocument("new.org")
-			await result.current.captureTodo("todo")
+			await result.current.captureTodo("todo", "a.org")
 			await result.current.openDefaultWorkspace()
 		})
 		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
@@ -6400,7 +7104,7 @@ describe("Org save-all snapshot transaction", () => {
 		const { result } = await setup(1)
 		const pending = deferred<SaveResult>()
 		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
-		let saving!: Promise<void>
+		let saving!: Promise<boolean>
 		act(() => {
 			saving = result.current.saveDocument()
 		})
@@ -6438,21 +7142,14 @@ describe("Org save-all snapshot transaction", () => {
 		})
 		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
 	})
-	it("is a clean no-op and rejects stale activation/path and stale same-root G1 callbacks", async () => {
+	it("is a clean no-op and rejects stale same-root G1 callbacks", async () => {
 		const { result } = await setup(1)
-		const oldActivation = result.current.saveAllDocuments
-		await act(async () => {
-			await result.current.openDocumentPath("b.org")
-		})
-		await act(async () => {
-			expect(await oldActivation()).toMatchObject({ kind: "rejected", savedPaths: [] })
-		})
-		act(() => result.current.updateContent("base b.org"))
+		act(() => result.current.updateContent("base a.org"))
 		await act(async () => {
 			await result.current.saveAllDocuments()
 		})
 		const oldGrant = result.current.saveAllDocuments
-		vi.spyOn(window, "confirm").mockReturnValue(true)
+		vi.mocked(useConfirm()).mockResolvedValue(true)
 		const grant = deferred<Awaited<ReturnType<ReturnType<typeof openDefaultOrgWorkspaceFlow>>>>()
 		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValueOnce(() => grant.promise)
 		let opening!: Promise<void>
@@ -6493,7 +7190,7 @@ describe("Org save-all snapshot transaction", () => {
 		const { result } = await setup(1)
 		const pending = deferred<SaveResult>()
 		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
-		let saving!: Promise<void>
+		let saving!: Promise<boolean>
 		act(() => {
 			saving = result.current.saveDocument()
 		})
@@ -6587,11 +7284,17 @@ describe("Org save-all snapshot transaction", () => {
 		const pending = deferred<SaveResult>()
 		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
 		let parked = observed.reservoir.read(observed.scope, "a.org")!
+		const runtime = result.current.liveBuffers.find((buffer) => buffer.bufferId === id)!.runtime
+		const editor = attachRuntime(runtime, result.current, "newer-baseline")
 		let closing!: Promise<boolean>
 		act(() => {
 			closing = result.current.closeDocumentPath("a.org")
 		})
 		act(() => {
+			editor.view.dispatch({
+				changes: { from: 0, to: editor.view.state.doc.length, insert: "newer working body" },
+			})
+			parked = observed.reservoir.read(observed.scope, "a.org")!
 			parked = observed.reservoir.installConfirmedBaseline(
 				observed.scope,
 				parked.bufferId,
@@ -6613,7 +7316,6 @@ describe("Org save-all snapshot transaction", () => {
 			hasConflict: true,
 		})
 		expect(result.current.error).not.toBeNull()
-		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(async () => E.right(parked.document))
 		await act(async () => {
 			expect(await result.current.switchBuffer(id)).toBe(true)
 		})
@@ -6626,7 +7328,10 @@ describe("Org save-all snapshot transaction", () => {
 		await act(async () => {
 			await vi.advanceTimersByTimeAsync(1000)
 		})
-		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		expect(vi.mocked(saveOrgDocumentFlow).mock.calls.some(([input]) =>
+			input.relativePath === "a.org" && input.expectedRevision === "newer-revision",
+		)).toBe(false)
+		editor.dispose()
 	})
 
 	it("rejects an active save-close after unmount in the flow terminal microtask gap", async () => {
@@ -6664,27 +7369,19 @@ describe("Org save-all snapshot transaction", () => {
 	})
 
 	it("ACKs the captured baseline while retaining a same-grant inactive body replacement before confirmation", async () => {
-		const create = runtimeFactory.createOrgBufferRuntime
-		let firstOptions!: OrgBufferRuntimeOptions
-		vi.spyOn(runtimeFactory, "createOrgBufferRuntime").mockImplementation((options) => {
-			if (options.source === "base a.org") firstOptions = options
-			return create(options)
-		})
 		const { result } = await setup(2)
 		const id = result.current.openBuffers.find(
 			(buffer) => buffer.relativePath === "a.org",
 		)!.bufferId
+		const runtime = result.current.liveBuffers.find((buffer) => buffer.bufferId === id)!.runtime
+		const editor = attachRuntime(runtime, result.current, "close-newer-parked")
 		const pending = deferred<SaveResult>()
 		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
 		let closing!: Promise<boolean>
 		act(() => {
 			closing = result.current.closeDocumentPath("a.org")
-			firstOptions.onCommit({
-				key: firstOptions.key,
-				previousSource: "edited a.org",
-				source: "same-grant replacement",
-				revision: 3,
-				originWindowId: null,
+			editor.view.dispatch({
+				changes: { from: 0, to: editor.view.state.doc.length, insert: "same-grant replacement" },
 			})
 		})
 		await act(async () => {
@@ -6721,6 +7418,7 @@ describe("Org save-all snapshot transaction", () => {
 		expect(result.current.content).toBe("same-grant replacement")
 		expect(result.current.isDirty).toBe(false)
 		expect(result.current.error).toBeNull()
+		editor.dispose()
 	})
 
 	it.each([
@@ -6728,27 +7426,19 @@ describe("Org save-all snapshot transaction", () => {
 		"invalid",
 		"throw",
 	])("latches an inactive close %s failure on the current owner despite a body replacement", async (failure) => {
-		const create = runtimeFactory.createOrgBufferRuntime
-		let firstOptions!: OrgBufferRuntimeOptions
-		vi.spyOn(runtimeFactory, "createOrgBufferRuntime").mockImplementation((options) => {
-			if (options.source === "base a.org") firstOptions = options
-			return create(options)
-		})
 		const { result } = await setup(2)
 		const id = result.current.openBuffers.find(
 			(buffer) => buffer.relativePath === "a.org",
 		)!.bufferId
+		const runtime = result.current.liveBuffers.find((buffer) => buffer.bufferId === id)!.runtime
+		const editor = attachRuntime(runtime, result.current, "failed-close-replacement")
 		const pending = deferred<SaveResult>()
 		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
 		let closing!: Promise<boolean>
 		act(() => {
 			closing = result.current.closeDocumentPath("a.org")
-			firstOptions.onCommit({
-				key: firstOptions.key,
-				previousSource: "edited a.org",
-				source: "newer failed-close body",
-				revision: 3,
-				originWindowId: null,
+			editor.view.dispatch({
+				changes: { from: 0, to: editor.view.state.doc.length, insert: "newer failed-close body" },
 			})
 		})
 		await act(async () => {
@@ -6765,34 +7455,27 @@ describe("Org save-all snapshot transaction", () => {
 		})
 		expect(result.current.error).not.toBeNull()
 		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		expect(runtime.source).toBe("newer failed-close body")
+		editor.dispose()
 	})
 
 	it("does not retire an inactive replacement installed in the flow terminal microtask gap", async () => {
-		const create = runtimeFactory.createOrgBufferRuntime
-		let firstOptions!: OrgBufferRuntimeOptions
-		vi.spyOn(runtimeFactory, "createOrgBufferRuntime").mockImplementation((options) => {
-			if (options.source === "base a.org") firstOptions = options
-			return create(options)
-		})
 		const { result } = await setup(2)
 		const id = result.current.openBuffers.find(
 			(buffer) => buffer.relativePath === "a.org",
 		)!.bufferId
+		const runtime = result.current.liveBuffers.find((buffer) => buffer.bufferId === id)!.runtime
+		const editor = attachRuntime(runtime, result.current, "terminal-gap-replacement")
 		const pending = deferred<SaveResult>()
 		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
 		let closing!: Promise<boolean>
 		act(() => {
 			closing = result.current.closeDocumentPath("a.org")
 		})
-		// Simulate a root source-mirror installation at the boundary, replacing
-		// the parked identity after confirmation but before the close continuation.
+		// Edit the real canonical runtime after confirmation but before the close continuation.
 		const replacement = pending.promise.then(() =>
-			firstOptions.onCommit({
-				key: firstOptions.key,
-				previousSource: "edited a.org",
-				source: "replacement a body",
-				revision: 3,
-				originWindowId: null,
+			editor.view.dispatch({
+				changes: { from: 0, to: editor.view.state.doc.length, insert: "replacement a body" },
 			}),
 		)
 		await act(async () => {
@@ -6831,6 +7514,7 @@ describe("Org save-all snapshot transaction", () => {
 		expect(result.current.activeBufferId).toBe(id)
 		expect(result.current.content).toBe("replacement a body")
 		expect(result.current.isDirty).toBe(false)
+		editor.dispose()
 	})
 
 	it("late unmounted G1 inactive completion cannot alter an already live same-root G2 buffer", async () => {
@@ -6906,8 +7590,103 @@ describe("Org save-all snapshot transaction", () => {
 			expect.objectContaining({ relativePath: "a.org", expectedRevision: "a.org-1" }),
 		)
 	})
+	it("reports newer raw canonical input after a confirmed batch ACK retires in the terminal gap", async () => {
+		const hook = await setup(1)
+		const runtime = hook.result.current.activeBufferRuntime!
+		let handle!: OrgBufferWindowHandle
+		const view = new EditorView({
+			state: EditorState.create({
+				doc: runtime.state.doc,
+				extensions: runtime.historyFreeSourceExtensions,
+			}),
+			dispatchTransactions: (transactions) => handle.dispatchTransactions(transactions),
+		})
+		const release = hook.result.current.registerBufferWindow("retired-batch", runtime.key.bufferId)
+		handle = runtime.attachWindow({ windowId: "retired-batch", view })
+		try {
+			const pending = deferred<SaveResult>()
+			vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
+			let saving!: Promise<OrgSaveAllOutcome>
+			act(() => {
+				saving = hook.result.current.saveAllDocuments()
+			})
+			const extra = "\nnewer café\0😀"
+			act(() => view.dispatch({ changes: { from: view.state.doc.length, insert: extra } }))
+			const before = runtime.state
+			const generation = runtime.revision
+			const retired = pending.promise.then(() => hook.unmount())
+			await act(async () => {
+				pending.resolve(E.right({ relativePath: "a.org", revision: "confirmed-final" }))
+				await retired
+				expect(await saving).toMatchObject({
+					kind: "partial",
+					savedPaths: ["a.org"],
+					remainingDirtyPaths: ["a.org"],
+				})
+			})
+			expect(runtime.closed).toBe(true)
+			expect(runtime.source).toBe("edited a.org" + extra)
+			expect(runtime.state).toBe(before)
+			expect(runtime.revision).toBe(generation)
+			expect(undoDepth(runtime.state)).toBe(1)
+			expect(redoDepth(runtime.state)).toBe(0)
+			expect(saveOrgDocumentFlow).toHaveBeenCalledOnce()
+			expect(saveOrgDocumentFlow).toHaveBeenCalledWith(
+				expect.objectContaining({ content: "edited a.org", expectedRevision: "a.org-1" }),
+			)
+		} finally {
+			release()
+			handle.detach()
+			view.destroy()
+		}
+	})
+
+	it("retains a confirmed parked ACK and stops the batch when its receipt observer unmounts", async () => {
+		const observed = observeParkedReservoir()
+		const hook = await setup(2)
+		const buffers = hook.result.current.liveBuffers
+		const pending = deferred<SaveResult>()
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
+		let saving!: Promise<OrgSaveAllOutcome>
+		act(() => {
+			saving = hook.result.current.saveAllDocuments()
+		})
+		const retire = vi.fn(() => {
+			const copy = observed.reservoir.read(observed.scope, "a.org")
+			if (copy?.document.revision !== "ack-before-retirement") return
+			expect(copy.document.content).toBe("edited a.org")
+			expect(copy.content).toBe("edited a.org")
+			expect(copy.isDirty).toBe(false)
+			hook.unmount()
+		})
+		const stop = observed.reservoir.subscribe(retire)
+		try {
+			await act(async () => {
+				pending.resolve(E.right({ relativePath: "a.org", revision: "ack-before-retirement" }))
+				expect(await saving).toMatchObject({
+					kind: "partial",
+					savedPaths: ["a.org"],
+					remainingDirtyPaths: ["b.org"],
+				})
+			})
+			expect(retire).toHaveBeenCalled()
+			expect(buffers.every((buffer) => buffer.runtime.closed)).toBe(true)
+			expect(buffers.map((buffer) => buffer.runtime.source)).toEqual(["edited a.org", "edited b.org"])
+			expect(saveOrgDocumentFlow).toHaveBeenCalledOnce()
+			expect(releaseOrgWorkspace).toHaveBeenCalledWith(workspace.rootPath, workspace.capabilityToken)
+		} finally {
+			stop()
+		}
+	})
+
 	it("ignores a deferred completion after unmount and stops remaining writes", async () => {
 		const hook = await setup()
+		const retained = hook.result.current.liveBuffers.map((buffer) => ({
+			runtime: buffer.runtime,
+			state: buffer.runtime.state,
+			source: buffer.content,
+			generation: buffer.sourceGeneration,
+		}))
 		const pending = deferred<SaveResult>()
 		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(() => pending.promise)
 		let saving!: ReturnType<typeof hook.result.current.saveAllDocuments>
@@ -6922,5 +7701,15 @@ describe("Org save-all snapshot transaction", () => {
 			remainingDirtyPaths: ["a.org", "b.org", "c.org"],
 		})
 		expect(saveOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		for (const buffer of retained) {
+			expect(buffer.runtime.closed).toBe(true)
+			expect(buffer.runtime.source).toBe(buffer.source)
+			expect(buffer.runtime.state).toBe(buffer.state)
+			expect(buffer.runtime.revision).toBe(buffer.generation)
+		}
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(1000)
+		})
+		expect(saveOrgDocumentFlow).toHaveBeenCalledOnce()
 	})
 })

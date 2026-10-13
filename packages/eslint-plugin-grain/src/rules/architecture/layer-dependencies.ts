@@ -47,7 +47,7 @@ type Options = [
 
 export default createRule<Options, MessageIds>({
 	create(context, [options]) {
-		const filename = context.filename || context.getFilename()
+		const filename = context.filename
 		const strict = options.strict ?? true
 
 		// 跳过测试文件

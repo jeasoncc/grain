@@ -1,5 +1,5 @@
 import { parseOrgPlanningLine } from "./org-planning-line.pipe"
-import { isOrgCalendarISO } from "./org-date-reader.pipe"
+import { formatOrgTimestamp, isOrgCalendarISO, readOrgStoredTimestamp, type OrgTimestampValue } from "./org-date-reader.pipe"
 
 const normalizedCaptureTitle = (title: string): string =>
 	title.trim().replace(/\s*[\r\n]+\s*/g, " ")
@@ -33,38 +33,49 @@ export interface OrgTextEdit {
 	readonly cursor: number
 }
 
-interface RawOrgLine {
+export interface RawOrgLine {
 	readonly from: number
 	readonly contentTo: number
 	readonly breakTo: number
 	readonly text: string
 }
 
-const rawOrgLines = (content: string): readonly RawOrgLine[] => {
-	const lines: RawOrgLine[] = []
-	let position = 0
-	while (position <= content.length) {
-		const breakOffset = content.slice(position).search(/[\r\n]/)
-		const contentTo = breakOffset === -1 ? content.length : position + breakOffset
-		let breakTo = contentTo
-		if (breakOffset !== -1) {
-			breakTo =
-				content[contentTo] === "\r" && content[contentTo + 1] === "\n"
-					? contentTo + 2
-					: contentTo + 1
-		}
-		lines.push({ from: position, contentTo, breakTo, text: content.slice(position, contentTo) })
-		if (breakOffset === -1) break
+function* rawOrgLines(content: string, from = 0): IterableIterator<RawOrgLine> {
+	const breaks = /\r\n|\r|\n/g
+	breaks.lastIndex = from
+	let position = from
+	for (let boundary = breaks.exec(content); boundary; boundary = breaks.exec(content)) {
+		const contentTo = boundary.index
+		const breakTo = contentTo + boundary[0].length
+		yield { from: position, contentTo, breakTo, text: content.slice(position, contentTo) }
 		position = breakTo
 	}
-	return lines
+	yield {
+		from: position,
+		contentTo: content.length,
+		breakTo: content.length,
+		text: content.slice(position),
+	}
 }
 
 const lineRangeAt = (content: string, cursor: number) => {
 	const safeCursor = Math.max(0, Math.min(cursor, content.length))
-	const line =
-		rawOrgLines(content).findLast(({ from }) => from <= safeCursor) ?? rawOrgLines(content)[0]
-	return { from: line.from, safeCursor, to: line.contentTo }
+	// Both code units of CRLF belong to the preceding line. NaN retains the
+	// original first-line fallback without changing the returned safe cursor.
+	let from = Number.isNaN(safeCursor) ? 0 : Math.floor(safeCursor)
+	if (content.charCodeAt(from) === 10 && content.charCodeAt(from - 1) === 13) from--
+	while (from > 0) {
+		const previous = content.charCodeAt(from - 1)
+		if (previous === 10 || previous === 13) break
+		from--
+	}
+	let to = from
+	while (to < content.length) {
+		const next = content.charCodeAt(to)
+		if (next === 10 || next === 13) break
+		to++
+	}
+	return { from, safeCursor, to }
 }
 
 const cursorAfterEdit = (cursor: number, from: number, to: number, insert: string): number =>
@@ -79,7 +90,7 @@ interface OrgTodoSequence extends OrgTodoKeywords {
 	readonly all: readonly string[]
 }
 
-interface OrgBlockRange {
+export interface OrgBlockRange {
 	readonly from: number
 	readonly to: number
 	readonly closed: boolean
@@ -95,30 +106,45 @@ export const orgHeadingIsComment = (title: string, states: ReadonlySet<string>):
 
 // A block can only begin in eligible source. Once active it owns every line:
 // drawer-looking text and heading-looking text inside it cannot change scope.
-const scanOrgSource = (content: string, states: ReadonlySet<string>, excludeComments: boolean) => {
+// Collect only the requested metadata. A cursor requests the lexical containing
+// heading, including headings in drawers/COMMENT subtrees.
+const scanOrgSource = (
+	content: string,
+	states: ReadonlySet<string>,
+	excludeComments: boolean,
+	collection: "ranges" | "drawers" | "lines" | "heading",
+	headingCursor?: number,
+) => {
 	const ranges: OrgBlockRange[] = []
 	const lines: RawOrgLine[] = []
 	let block: { readonly from: number; readonly type: string } | null = null
 	const drawers: OrgBlockRange[] = []
 	let drawerFrom: number | null = null
 	let commentLevel: number | null = null
+	let headingLine: RawOrgLine | null = null
+	let cursorInBlock = false
 	for (const line of rawOrgLines(content)) {
+		if (headingCursor !== undefined && line.from > headingCursor) break
 		if (block) {
+			if (headingCursor !== undefined && headingCursor < line.breakTo) cursorInBlock = true
 			const end = /^[ \t]*#\+end_([A-Za-z0-9_-]+)\b/i.exec(line.text)
 			if (end?.[1].toLowerCase() === block.type) {
-				ranges.push({ from: block.from, to: line.breakTo, closed: true })
+				if (collection === "ranges")
+					ranges.push({ from: block.from, to: line.breakTo, closed: true })
 				block = null
 			}
 			continue
 		}
+		if (headingCursor !== undefined && /^\*+[ \t]+/.test(line.text)) headingLine = line
 		if (drawerFrom !== null) {
 			if (/^[ \t]*:END:[ \t]*$/i.test(line.text)) {
-				drawers.push({ from: drawerFrom, to: line.breakTo, closed: true })
+				if (collection === "drawers")
+					drawers.push({ from: drawerFrom, to: line.breakTo, closed: true })
 				drawerFrom = null
 			}
 			continue
 		}
-		const heading = /^(\*+)[ \t]+(.*)$/.exec(line.text)
+		const heading = excludeComments ? /^(\*+)[ \t]+(.*)$/.exec(line.text) : null
 		if (heading && excludeComments) {
 			const level = heading[1].length
 			if (commentLevel !== null && level > commentLevel) continue
@@ -130,41 +156,45 @@ const scanOrgSource = (content: string, states: ReadonlySet<string>, excludeComm
 			continue
 		}
 		const begin = /^[ \t]*#\+begin_([A-Za-z0-9_-]+)\b/i.exec(line.text)
-		if (begin) block = { from: line.from, type: begin[1].toLowerCase() }
-		else lines.push(line)
+		if (begin) {
+			block = { from: line.from, type: begin[1].toLowerCase() }
+			if (headingCursor !== undefined && headingCursor < line.breakTo) cursorInBlock = true
+		} else if (collection === "lines") lines.push(line)
 	}
-	if (block) ranges.push({ from: block.from, to: content.length, closed: false })
-	if (drawerFrom !== null) drawers.push({ from: drawerFrom, to: content.length, closed: false })
-	return { ranges, drawers, lines }
+	if (collection === "ranges" && block)
+		ranges.push({ from: block.from, to: content.length, closed: false })
+	if (collection === "drawers" && drawerFrom !== null)
+		drawers.push({ from: drawerFrom, to: content.length, closed: false })
+	return { ranges, drawers, lines, heading: cursorInBlock ? null : headingLine }
 }
 
 /** Lexical literal protection includes blocks in COMMENT subtrees, but not drawer markers. */
 export const orgBlockRanges = (content: string): readonly OrgBlockRange[] =>
-	scanOrgSource(content, new Set(), false).ranges
+	scanOrgSource(content, new Set(), false, "ranges").ranges
 
 /** Drawer markers are eligible only outside literal blocks and existing drawers. */
 export const orgDrawerRanges = (content: string): readonly OrgBlockRange[] =>
-	scanOrgSource(content, new Set(), false).drawers
+	scanOrgSource(content, new Set(), false, "drawers").drawers
 
 /** Structural source eligibility preserves COMMENT headings while excluding literal drawers/blocks. */
 export const structuralOrgSourceLines = (content: string) =>
-	scanOrgSource(content, new Set(), false).lines
+	scanOrgSource(content, new Set(), false, "lines").lines
 
 /** Shared eligibility grammar for TODO declarations and sparse headings. */
 export const eligibleOrgSourceLines = (content: string, states: ReadonlySet<string>) =>
-	scanOrgSource(content, states, true).lines
+	scanOrgSource(content, states, true, "lines").lines
 
 /** TODO policy scopes ignore literal-looking content in excluded COMMENT subtrees. */
 export const eligibleOrgDrawerRanges = (content: string, states: ReadonlySet<string>) =>
-	scanOrgSource(content, states, true).drawers
+	scanOrgSource(content, states, true, "drawers").drawers
 
 export const eligibleOrgBlockRanges = (content: string, states: ReadonlySet<string>) =>
-	scanOrgSource(content, states, true).ranges
+	scanOrgSource(content, states, true, "ranges").ranges
 
 const positionIsInOrgBlock = (ranges: readonly OrgBlockRange[], position: number): boolean =>
 	ranges.some((range) => position >= range.from && position < range.to)
 
-const TODO_DIRECTIVE = /^#\+(?:TODO|SEQ_TODO):[ \t]*(.*?)[ \t]*$/i
+const TODO_DIRECTIVE = /^#\+(?:TODO|SEQ_TODO|TYP_TODO):[ \t]*(.*?)[ \t]*$/i
 const todoKeywordFromToken = (token: string): string => token.replace(/\([^)]*\)$/, "")
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: bounded source-order scope validation supports states declared after COMMENT headings.
@@ -192,6 +222,7 @@ const todoSequencesFrom = (content: string): readonly OrgTodoSequence[] => {
 		}
 	}
 	const defaults = [{ all: ["TODO", "DONE"], done: ["DONE"], todo: ["TODO"] }]
+	if (candidates.length === 0) return defaults
 	let accepted = candidates
 	// Revalidate after removing inert declarations: their fake states must not turn
 	// ordinary title words into COMMENT markers. Bound the scan for ambiguous
@@ -318,12 +349,15 @@ interface OrgHeadingPosition {
 
 const orgHeadingPositions = (content: string): readonly OrgHeadingPosition[] => {
 	const blocks = orgBlockRanges(content)
-	return rawOrgLines(content).flatMap((line) => {
+	const headings: OrgHeadingPosition[] = []
+	let blockIndex = 0
+	for (const line of rawOrgLines(content)) {
+		while (blockIndex < blocks.length && blocks[blockIndex].to <= line.from) blockIndex++
 		const heading = /^(\*+)[ \t]+/.exec(line.text)
-		return heading && !positionIsInOrgBlock(blocks, line.from)
-			? [{ from: line.from, level: heading[1].length }]
-			: []
-	})
+		if (heading && !(blocks[blockIndex] && line.from >= blocks[blockIndex].from))
+			headings.push({ from: line.from, level: heading[1].length })
+	}
+	return headings
 }
 
 const subtreeEndAt = (
@@ -422,16 +456,28 @@ interface OrgLinePosition {
 }
 
 const linePositionFrom = (content: string, from: number): OrgLinePosition => {
-	const line = rawOrgLines(content).find((candidate) => candidate.from === from)
-	return line ?? { breakTo: content.length, contentTo: content.length, from, text: "" }
+	if (
+		!Number.isInteger(from) ||
+		from < 0 ||
+		from > content.length ||
+		(from !== 0 &&
+			content.charCodeAt(from - 1) !== 10 &&
+			!(content.charCodeAt(from - 1) === 13 && content.charCodeAt(from) !== 10))
+	) {
+		return { breakTo: content.length, contentTo: content.length, from, text: "" }
+	}
+	const breaks = /\r\n|\r|\n/g
+	breaks.lastIndex = from
+	const boundary = breaks.exec(content)
+	const contentTo = boundary?.index ?? content.length
+	const breakTo = contentTo + (boundary?.[0].length ?? 0)
+	return { from, contentTo, breakTo, text: content.slice(from, contentTo) }
 }
 
 export const headingPositionAt = (content: string, cursor: number): OrgLinePosition | null => {
 	const safeCursor = Math.max(0, Math.min(cursor, content.length))
-	if (positionIsInOrgBlock(orgBlockRanges(content), safeCursor)) return null
-	const headings = orgHeadingPositions(content)
-	const heading = headings.findLast(({ from }) => from <= safeCursor)
-	return heading ? linePositionFrom(content, heading.from) : null
+	if (Number.isNaN(safeCursor)) return null
+	return scanOrgSource(content, new Set(), false, "heading", safeCursor).heading
 }
 
 const editFrom = (cursor: number, from: number, to: number, insert: string): OrgTextEdit => ({
@@ -485,15 +531,17 @@ export type OrgPlanningKind = "SCHEDULED" | "DEADLINE"
 
 export const validOrgDate = (date: string): boolean => isOrgCalendarISO(date)
 
-/** Sets a planning date on the line directly below the containing heading. */
+/** Date-only changes preserve raw suffixes; explicit timestamp intent replaces only its range. */
 export const setOrgPlanningAt = (
 	content: string,
 	cursor: number,
 	kind: OrgPlanningKind,
-	date: string,
+	date: string | OrgTimestampValue,
 ): OrgTextEdit | null => {
-	if (!validOrgDate(date)) {
-		throw new Error("Org planning dates must be real calendar dates in YYYY-MM-DD format.")
+	const dateOnly = typeof date === "string"
+	const timestamp = dateOnly ? `<${date}>` : formatOrgTimestamp(date)
+	if (readOrgStoredTimestamp(timestamp).kind === "error") {
+		throw new Error("Org planning timestamps must contain a valid date, time, range and cookies.")
 	}
 	const heading = headingPositionAt(content, cursor)
 	if (!heading) {
@@ -504,12 +552,15 @@ export const setOrgPlanningAt = (
 	if (planning.kind === "invalid") throw new Error(planning.message)
 	if (heading.breakTo < content.length && planning.kind === "planning") {
 		const field = planning.fields.find((field) => field.kind === kind)
-		if (field)
-			return editFrom(cursor, next.from + field.dateFrom, next.from + field.dateAndWeekdayTo, date)
+		if (field) {
+			if (dateOnly)
+				return editFrom(cursor, next.from + field.dateFrom, next.from + field.dateAndWeekdayTo, date)
+			return editFrom(cursor, next.from + field.timestampFrom, next.from + field.timestampTo, timestamp)
+		}
 		const separator = next.text.length > 0 && !/[ \t]$/.test(next.text) ? " " : ""
-		return editFrom(cursor, next.contentTo, next.contentTo, `${separator}${kind}: <${date}>`)
+		return editFrom(cursor, next.contentTo, next.contentTo, `${separator}${kind}: ${timestamp}`)
 	}
-	const insert = insertedLinesAt(content, heading.breakTo, [`${kind}: <${date}>`])
+	const insert = insertedLinesAt(content, heading.breakTo, [`${kind}: ${timestamp}`])
 	return editFrom(cursor, heading.breakTo, heading.breakTo, insert)
 }
 
@@ -544,8 +595,7 @@ export const orgPropertyDrawerAt = (
 	if (!/^[ \t]*:PROPERTIES:[ \t]*$/i.test(start.text)) return { kind: "absent", from }
 	const properties: OrgPropertySourceRange[] = []
 	const keys = new Set<string>()
-	for (const line of rawOrgLines(content)) {
-		if (line.from < start.breakTo) continue
+	for (const line of rawOrgLines(content, start.breakTo)) {
 		if (/^\*+[ \t]+/.test(line.text)) break
 		if (/^[ \t]*:END:[ \t]*$/i.test(line.text))
 			return { kind: "drawer", endFrom: line.from, properties }
@@ -555,7 +605,8 @@ export const orgPropertyDrawerAt = (
 				message:
 					"The property drawer contains a nested drawer. Repair it before setting properties.",
 			}
-		const match = /^([ \t]*:([^:\s]+):[ \t]*)(.*?)([ \t]*)$/.exec(line.text)
+		const match = /^([ \t]*:([^\s]+):[ \t]+)(.*?)([ \t]*)$/.exec(line.text)
+			?? /^([ \t]*:([^:\s]+):[ \t]*)(.*?)([ \t]*)$/.exec(line.text)
 		if (match) {
 			const key = match[2]
 			if (keys.has(key.toUpperCase()))

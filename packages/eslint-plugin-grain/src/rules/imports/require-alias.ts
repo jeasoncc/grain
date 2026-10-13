@@ -23,7 +23,7 @@ export default createRule({
 				if (!source.startsWith(".")) return
 
 				// Get the current file path
-				const filename = context.filename || context.getFilename()
+				const filename = context.filename
 
 				// Skip if not in src directory
 				if (!filename.includes("/src/")) return

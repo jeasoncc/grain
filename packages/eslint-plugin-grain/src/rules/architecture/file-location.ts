@@ -219,7 +219,7 @@ export default createRule<[], MessageIds>({
 					if (!hasOnlyReExports(node.body)) {
 						context.report({
 							messageId: "indexFileLogic",
-							node,
+							node: node.body[0] ?? node,
 						})
 					}
 					return // index.ts 不需要检查其他规则
@@ -231,7 +231,7 @@ export default createRule<[], MessageIds>({
 					context.report({
 						data: { count: String(exportCount) },
 						messageId: "multipleExports",
-						node,
+						node: node.body[0] ?? node,
 					})
 				}
 
@@ -264,7 +264,7 @@ export default createRule<[], MessageIds>({
 							layer: currentLayer,
 						},
 						messageId: "wrongFileLocation",
-						node,
+						node: node.body[0] ?? node,
 					})
 				}
 			},

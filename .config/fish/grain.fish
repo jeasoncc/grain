@@ -35,7 +35,6 @@ set -gx MAKEFLAGS "-j"(nproc)
 # 快速启动
 alias gd="bun run desktop:dev"
 alias gw="bun run web:dev"
-alias gm="bun run mobile:dev"
 alias ga="bun run admin:dev"
 alias gapi="bun run api:dev"
 alias gr="bun run api-rust:dev"
@@ -75,7 +74,7 @@ alias cc="cargo clippy --manifest-path apps/api-rust/Cargo.toml"
 alias clean-node="rm -rf node_modules apps/*/node_modules packages/*/node_modules"
 alias clean-turbo="rm -rf .turbo apps/*/.turbo packages/*/.turbo"
 alias clean-rust="cargo clean --manifest-path apps/api-rust/Cargo.toml"
-alias clean-all="clean-node && clean-turbo && clean-rust && bun install"
+alias clean-all="clean-node && clean-turbo && clean-rust && bun install --frozen-lockfile"
 alias clean-cache="clean-turbo && rm -rf ~/.cache/turbo"
 
 # ============================================================================

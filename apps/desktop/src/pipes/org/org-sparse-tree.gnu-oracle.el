@@ -1,0 +1,197 @@
+;;; org-sparse-tree.gnu-oracle.el --- Owned-fixture GNU matcher oracle -*- lexical-binding: t; -*-
+;; Run only with the committed, compact JSON fixture on stdin, never workspace/user Org.
+;; jq -c . org-sparse-tree.gnu-fixtures.json | emacs --batch -Q --script org-sparse-tree.gnu-oracle.el
+;; This invokes the installed matcher/scanner without replacing their semantics.
+(require 'json)
+(require 'cl-lib)
+(require 'org)
+(require 'org-agenda)
+(require 'thingatpt)
+(set-time-zone-rule "UTC")
+;; Batch stdout otherwise uses Emacs' internal/raw byte representation under
+;; some launch environments. JSON strings must reach Node as actual UTF-8,
+;; without changing the installed syntax/category/case tables.
+(setq coding-system-for-read 'utf-8-unix
+      coding-system-for-write 'utf-8-unix)
+
+(defun grain-owned-utf16-offset (value position)
+  (let ((offset 0))
+    (dotimes (index position offset)
+      (setq offset (+ offset (if (> (aref value index) #xffff) 2 1))))))
+
+(defun grain-owned-char-offset (value raw-offset)
+  (let ((position 0) (offset 0))
+    (while (< offset raw-offset)
+      (setq offset (+ offset (if (> (aref value position) #xffff) 2 1))
+            position (1+ position)))
+    position))
+
+(let* ((fixture (json-parse-string (decode-coding-string (read-string "") 'utf-8-unix)
+                                 :object-type 'alist :array-type 'list :null-object nil :false-object :false))
+       (sources (alist-get 'sources fixture))
+       (configurations (alist-get 'configurations fixture))
+       (date (split-string (alist-get 'today fixture) "-"))
+       (clock (split-string (alist-get 'now fixture) ":"))
+       (fixed (encode-time 0 (string-to-number (cadr clock))
+                           (string-to-number (car clock))
+                           (string-to-number (nth 2 date))
+                           (string-to-number (nth 1 date))
+                           (string-to-number (nth 0 date)) "UTC"))
+       (native-float-time (symbol-function 'float-time))
+       (native-decode-time (symbol-function 'decode-time))
+       rows syntax-probes word-selections regexp-errors date-probes)
+  ;; Data-only collation context, from GNU's actual default OS-locale comparator.
+  ;; The matcher/compiler/property functions below remain untouched.
+  (let* ((strings (vconcat (alist-get 'collationStrings fixture)))
+         (indices (number-sequence 0 (1- (length strings))))
+         previous group groups)
+    (setq indices (sort indices (lambda (left right)
+                                 (org-string< (aref strings left) (aref strings right)))))
+    (dolist (index indices)
+      (when (and previous
+                 (or (org-string< (aref strings previous) (aref strings index))
+                     (org-string< (aref strings index) (aref strings previous))))
+        (push (vconcat (nreverse group)) groups)
+        (setq group nil))
+      (push index group)
+      (setq previous index))
+    (when group (push (vconcat (nreverse group)) groups))
+    (setq fixture (cons (cons 'collationGroups (vconcat (nreverse groups))) fixture)))
+  (with-temp-buffer
+    (let ((org-inhibit-startup t) (enable-local-variables nil) (enable-local-eval nil))
+      (org-mode))
+    (dolist (probe (alist-get 'syntaxProbes fixture))
+      (let* ((case-fold-search t)
+             (value (alist-get 'value probe))
+             (from (grain-owned-char-offset value (or (alist-get 'from probe) 0)))
+             (table (if (equal (alist-get 'mode probe) "tag")
+                        org-mode-tags-syntax-table (syntax-table))))
+        (with-syntax-table table
+          (let* ((position (string-match (alist-get 'pattern probe) value from))
+                 (data (and position (match-data)))
+                 (captures (when position
+                             (cl-loop for number below (/ (length data) 2)
+                                      collect (or (match-string number value) :null)))))
+            (push `((id . ,(alist-get 'id probe))
+                    (matches . ,(if position t :false))
+                    (index . ,(if position (grain-owned-utf16-offset value position) :null))
+                    (captures . ,(if position (vconcat captures) :null)))
+                  syntax-probes)))))
+    (dolist (pattern (alist-get 'regexpErrors fixture))
+      (condition-case error-data
+          (progn (string-match pattern "")
+                 (push `((pattern . ,pattern) (error . :null)) regexp-errors))
+        (invalid-regexp
+         (push `((pattern . ,pattern) (error . ,(error-message-string error-data))) regexp-errors)))))
+  ;; Native source navigation is deliberately independent of regexp \w.
+  ;; Every decoded character boundary maps back to the owned raw UTF-16 source.
+  (dolist (entry (alist-get 'wordSources fixture))
+    (let ((source (cdr entry)) (at 0) (raw-offset 0) normalized offsets)
+      (while (< at (length source))
+        (let ((character (aref source at)))
+          (push raw-offset offsets)
+          (push (if (= character ?\r) ?\n character) normalized)
+          (setq raw-offset (+ raw-offset (if (> character #xffff) 2 1)))
+          (when (and (= character ?\r) (< (1+ at) (length source))
+                     (= (aref source (1+ at)) ?\n))
+            (setq at (1+ at) raw-offset (1+ raw-offset)))
+          (setq at (1+ at))))
+      (push raw-offset offsets)
+      (setq offsets (vconcat (nreverse offsets)))
+      (with-temp-buffer
+        (insert (apply #'string (nreverse normalized)))
+        (let ((org-inhibit-startup t) (enable-local-variables nil) (enable-local-eval nil))
+          (org-mode))
+        (dotimes (offset (length offsets))
+          (goto-char (1+ offset))
+          (let ((bounds (bounds-of-thing-at-point 'word)))
+            (push `((source . ,(symbol-name (car entry)))
+                    (point . ,(aref offsets offset))
+                    (bounds . ,(if bounds
+                                   (vector (aref offsets (1- (car bounds)))
+                                           (aref offsets (1- (cdr bounds))))
+                                 :null)))
+                  word-selections))))))
+  (cl-letf (((symbol-function 'float-time)
+             (lambda (&optional time) (funcall native-float-time (or time fixed))))
+            ((symbol-function 'decode-time)
+             (lambda (&optional time zone form)
+               (funcall native-decode-time (or time fixed) zone form))))
+    (dolist (entry (alist-get 'cases fixture))
+      (let* ((id (alist-get 'id entry))
+             (source (alist-get (intern (alist-get 'source entry)) sources))
+             (configuration (alist-get (intern (alist-get 'configuration entry)) configurations))
+             (tags (alist-get 'tags configuration))
+             (properties (alist-get 'properties configuration))
+             ;; GNU has no property-exclusion knob. Such Grain-only extension
+             ;; cases must remain in separate tests, not redefine GNU's predicate.
+             (org-use-tag-inheritance (unless (eq tags :false) tags))
+             (org-tags-exclude-from-inheritance (alist-get 'tagExclusions configuration))
+             (org-use-property-inheritance (unless (eq properties :false) properties))
+             (org-tags-match-list-sublevels t)
+             (org--matcher-tags-todo-only nil)
+             (org-inhibit-startup t)
+             (enable-local-variables nil)
+             (enable-local-eval nil)
+             (org-confirm-babel-evaluate t)
+             (org-agenda-skip-function nil)
+             (org-agenda-skip-function-global nil)
+             (org-agenda-skip-comment-trees t)
+             (org-agenda-skip-archived-trees nil)
+             (raw-offset 0) (at 0) normalized offsets matched)
+        (condition-case error-data
+            (progn
+              (unless (null (alist-get 'propertyExclusions configuration))
+                (error "Property exclusions are a Grain extension, not a GNU configuration"))
+              ;; Emacs file decoding normalizes line endings. Independently map
+              ;; its character positions back to the committed raw UTF-16 source.
+              (while (< at (length source))
+                (let ((character (aref source at)))
+                  (push raw-offset offsets)
+                  (push (if (= character ?\r) ?\n character) normalized)
+                  (setq raw-offset (+ raw-offset (if (> character #xffff) 2 1)))
+                  (when (and (= character ?\r) (< (1+ at) (length source))
+                             (= (aref source (1+ at)) ?\n))
+                    (setq at (1+ at) raw-offset (1+ raw-offset)))
+                  (setq at (1+ at))))
+              (push raw-offset offsets)
+              (setq offsets (vconcat (nreverse offsets)))
+              (with-temp-buffer
+                (insert (apply #'string (nreverse normalized)))
+                (org-mode)
+                ;; No find-file, local variable processing, Babel, shell or eval
+                ;; of fixture text. Only the trusted GNU match compiler executes.
+                (let ((matcher (cdr (org-make-tags-matcher (alist-get 'match entry)))))
+                  (org-scan-tags
+                   (lambda () (push (aref offsets (1- (point))) matched))
+                   matcher nil)))
+              (push `((id . ,id) (offsets . ,(vconcat (nreverse matched)))) rows))
+          (error (push `((id . ,id) (error . ,(error-message-string error-data))) rows))))))
+  ;; Invoke the real prompt parser with with-time and an explicit default time.
+  ;; Org declares these output flags without initializing them. In this interpreted
+  ;; lexical script a let alone does not make an unbound flag dynamically visible
+  ;; to Org's boundp guard; cl-progv supplies the caller's actual dynamic contract.
+  (dolist (probe (alist-get 'dateProbes fixture))
+    (let* ((default-date (split-string (alist-get 'defaultDate probe) "-"))
+           (default-clock (split-string (alist-get 'defaultTime probe) ":"))
+           (default (encode-time 0 (string-to-number (cadr default-clock))
+                                 (string-to-number (car default-clock))
+                                 (string-to-number (nth 2 default-date))
+                                 (string-to-number (nth 1 default-date))
+                                 (string-to-number (nth 0 default-date)) "UTC"))
+           (org-read-date-prefer-future t) (org-read-date-force-compatible-dates nil)
+           (org-read-date-popup-calendar nil))
+      (cl-progv '(org-end-time-was-given org-time-was-given) '(nil nil)
+        (cl-letf (((symbol-function 'org-current-time) (lambda () fixed)))
+          (let ((start (org-read-date t nil (alist-get 'input probe) nil default)))
+            (push `((id . ,(alist-get 'id probe)) (start . ,start)
+                    (endTime . ,(or (symbol-value 'org-end-time-was-given) :null)))
+                  date-probes))))))
+  (princ (decode-coding-string (json-serialize
+          `((emacsVersion . ,emacs-version) (orgVersion . ,(org-version))
+            (collationGroups . ,(alist-get 'collationGroups fixture))
+            (syntaxProbes . ,(vconcat (nreverse syntax-probes)))
+            (regexpErrors . ,(vconcat (nreverse regexp-errors)))
+            (dateProbes . ,(vconcat (nreverse date-probes)))
+            (wordSelections . ,(vconcat (nreverse word-selections)))
+            (rows . ,(vconcat (nreverse rows))))) 'utf-8-unix)))

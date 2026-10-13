@@ -9,7 +9,8 @@ import {
 } from "@codemirror/commands"
 import { EditorSelection, EditorState, Transaction } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { act, cleanup, fireEvent, screen, waitFor } from "@testing-library/react"
+import { render } from "@/test/application-providers"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { createOrgBufferRuntime } from "@/flows/org-editor-runtime"
 import type { OrgSparseTreeQuery } from "@/types/org"
@@ -18,6 +19,12 @@ import { OrgEditor } from "./org-editor.view.fn"
 import { editorOffsetFromSource } from "./org-source-offset.pipe"
 import * as sparseAPI from "./org-sparse-tree.extension"
 import { orgSparseTreeField } from "./org-sparse-tree.extension"
+import { useSettings } from "@/hooks/use-settings"
+import { DEFAULT_ORG_BEHAVIOR_CONFIGURATION } from "@/pipes/org/org-behavior-configuration.pipe"
+import * as nativeCollationAPI from "@/io/api/org-collation.api"
+import * as nativeClockAPI from "@/io/api/org-clock-context.api"
+import type { OrgSparseClockContext } from "@/pipes/org/org-sparse-special-properties.pipe"
+import { OrgSparseTreeContextRequiredError, type OrgSparseTreeNativeContext } from "@/pipes/org/org-sparse-tree.pipe"
 
 const viewFor = (name: string) => EditorView.findFromDOM(screen.getByRole("textbox", { name }))!
 const source = "* TODO Keep\r\nkeep body\r\n* DONE Hide\r\nhidden body\r\n"
@@ -56,7 +63,7 @@ describe("real CodeMirror sparse-tree presentation", () => {
 		act(() => {
 			expect(target!.applyView!(raw, { kind: "sparse-tree", query: "itag:work" })).toBe(true)
 		})
-		expect(view.state.field(orgSparseTreeField)!.plan.matchedHeadingStarts).toEqual([
+		expect(view.state.field(orgSparseTreeField)!.plan?.matchedHeadingStarts).toEqual([
 			raw.indexOf("* Parent"),
 			raw.indexOf("** TODO Keep"),
 			raw.indexOf("** DONE Hide"),
@@ -67,15 +74,15 @@ describe("real CodeMirror sparse-tree presentation", () => {
 			expect(
 				target!.applyView!(raw, {
 					kind: "sparse-tree",
-					query: 'match: itag:file AND (todo OR text:"Hide") AND itag:work AND NOT tag:blocked',
+					query: 'match: itag:file AND (todo:TODO OR text:"Hide") AND itag:work AND NOT tag:blocked',
 				}),
 			).toBe(true)
 		})
 		const before = view.state
-		expect(before.field(orgSparseTreeField)!.plan.matchedHeadingStarts).toEqual([
+		expect(before.field(orgSparseTreeField)!.plan?.matchedHeadingStarts).toEqual([
 			raw.indexOf("** TODO Keep"),
 		])
-		expect(before.field(orgSparseTreeField)!.plan.hiddenRanges).toEqual([
+		expect(before.field(orgSparseTreeField)!.plan?.hiddenRanges).toEqual([
 			{ from: raw.indexOf("** DONE Hide"), to: raw.length },
 		])
 		expect(view.contentDOM.textContent).toContain("parent BODY")
@@ -83,7 +90,7 @@ describe("real CodeMirror sparse-tree presentation", () => {
 		expect(view.contentDOM.textContent).not.toContain("hidden BODY")
 		expect(view.contentDOM.textContent).not.toContain("outside BODY")
 		act(() => {
-			expect(target!.applyView!(raw, { kind: "sparse-tree", query: "match: todo AND (" })).toBe(
+			expect(target!.applyView!(raw, { kind: "sparse-tree", query: "match: todo:TODO AND (" })).toBe(
 				false,
 			)
 		})
@@ -186,7 +193,7 @@ describe("real CodeMirror sparse-tree presentation", () => {
 			expect(target!.applyView!(raw, { kind: "sparse-tree", query: "match: tag:work" })).toBe(true)
 			view.dispatch({ selection: { anchor: 3 } })
 		})
-		expect(view.state.field(orgSparseTreeField)!.plan.matchedHeadingStarts).toEqual([
+		expect(view.state.field(orgSparseTreeField)!.plan?.matchedHeadingStarts).toEqual([
 			0,
 			raw.indexOf("* Second"),
 		])
@@ -197,8 +204,8 @@ describe("real CodeMirror sparse-tree presentation", () => {
 		expect(view.state.sliceDoc()).toBe(edited)
 		if (runtime) expect(runtime.source).toBe(edited)
 		const sparse = view.state.field(orgSparseTreeField)!
-		expect(sparse.plan.matchedHeadingStarts).toEqual([edited.indexOf("* Second")])
-		expect(sparse.plan.hiddenRanges).toEqual([{ from: 0, to: edited.indexOf("* Second") }])
+		expect(sparse.plan?.matchedHeadingStarts).toEqual([edited.indexOf("* Second")])
+		expect(sparse.plan?.hiddenRanges).toEqual([{ from: 0, to: edited.indexOf("* Second") }])
 		expect(view.contentDOM.textContent).not.toContain("first body")
 		expect(view.contentDOM.textContent).toContain("second body")
 		expect(view.state.selection.main.empty).toBe(true)
@@ -225,7 +232,7 @@ describe("real CodeMirror sparse-tree presentation", () => {
 		})
 		expect(view.state.sliceDoc()).toBe(raw)
 		if (runtime) expect(runtime.source).toBe(raw)
-		expect(view.state.field(orgSparseTreeField)!.plan.matchedHeadingStarts).toEqual([
+		expect(view.state.field(orgSparseTreeField)!.plan?.matchedHeadingStarts).toEqual([
 			0,
 			raw.indexOf("* Second"),
 		])
@@ -465,8 +472,8 @@ describe("real CodeMirror sparse-tree presentation", () => {
 			expect(target!.applyView!(raw, { kind: "sparse-tree", query: "todo" })).toBe(true)
 		})
 		const sparse = a.state.field(orgSparseTreeField)!
-		expect(sparse.plan.matchedHeadingStarts).toEqual([raw.indexOf("* TODO Keep")])
-		expect(sparse.plan.hiddenRanges).toEqual([
+		expect(sparse.plan?.matchedHeadingStarts).toEqual([raw.indexOf("* TODO Keep")])
+		expect(sparse.plan?.hiddenRanges).toEqual([
 			{ from: 0, to: raw.indexOf("* TODO Keep") },
 			{ from: raw.indexOf("* DONE Hide last"), to: raw.length },
 		])
@@ -683,7 +690,7 @@ describe("real CodeMirror sparse-tree presentation", () => {
 			expect(target!.applyView!(source, { kind: "sparse-tree", query: "todo" })).toBe(true)
 		})
 		const sparse = a.state.field(orgSparseTreeField)!
-		expect(sparse.plan.hiddenRanges).toEqual([
+		expect(sparse.plan?.hiddenRanges).toEqual([
 			{ from: source.indexOf("* DONE"), to: source.length },
 		])
 		const ranges: [number, number][] = []
@@ -826,13 +833,13 @@ describe("real CodeMirror sparse-tree presentation", () => {
 			const line = b.state.doc.line(3)
 			b.dispatch({ changes: { from: line.from + 2, insert: "TODO", to: line.from + 6 } })
 		})
-		expect(a.state.field(orgSparseTreeField)!.plan.allVisible).toBe(true)
+		expect(a.state.field(orgSparseTreeField)!.plan?.allVisible).toBe(true)
 		expect(undoDepth(runtime.state)).toBe(1)
 		expect(onCommit).toHaveBeenCalledOnce()
 		act(() => {
 			fireEvent.keyDown(b.contentDOM, { ctrlKey: true, key: "z", keyCode: 90 })
 		})
-		expect(a.state.field(orgSparseTreeField)!.plan.hiddenRanges).toHaveLength(1)
+		expect(a.state.field(orgSparseTreeField)!.plan?.hiddenRanges).toHaveLength(1)
 		expect(a.state.sliceDoc()).toBe(source)
 	})
 
@@ -888,10 +895,10 @@ describe("real CodeMirror sparse-tree presentation", () => {
 			target!.applyView!(source, { kind: "sparse-tree", query: "text:Missing" })
 		})
 		const a = viewFor("a")
-		expect(a.state.field(orgSparseTreeField)!.plan.allVisible).toBe(true)
+		expect(a.state.field(orgSparseTreeField)!.plan?.allVisible).toBe(true)
 		const next = source.replace("Keep", "Missing")
 		mounted.rerender(editor(next))
-		expect(a.state.field(orgSparseTreeField)!.plan.hiddenRanges).toHaveLength(1)
+		expect(a.state.field(orgSparseTreeField)!.plan?.hiddenRanges).toHaveLength(1)
 		expect(a.state.sliceDoc()).toBe(next)
 		expect(onChange).not.toHaveBeenCalled()
 		expect(undoDepth(a.state)).toBe(0)
@@ -923,5 +930,167 @@ describe("real CodeMirror sparse-tree presentation", () => {
 		mounted.unmount()
 		render(editor)
 		expect(viewFor("a").state.field(orgSparseTreeField)).toBeNull()
+	})
+})
+
+describe("actual Sparse Tree configured match/inheritance boundary", () => {
+	afterEach(() => { cleanup(); useSettings.setState({ orgBehaviorConfigurationJson: "" }); vi.restoreAllMocks() })
+	it("captures each window's inheritance policy, evaluates full standard matches and leaves canonical history untouched", () => {
+		const raw = "#+FILETAGS: :file:\r\n* Parent :work:\r\n:PROPERTIES:\r\n:EFFORT: 3\r\n:OWNER: Ada\r\n:END:\r\n** TODO Keep :local:\r\nkeep BODY\0\r\n** TODO Hide :blocked:\r\nhidden BODY\r\n* TODO Peer :work:\r\npeer BODY\r\n"
+		const onCommit = vi.fn()
+		const runtime = createOrgBufferRuntime({ canCommit: () => true, key: { bufferId: "configured", workspaceSessionId: "test" }, onCommit, source: raw })
+		let first: OrgEditorCommandTarget | null = null
+		let second: OrgEditorCommandTarget | null = null
+		useSettings.setState({ orgBehaviorConfigurationJson: JSON.stringify({ ...DEFAULT_ORG_BEHAVIOR_CONFIGURATION, inheritance: { tags: ["work"], tagExclusions: ["blocked"], properties: true, propertyExclusions: ["OWNER"] } }) })
+		render(<><OrgEditor runtime={runtime} value={raw} onChange={vi.fn()} onSave={vi.fn()} ariaLabel="configured-first" onCommandTarget={(target) => { first = target }} /><OrgEditor runtime={runtime} value={raw} onChange={vi.fn()} onSave={vi.fn()} ariaLabel="configured-second" onCommandTarget={(target) => { second = target }} /></>)
+		const query = '+work-blocked+EFFORT>=3/!TODO'
+		act(() => { expect(first!.applyView!(raw, { kind: "sparse-tree", query })).toBe(true) })
+		const a = viewFor("configured-first")
+		const b = viewFor("configured-second")
+		expect(a.state.field(orgSparseTreeField)!.plan?.matchedHeadingStarts).toEqual([raw.indexOf("** TODO Keep")])
+		expect(a.contentDOM.textContent).not.toContain("hidden BODY")
+		expect(b.state.field(orgSparseTreeField)).toBeNull()
+		expect(runtime.source).toBe(raw)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(onCommit).not.toHaveBeenCalled()
+		act(() => useSettings.setState({ orgBehaviorConfigurationJson: JSON.stringify({ ...DEFAULT_ORG_BEHAVIOR_CONFIGURATION, inheritance: { tags: false, tagExclusions: [], properties: false, propertyExclusions: [] } }) }))
+		act(() => { expect(second!.applyView!(raw, { kind: "sparse-tree", query })).toBe(true) })
+		expect(b.state.field(orgSparseTreeField)!.plan?.allVisible).toBe(true)
+		expect(a.state.field(orgSparseTreeField)!.plan?.matchedHeadingStarts).toEqual([raw.indexOf("** TODO Keep")])
+		expect(runtime.source).toBe(raw)
+		expect(undoDepth(runtime.state)).toBe(0)
+		act(() => { a.dispatch({ changes: { from: raw.indexOf("keep BODY"), insert: "visible " } }) })
+		expect(a.state.field(orgSparseTreeField)!.plan?.matchedHeadingStarts).toEqual([raw.indexOf("** TODO Keep")])
+		expect(b.state.field(orgSparseTreeField)!.plan?.allVisible).toBe(true)
+		expect(undoDepth(runtime.state)).toBe(1)
+		const prior = a.state.field(orgSparseTreeField)
+		act(() => useSettings.setState({ orgBehaviorConfigurationJson: "{broken" }))
+		act(() => { expect(first!.applyView!(runtime.source, { kind: "sparse-tree", query: "work" })).toBe(false) })
+		expect(a.state.field(orgSparseTreeField)).toBe(prior)
+		expect(undoDepth(runtime.state)).toBe(1)
+	})
+	const rankedContext = (values: readonly string[]): OrgSparseTreeNativeContext => {
+		const ranks = new Map(values.map((value, index) => [value, index]))
+		return { compareStrings: (left, right) => {
+			const a = ranks.get(left), b = ranks.get(right)
+			if (a === undefined || b === undefined) throw new OrgSparseTreeContextRequiredError()
+			return a - b
+		} }
+	}
+	it("keeps accepted property edits and canonical history while fresh native comparison is pending", async () => {
+		const raw = "* First\n:PROPERTIES:\n:NAME: a\n:END:\nfirst body\n* Last\n:PROPERTIES:\n:NAME: z\n:END:\nlast body\n"
+		const initial = rankedContext(["a", "m", "z"])
+		let resolve: (context: OrgSparseTreeNativeContext) => void = () => { throw new Error("Native read not started") }
+		vi.spyOn(nativeCollationAPI, "readOrgSparseTreeNativeContext")
+			.mockImplementationOnce(() => new Promise((done) => { resolve = done }))
+			.mockResolvedValue(initial)
+		const runtime = createOrgBufferRuntime({ key: { bufferId: "native-pending", workspaceSessionId: "test" }, source: raw, canCommit: () => true, onCommit: () => {} })
+		let target: OrgEditorCommandTarget | null = null
+		render(<OrgEditor runtime={runtime} value={raw} onChange={vi.fn()} onSave={vi.fn()} ariaLabel="native-pending" onCommandTarget={(next) => { target = next }} />)
+		const view = viewFor("native-pending")
+		act(() => { expect(target!.applyView!(raw, { kind: "sparse-tree", query: 'NAME<"m"', nativeContext: initial })).toBe(true) })
+		expect(view.contentDOM.textContent).not.toContain("last body")
+		const from = raw.indexOf(":NAME: a") + ":NAME: ".length
+		act(() => { view.dispatch({ changes: { from, to: from + 1, insert: "b" } }) })
+		const edited = raw.slice(0, from) + "b" + raw.slice(from + 1)
+		const selection = view.state.selection
+		expect(runtime.source).toBe(edited)
+		expect(view.state.field(orgSparseTreeField)!.contextStatus).toBe("pending")
+		expect(view.state.field(orgSparseTreeField)!.plan).toBeNull()
+		expect(view.contentDOM.textContent).toContain("last body")
+		expect(undoDepth(runtime.state)).toBe(1)
+		await act(async () => { await Promise.resolve() })
+		await act(async () => { resolve(rankedContext(["b", "m", "z"])) })
+		await waitFor(() => expect(view.state.field(orgSparseTreeField)!.contextStatus).toBe("ready"))
+		expect(view.contentDOM.textContent).not.toContain("last body")
+		expect(view.state.selection.eq(selection, true)).toBe(true)
+		expect(runtime.source).toBe(edited)
+		expect(undoDepth(runtime.state)).toBe(1)
+		act(() => { fireEvent.keyDown(view.contentDOM, { ctrlKey: true, key: "z" }) })
+		expect(runtime.source).toBe(raw)
+		expect(undoDepth(runtime.state)).toBe(0)
+		await waitFor(() => expect(view.state.field(orgSparseTreeField)!.contextStatus).toBe("ready"))
+	})
+	it("does not resurrect a cleared query when its held native comparison completes", async () => {
+		const raw = "* First\n:PROPERTIES:\n:NAME: a\n:END:\nfirst body\n* Last\n:PROPERTIES:\n:NAME: z\n:END:\nlast body\n"
+		const initial = rankedContext(["a", "m", "z"])
+		let resolve: (context: OrgSparseTreeNativeContext) => void = () => { throw new Error("Native read not started") }
+		vi.spyOn(nativeCollationAPI, "readOrgSparseTreeNativeContext").mockImplementationOnce(() => new Promise((done) => { resolve = done }))
+		const runtime = createOrgBufferRuntime({ key: { bufferId: "native-retire", workspaceSessionId: "test" }, source: raw, canCommit: () => true, onCommit: () => {} })
+		let target: OrgEditorCommandTarget | null = null
+		render(<OrgEditor runtime={runtime} value={raw} onChange={vi.fn()} onSave={vi.fn()} ariaLabel="native-retire" onCommandTarget={(next) => { target = next }} />)
+		const view = viewFor("native-retire")
+		act(() => { target!.applyView!(raw, { kind: "sparse-tree", query: 'NAME<"m"', nativeContext: initial }) })
+		const from = raw.indexOf(":NAME: a") + ":NAME: ".length
+		act(() => { view.dispatch({ changes: { from, to: from + 1, insert: "b" } }) })
+		await act(async () => { await Promise.resolve() })
+		const edited = runtime.source
+		act(() => { expect(target!.applyView!(edited, { kind: "sparse-tree", query: null })).toBe(true) })
+		const selection = view.state.selection
+		await act(async () => { resolve(rankedContext(["b", "m", "z"])) })
+		expect(view.state.field(orgSparseTreeField)).toBeNull()
+		expect(view.state.selection.eq(selection, true)).toBe(true)
+		expect(runtime.source).toBe(edited)
+		expect(undoDepth(runtime.state)).toBe(1)
+		expect(view.contentDOM.textContent).toContain("last body")
+	})
+	it("reprojects full visiting FILE metadata without changing Source, multirange selection or history", async () => {
+		let target: OrgEditorCommandTarget | null = null
+		const runtime = createOrgBufferRuntime({ key: { bufferId: "filename", workspaceSessionId: "test" }, source, canCommit: () => true, onCommit: () => {} })
+		const editor = (filename: string) => <OrgEditor runtime={runtime} value={source} documentPath="relative.org" documentFilename={filename} onSave={() => {}} ariaLabel="filename" onCommandTarget={(next) => { target = next }} />
+		const rendered = render(editor("/approved/a.org")), view = viewFor("filename")
+		act(() => { expect(target!.applyView!(source, { kind: "sparse-tree", query: "FILE={a[.]org$}/TODO" })).toBe(true) })
+		await waitFor(() => expect(view.state.field(orgSparseTreeField)!.contextStatus).toBe("ready"))
+		expect(view.state.field(orgSparseTreeField)!.plan?.matchedHeadingStarts).toEqual([0])
+		expect(view.contentDOM.textContent).not.toContain("hidden body")
+		const selection = EditorSelection.create([
+			EditorSelection.cursor(2, -1, 2, 27),
+			EditorSelection.range(source.indexOf("keep body"), source.indexOf("keep body") + 3),
+		], 1)
+		act(() => { view.dispatch({ selection }) })
+		rendered.rerender(editor("/approved/b.org"))
+		await waitFor(() => expect(view.state.field(orgSparseTreeField)!.contextStatus).toBe("ready"))
+		expect(view.state.field(orgSparseTreeField)!.plan?.matchedHeadingStarts).toEqual([])
+		expect(view.contentDOM.textContent).toContain("hidden body")
+		expect(view.state.selection.eq(selection, true)).toBe(true)
+		expect(runtime.source).toBe(source)
+		expect(undoDepth(runtime.state)).toBe(0)
+	})
+	it("invalidates clock values when an accepted timestamp edit leaves heading offsets unchanged", async () => {
+		const raw = "* First\nCLOCK: [2026-10-10 Sat 10:00]--[2026-10-10 Sat 11:00] => 99:00\nfirst body\n* Other\nCLOCK: [2026-10-10 Sat 10:00]--[2026-10-10 Sat 12:00] => 0:01\nother body\n"
+		const clock: OrgSparseClockContext = {
+			nowEpochMs: Date.UTC(2026, 9, 10, 14), todayStartEpochMs: Date.UTC(2026, 9, 10), todayEndEpochMs: Date.UTC(2026, 9, 11),
+			localTimeToEpochMs: (year, month, day, hour, minute) => Date.UTC(year, month - 1, day, hour, minute),
+			durationFormat: "gnu-default", includeClockingTask: false, activeClock: null,
+		}
+		let resolve: (value: OrgSparseClockContext) => void = () => { throw new Error("Clock read not started") }
+		vi.spyOn(nativeClockAPI, "readOrgSparseClockContext").mockResolvedValueOnce(clock)
+			.mockImplementationOnce(() => new Promise(done => { resolve = done })).mockResolvedValue(clock)
+		const runtime = createOrgBufferRuntime({ key: { bufferId: "clock-source", workspaceSessionId: "test" }, source: raw, canCommit: () => true, onCommit: () => {} })
+		let target: OrgEditorCommandTarget | null = null
+		render(<OrgEditor runtime={runtime} value={raw} onSave={() => {}} ariaLabel="clock-source" onCommandTarget={(next) => { target = next }} />)
+		const view = viewFor("clock-source")
+		act(() => { expect(target!.applyView!(raw, { kind: "sparse-tree", query: 'CLOCKSUM="1:00"' })).toBe(true) })
+		await waitFor(() => expect(view.state.field(orgSparseTreeField)!.contextStatus).toBe("ready"))
+		expect(view.state.field(orgSparseTreeField)!.plan?.matchedHeadingStarts).toEqual([0])
+		const from = raw.indexOf("11:00"), edited = raw.slice(0, from) + "12:00" + raw.slice(from + 5)
+		act(() => { view.dispatch({ changes: { from, to: from + 5, insert: "12:00" } }) })
+		const selection = view.state.selection
+		expect(runtime.source).toBe(edited)
+		expect(view.state.field(orgSparseTreeField)!.contextStatus).toBe("pending")
+		expect(view.state.field(orgSparseTreeField)!.plan).toBeNull()
+		expect(view.contentDOM.textContent).toContain("other body")
+		expect(undoDepth(runtime.state)).toBe(1)
+		await act(async () => { await Promise.resolve() })
+		await act(async () => { resolve(clock) })
+		await waitFor(() => expect(view.state.field(orgSparseTreeField)!.contextStatus).toBe("ready"))
+		expect(view.state.field(orgSparseTreeField)!.plan?.matchedHeadingStarts).toEqual([])
+		expect(view.state.selection.eq(selection, true)).toBe(true)
+		expect(runtime.source).toBe(edited)
+		act(() => { fireEvent.keyDown(view.contentDOM, { ctrlKey: true, key: "z" }) })
+		await waitFor(() => expect(view.state.field(orgSparseTreeField)!.contextStatus).toBe("ready"))
+		expect(view.state.field(orgSparseTreeField)!.plan?.matchedHeadingStarts).toEqual([0])
+		expect(runtime.source).toBe(raw)
+		expect(undoDepth(runtime.state)).toBe(0)
 	})
 })

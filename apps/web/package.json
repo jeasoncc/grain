@@ -6,28 +6,32 @@
     "dev": "next dev",
     "build": "next build",
     "build:prod": "next build",
-    "build:test": "NODE_ENV=development next build",
-    "start": "next start",
-    "lint": "next lint"
+    "build:test": "next build",
+    "start": "serve out --listen 3000",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-slot": "^1.4.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "lucide-react": "^0.554.0",
-    "next": "^15.1.0",
+    "lucide-react": "^1.52.0",
+    "next": "^16.3.8",
     "next-themes": "^0.4.6",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "tailwind-merge": "^3.3.1"
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "serve": "^14.2.6",
+    "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.17",
-    "@types/node": "^22.10.2",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^4.0.0",
-    "typescript": "^5.8.3"
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.8",
+    "postcss": "^8.5.29",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.3"
   }
 }

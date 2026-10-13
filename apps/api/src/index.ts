@@ -1,6 +1,6 @@
 import { Elysia } from 'elysia';
 import { cors } from '@elysiajs/cors';
-import { swagger } from '@elysiajs/swagger';
+import { openapi } from '@elysia/openapi';
 import { visitorsRoutes, statsRoute } from './routes/visitors';
 
 const PORT = parseInt(process.env.PORT || '4001');
@@ -11,7 +11,10 @@ const app = new Elysia()
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   }))
-  .use(swagger({
+  .use(openapi({
+    path: '/swagger',
+    specPath: '/swagger/json',
+    openapiVersion: '3.0.3',
     documentation: {
       info: {
         title: '访客管理系统 API',

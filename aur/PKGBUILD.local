@@ -14,12 +14,12 @@ depends=(
   'libappindicator-gtk3'
 )
 makedepends=(
-  'rust'
+  'rust>=1.94.0'
   'cargo'
-  'nodejs'
+  'bun>=1.4.2'
+  'nodejs>=22.22.2'
   'patchelf'
 )
-# Note: bun needs to be installed manually, not in official repos
 optdepends=(
   'libfuse2: AppImage support'
 )
@@ -41,7 +41,7 @@ build() {
   cd "$PROJECT_ROOT"
   
   echo "📦 Installing dependencies..."
-  bun install
+  bun install --frozen-lockfile
   
   echo "🔨 Building frontend..."
   cd apps/desktop

@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useDocPathname } from "./hooks/use-doc-pathname";
 import { Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +10,7 @@ interface DocumentTagsProps {
 }
 
 export function DocumentTags({ tags, className }: DocumentTagsProps) {
-  const pathname = usePathname();
+  const pathname = useDocPathname();
   
   // 如果没有提供标签，可以从路径或内容中推断
   const displayTags = tags || [];

@@ -2,10 +2,17 @@ import { undo, undoDepth } from "@codemirror/commands"
 import { foldCode, foldedRanges } from "@codemirror/language"
 import { EditorSelection, EditorState } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { act, cleanup, fireEvent, screen } from "@testing-library/react"
+import { render } from "@/test/application-providers"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { OrgEditor } from "./org-editor.view.fn"
 import type { OrgEditorCommandTarget, OrgEditorSessionSnapshot } from "./org-editor.types"
+import { deriveOrgCommands, dispatchOrgCommand, type OrgCommandContext } from "@/flows/org-command/org-workspace-command"
+import { ApplicationCommandProvider, useApplicationCommandHost, useApplicationCommandRegistration, type ApplicationCommandDescriptor } from "@/views/application/application-command-provider"
+import { StrictMode, useEffect, useState } from "react"
+import { useSettings } from "@/hooks/use-settings"
+import { getOrgInputConfiguration } from "@/hooks/use-org-input-configuration"
+import { useOrgScopedInput } from "@/hooks/use-org-scoped-input"
 
 function getEditorView(): EditorView {
 	const content = screen.getByRole("textbox")
@@ -19,8 +26,169 @@ function getEditorView(): EditorView {
 describe("OrgEditor", () => {
 	afterEach(() => {
 		cleanup()
+		useSettings.setState({ orgKeymapConfigurationJson: "", orgBehaviorConfigurationJson: "" })
 		vi.restoreAllMocks()
 		vi.useRealTimers()
+	})
+
+	it("does not inherit Save after a fresh Source Mod-S null override, while leaving fallback native", () => {
+		useSettings.setState({ orgKeymapConfigurationJson: JSON.stringify({ version: 1,
+			bindings: [{ scope: "org-source", key: "Mod-s", command: null }] }) })
+		const inherited = vi.fn(() => true)
+		const save = vi.fn()
+		function WorkspaceRoute() {
+			const input = useOrgScopedInput({ scope: "workspace", owner: inherited, execute: inherited,
+				onUnavailable: () => {}, acceptsEvent: () => true })
+			useEffect(() => {
+				const listener = (event: KeyboardEvent) => { input.handleKeyDown(event) }
+				window.addEventListener("keydown", listener)
+				return () => window.removeEventListener("keydown", listener)
+			}, [input.handleKeyDown])
+			return null
+		}
+		render(<><WorkspaceRoute /><OrgEditor value={"* TODO Raw\r\nbody\0😀"} onSave={save} /></>)
+		const editor = screen.getByRole("textbox")
+		const event = new KeyboardEvent("keydown", { key: "s", ctrlKey: true, repeat: false, bubbles: true, cancelable: true })
+		act(() => { editor.dispatchEvent(event) })
+		expect(event.defaultPrevented).toBe(false)
+		expect(inherited).not.toHaveBeenCalled()
+		expect(save).not.toHaveBeenCalled()
+		expect(getEditorView().state.sliceDoc()).toBe("* TODO Raw\r\nbody\0😀")
+	})
+
+	it("navigates real table fields and rows before indent, fold, or list fallback without rewriting aligned raw source", () => {
+		const source = "| 2 | 3 |\r\n| 4 | 5 |\r\noutside\0😀"
+		render(<OrgEditor value={source} initialCursor={2} onSave={vi.fn()} />)
+		const editor = screen.getByRole("textbox")
+		const view = getEditorView()
+		fireEvent.keyDown(editor, { key: "Tab" })
+		fireEvent.keyUp(window, { key: "Tab" })
+		expect(view.state.selection.main.head).toBe(6)
+		fireEvent.keyDown(editor, { key: "Tab", shiftKey: true })
+		fireEvent.keyUp(window, { key: "Tab", shiftKey: true })
+		expect(view.state.selection.main.head).toBe(2)
+		fireEvent.keyDown(editor, { key: "Enter" })
+		fireEvent.keyUp(window, { key: "Enter" })
+		expect(view.state.doc.lineAt(view.state.selection.main.head).number).toBe(2)
+		expect(view.state.doc.sliceString(view.state.selection.main.head, view.state.selection.main.head + 1)).toBe("4")
+		expect(view.state.sliceDoc()).toBe(source)
+		for (const init of [{ key: "Tab", isComposing: true }, { key: "Enter", keyCode: 229 }]) {
+			fireEvent.keyDown(editor, init)
+			fireEvent.keyUp(window, { key: init.key, ...("keyCode" in init ? { keyCode: init.keyCode } : {}) })
+			expect(view.state.sliceDoc()).toBe(source)
+		}
+	})
+	it("aligns a valid raw table during navigation in one undo event", () => {
+		const source = "|😀|2|\r\n|3|long|\r\noutside\0😀"
+		render(<OrgEditor value={source} initialCursor={1} onSave={vi.fn()} />)
+		const view = getEditorView()
+		const tab = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true })
+		fireEvent(view.contentDOM, tab)
+		fireEvent.keyUp(window, { key: "Tab" })
+		expect(tab.defaultPrevented).toBe(true)
+		expect(view.state.doc.sliceString(view.state.selection.main.head, view.state.selection.main.head + 1)).toBe("2")
+		expect(view.state.sliceDoc()).not.toBe(source)
+		expect(view.state.sliceDoc()).toMatch(/\r\noutside\0😀$/)
+		expect(undoDepth(view.state)).toBe(1)
+		act(() => { expect(undo(view)).toBe(true) })
+		expect(view.state.sliceDoc()).toBe(source)
+		expect(undoDepth(view.state)).toBe(0)
+	})
+	it("does not indent malformed table rows or align a table across hidden Source ranges", () => {
+		const malformed = "| one | two |\r\n| open\r\noutside\0😀"
+		const app = render(<OrgEditor value={malformed} initialCursor={2} onSave={vi.fn()} />)
+		fireEvent.keyDown(screen.getByRole("textbox"), { key: "Tab" })
+		fireEvent.keyUp(window, { key: "Tab" })
+		expect(getEditorView().state.sliceDoc()).toBe(malformed)
+		expect(undoDepth(getEditorView().state)).toBe(0)
+		app.unmount()
+		const source = "| 2 | 3 |\r\n| 4 | 5 |\r\noutside\0😀"
+		render(<OrgEditor value={source} initialCursor={2} visibleSourceRange={{ from: 0, to: source.indexOf("| 4") }} onSave={vi.fn()} />)
+		fireEvent.keyDown(screen.getByRole("textbox"), { key: "Tab" })
+		fireEvent.keyUp(window, { key: "Tab" })
+		expect(getEditorView().state.selection.main.head).toBe(2)
+		expect(getEditorView().state.sliceDoc()).toBe(source)
+		expect(undoDepth(getEditorView().state)).toBe(0)
+	})
+
+	it("reports the exact clicked raw link position without moving the original Source selection", () => {
+		const source = "[[id:first]]\r\n[[id:second]]\r\nbody\0😀"
+		const onOpenOrgLink = vi.fn()
+		let target: OrgEditorCommandTarget | null = null
+		render(<OrgEditor value={source} documentPath="source.org" onSave={vi.fn()}
+			onOpenOrgLink={onOpenOrgLink} onCommandTarget={(next) => { target = next }} />)
+		const view = getEditorView()
+		expect(target!.executeCommand("link")).toBe(true)
+		expect(onOpenOrgLink.mock.calls[0]?.[1]).toBe(0)
+		const selection = EditorSelection.create([EditorSelection.range(2, 5), EditorSelection.cursor(view.state.doc.length)], 0)
+		view.dispatch({ selection })
+		const clicked = source.indexOf("second")
+		vi.spyOn(view, "posAtCoords").mockReturnValue(clicked - 1)
+		fireEvent.mouseDown(screen.getByRole("textbox"), { button: 0, ctrlKey: true, clientX: 10, clientY: 10 })
+		expect(onOpenOrgLink).toHaveBeenCalledTimes(2)
+		expect(onOpenOrgLink.mock.calls[1]?.[1]).toBe(clicked)
+		expect(view.state.selection.eq(selection)).toBe(true)
+		expect(view.state.sliceDoc()).toBe(source)
+	})
+
+
+	it("uses configured bindings and transient hints in real Source without altering bytes or full selections", () => {
+		const raw = JSON.stringify({ version: 1, bindings: [{ scope: "org-source", key: "A-t", command: "tags" }],
+			leaders: [{ scope: "org-source", key: "C-l", map: "planning" }],
+			transients: [{ id: "planning", label: "Planning", scope: "org-source", timeoutMs: null,
+				bindings: [{ key: "s", command: "scheduled" }] }] })
+		useSettings.setState({ orgKeymapConfigurationJson: raw })
+		const onEditTags = vi.fn()
+		const onSchedule = vi.fn()
+		const onPrefixChange = vi.fn()
+		const onChange = vi.fn()
+		render(<OrgEditor value={"* Heading\r\nbody\0😀"} onChange={onChange} onSave={vi.fn()}
+			onEditTags={onEditTags} onSchedule={onSchedule} onPrefixChange={onPrefixChange} />)
+		const view = getEditorView()
+		const selection = EditorSelection.create([EditorSelection.range(2, 6), EditorSelection.cursor(12, -1, 2, 42)], 0)
+		view.dispatch({ selection })
+		const editor = screen.getByRole("textbox")
+		fireEvent.keyDown(editor, { key: "t", altKey: true })
+		expect(onEditTags).toHaveBeenCalledExactlyOnceWith(6)
+		fireEvent.keyDown(editor, { key: "l", ctrlKey: true })
+		expect(onPrefixChange.mock.lastCall?.[0]).toMatchObject({ label: "Planning", bindings: [{ keyLabel: "s", commandId: "scheduled" }] })
+		fireEvent.keyDown(editor, { key: "s" })
+		expect(onSchedule).toHaveBeenCalledExactlyOnceWith(6)
+		expect(view.state.sliceDoc()).toBe("* Heading\r\nbody\0😀")
+		expect(view.state.selection.eq(selection)).toBe(true)
+		expect(onChange).not.toHaveBeenCalled()
+	})
+
+	it("cancels prefix and captured command on configuration replacement including a batched ABA", () => {
+		let target: OrgEditorCommandTarget | null = null
+		const onEditTags = vi.fn()
+		const onPrefixChange = vi.fn()
+		render(<OrgEditor value="* Heading" onSave={vi.fn()} onEditTags={onEditTags}
+			onPrefixChange={onPrefixChange} onCommandTarget={(next) => { target = next }} />)
+		const editor = screen.getByRole("textbox")
+		fireEvent.keyDown(editor, { key: "c", ctrlKey: true })
+		const captured = target!.captureCommand("tags")!
+		const generation = getOrgInputConfiguration().generation
+		act(() => {
+			useSettings.setState({ orgKeymapConfigurationJson: '{"version":1,"bindings":[{"scope":"org-source","key":"A-t","command":"tags"}]}' })
+			useSettings.setState({ orgKeymapConfigurationJson: "" })
+		})
+		expect(getOrgInputConfiguration().generation).not.toBe(generation)
+		expect(onPrefixChange.mock.lastCall?.[0]).toBeNull()
+		expect(captured()).toBe(false)
+		fireEvent.keyDown(editor, { key: "q", ctrlKey: true })
+		expect(onEditTags).not.toHaveBeenCalled()
+	})
+
+	it("shows invalid persisted overrides and leaves unmatched source text/native input alone", () => {
+		useSettings.setState({ orgKeymapConfigurationJson: '{"version":2}' })
+		const onEditTags = vi.fn()
+		render(<OrgEditor value="* Heading" onSave={vi.fn()} onEditTags={onEditTags} />)
+		const editor = screen.getByRole("textbox")
+		expect(fireEvent.keyDown(editor, { key: "c", ctrlKey: true })).toBe(true)
+		expect(fireEvent.keyDown(editor, { key: "q", ctrlKey: true })).toBe(true)
+		expect(onEditTags).not.toHaveBeenCalled()
+		expect(getEditorView().state.sliceDoc()).toBe("* Heading")
 	})
 
 	it.each([
@@ -147,11 +315,24 @@ describe("OrgEditor", () => {
 		expect(getEditorView().state.selection.main.head).toBe(1)
 	})
 
-	it("retains independent opaque A/B sessions with undo, selection, and scroll", () => {
+	it.each([false, true])("retains A/B history, selection and pending scroll with StrictMode=%s", (strict) => {
 		vi.useFakeTimers()
 		const cache = new Map<string, OrgEditorSessionSnapshot>()
-		const mount = (sessionKey: string, value: string) =>
-			render(
+		// Chromium reports zero offsets after the scroll container leaves the DOM.
+		const setLiveScroll = (view: EditorView, scrollTop: number, scrollLeft: number) => {
+			const viewport = { scrollTop, scrollLeft }
+			for (const property of ["scrollTop", "scrollLeft"] as const) {
+				Object.defineProperty(view.scrollDOM, property, {
+					configurable: true,
+					get: () => (view.scrollDOM.isConnected ? viewport[property] : 0),
+					set: (value: number) => {
+						viewport[property] = value
+					},
+				})
+			}
+		}
+		const mount = (sessionKey: string, value: string) => {
+			const editor = (
 				<OrgEditor
 					sessionKey={sessionKey}
 					sessionCache={cache}
@@ -159,21 +340,21 @@ describe("OrgEditor", () => {
 					onChange={vi.fn()}
 					onSave={vi.fn()}
 					documentPath="/same/note.org"
-				/>,
+				/>
 			)
+			return render(strict ? <StrictMode>{editor}</StrictMode> : editor)
+		}
 		let mounted = mount("capability-A", "alpha")
 		let view = getEditorView()
 		view.dispatch({ changes: { from: 5, insert: " A" } })
 		view.dispatch({ selection: { anchor: 1, head: 4 } })
-		view.scrollDOM.scrollTop = 123
-		view.scrollDOM.scrollLeft = 17
+		setLiveScroll(view, 123, 17)
 		mounted.unmount()
 		mounted = mount("capability-B", "beta")
 		view = getEditorView()
 		view.dispatch({ changes: { from: 4, insert: " B" } })
 		view.dispatch({ selection: { anchor: 2 } })
-		view.scrollDOM.scrollTop = 45
-		view.scrollDOM.scrollLeft = 9
+		setLiveScroll(view, 45, 9)
 		mounted.unmount()
 		mounted = mount("capability-A", "alpha A")
 		view = getEditorView()
@@ -953,5 +1134,125 @@ describe("OrgEditor", () => {
 			"contenteditable",
 			"false",
 		)
+	})
+	it("uses the same real transaction authority for prefix, shortcut and palette execution", async () => {
+		let target: OrgEditorCommandTarget | null = null
+		const getContext = (): OrgCommandContext => ({
+			hasWorkspace: true, hasDocument: true, isDirty: true, isBusy: false,
+			sidebarVisible: false, inspectorVisible: false, editor: target?.getCommandContext(),
+		})
+		const dispatcher = {
+			getContext,
+			execute: (id: Parameters<OrgEditorCommandTarget["executeCommand"]>[0]) => target?.executeCommand(id) ?? false,
+		}
+		const editor = <OrgEditor value="* Note" onChange={() => {}} onSave={() => {}}
+			onCommandTarget={(current) => { target = current }}
+			onCommand={(id) => dispatchOrgCommand(id, dispatcher)} />
+		const mounted = render(<ApplicationCommandProvider>{editor}</ApplicationCommandProvider>)
+		const view = getEditorView()
+		const content = screen.getByRole("textbox")
+		fireEvent.keyDown(content, { ctrlKey: true, key: "c" })
+		fireEvent.keyDown(content, { ctrlKey: true, key: "t" })
+		expect(view.state.sliceDoc()).toBe("* TODO Note")
+		fireEvent.keyDown(content, { altKey: true, shiftKey: true, key: "t" })
+		expect(view.state.sliceDoc()).toBe("* DONE Note")
+		const origin = target as OrgEditorCommandTarget | null
+		if (!origin) throw new Error("Missing origin command target")
+		function Commands() {
+			const [owner] = useState(() => ({}))
+			const host = useApplicationCommandHost()
+			useApplicationCommandRegistration(owner, deriveOrgCommands(getContext()).filter((entry) => entry.id === "todo").map((entry): ApplicationCommandDescriptor => ({
+				id: entry.id, label: entry.label, getDisabledReason: () => entry.disabledReason ?? null,
+				capture: () => {
+					const captured = origin!.captureCommand("todo")
+					return captured ? async () => {
+						const command = deriveOrgCommands(getContext()).find((command) => command.id === entry.id)
+						return { kind: command && !command.disabledReason && await captured() ? "success" : "rejected" }
+					} : { kind: "rejected" }
+				},
+			})))
+			return <button onClick={() => host.open()}>Execute</button>
+		}
+		mounted.rerender(<ApplicationCommandProvider>{editor}<Commands /></ApplicationCommandProvider>)
+		fireEvent.click(screen.getByRole("button", { name: "Execute" }))
+		const active = getEditorView()
+		fireEvent.change(screen.getByRole("combobox"), { target: { value: "todo" } })
+		await act(async () => { fireEvent.keyDown(screen.getByRole("combobox"), { key: "Enter" }) })
+		expect(active.state.sliceDoc()).toBe("* Note")
+		expect(undoDepth(active.state)).toBe(3)
+		expect(undo(active)).toBe(true)
+		expect(active.state.sliceDoc()).toBe("* DONE Note")
+	})
+
+	it("rejects captured command leases after source ABA, selection movement and retirement", () => {
+		let target: OrgEditorCommandTarget | null = null
+		const mounted = render(<OrgEditor value="* Note" onChange={() => {}} onSave={() => {}}
+			onCommandTarget={(current) => { target = current }} />)
+		const original = target as OrgEditorCommandTarget | null
+		if (!original) throw new Error("Missing origin command target")
+		const view = getEditorView()
+		const beforeABA = original.captureCommand("todo")!
+		view.dispatch({ changes: { from: view.state.doc.length, insert: "!" } })
+		undo(view)
+		expect(view.state.sliceDoc()).toBe("* Note")
+		expect(beforeABA()).toBe(false)
+		const beforeMove = original.captureCommand("todo")!
+		view.dispatch({ selection: { anchor: 4 } })
+		expect(beforeMove()).toBe(false)
+		const beforeRetire = original.captureCommand("todo")!
+		mounted.unmount()
+		render(<OrgEditor value="* Replacement" onChange={() => {}} onSave={() => {}} />)
+		expect(beforeRetire()).toBe(false)
+		expect(original.getCommandContext().available).toBe(false)
+		expect(original.executeCommand("todo")).toBe(false)
+		expect(getEditorView().state.sliceDoc()).toBe("* Replacement")
+	})
+
+	it("restores the captured origin selection and scroll without adding history", () => {
+		let target: OrgEditorCommandTarget | null = null
+		render(<OrgEditor value="* Note\nbody" onChange={() => {}} onSave={() => {}}
+			onCommandTarget={(current) => { target = current }} />)
+		const view = getEditorView()
+		view.dispatch({ selection: { anchor: 2, head: 5 } })
+		view.scrollDOM.scrollTop = 27
+		view.scrollDOM.scrollLeft = 9
+		const origin = target as OrgEditorCommandTarget | null
+		if (!origin) throw new Error("Missing origin command target")
+		const restore = origin.captureFocus()!
+		const depth = undoDepth(view.state)
+		view.dispatch({ selection: { anchor: 0 } })
+		view.scrollDOM.scrollTop = 0
+		expect(restore()).toBe(true)
+		expect(view.state.selection.main).toMatchObject({ anchor: 2, head: 5 })
+		expect(view.scrollDOM.scrollTop).toBe(27)
+		expect(view.scrollDOM.scrollLeft).toBe(9)
+		expect(screen.getByRole("textbox")).toHaveFocus()
+		expect(undoDepth(view.state)).toBe(depth)
+		view.dispatch({ changes: { from: view.state.doc.length, insert: "!" } })
+		expect(restore()).toBe(false)
+	})
+
+	it("does not dispatch protected shortcut events through CodeMirror or the outer boundary", () => {
+		render(<OrgEditor value="* Note" onChange={() => {}} onSave={() => {}} />)
+		const content = screen.getByRole("textbox")
+		for (const guard of [{ repeat: true }, { isComposing: true }, { keyCode: 229 }]) {
+			if ("repeat" in guard) {
+				const down = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, altKey: true, shiftKey: true, key: "t" })
+				down.preventDefault()
+				content.dispatchEvent(down)
+			}
+			fireEvent.keyDown(content, { altKey: true, shiftKey: true, key: "t", ...guard })
+			expect(getEditorView().state.sliceDoc()).toBe("* Note")
+			fireEvent.keyUp(window, { key: "t", ...("keyCode" in guard ? { keyCode: guard.keyCode } : {}) })
+		}
+		const prevented = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, altKey: true, shiftKey: true, key: "t" })
+		prevented.preventDefault()
+		content.dispatchEvent(prevented)
+		fireEvent.keyUp(window, { key: "t" })
+		const altGraph = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, altKey: true, shiftKey: true, key: "t" })
+		Object.defineProperty(altGraph, "getModifierState", { value: (key: string) => key === "AltGraph" })
+		content.dispatchEvent(altGraph)
+		fireEvent.keyUp(window, { key: "t" })
+		expect(getEditorView().state.sliceDoc()).toBe("* Note")
 	})
 })

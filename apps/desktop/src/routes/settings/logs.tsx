@@ -15,11 +15,12 @@ import {
 	Trash2,
 	XCircle,
 } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { clearAllLogsFromSQLite, queryLogsFromSQLite } from "@/io/log/log.storage.api"
 import type { LogEntry, LogLevel } from "@/types/log/log.interface"
 import { cn } from "@/utils/cn.util"
 import { Button } from "@/views/ui/button"
+import { useConfirm } from "@/views/ui/confirm"
 import { Input } from "@/views/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/views/ui/select"
 
@@ -49,6 +50,13 @@ const LOG_LEVELS = ["all", "error", "warn", "info", "success", "debug", "trace"]
 type LogLevelFilter = (typeof LOG_LEVELS)[number]
 
 function LogsSettingsPage() {
+	const confirm = useConfirm()
+	const lifetime = useRef<AbortController | null>(null)
+	useEffect(() => {
+		const owner = new AbortController()
+		lifetime.current = owner
+		return () => owner.abort()
+	}, [])
 	const [levelFilter, setLevelFilter] = useState<LogLevelFilter>("all")
 	const [searchQuery, setSearchQuery] = useState("")
 	const queryClient = useQueryClient()
@@ -85,7 +93,14 @@ function LogsSettingsPage() {
 	}, [logs])
 
 	const handleClearLogs = async () => {
-		if (!window.confirm("Are you sure you want to clear all logs?")) {
+		const owner = lifetime.current
+		if (!owner || owner.signal.aborted || await confirm({
+			title: "Clear all logs?",
+			description: "Are you sure you want to clear all logs?",
+			confirmText: "Clear",
+			cancelText: "Cancel",
+			signal: owner.signal,
+		}) !== true || owner.signal.aborted) {
 			return
 		}
 		const result = await clearAllLogsFromSQLite()()

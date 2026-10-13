@@ -43,6 +43,8 @@ export const createTiptapDiagramAdapter = (
       mermaid.default.initialize({
         startOnLoad: false,
         theme: "default",
+        layout: "dagre",
+        look: "classic",
         securityLevel: "loose",
       });
 
@@ -96,10 +98,10 @@ export const createTiptapDiagramAdapter = (
           {
             type: "codeBlock",
             attrs: { language: currentDiagramType },
-            content: [{ type: "text", text: source }],
+            content: source ? [{ type: "text", text: source }] : [],
           },
         ],
-      });
+      }, { emitUpdate: false });
     },
 
     // ============================================

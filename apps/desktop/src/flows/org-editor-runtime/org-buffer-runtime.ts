@@ -9,6 +9,7 @@ import {
 import { foldEffect, unfoldEffect } from "@codemirror/language"
 import {
 	Compartment,
+	EditorSelection,
 	EditorState,
 	type Extension,
 	Facet,
@@ -20,6 +21,7 @@ import {
 	minimalTextChange,
 	orgSourceLineSeparator,
 	orgSourceText,
+	orgSemanticHistory,
 	originWindow,
 	rawSourceBatch,
 	restoreOriginSelection,
@@ -27,13 +29,14 @@ import {
 } from "./org-buffer-runtime.helpers"
 import {
 	type OrgBufferRuntime,
+	type OrgBufferCommitReceipt,
 	OrgBufferRuntimeError,
 	type OrgBufferRuntimeOptions,
 	type OrgBufferWindowHandle,
 	type OrgBufferWindowOptions,
 } from "./org-buffer-runtime.types"
 
-export { orgSourceLineSeparator, orgSourceText } from "./org-buffer-runtime.helpers"
+export { orgSourceLineSeparator, orgSourceText, orgSemanticHistory } from "./org-buffer-runtime.helpers"
 export * from "./org-buffer-runtime.types"
 
 // The facet and its issuer stay private: neither annotations nor filter:false
@@ -46,6 +49,24 @@ const projectionAuthority = Facet.define<(tr: Transaction) => boolean>()
  */
 export function isOrgRuntimeProjection(tr: Transaction): boolean {
 	return tr.startState.facet(projectionAuthority).some((recognize) => recognize(tr))
+}
+/** Presentation provenance for a history-free async projection. This issues
+ * transaction identity only, never canonical commit/history/window authority. */
+export function createOrgSourceProjectionAuthority() {
+	const issued = new WeakSet<Transaction>()
+	return {
+		extension: projectionAuthority.of((transaction) => issued.has(transaction)),
+		update(state: EditorState, spec: TransactionSpec): Transaction {
+			const transaction = state.update({ ...spec, filter: false })
+			const effects = spec.effects == null ? [] : Array.isArray(spec.effects) ? spec.effects : [spec.effects]
+			if (transaction.effects.length !== effects.length || transaction.effects.some((effect, index) => effect !== effects[index])) {
+				throw new OrgBufferRuntimeError("unknown-effect", "Async projection extender injected an unknown effect")
+			}
+			issued.add(transaction)
+			void transaction.state
+			return transaction
+		},
+	}
 }
 
 interface WindowSlot {
@@ -92,7 +113,7 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 			: [restoreOriginSelection.of({ selection: tr.startState.selection, windowId: id })]
 	})
 	const canonicalExtensions = (separator: string): Extension => [
-		history(),
+		history({ joinToEvent: (transaction, adjacent) => transaction.annotation(orgSemanticHistory) !== undefined || adjacent }),
 		authorityExtension,
 		EditorState.allowMultipleSelections.of(true),
 		EditorState.lineSeparator.of(separator),
@@ -102,12 +123,39 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 		doc: orgSourceText(options.source),
 		extensions: canonicalExtensions(orgSourceLineSeparator(options.source)),
 	})
+	// Exact raw Source belongs to the committed canonical state, including its separator.
+	let canonicalSource = options.source
 	let revision = 0,
 		closed = false,
 		busy = false,
 		disabled = false
 	let lastOrigin: string | null = null
+	let semanticGroup: { readonly slot: WindowSlot; readonly id: string; readonly time: number } | null = null
+	// A checkpoint of the SAME canonical state, never another document authority.
+	// Provisional history mappings are discarded at settlement; one net change is
+	// recorded from this checkpoint, so cancellation leaves prior undo/redo intact.
+	type Composition = { readonly slot: WindowSlot; readonly id: string; readonly seed: EditorState }
+	let composition: Composition | null = null
+	const settleComposition = (current: EditorState, pending: Composition): EditorState => {
+		const unchanged = pending.seed.doc.eq(current.doc)
+		const settled = unchanged ? pending.seed.update({
+			annotations: [Transaction.addToHistory.of(false), isolateHistory.of("full")], filter: false,
+		}).state : pending.seed.update({
+			changes: minimalTextChange(pending.seed.doc, current.doc),
+			selection: current.selection,
+			annotations: [originWindow.of(pending.slot.options.windowId), isolateHistory.of("full"),
+				Transaction.userEvent.of("input.type.compose.start")],
+			filter: false,
+		}).state
+		return EditorState.create({
+			doc: current.doc,
+			selection: current.selection,
+			extensions: [canonicalExtensions(current.lineBreak),
+				historyField.init(() => settled.field(historyField))],
+		})
+	}
 	const windows = new Map<string, WindowSlot>()
+	const commitListeners = new Set<(receipt: OrgBufferCommitReceipt) => void>()
 	const guardedStates = new WeakMap<
 		EditorState,
 		{ slot: WindowSlot; update: EditorState["update"] }
@@ -141,7 +189,6 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 		if (
 			candidate.field(historyField, false) !== undefined ||
 			candidate.lineBreak !== canonical.lineBreak ||
-			candidate.sliceDoc() !== canonical.sliceDoc() ||
 			!candidate.doc.eq(canonical.doc) ||
 			sourceCompartment.get(candidate) === undefined
 		) {
@@ -163,7 +210,8 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 		) {
 			fail("stale-window", "Detached or stale window state/revision")
 		}
-		assertWindowState(slot.state, state)
+		// This exact immutable state was checked at attachment/projection. The
+		// identity/revision guard above makes re-comparing its body unnecessary.
 	}
 	const project = (projections: readonly Projection[]) => {
 		for (const { slot, transactions } of projections) {
@@ -196,12 +244,16 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 	const commit = (
 		next: EditorState,
 		projections: readonly Projection[],
+		transactions: readonly Transaction[],
 		origin: string | null,
 		nextOrigin: string | null,
 		operation: "edit" | "installation" | "command" = "edit",
+		materializedSource?: string,
 	) => {
-		const previousSource = state.sliceDoc(),
-			source = next.sliceDoc()
+		const previousSource = canonicalSource,
+			source = next.lineBreak === state.lineBreak && next.doc.eq(state.doc)
+				? previousSource
+				: materializedSource ?? next.sliceDoc()
 		const changed = source !== previousSource
 		if (changed) {
 			let allowed = false
@@ -214,23 +266,49 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 				fail("commit-denied", "Commit guard rejected source")
 			}
 		}
+		if (nextOrigin === null && transactions.some((transaction) => transaction.docChanged)) semanticGroup = null
 		state = next
+		canonicalSource = source
 		lastOrigin = nextOrigin
-		if (changed) {
-			revision++
-			try {
-				options.onCommit(
-					Object.freeze({ key, originWindowId: origin, previousSource, revision, source }),
-				)
-			} catch (cause) {
-				disabled = true
-				report(
-					new OrgBufferRuntimeError(
-						"callback-failed",
-						"Canonical commit retained after callback failure",
-						cause,
-					),
-				)
+		if (changed) revision++
+		if (changed || transactions.some((transaction) => transaction.docChanged)) {
+			const receipt: OrgBufferCommitReceipt = Object.freeze({
+				key,
+				operation,
+				originWindowId: origin,
+				previousSource,
+				revision,
+				source,
+				transactions: Object.freeze([...transactions]),
+			})
+			const listeners = [...commitListeners]
+			if (changed) {
+				try {
+					options.onCommit(receipt)
+				} catch (cause) {
+					disabled = true
+					report(
+						new OrgBufferRuntimeError(
+							"callback-failed",
+							"Canonical commit retained after callback failure",
+							cause,
+						),
+					)
+				}
+			}
+			for (const listener of listeners) {
+				if (!commitListeners.has(listener)) continue
+				try {
+					listener(receipt)
+				} catch (cause) {
+					report(
+						new OrgBufferRuntimeError(
+							"callback-failed",
+							"Canonical commit subscriber failed",
+							cause,
+						),
+					)
+				}
 			}
 		}
 		project(projections)
@@ -249,11 +327,15 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 	): Transaction => {
 		const separatorChanged = projected.lineBreak !== canonical.state.lineBreak
 		// Install the origin's already-filtered transaction, avoiding duplicate extenders.
-		if (local && !separatorChanged) {
+		const settlementSelection = local?.annotation(orgSemanticHistory)?.composition === "end" &&
+			!local.state.selection.eq(canonical.state.selection, true)
+		if (local && !separatorChanged && !settlementSelection) {
 			if (local.startState !== projected) {
 				fail("stale-window", "Local projection baseline changed")
 			}
-			assertWindowState(local.state, canonical.state)
+			// An unchanged local document retains the already-validated baseline.
+			// Only changed documents need a new convergence comparison.
+			if (!local.changes.empty || !canonical.changes.empty) assertWindowState(local.state, canonical.state)
 			return local
 		}
 		const effects = [...(local?.effects ?? [])]
@@ -262,7 +344,8 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 				sourceCompartment.reconfigure(EditorState.lineSeparator.of(canonical.state.lineBreak)),
 			)
 		}
-		const selection = local?.selection ?? projectionSelection(slot, canonical, origin)
+		const selection = settlementSelection ? projectionSelection(slot, canonical, origin) :
+			local?.selection ?? projectionSelection(slot, canonical, origin)
 		// Internal projections may reconfigure the runtime-owned source compartment.
 		const update = guardedStates.get(projected)?.update ?? projected.update
 		const tr = withProjectionAuthority(() => {
@@ -300,6 +383,12 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 			for (let i = 0; i < canonicalTransactions.length; i++) {
 				const canonical = canonicalTransactions[i],
 					local = slot === origin ? localTransactions[i] : undefined
+				// Carets, folds and configuration belong to their window. An empty
+				// canonical transaction has nothing to replay to an unrelated peer;
+				// running it would still evaluate that peer's extenders/StateFields.
+				if (!local && canonical.changes.empty &&
+					projected.lineBreak === canonical.state.lineBreak &&
+					projectionSelection(slot, canonical, origin) === undefined) continue
 				const tr = projectTransaction(slot, projected, canonical, origin, local)
 				projected = tr.state
 				transactions.push(tr)
@@ -408,36 +497,101 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 			validateBatch(slot, input)
 			let next = state,
 				nextOrigin = lastOrigin
+			let nextGroup = semanticGroup
+			let nextComposition = composition
 			const canonical: Transaction[] = []
+			const committedTransactions: Transaction[] = []
 			for (const local of input) {
-				next = next.update({
-					annotations: Transaction.addToHistory.of(false),
-					filter: false,
-					selection: local.startState.selection,
-				}).state
+				const semantic = local.annotation(orgSemanticHistory)
+				const composing = semantic?.composition === "update"
+				const ending = semantic?.composition === "end"
+				if (semantic && semantic.composition !== undefined && !composing && !ending)
+					fail("invalid-edit", "Unknown semantic composition phase")
+				const sameComposition = nextComposition?.slot === slot && nextComposition.id === semantic?.group
+				if (nextComposition && !sameComposition && (local.docChanged || semantic !== undefined ||
+					nextComposition.slot !== slot && local.selection !== undefined)) {
+					next = settleComposition(next, nextComposition)
+					nextComposition = null
+					nextGroup = null
+				}
+				if (composing && !nextComposition) {
+					if (typeof semantic.group !== "string" || !semantic.group || semantic.group.length > 256 ||
+						!(semantic.selection instanceof EditorSelection) ||
+						semantic.selection.ranges.some((range) => range.from < 0 || range.to > local.startState.doc.length))
+						fail("invalid-edit", "Composition must carry its exact pre-composition selection")
+					const seed = next.update({ selection: semantic.selection,
+						annotations: Transaction.addToHistory.of(false), filter: false }).state
+					nextComposition = { slot, id: semantic.group, seed }
+					nextGroup = null
+				}
+				const operation = local.docChanged && !composing && !ending ? semantic : undefined
+				const continuing = operation !== undefined && nextGroup?.slot === slot && nextGroup.id === operation.group
+				if (operation && !continuing) {
+					if (typeof operation.group !== "string" || !operation.group || operation.group.length > 256 ||
+						!(operation.selection instanceof EditorSelection) ||
+						operation.selection.ranges.some((range) => range.from < 0 || range.to > local.startState.doc.length))
+						fail("invalid-edit", "Semantic history must carry a valid exact pre-operation selection")
+					nextGroup = { slot, id: operation.group, time: local.annotation(Transaction.time)! }
+				}
+				if (local.docChanged || local.selection) {
+					const selection = next.update({
+						annotations: Transaction.addToHistory.of(false),
+						filter: false,
+						selection: operation ? continuing ? next.selection : operation.selection : local.startState.selection,
+					})
+					committedTransactions.push(selection)
+					next = selection.state
+				}
+				let traits = originTraits(local, slot.options.windowId, nextOrigin)
+				if (composing || ending) {
+					traits = traits.filter((annotation) => annotation.type !== Transaction.addToHistory)
+					traits.unshift(Transaction.addToHistory.of(false))
+				} else if (operation) {
+					traits = traits.filter((annotation) => annotation.type !== Transaction.time && annotation.type !== Transaction.userEvent &&
+						annotation.type !== isolateHistory && annotation.type !== Transaction.addToHistory)
+					traits.unshift(Transaction.time.of(nextGroup!.time), Transaction.userEvent.of("input.type.modal"))
+					if (!continuing) traits.unshift(isolateHistory.of("before"))
+				} else if (local.docChanged && nextGroup) {
+					traits.unshift(isolateHistory.of("before"))
+					nextGroup = null
+				}
 				const tr = next.update({
-					annotations: originTraits(local, slot.options.windowId, nextOrigin),
+					annotations: traits,
 					changes: local.changes,
 					filter: false,
-					selection: local.selection,
+					selection: ending && sameComposition && nextComposition?.seed.doc.eq(local.newDoc)
+						? nextComposition.seed.selection : local.selection,
 				})
 				next = tr.state
 				canonical.push(tr)
+				committedTransactions.push(tr)
+				if (ending && sameComposition && nextComposition) {
+					next = settleComposition(next, nextComposition)
+					nextComposition = null
+					nextGroup = null
+				}
 				if (local.docChanged) {
 					nextOrigin = slot.options.windowId
 				}
 			}
 			// Projection preflight runs while busy. It checks baseline without entering the runtime guard.
 			const projections = buildProjections(canonical, slot, input)
-			commit(next, projections, slot.options.windowId, nextOrigin)
+			commit(next, projections, committedTransactions, slot.options.windowId, nextOrigin)
+			semanticGroup = nextGroup && !nextGroup.slot.detached ? nextGroup : null
+			composition = nextComposition
 		} finally {
 			busy = false
 		}
 	}
 	const runHistory = (slot: WindowSlot, command: typeof undo): boolean => {
 		guardSlot(slot)
+		semanticGroup = null
 		busy = true
 		try {
+			if (composition) {
+				state = settleComposition(state, composition)
+				composition = null
+			}
 			let result: Transaction | undefined
 			command({
 				dispatch: (tr) => {
@@ -451,29 +605,35 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 			const snapshot = result.effects.filter((e) => e.is(restoreOriginSelection)).at(-1)
 			const target = snapshot ? (windows.get(snapshot.value.windowId) ?? slot) : slot
 			// Seed live pre-undo caret so inverse effects and redo restore it exactly.
-			const seeded = state.update({
+			const seed = state.update({
 				annotations: Transaction.addToHistory.of(false),
 				filter: false,
 				selection: target.state.selection,
-			}).state
+			})
 			command({
 				dispatch: (tr) => {
 					result = tr
 				},
-				state: seeded,
+				state: seed.state,
 			})
 			const tr = result!
 			const projections = buildProjections([tr], target)
 			const restored = tr.effects.filter((e) => e.is(restoreOriginSelection)).at(-1)
-			const next = restored
+			const restoration = restored
 				? tr.state.update({
 						annotations: Transaction.addToHistory.of(false),
 						filter: false,
 						selection: restored.value.selection,
-					}).state
-				: tr.state
+					})
+				: undefined
 			// Selection restoration belongs to the historical origin; authority belongs to the caller.
-			commit(next, projections, slot.options.windowId, null)
+			commit(
+				restoration?.state ?? tr.state,
+				projections,
+				restoration ? [seed, tr, restoration] : [seed, tr],
+				slot.options.windowId,
+				null,
+			)
 			return true
 		} finally {
 			busy = false
@@ -484,7 +644,6 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 			guard()
 			if (
 				windows.size ||
-				legacy.sliceDoc() !== state.sliceDoc() ||
 				legacy.lineBreak !== state.lineBreak ||
 				!legacy.doc.eq(state.doc)
 			) {
@@ -510,6 +669,8 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 					filter: false,
 				}).state
 				lastOrigin = null
+				composition = null
+				semanticGroup = null
 				return true
 			} finally {
 				busy = false
@@ -520,14 +681,15 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 		},
 		applyCommandEdits(previousExpectedSource, edits) {
 			guard()
-			if (previousExpectedSource !== state.sliceDoc()) {
+			if (previousExpectedSource !== canonicalSource) {
 				fail("stale-source", "Command source baseline is stale")
 			}
 			const { nextSource, changes } = rawSourceBatch(previousExpectedSource, edits)
 			if (nextSource === previousExpectedSource) return false
 			busy = true
 			try {
-				const tr = state.update({
+				const base = composition ? settleComposition(state, composition) : state
+				const tr = base.update({
 					annotations: [
 						Transaction.addToHistory.of(true),
 						isolateHistory.of("full"),
@@ -536,11 +698,13 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 					changes,
 					filter: false,
 				})
-				if (tr.state.sliceDoc() !== nextSource) {
+				const source = tr.state.sliceDoc()
+				if (source !== nextSource) {
 					fail("invalid-edit", "Command edits must preserve structural separator boundaries")
 				}
 				const projections = buildProjections([tr])
-				commit(tr.state, projections, null, null, "command")
+				commit(tr.state, projections, [tr], null, null, "command", source)
+				composition = null
 				return true
 			} finally {
 				busy = false
@@ -548,7 +712,7 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 		},
 		applyControllerSource(previousExpectedSource, nextSource) {
 			guard()
-			if (previousExpectedSource !== state.sliceDoc()) {
+			if (previousExpectedSource !== canonicalSource) {
 				fail("stale-source", "Controller source baseline is stale")
 			}
 			if (nextSource === previousExpectedSource) {
@@ -559,7 +723,8 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 				const separator = orgSourceLineSeparator(nextSource),
 					doc = orgSourceText(nextSource, separator)
 				const separatorChanged = separator !== state.lineBreak
-				const tr = state.update({
+				const base = composition ? settleComposition(state, composition) : state
+				const tr = base.update({
 					annotations: [Transaction.addToHistory.of(false), isolateHistory.of("full")],
 					changes: separatorChanged
 						? { from: 0, insert: doc, to: state.doc.length }
@@ -579,11 +744,18 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 							selection: tr.state.selection,
 						})
 					: tr.state
-				commit(next, projections, null, null, "installation")
+				commit(next, projections, [tr], null, null, "installation", nextSource)
+				composition = null
 				return true
 			} finally {
 				busy = false
 			}
+		},
+		captureWindowProjection(windowId) {
+			const slot = windows.get(windowId)
+			if (!slot || closed || slot.detached || slot.revision !== revision || slot.options.view.state !== slot.state) return null
+			const viewport = slot.options.readViewport?.()
+			return { state: slot.state, scrollTop: viewport?.scrollTop ?? 0, scrollLeft: viewport?.scrollLeft ?? 0 }
 		},
 		attachWindow(windowOptions) {
 			guard()
@@ -604,7 +776,15 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 					if (busy) {
 						fail("reentrant", "Reentrant window detach")
 					}
+					if (composition?.slot === slot) {
+						// Closing a view cannot rewrite already accepted canonical Source.
+						// Native cancellation edits use dispatch before retirement; retain
+						// accepted bytes and seal history even after its grant is revoked.
+						state = settleComposition(state, composition)
+						composition = null
+					}
 					slot.detached = true
+					if (semanticGroup?.slot === slot) semanticGroup = null
 					releaseWindowUpdate(slot)
 					if (windows.get(windowOptions.windowId) === slot) {
 						windows.delete(windowOptions.windowId)
@@ -616,11 +796,21 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 			}
 			return handle
 		},
+		subscribeCommits(listener) {
+			if (closed) return () => {}
+			commitListeners.add(listener)
+			return () => {
+				commitListeners.delete(listener)
+			}
+		},
 		close() {
 			if (busy) {
 				fail("reentrant", "Reentrant close")
 			}
 			closed = true
+			semanticGroup = null
+			composition = null
+			commitListeners.clear()
 			for (const slot of windows.values()) {
 				slot.detached = true
 				releaseWindowUpdate(slot)
@@ -642,7 +832,7 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 			return revision
 		},
 		get source() {
-			return state.sliceDoc()
+			return canonicalSource
 		},
 		get state() {
 			return state

@@ -1,20 +1,20 @@
 pkgbase = grain
 	pkgdesc = A minimalist writing sanctuary for long-form content
-	pkgver = 0.1.91
+	pkgver = 0.1.604
 	pkgrel = 1
 	url = https://github.com/jeasoncc/grain
 	arch = x86_64
 	license = MIT
-	makedepends = rust
+	makedepends = rust>=1.94.0
 	makedepends = cargo
-	makedepends = bun
-	makedepends = nodejs
+	makedepends = bun>=1.4.2
+	makedepends = nodejs>=22.22.2
 	makedepends = patchelf
 	depends = webkit2gtk
 	depends = gtk3
 	depends = libappindicator-gtk3
 	optdepends = libfuse2: AppImage support
-	source = grain-0.1.91.tar.gz::https://github.com/jeasoncc/grain/archive/refs/tags/desktop-v0.1.91.tar.gz
+	source = grain-0.1.604.tar.gz::https://github.com/jeasoncc/grain/archive/refs/tags/desktop-v0.1.604.tar.gz
 	sha256sums = SKIP
 
 pkgname = grain

@@ -4,6 +4,7 @@
 
 import * as parser from "@typescript-eslint/parser"
 import { Linter } from "eslint"
+import path from "node:path"
 import plugin from "../index.js"
 
 /**
@@ -14,7 +15,9 @@ export function runLint(
 	rules: Record<string, string | [string, unknown]>,
 	filename?: string,
 ): Linter.LintMessage[] {
-	const linter = new Linter({ configType: "flat" })
+	const lintFilename = path.resolve(filename ?? "test.tsx")
+	// Flat-config globs are relative to cwd; virtual absolute fixtures must be inside it.
+	const linter = new Linter({ configType: "flat", cwd: path.dirname(lintFilename) })
 
 	const config = {
 		files: ["**/*.ts", "**/*.tsx"],
@@ -36,8 +39,9 @@ export function runLint(
 		rules,
 	}
 
-	// Type assertion needed because our plugin's configs use legacy format
-	return linter.verify(code, config as any, { filename: filename || "test.tsx" })
+	// TS-ESLint visitor types are wider than ESLint's ESTree rule types.
+	const lintConfig = config as unknown as Linter.Config
+	return linter.verify(code, lintConfig, { filename: lintFilename })
 }
 
 /**

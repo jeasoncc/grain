@@ -1,48 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useSafeLocalStorage } from "./hooks/use-safe-local-storage";
 
 interface SidebarToggleProps {
+  collapsed: boolean;
   onToggle: (collapsed: boolean) => void;
 }
 
-export function SidebarToggle({ onToggle }: SidebarToggleProps) {
-  const [collapsed, setCollapsed] = useState(false);
-  const { get, set } = useSafeLocalStorage();
-
-  useEffect(() => {
-    // 从 localStorage 读取折叠状态
-    const saved = get("docs-sidebar-collapsed");
-    if (saved === "true") {
-      setCollapsed(true);
-      onToggle(true);
-    }
-  }, [get, onToggle]);
-
-  const handleToggle = () => {
-    const newCollapsed = !collapsed;
-    setCollapsed(newCollapsed);
-    onToggle(newCollapsed);
-    set("docs-sidebar-collapsed", String(newCollapsed));
-  };
+export function SidebarToggle({ collapsed, onToggle }: SidebarToggleProps) {
 
   return (
     <Button
-      onClick={handleToggle}
+      onClick={() => onToggle(!collapsed)}
       variant="ghost"
       size="sm"
       className={cn(
-        "fixed top-20 left-0 z-40 h-8 w-8 rounded-r-lg rounded-l-none",
-        "bg-white dark:bg-black border-r border-t border-b border-gray-200 dark:border-gray-800",
-        "lg:top-16",
+        "h-8 w-8 shrink-0 p-0",
         "hover:bg-gray-100 dark:hover:bg-gray-800",
         "transition-all duration-300"
       )}
       aria-label={collapsed ? "展开侧边栏" : "折叠侧边栏"}
+      aria-expanded={!collapsed}
+      aria-controls="docs-navigation"
     >
       {collapsed ? (
         <ChevronRight className="w-4 h-4" />

@@ -12,7 +12,7 @@ import {
   Database,
   Code,
   Command,
-  Image,
+  Image as ImageIcon,
   Keyboard,
   BarChart3,
 } from "lucide-react";
@@ -72,7 +72,7 @@ const features = [
     description: "集中管理地点、势力、物品等世界观元素，构建完整的创作世界。",
   },
   {
-    icon: <Image className="w-6 h-6" />,
+    icon: <ImageIcon className="w-6 h-6" />,
     title: "Canvas 绘图",
     description: "集成 Excalidraw 绘图工具，支持在场景中插入手绘图表、思维导图等可视化内容。",
   },

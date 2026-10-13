@@ -22,10 +22,9 @@ Grain is transitioning from a SQLite/Lexical writing application to a local-firs
 
 ## Other applications
 
-The monorepo also contains web, mobile, admin, and API applications. They do not provide the capability-scoped local filesystem boundary used by Grain Desktop.
+The monorepo also contains web, admin, and API applications. They do not provide the capability-scoped local filesystem boundary used by Grain Desktop.
 
 - [Web](./web/README.md)
-- [Mobile](./mobile-app.md)
 - [Admin](./admin-panel.md)
 - [API](./api-server.md)
 

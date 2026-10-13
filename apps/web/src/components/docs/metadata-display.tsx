@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useDocPathname } from "./hooks/use-doc-pathname";
 import { docNavItems, type NavItem } from "./doc-nav-data";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +21,7 @@ function findDocItem(pathname: string): NavItem | null {
 }
 
 export function MetadataDisplay() {
-  const pathname = usePathname();
+  const pathname = useDocPathname();
   
   if (pathname === "/docs") return null;
 

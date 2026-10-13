@@ -74,7 +74,7 @@ export function LazyImage({
             onLoad={() => setIsLoaded(true)}
             placeholder={placeholder}
             blurDataURL={blurDataURL}
-            priority={priority}
+            preload={priority}
             {...props}
           />
         )}
@@ -100,7 +100,7 @@ export function LazyImage({
           onLoad={() => setIsLoaded(true)}
           placeholder={placeholder}
           blurDataURL={blurDataURL}
-          priority={priority}
+          preload={priority}
           sizes={sizes}
           {...props}
         />

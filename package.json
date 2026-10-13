@@ -12,17 +12,17 @@
     "url": "https://github.com/jeasoncc/grain.git"
   },
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "bun run desktop:dev",
+    "dev:all": "turbo run dev",
     "build": "turbo run build",
     "build:prod": "NODE_ENV=production turbo run build:prod",
-    "build:test": "NODE_ENV=development turbo run build:test",
+    "build:test": "turbo run build:test",
     "lint": "turbo run lint",
     "format": "turbo run format",
     "check": "turbo run check",
     "clean": "turbo run clean",
     "desktop:dev": "turbo run dev --filter=desktop",
     "web:dev": "turbo run dev --filter=web",
-    "mobile:dev": "turbo run dev --filter=mobile",
     "admin:dev": "turbo run dev --filter=admin",
     "api:dev": "turbo run dev --filter=api",
     "api-rust:dev": "cargo run --manifest-path apps/api-rust/Cargo.toml",
@@ -30,10 +30,8 @@
     "api-rust:check": "cargo check --manifest-path apps/api-rust/Cargo.toml",
     "build:prod:desktop": "NODE_ENV=production turbo run build:prod --filter=desktop",
     "build:prod:web": "NODE_ENV=production turbo run build:prod --filter=web",
-    "build:prod:mobile": "NODE_ENV=production turbo run build:prod --filter=mobile",
-    "build:test:desktop": "NODE_ENV=development turbo run build:test --filter=desktop",
-    "build:test:web": "NODE_ENV=development turbo run build:test --filter=web",
-    "build:test:mobile": "NODE_ENV=development turbo run build:test --filter=mobile",
+    "build:test:desktop": "turbo run build:test --filter=desktop",
+    "build:test:web": "turbo run build:test --filter=web",
     "tag:desktop": "bash scripts/create-tag.sh desktop",
     "tag:snap": "bash scripts/create-tag.sh snap",
     "tag:web": "bash scripts/create-tag.sh web",
@@ -48,23 +46,38 @@
     "test:desktop": "turbo run test --filter=desktop"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.2",
-    "@playwright/test": "^1.57.0",
-    "@sinclair/typebox": "^0.34.0",
-    "playwright": "^1.57.0",
-    "turbo": "^2.3.3",
-    "typescript": "^5.8.3"
+    "@biomejs/biome": "^2.5.15",
+    "@playwright/test": "^1.63.0",
+    "@sinclair/typebox": "^0.34.52",
+    "playwright": "^1.63.0",
+    "turbo": "^2.11.7",
+    "typescript": "~6.0.3"
   },
   "engines": {
-    "node": ">=20",
-    "bun": ">=1.1.0"
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0",
+    "bun": ">=1.4.2"
   },
-  "packageManager": "bun@1.1.0",
+  "packageManager": "bun@1.4.2",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "overrides": {
-    "@sinclair/typebox": "^0.34.0"
+    "@sinclair/typebox": "^0.34.52",
+    "@chevrotain/cst-dts-gen>lodash-es": "4.18.1",
+    "@chevrotain/gast>lodash-es": "4.18.1",
+    "@excalidraw/excalidraw>nanoid": "3.3.20",
+    "@excalidraw/excalidraw>sass": "1.105.1",
+    "@excalidraw/mermaid-to-excalidraw>nanoid": "5.1.16",
+    "chevrotain>lodash-es": "4.18.1",
+    "eslint-plugin-functional>deepmerge-ts": "8.0.2",
+    "mermaid>katex": "0.18.2",
+    "monaco-editor>dompurify": "3.4.16",
+    "serve>compression": "1.8.2",
+    "solid-js>seroval": "1.6.8",
+    "solid-js>seroval-plugins": "1.6.8"
+  },
+  "patchedDependencies": {
+    "@replit/codemirror-vim-core@0.1.0": "patches/@replit%2Fcodemirror-vim-core@0.1.0.patch"
   }
 }

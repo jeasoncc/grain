@@ -85,7 +85,7 @@ pub async fn clear_all_data(
             "org_index_headings",
             "org_index_documents",
         ] {
-            txn.execute(Statement::from_string(
+            txn.execute_raw(Statement::from_string(
                 txn.get_database_backend(),
                 format!("DELETE FROM {table}"),
             ))

@@ -26,7 +26,7 @@ import {
 	type LexicalRootChild,
 	type LexicalTagNode,
 	type LexicalTextNode,
-} from "../content/content.generate.fn"
+} from "../content/legacy-content.pipe"
 
 // ==============================
 // Types

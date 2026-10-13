@@ -3,6 +3,8 @@
  *
  * 与 Tauri Commands 对应的 TypeScript 类型
  */
+import type { LegacyRecoveryGraph } from "./org/org.interface"
+
 
 // ============================================
 // Workspace 类型（与 Rust 后端 workspace_interface.rs 对应）
@@ -154,22 +156,10 @@ export interface NodeResponse {
 // Content 类型
 // ============================================
 
-/** 保存内容请求 */
-export interface SaveContentRequest {
-	/** 节点 ID */
-	readonly nodeId: string
-	/** 内容 (JSON 字符串) */
-	readonly content: string
-	/** 期望版本号 (用于乐观锁) */
-	readonly expectedVersion?: number
-}
-
 /** Atomic legacy migration read model returned from one backend snapshot. */
 export interface LegacyMigrationSnapshotResponse {
-	readonly workspaceTitle: string
-	readonly workspaceNodes: readonly NodeResponse[]
-	readonly allNodes: readonly NodeResponse[]
-	readonly allContents: readonly LegacyMigrationContentResponse[]
+	readonly graph: LegacyRecoveryGraph
+	readonly contents: readonly LegacyMigrationContentResponse[]
 }
 
 /** Lossless migration-only content row; SQLite integers cross IPC as decimal strings. */
