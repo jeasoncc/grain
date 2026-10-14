@@ -1,108 +1,111 @@
-<div align="center">
-
 # Grain
 
-**真正以本地 Org 文件为核心的桌面客户端**
+**以本地 Org 文件为核心的笔记、写作与任务桌面工作台。**
 
-作品保存在标准 `.org` 文件中。Grain 提供专注编辑、Agenda、Capture、链接与安全的桌面文件操作，但不会把数据库变成正文的唯一来源。
+Grain 是一个基于 Tauri 的桌面应用，直接管理本地目录中的 `.org` 文件，将文本编辑、Agenda、Capture、笔记链接与多窗口工作流整合在同一个 workspace 中。保存后的文档仍是普通文件，可以在 Grain 之外阅读和编辑；SQLite 只提供可重建的索引，不承载正文。
 
-[English](./README.md) · [桌面端开发说明](./apps/desktop/README.md) · [文档目录](./docs/README.md)
+[English](./README.md) · [下载发行版](https://github.com/jeasoncc/grain/releases) · [桌面端指南](./apps/desktop/README.md) · [文档目录](./docs/README.md)
 
-</div>
+> 项目仍在持续开发。本文描述当前基于 Org 的源码，较早的发行版可能仍使用旧 SQLite/Lexical 应用。**当前原生 Org 保存、移动与删除以 Linux 为支持目标。** macOS 和 Windows 尚未具备等价的文件系统支持；不支持的操作会被拒绝，不会退回不安全的实现。
 
----
+## 可以用它做什么
 
-## 核心原则
+| 工作流 | 功能 |
+| --- | --- |
+| 写作与整理 | 用 CodeMirror 6 编辑 Org 原文；标题与列表操作、折叠、TODO 状态、复选框、标签、属性与时间戳；子树 Refile 与 Archive |
+| 安排任务 | 计划日期与截止日期、可配置 TODO 流程、命名 Agenda 视图，以及 Sparse Tree 稀疏树过滤 |
+| 快速记录 | 支持文件、标题或 datetree 日期树目标的 TODO/笔记 Capture 模板；每次新建独立且带 ID 的日记条目 |
+| 连接笔记 | `file:`、`id:`、`CUSTOM_ID` 跳转与反向链接；Org-roam 节点查找、记录与链接插入；Org-remark 高亮和边注 |
+| 多视图工作 | 模糊 Quick Open、标签页、buffer 切换、分栏编辑、独立原生窗口，以及 Outline / Properties / Backlinks 检查面板 |
+| 使用 Org 工具 | 任务计时与报告、受支持的 Org 表格操作、HTML/Markdown 导出、可配置快捷键、Which-Key 提示与可选 Vim 编辑 |
 
-> **对于新的 Org workspace，Org 文件是唯一事实来源，SQLite 索引只是可清空重建的派生状态。**
+同一笔记的多个视图共享正文和撤销历史，选区、折叠与滚动位置各自独立。切换笔记不会丢弃未保存修改。自动保存在 **Settings → General** 中配置，也可以手动保存当前笔记或全部修改。
 
-默认桌面界面直接打开真实本地目录并编辑其中的 `.org` 文件。新的 Org 索引、缓存和 UI 状态都可重建，不能成为 Org 正文的权威存储。
+Grain 实现的是一组受支持的 Org 工作流，不是 Emacs 运行时，也不承诺完整替代 GNU Org mode 及其扩展。
 
-文件打开期间，canonical 内存 buffer 是工作正文及撤销历史的唯一持有者；窗口只是无独立历史的投影。Agenda、Backlinks 和链接解析优先消费 live source，包含保存失败和 parked buffer 的未保存改动。已确认磁盘 revision 只作为 CAS 基线，不会覆盖更新的输入。
+## 开始使用
 
-旧 SQLite/Lexical 应用留下的历史 `grain.db` 是另一回事：其中可能仍保存尚未迁移作品的唯一副本，**绝不能将它视为可清空的派生状态**。旧应用目前只保留为明确隔离的迁移兼容界面，待经授权的历史数据库副本通过迁移与恢复验收后删除。
+安装包见 [GitHub Releases](https://github.com/jeasoncc/grain/releases)。选择对应操作系统和架构的文件，并先核对发行版本：旧安装包不一定包含当前 Org workspace。要运行本文描述的源码，请按下方的[本地开发](#本地开发)步骤启动。
 
-## 已实现功能
+在原生桌面应用中：
 
-- 使用 CodeMirror 6 直接编辑原始 Org 文本
-- Obsidian 风格 Ribbon、可调整面板、文档标签、前进/后退和状态栏
-- 模糊 Quick Open（`Mod-O`）与 Org 原生命令面板（`Mod-P` 或 `Mod-K`）
-- 带 revision 冲突保护的自动保存，同时保留 `Mod-S`
-- workspace 授权后恢复标签、活动文档、面板可见性和文件树折叠状态
-- 可选的 Outline、Properties 与 Backlinks 检查面板
-- 真实文件和空目录组成的递归 workspace 树
-- 安全的新建、读取、revision 写入、移动、重命名和删除
-- Org 风格折叠、标题/列表编辑、可配置 TODO 流程、Tags、Planning 日期、Properties、时间戳、subtree move、Refile 和 Archive
-- Agenda 提取、稀疏 Outline 过滤与 TODO Capture
-- `file:`、`id:`、`CUSTOM_ID` 链接跳转
-- Backlinks 与精确来源定位
-- `diary/YYYY-MM-DD.org` 日记文件
-- 系统 Documents 目录下的默认 `Grain` workspace
-- 外部文件监听、轮询 fallback、dirty buffer 和冲突提示
-- 可从 Org 文件重建的文档、标题、链接和 Agenda 索引
-- 带 raw backup、manifest、hash、恢复 SQL 和 recovery drill 的旧数据迁移
+1. 点击 **Open Documents/Grain**，创建或打开系统 Documents 目录下的默认 workspace；也可以用 **Choose another…** 授权一个已有本地目录。
+2. 从文件树打开 `.org` 文件，或点击 **New note**，输入 `inbox.org` 这样的相对路径。
+3. 通过 **Execute command** 查找 **Open agenda**、**Quick capture**、**New diary entry**、**Org-roam: find node** 等操作。
 
-## 存储模型
+可以先创建一个简单的 `inbox.org`：
+
+```org
+#+title: Inbox
+#+TODO: TODO NEXT | DONE
+
+* TODO 起草下一章 :writing:
+- [ ] 整理素材
+- [ ] 完成初稿
+
+* 笔记
+正文保持为普通文本。
+```
+
+### Linux 默认快捷键
+
+| 快捷键 | 操作 |
+| --- | --- |
+| `Ctrl-O` | 快速打开文件 |
+| `Alt-X`、`Ctrl-P` 或 `Ctrl-K` | 执行命令 |
+| `Ctrl-S` | 保存当前笔记 |
+| `Ctrl-Shift-S` | 保存所有已修改 buffer |
+| `Ctrl-Shift-B` | 切换已打开的 buffer |
+| 标题上的 `Tab` / `Shift-Tab` | 折叠子树 / 切换全文折叠状态 |
+| `Ctrl-C Ctrl-T` | 切换标题的 TODO 状态 |
+| `Ctrl-C Ctrl-O` | 跟随光标处的 Org 链接 |
+
+`Ctrl-C Ctrl-T` 表示先按 `Ctrl-C`，再按 `Ctrl-T`。作用域快捷键和可选 Vim 模式在 **Settings → Editor → Org keymaps** 中配置。完整按键与配置说明见[桌面端编辑指南](./apps/desktop/README.md#org-editing-keys)。
+
+## 文件与数据归属
+
+默认 workspace 位于系统 Documents 目录下的 `Grain`，也可以使用另一个明确授权的目录。
 
 ```text
-Documents/Grain/             用户作品，唯一事实来源
+Documents/Grain/            已保存的用户内容
 ├── inbox.org
-├── projects/
-└── diary/YYYY-MM-DD.org
+└── projects/
+    └── book.org
 
-应用数据目录/                 应用状态
-├── grain-org-index.db       可从 Org workspace 重建；普通桌面启动使用
-└── grain.db                 历史数据库；明确迁移与验证前可能仍是权威数据
+应用数据目录/
+├── grain-org-index.db     Org 派生索引，可从 workspace 文件重建
+└── grain.db               可能存在的历史数据库，不是可随意删除的缓存
 ```
 
-清空 SQLite Org 派生索引不能损坏任何 Org 文件；应用必须能够通过重新扫描 workspace 恢复索引。不要因为新的 Org 索引可丢弃，就删除尚未验证迁移的历史 `grain.db`。
+编辑期间，共享的内存 buffer 持有工作正文与撤销历史。Agenda 和反向链接读取包含未保存修改的实时正文，不会用较旧的磁盘或索引快照覆盖它。最后确认的磁盘 revision 单独记录，作为保存基线。
 
-## 文件安全
+### 文件安全与当前限制
 
-本地文件访问由 Tauri/Rust 完成，不依赖普通网页文件 API。
+- 本地文件访问通过 Tauri/Rust 完成，限制在用户授权的目录内；浏览器预览没有这项权限。
+- 路径会检查目录穿越与符号链接越界。保存、移动和删除检查预期文件 revision；遇到过期或不明确的状态时需要核对，不会静默替换。
+- 外部文件监听与轮询保护未保存内容。跨文件 Refile/Archive 先复制并验证目标，再移除来源。
+- 保存或删除可能保留 `.grain-*.tmp` 文件系统恢复产物。它们可被外部写入修改，**不是不可变备份**，也不会自动清理；不要直接批量删除。请另外备份 workspace。
+- 普通笔记的未保存 buffer **尚不支持通用重启恢复**。Capture 草稿恢复是独立的显式选项，会将明文草稿保存在本地存储中，不会自动写入 Org 文件。
+- 原生文件操作依赖受支持的 Linux 文件系统原语。不支持的平台或文件系统条件会直接拒绝操作；存在某平台的安装包不等于当前 Org 文件系统已在该平台具备等价支持。
 
-- 用户批准目录后，应用保留 capability-scoped directory handle。
-- 拒绝路径穿越、绝对路径、反斜杠和非法文档目标。
-- 拒绝 symlink 越界，扫描器不会跟随 symlink 目录。
-- 普通写入必须提供 `expectedRevision`，过期内容会产生冲突。
-- 普通保存保留持久化、绑定文件身份的发布 journal；重新授权目录时先恢复再扫描。外来同名文件、身份不明产物和歧义状态保留并拒绝处理，不擅自覆盖或清除。
-- 支持的平台使用 staging 与原子 no-clobber 发布迁移结果。
-- Refile/Archive 采用 copy-first，部分失败时优先保留可恢复副本。
-- 默认 workspace 只在用户明确点击后创建；重启恢复不会静默重建被用户删除的目录。
+具体规则与恢复边界见[桌面端指南](./apps/desktop/README.md#file-mutation-rules)。
 
-## CodeMirror 与 Lexical
+### 旧 SQLite 数据
 
-| 界面 | 编辑器 | 定位 |
-|---|---|---|
-| 默认 `/`、`/org` | CodeMirror 6，直接持有 Org 原文 | 主路径 |
-| 显式 `/legacy` | Lexical，读取旧 SQLite 正文 | 迁移兼容 |
+历史 `grain.db` 可能仍保存尚未迁移作品的唯一副本，**绝不能把它当作 Org 派生索引删除**。普通 Org 启动不会打开这个历史数据库。
 
-`/legacy` 的业务 provider、迁移选择器及编辑器样式仅在原生启动时固定的 `legacy` 模式授权后加载。需明确使用 `GRAIN_TAURI_LEGACY_MODE=1` 启动历史恢复环境；普通浏览器、无效模式及查询失败均不能授权。Activity Bar 保持 Org 主路径。只有历史数据库副本完成迁移与恢复验收后，才会移除最后的 Lexical 与 SQLite 正文写入代码。
-
-## 项目结构
-
-```text
-apps/desktop/                 Tauri 桌面端
-apps/desktop/src/flows/       业务流程
-apps/desktop/src/io/          Tauri/API/event 边界
-apps/desktop/src/pipes/org/   纯 Org 文本转换
-apps/desktop/src/views/       React 界面
-packages/rust-core/           capability 文件系统、数据库与 Tauri commands
-packages/editor-codemirror/   CodeMirror 编辑器包
-packages/editor-lexical/      旧系统兼容编辑器包
-```
+旧 `/legacy` 编辑器与桌面 Lexical 正文写入路径已经移除。历史数据通过 `/history` 只读查看，查看与迁移工具都需要以 `GRAIN_TAURI_LEGACY_MODE=1` 明确启动原生恢复环境。仅操作经过明确授权的隔离数据库副本。使用恢复工具前，请阅读 [SQLite 启动模式说明](./apps/desktop/README.md#sqlite-startup-modes)。
 
 ## 本地开发
 
 ### 环境要求
 
-- Bun 1.4.2（仓库包管理器与 CI 固定版本）
-- Node.js `^22.22.2 || ^24.15.0 || >=26.0.0`（CI 使用 24.21.0；本地验证使用 26.10.0）
-- Rust >= 1.94.0（验证使用 1.94.1）
-- Tauri 2 系统依赖
-- Linux 需要 WebKitGTK 4.1 开发包
+- **Bun ≥ 1.4.2**；仓库包管理器固定为 `bun@1.4.2`。
+- **Node.js** 满足 `^22.22.2 || ^24.15.0 || >=26.0.0`。
+- **Rust ≥ 1.94.0** 与 Cargo。
+- [Tauri 2 系统依赖](https://v2.tauri.app/start/prerequisites/)；Linux 需要 WebKitGTK 4.1 开发库。
 
-### 安装与启动
+检出仓库后，在仓库根目录安装 JavaScript 依赖，再启动桌面应用：
 
 ```bash
 bun install --frozen-lockfile
@@ -110,48 +113,46 @@ cd apps/desktop
 bun run tauri dev
 ```
 
-JavaScript workspace 统一从仓库根目录安装，仅使用根 `bun.lock`。
-隔离链接使不同 workspace 的不兼容 peer 版本不会相互覆盖。
-独立实验 `experiments/doom-runtime` 保留自己的 npm 锁文件。
+JavaScript workspace 共用根目录的 `bun.lock`，使用隔离依赖链接。不要单独安装一套桌面端依赖。独立实验 `experiments/doom-runtime` 保留自己的 npm 锁文件。
 
-开发时 Vite 在 `http://localhost:1420` 为 Tauri WebView 提供页面。该地址不是面向普通浏览器的本地文件访问方案。
+Tauri 会启动 `http://localhost:1420` 上的 Vite 服务，供 WebView 使用。根目录的 **`bun run dev` 只启动桌面 Vite 服务**，不启动原生应用或 API 服务；**`bun run dev:all`** 才会启动更大的 monorepo 开发栈。这两种浏览器预览都不能获得原生 Org 文件权限；本地桌面 workspace 不需要另起 HTTP API 服务。
 
-仓库根目录的 `bun run dev` 仅启动 desktop Vite，不再默认启动历史 Warp API；`bun run dev:all` 显式启动较大的 monorepo 开发栈。浏览器预览不能获取原生文件权限。
+### 检查与构建
 
-### 核心验证
+以下命令在 `apps/desktop` 中运行：
 
-```bash
-cd apps/desktop
-bun run type:check
-bunx vitest run \
-  src/hooks/use-org-workspace.test.ts \
-  src/io/file/org-file.repository.test.ts \
-  src/flows/org-workspace/org-workspace.flow.test.ts
+| 命令 | 用途 |
+| --- | --- |
+| `bun run type:check` | 检查 TypeScript，不生成文件 |
+| `bun run test` | 运行桌面端 Vitest 测试 |
+| `bun run build` | 检查 TypeScript 并构建生产前端 |
+| `bun run tauri build` | 构建原生安装包，同时执行前端构建 |
 
-cd ../..
-cargo test --manifest-path packages/rust-core/Cargo.toml --offline --lib
-```
-
-### 构建
+共享 Rust 库测试在仓库根目录运行：
 
 ```bash
-cd apps/desktop
-bun run build
-bun run tauri build
+cargo test --manifest-path packages/rust-core/Cargo.toml --lib
 ```
 
-## 当前迁移状态
+Org 定向验证、原生架构与打包说明见 [Grain Desktop](./apps/desktop/README.md)。
 
-文件权威的 Org 主路径、编辑器、Agenda、链接、派生索引、迁移产物和合成恢复演练已经完成。删除旧系统前仍需：
+## 仓库结构
 
-1. 在用户明确授权的真实历史 `grain.db` 副本上完成 migration/recovery 演练。
-2. 验收通过后把 `/legacy` 改为只读。
-3. 删除剩余 Lexical 和 SQLite 正文写入路径。
-4. 为 Windows 实现等价 ACL、文件身份检查及原子发布保证。
-5. 继续清理只覆盖旧界面的陈旧测试。
+| 路径 | 职责 |
+| --- | --- |
+| `apps/desktop/` | React/TypeScript 桌面 UI 与 Tauri shell |
+| `apps/desktop/src/flows/` | 业务流程，以及编辑器/workspace 状态归属 |
+| `apps/desktop/src/pipes/org/` | 纯 Org 解析与文本变换 |
+| `apps/desktop/src/io/` | 原生文件系统、API 与事件边界 |
+| `packages/rust-core/` | 目录授权文件系统、索引、迁移与 Tauri commands |
+| `packages/editor-*/` | 编辑器包；存在某个包不代表桌面端正在使用它 |
+| `apps/web/`、`apps/admin/`、`apps/api/`、`apps/api-rust/` | 其他 monorepo 应用，与本地 Org 桌面主路径分开 |
+| `docs/` | 开发、架构、部署与发布文档 |
 
-未经明确授权，不应读取或修改任何真实历史数据库。
+新增桌面文档功能应进入 Org workspace：保留 Org 原文，将文件访问限制在原生 IO 边界内，并保证 SQLite 索引可重建。独立的 Lexical 编辑器包不是桌面端依赖。
 
-## 许可证
+## 文档与许可证
 
-MIT，参见 [LICENSE](./LICENSE)。
+从[桌面端指南](./apps/desktop/README.md)和[文档目录](./docs/README.md)开始。部分旧文档描述原 Novel Editor / SQLite/Lexical 产品，不应作为当前 Org workspace 的功能约定。
+
+Grain 使用 [MIT 许可证](./LICENSE)。
