@@ -2,36 +2,42 @@
 
 **Local-first notes, writing, and tasks in plain Org files.**
 
-Grain is a Tauri desktop app for working with a local directory of `.org` files. It brings a text editor, Agenda, Capture, linked notes, and multiple editor views into one workspace. Your saved documents remain ordinary files you can read and edit outside Grain; SQLite provides rebuildable indexes, not document storage.
+Grain brings writing, linked notes, and task planning into one desktop workspace. Work directly with `.org` files in a local directory you choose—your saved documents stay readable and editable outside the app.
 
-[简体中文](./README.zh-CN.md) · [Releases](https://github.com/jeasoncc/grain/releases) · [Desktop guide](./apps/desktop/README.md) · [Documentation](./docs/README.md)
+[简体中文](./README.zh-CN.md) · [Download](https://github.com/jeasoncc/grain/releases) · [Desktop guide](./apps/desktop/README.md) · [Documentation](./docs/README.md) · [Report an issue](https://github.com/jeasoncc/grain/issues)
 
-> Grain is under active development. This README describes the current Org-based source tree; older published builds may still use the former SQLite/Lexical application. **Linux is the current target for native Org saving, moving, and deletion.** macOS and Windows do not yet provide equivalent filesystem support; unsupported operations are refused rather than using an unsafe fallback.
+![Grain's Linux desktop showing an Org note with headings, scheduled tasks, checklists, and linked notes beside the workspace file tree.](./docs/assets/grain-workspace.png)
+
+*Linux desktop · Catppuccin Mocha theme · Sample workspace, not personal data.*
+
+> **Development status:** This README describes the current Org-based source tree; older releases may use the former SQLite/Lexical application. **Linux and Windows have native Org saving, moving, and deletion backends; Windows verification uses NTFS.** macOS mutations remain unsupported and fail closed. Platform packaging does not establish equivalent filesystem or power-loss guarantees.
+
+[Features](#what-you-can-do) · [Quick start](#get-started) · [Configuration](#file-configuration) · [Data and safety](#your-files-and-data) · [Development](#development)
 
 ## What you can do
 
 | Workflow | Capabilities |
 | --- | --- |
-| Write and organize | CodeMirror 6 editing of raw Org text; heading and list operations; folding; TODO states, checkboxes, tags, properties, and timestamps; subtree refile and archive |
-| Plan your work | Scheduled tasks and deadlines, configurable TODO workflows, named Agenda views, and sparse-tree filtering |
-| Capture ideas | TODO and note templates with file, heading, or datetree targets; separate diary entries with per-entry IDs |
-| Connect notes | `file:`, `id:`, and `CUSTOM_ID` navigation; backlinks; Org-roam node lookup, capture, and link insertion; Org-remark highlights and marginal notes |
-| Work across views | Fuzzy Quick Open, tabs, buffer switching, split editors, detached native views, and Outline/Properties/Backlinks inspectors |
-| Use Org tools | Task clocks and reports, supported Org table operations, HTML/Markdown export, configurable keymaps, Which-Key hints, and opt-in Vim editing |
+| Write and organize | Edit Org text with CodeMirror 6: headings, folding, lists, checkboxes, tags, properties, and timestamps |
+| Plan your work | Schedule tasks, track deadlines, configure TODO workflows, and build named Agenda views |
+| Capture ideas | Send notes and TODOs to a file, heading, or date tree; create separate diary entries with their own IDs |
+| Connect notes | Follow `file:`, `id:`, and `CUSTOM_ID` links; explore backlinks and Org-roam nodes; annotate with Org-remark |
+| Stay in context | Fuzzy Quick Open, tabs, buffer switching, split editors, detached windows, and Outline/Properties/Backlinks inspectors |
+| Use Org tools | Refile and archive subtrees, clock tasks, work with supported Org tables, export HTML/Markdown, and use configurable keys or optional Vim editing |
 
-Views of the same note share text and undo history while keeping their own selection, folds, and scroll position. Switching notes preserves unsaved edits. Autosave is configured in `config.json` under `saving`; manual Save / Save All remains available.
+Open the same note in multiple views: text and undo history are shared, while selections, folds, and scrolling stay independent. Switching notes preserves unsaved edits.
 
 Grain implements a supported subset of Org workflows. It is not an Emacs runtime or a complete replacement for GNU Org mode and its extensions.
 
 ## Get started
 
-Packaged builds are available on [GitHub Releases](https://github.com/jeasoncc/grain/releases). Choose the asset for your operating system and architecture, and check the release version before assuming it includes the current Org workspace. To run the source described here, use the [development instructions](#development).
+Download a packaged build from [GitHub Releases](https://github.com/jeasoncc/grain/releases), matching your operating system and architecture. Check the release version: older builds may not include this Org workspace. To run the current source, follow [Development](#development).
 
 In the native desktop app:
 
-1. Select **Open Documents/Grain** to create or open the default workspace, or **Choose another…** to approve an existing local directory.
-2. Open a `.org` file from the file tree, or use **New Org document** and enter a relative path such as `inbox.org` in the bottom minibuffer.
-3. Use **Execute command** to find actions such as **Open agenda**, **Quick capture**, **New diary entry**, and **Org-roam: find node**.
+1. **Open a workspace.** Select **Open Documents/Grain** for the default directory, or **Choose another…** to approve an existing local directory.
+2. **Open or create a note.** Pick a `.org` file in the file tree, or use **New Org document** and enter a relative path such as `inbox.org` in the bottom input bar.
+3. **Find an action.** Press `Alt-X` for **Execute command**, then search for **Open agenda**, **Quick capture**, **New diary entry**, or **Org-roam: find node**.
 
 A workspace can start with a small `inbox.org`:
 
@@ -60,19 +66,15 @@ Keep the source as plain text.
 | `Ctrl-C Ctrl-T` | Cycle the heading's TODO state |
 | `Ctrl-C Ctrl-O` | Follow the Org link at the cursor |
 
-`Ctrl-C Ctrl-T` is a sequence: press `Ctrl-C`, then `Ctrl-T`. Scoped bindings and optional Vim mode are configured in the `keymaps` section of `config.json`. See the [desktop editing guide](./apps/desktop/README.md#org-editing-keys) for the full supported key set.
-
-The [file tree](./apps/desktop/README.md#file-tree) uses arrow navigation. Focused rows support `F2` rename, `Delete` confirmation, `F5` refresh and `Ctrl/Cmd-F` filtering. Right-click / **…** menus identify their target; new-file and rename readers preselect the filename stem while preserving `.org`. Built-in Vim/Treemacs tree keys are removed; optional Source Vim mode is unchanged.
+`Ctrl-C Ctrl-T` is a sequence: press `Ctrl-C`, then `Ctrl-T`. Configure shortcuts and optional Vim mode in `config.json` → `keymaps`. See the desktop guide for [all editing keys](./apps/desktop/README.md#org-editing-keys) and [file-tree navigation and actions](./apps/desktop/README.md#file-tree).
 
 ## File configuration
 
-Grain has no graphical preferences pages or theme picker. In **Execute command**, run **Open configuration file** to open `config.json` with the system default application; after saving it, run **Reload configuration**.
+Configure Grain through `config.json`, not a graphical preferences page. Run **Open configuration file** from **Execute command**, edit and save the file in your system editor, then run **Reload configuration**.
 
-The native configuration lives in the application configuration directory. On Linux this is `$XDG_CONFIG_HOME/com.lotus.grain/config.json`, or `~/.config/com.lotus.grain/config.json` when `XDG_CONFIG_HOME` is unset. Preferences migrate once when the file is first created; an existing file is never rewritten by Grain.
+On Linux, the file is at `$XDG_CONFIG_HOME/com.lotus.grain/config.json`, or `~/.config/com.lotus.grain/config.json` when `XDG_CONFIG_HOME` is unset. It controls themes, fonts, autosave (`saving`), Capture, keymaps, Org behavior, Agenda views, tool placement, and diagram services. Missing fields use defaults; invalid reloads are rejected as a whole without discarding open text or undo history.
 
-The version-1 JSON document controls appearance, fonts, saving, word counts, Capture, keymaps, Org behavior, Agenda views, tool placement and diagram services. Missing fields use defaults; unknown fields or invalid values reject the complete reload. Visual preferences, Source and Undo are retained on rejection. Themes use exact names from 811 bundled [iTerm2-Color-Schemes](https://github.com/mbadolato/iTerm2-Color-Schemes) palettes.
-
-See the [configuration example and safety rules](./apps/desktop/README.md#file-configuration) and [theme guide](./docs/desktop/THEMES_GUIDE.md).
+See the [configuration example and safety rules](./apps/desktop/README.md#file-configuration) and [theme guide](./docs/desktop/THEMES_GUIDE.md). Grain includes 811 offline [iTerm2-Color-Schemes](https://github.com/mbadolato/iTerm2-Color-Schemes) palettes.
 
 ## Your files and data
 
@@ -89,16 +91,16 @@ Application data directory/
 └── grain.db               Historical database, if present; not a disposable cache
 ```
 
-While a note is open, its shared in-memory buffer owns the working text and undo history. Agenda and backlinks use live text, including unsaved changes, rather than replacing it with an older disk or index snapshot. The last confirmed disk revision is tracked separately for saving.
+SQLite holds rebuildable indexes, not your Org documents. Open notes and undo history live in memory; Agenda and backlinks include unsaved edits. Autosave is configured under `saving` in `config.json`; manual **Save** and **Save All** are also available.
 
 ### File safety and current limits
 
 - Local file access runs through Tauri and Rust, scoped to the directory you approve. A browser preview does not have that authority.
 - Paths are checked for traversal and symlink escapes. Saves, moves, and deletes check the expected file revision; stale or ambiguous state requires review rather than silent replacement.
-- External-change watching and polling protect dirty buffers. Cross-file refile and archive copy and verify the destination before removing the source.
+- Linux descriptor-bound watching and active-document polling protect dirty buffers. Windows currently uses active-document polling and manual workspace refresh, not filesystem watching. Cross-file refile and archive copy and verify the destination before removing the source.
 - Save/delete recovery can retain `.grain-*.tmp` filesystem artifacts. Inspect their paths through **Workspace tools → Recovery files…**. They are mutable recovery objects, **not immutable backups**; there is no automatic restore or garbage collection. Do not remove them blindly. Back up your workspace separately.
 - Ordinary unsaved note buffers do **not** have general restart recovery. Capture draft recovery is a separate, explicit opt-in that stores plaintext draft data in local storage and does not automatically publish it.
-- Native file operations depend on supported Linux filesystem primitives. Unsupported platforms or filesystem conditions fail closed; packaging for an OS does not establish equivalent Org filesystem support.
+- Native operations require supported Linux or Windows filesystem primitives. Windows rejects reparse points and EFS-encrypted workspace objects rather than losing encryption through replacement or derived copies. Unsupported conditions fail closed; see the [Windows installation boundaries](./docs/windows-install-guide.md) before choosing a published build.
 
 Details and recovery boundaries are documented in the [desktop guide](./apps/desktop/README.md#file-mutation-rules).
 
@@ -106,7 +108,7 @@ Details and recovery boundaries are documented in the [desktop guide](./apps/des
 
 An old `grain.db` may still hold the only copy of unmigrated writing. **Never delete it as though it were the derived Org index.** Normal Org startup does not open that historical database.
 
-The former `/legacy` editor and desktop Lexical writing paths have been removed. Historical inspection is read-only at `/history`, and inspection/migration require an explicit native recovery launch with `GRAIN_TAURI_LEGACY_MODE=1`. Work only with an explicitly authorized, isolated database copy. See [SQLite startup modes](./apps/desktop/README.md#sqlite-startup-modes) before using recovery tools.
+The former `/legacy` editor and desktop Lexical writing paths have been removed. Historical inspection is read-only at `/history`, and inspection/migration require an explicit native recovery launch with `GRAIN_TAURI_LEGACY_MODE=1` on a supported platform. Windows historical SQLite recovery/migration remains unsupported; the native Org backend does not migrate old data. Work only with an explicitly authorized, isolated database copy. See [SQLite startup modes](./apps/desktop/README.md#sqlite-startup-modes) before using recovery tools.
 
 ## Development
 
@@ -153,15 +155,12 @@ For focused Org checks, native architecture, and packaging notes, see [Grain Des
 | Path | Responsibility |
 | --- | --- |
 | `apps/desktop/` | React/TypeScript desktop UI and Tauri shell |
-| `apps/desktop/src/flows/` | Business flows and editor/workspace ownership |
-| `apps/desktop/src/pipes/org/` | Pure Org parsing and text transformations |
-| `apps/desktop/src/io/` | Native filesystem, API, and event boundaries |
 | `packages/rust-core/` | Capability-scoped filesystem, indexes, migration, and Tauri commands |
 | `packages/editor-*/` | Editor packages; their presence does not imply desktop integration |
 | `apps/web/`, `apps/admin/`, `apps/api/`, `apps/api-rust/` | Other monorepo applications, separate from the local Org desktop path |
 | `docs/` | Development, architecture, deployment, and release documentation |
 
-New desktop document features belong in the Org workspace. Preserve raw Org text, keep filesystem access behind native IO, and keep SQLite indexes rebuildable. The standalone Lexical package is not a desktop dependency.
+For desktop architecture and contribution boundaries, see [Grain Desktop](./apps/desktop/README.md). New document features belong in the Org workspace; preserve raw text and keep filesystem access behind native IO.
 
 ## Privacy policy
 
