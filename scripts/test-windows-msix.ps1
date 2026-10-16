@@ -182,13 +182,13 @@ namespace GrainReadiness {
         & node (Join-Path $PSScriptRoot 'windows-msix-smoke.mjs') $phase $output 2>&1 | Tee-Object (Join-Path $output "$phase.log")
         if ($LASTEXITCODE -ne 0) {
             $detail = Get-Content (Join-Path $output "$phase.log") -Tail 35 | Out-String
-            throw "Installed native boundary smoke failed ($phase):`n$detail"
+            throw "Installed native and editor smoke failed ($phase):`n$detail"
         }
         $result.phases += $phase
         Stop-InstalledApp
         $process = $null
     }
-    Add-Summary '- Real installed-app create/read/edit/save, stale CAS rejection, no-clobber creation, invalid-capability rejection, Unicode/CRLF disk bytes, and reopen after a full process restart passed. This is native IPC coverage, not keyboard/editor UI coverage.'
+    Add-Summary '- Real installed-app create/read/edit/save, stale CAS rejection, no-clobber creation, invalid-capability rejection, visible file-tree opening, editor Unicode input and Ctrl+S, exact CRLF disk bytes, and visible reopening after a full process restart passed. Native IME composition is not covered.'
 
     # Run the real certification tool when available; never ignore a failed tool or report.
     $appcert = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\App Certification Kit\appcert.exe'

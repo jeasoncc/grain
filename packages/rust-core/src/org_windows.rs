@@ -686,6 +686,7 @@ fn security(file: &cap_std::fs::File) -> io::Result<Vec<u8>> {
 }
 
 #[derive(PartialEq, Eq)]
+#[cfg_attr(test, derive(Debug))]
 struct SecurityFingerprint {
     protected: bool,
     owner: Vec<u8>,
@@ -777,6 +778,13 @@ fn preserve_security(original: &cap_std::fs::File, stage: &cap_std::fs::File) ->
     if security_fingerprint(&mut security(stage)?)? != security_fingerprint(&mut descriptor)?
         || security_fingerprint(&mut security(original)?)? != security_fingerprint(&mut descriptor)?
     {
+        #[cfg(test)]
+        eprintln!(
+            "security preservation mismatch: captured={:?}; stage={:?}; retained_original={:?}",
+            security_fingerprint(&mut descriptor),
+            security(stage).and_then(|mut value| security_fingerprint(&mut value)),
+            security(original).and_then(|mut value| security_fingerprint(&mut value)),
+        );
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
             "Windows security descriptor changed during preservation",
