@@ -24,7 +24,7 @@
 3. 工作流使用 `--include-ignored`，在一次性 Windows NTFS 环境实际执行 EFS 边界用例；它会创建真正的加密文件/目录，验证拒绝明文读取、派生索引和替换写入，不会把缺少 EFS 能力跳过成通过。普通本地测试默认忽略此需隔离环境的用例。任一组失败或没有选中测试，门禁失败；仍收集其他组结果，不能因为一个失败隐藏后面的诊断。
 4. 只有原生组通过，才构建真实前端与 `grain.exe`，运行 `scripts/build-msix.ps1`。使用 Partner Center 实际分配给 `Grain Org` 的 `Jeason.GrainOrg` / `9PF3WZLSWZHX`，不使用旧商店产品。
 5. Windows PowerShell 运行 `scripts/test-windows-msix.ps1`，安装实际 MSIX、验证包身份与可见窗口，通过 Windows 原生 API 确认窗口为 `PerMonitorV2` DPI awareness，再连接其真实 WebView2。`scripts/windows-msix-smoke.mjs` 检查权限拒绝、创建碰撞、过期 revision、Unicode/CRLF 原生保存、文件树打开、编辑器输入与 Ctrl+S，以及全进程重启后再打开。两次启动都核对窗口 DPI context，不把声明 XML 等同于运行时证明。
-6. 如有 WACK，实际运行并保留报告。读取真实 `REPORT/@OVERALL_RESULT`，拒绝部分/未知报告、非零退出以及任何必需检查的非 PASS；仅可选检查有问题的 `WARNING` 明确报告为 `passed-with-wack-warnings`，不是干净 WACK 通过或 Store 认证，完整 findings 留待提交前核对。缺少工具必须明确标记。
+6. 如有 WACK，完成安装与重启 smoke 后卸载本次测试包，再用 `appcert test -appxpackagepath` 验证同一签名 MSIX 归档并保留报告。读取真实 `REPORT/@OVERALL_RESULT`，拒绝部分/未知报告、非零退出以及任何必需检查的非 PASS；总体 `PASS` 或 `WARNING` 中仅有可选问题时，明确报告为 `passed-with-wack-warnings`，不是干净 WACK 通过或 Store 认证，完整 findings 留待提交前核对。缺少工具必须明确标记。
 7. 不论成功失败，都尝试上传已有包、完整原生日志、截图和报告；保留期 14 天。
 
 运行时不存在时，smoke 会在验证 Microsoft 签名后单独配置 WebView2 Evergreen。MSIX 本身不包含这个引导程序。
@@ -52,7 +52,7 @@ Readiness 和 Release 都使用打包脚本中固定的新产品公开身份，�
 
 可见编辑器 smoke 不测试 Windows 原生 IME composition，不覆盖所有 Windows 版本、文件系统、离线干净机器或第三方安全软件环境。保存测试使用真实磁盘字节和真实应用，不使用浏览器替身、mock 文件系统或伪造认证结果。
 
-截图来自直接调整尺寸后的真实原生窗口，不设置 Playwright viewport、不模拟设备也不放大图片。`*-process.json` 记录真实 client area 和经 `AreDpiAwarenessContextsEqual` 核验的 DPI context；context 是不透明句柄，不能直接用数值是否等于 `-4` 判断。`*-viewport.json` 记录 WebView 和 PNG 像素尺寸；提交截图要求至少 1366 × 768、PNG 不超过 50 MB，smoke 直接核验原始图片。
+截图先等待带标题的真实主窗口及其 Tauri 页面就绪，再直接调整原生窗口尺寸，不设置 Playwright viewport、不模拟设备也不放大图片。`*-process.json` 记录真实 client area 和经 `AreDpiAwarenessContextsEqual` 核验的 DPI context；context 是不透明句柄，不能直接用数值是否等于 `-4` 判断。`*-viewport.json` 记录 WebView 和 PNG 像素尺寸；提交截图要求至少 1366 × 768、PNG 不超过 50 MB，smoke 直接核验原始图片。
 
 WACK 成功也只是该环境的工具结果；商店发布必须有 Partner Center 的真实提交 ID 和状态。没有认证工具或商店权限时，报告该缺口，不吞掉错误或填写假的通过结果。
 
