@@ -269,16 +269,16 @@ namespace GrainReadiness {
         $result.wackFindings = $findings
         $requiredFindings = @($findings | Where-Object { -not $_.optional })
         if ($verdict -notin @('PASS', 'WARNING') -or $requiredFindings.Count -gt 0 -or
-            ($verdict -eq 'PASS' -and $findings.Count -gt 0) -or ($verdict -eq 'WARNING' -and $findings.Count -eq 0)) {
+            ($verdict -eq 'WARNING' -and $findings.Count -eq 0)) {
             $result.wack = 'failed or unrecognized checks; certification NOT verified'
             throw "WACK $verdict; non-passing checks:`n$($findings | ConvertTo-Json -Depth 4)"
         }
-        if ($verdict -eq 'WARNING') {
-            # An optional static scan is not a clean pass. Preserve its findings for review.
-            $result.wack = 'WARNING: optional findings require review; not a clean WACK pass or Store certification'
+        if ($findings.Count -gt 0) {
+            # Overall PASS can still contain optional failures; retain them as warnings.
+            $result.wack = 'Optional findings require review; not a clean WACK pass or Store certification'
             $result.status = 'passed-with-wack-warnings'
             Write-Warning $result.wack
-            Add-Summary ("- **WACK WARNING; not certified.** All mandatory checks passed, but optional findings remain: " + (($findings | ForEach-Object { $_.name + ': ' + $_.result }) -join '; ') + ". Review wack-report.xml and readiness-result.json before submission.")
+            Add-Summary ("- **WACK optional findings; not certified.** Overall verdict: $verdict. All mandatory checks passed, but optional findings remain: " + (($findings | ForEach-Object { $_.name + ': ' + $_.result }) -join '; ') + ". Review wack-report.xml and readiness-result.json before submission.")
         } else {
             $result.wack = 'PASS on hosted runner; not Store certification'
             Add-Summary '- WACK produced a real PASS report for this hosted environment. Microsoft Store certification remains a separate review.'
