@@ -6,13 +6,15 @@
 
 | 目标 | GitHub Release 安装包 |
 | --- | --- |
-| Windows x64 | MSI、NSIS EXE、MSIX |
+| Windows x64 | MSI、NSIS EXE；MSIX 另需独立 Org 商店身份配置及安装验证 |
 | macOS Apple Silicon | aarch64 DMG |
 | macOS Intel | x64 DMG |
 | Linux x86_64 | DEB、RPM、AppImage |
 | Linux ARM64 | DEB、RPM、AppImage |
 
 安装包存在不等于对应操作系统上的 Org 文件系统能力已经等价支持。文件操作与恢复边界以[桌面端指南](../apps/desktop/README.md#file-mutation-rules)为准。
+
+`main` 上相关变动会先触发 [Windows Native Readiness](https://github.com/jeasoncc/grain/actions/workflows/windows-readiness.yml)，运行真实 Windows 文件、导出、日历与权限回归，再安装运行一个明确标记 `readiness-only` 的独立测试 MSIX。它不创建 Release，也不是可提交的 Store 包。
 
 桌面发布不会再自动派发 AUR、Flatpak、PPA、COPR、OBS、Gentoo、Winget、Scoop、Chocolatey 或 Homebrew 工作流，也没有自动等待这些渠道的发布编排器。
 
@@ -39,12 +41,22 @@ bun run tag:desktop
 
 该命令读取根版本、创建带注释的 `desktop-v` 标签并推送到 `origin`。不要覆盖、删除或移动已经发布的标签；修复应使用新的补丁版本。直接手动运行工作流只做所选 ref 的构建，发布仍使用明确的版本标签。
 
+Windows 修复版本必须先通过实机门禁。Org 版保留旧商店产品、建立独立新条目；取得真实新身份并配置 `GRAIN_STORE_PRODUCT_ID`、`GRAIN_STORE_IDENTITY`、`GRAIN_STORE_PUBLISHER` repository variables 后再创建正式标签。MSIX job 在缺少身份或使用旧产品身份时失败，不退回测试包；当前待发布版本为 0.1.606，不能因版本已递增就宣称已经发布。
+
 ## 发布成功的验收
 
 1. 在 [Release Desktop App](https://github.com/jeasoncc/grain/actions/workflows/release-desktop.yml) 中找到对应标签与提交，确认五个 Tauri 矩阵任务以及 MSIX 任务的实际结果。
 2. 打开该标签的 [GitHub Release](https://github.com/jeasoncc/grain/releases)，核对版本、架构和上表中的安装包。其他任务可能先创建 Release；Release 页面存在本身不能证明全部打包成功。
 3. 下载实际安装包，核对下载内容与发布的 SHA256。构建、附件上传、安装和原生功能实测是不同的验证层次，分别报告。
 4. 查看失败任务的步骤及日志。日志过期时只能报告仍可见的任务结果，不能猜测具体编译错误。
+5. MSIX job 会安装、启动、通过文件树打开与编辑器 Ctrl+S 保存、核对 Unicode/CRLF 磁盘字节、完全重启并重新打开**该 job 将上传的同一个包**。检查其 `msix-readiness-*` 证据及清理结果；失败时不上传该 MSIX。
+
+## Microsoft Store
+
+本标签流程不向 Partner Center 提交。测试证书、托管 Windows smoke 或 WACK 结果均不是商店审核结论。Org 版使用独立新产品，不能更新旧「小麦写作」`9NV7M2PW25B3`，也不能提交 CI 的 `Grain.WindowsReadiness` 身份。
+
+新产品身份、公开隐私政策、真实 Windows 截图、WebView2 依赖和旧格式不自动迁移说明都准备完毕后，再按[Microsoft Store 指南](./microsoft-store-guide.md)提交，记录实际 submission ID 与审核/发布状态。
+
 
 ## 外部渠道
 

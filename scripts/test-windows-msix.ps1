@@ -155,11 +155,13 @@ namespace GrainReadiness {
     $installed | Select-Object Name, Publisher, Version, Architecture, PackageFullName, PackageFamilyName, InstallLocation |
         ConvertTo-Json | Set-Content (Join-Path $output 'installed-package.json') -Encoding UTF8
 
-    # Registry overrides reach normal AppsFolder activation, unlike shell-only environment variables.
-    # They apply only to this app and are restored in finally. No production debugging flag is built in.
+    # WebView2 150+ ignores HKCU overrides for elevated hosts, including hosted runners.
+    # https://github.com/MicrosoftEdge/WebView2Feedback/issues/5645
+    # App-scoped HKLM values reach normal AppsFolder activation and are restored in finally.
+    # No production debugging flag is built in.
     $aumid = $installed.PackageFamilyName + '!Grain'
     foreach ($name in @($aumid, 'grain.exe')) {
-        $key = 'HKCU:\Software\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments'
+        $key = 'HKLM:\Software\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments'
         if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
         $properties = Get-ItemProperty $key
         $previous = $properties.PSObject.Properties[$name]

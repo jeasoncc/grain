@@ -31,10 +31,10 @@ use windows_sys::Win32::Security::{
 use windows_sys::Win32::Storage::FileSystem::{
     FileAttributeTagInfo, FileBasicInfo, FileIdInfo, GetFileInformationByHandleEx, GetFileType,
     GetFinalPathNameByHandleW, DELETE, FILE_ALL_ACCESS, FILE_ATTRIBUTE_DIRECTORY,
-    FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_REPARSE_POINT, FILE_ATTRIBUTE_TAG_INFO, FILE_BASIC_INFO,
-    FILE_ID_INFO, FILE_LIST_DIRECTORY, FILE_READ_ATTRIBUTES, FILE_READ_DATA, FILE_SHARE_DELETE,
-    FILE_SHARE_READ, FILE_SHARE_WRITE, FILE_TRAVERSE, FILE_TYPE_DISK, FILE_WRITE_DATA,
-    READ_CONTROL, SYNCHRONIZE, VOLUME_NAME_NONE,
+    FILE_ATTRIBUTE_ENCRYPTED, FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_REPARSE_POINT,
+    FILE_ATTRIBUTE_TAG_INFO, FILE_BASIC_INFO, FILE_ID_INFO, FILE_LIST_DIRECTORY,
+    FILE_READ_ATTRIBUTES, FILE_READ_DATA, FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE,
+    FILE_TRAVERSE, FILE_TYPE_DISK, FILE_WRITE_DATA, READ_CONTROL, SYNCHRONIZE, VOLUME_NAME_NONE,
 };
 use windows_sys::Win32::System::IO::IO_STATUS_BLOCK;
 
@@ -118,19 +118,11 @@ fn raw(handle: &impl AsRawHandle) -> HANDLE {
     handle.as_raw_handle().cast()
 }
 
-#[track_caller]
 fn status(result: i32) -> io::Result<()> {
     if result < 0 {
-        let error = io::Error::from_raw_os_error(unsafe { RtlNtStatusToDosError(result) } as i32);
-        // Temporary native-run diagnostics: retain the unwrapped OS error for classification.
-        #[cfg(test)]
-        eprintln!(
-            "Windows native call at {} failed: NTSTATUS={:#010x}, {}",
-            std::panic::Location::caller(),
-            result as u32,
-            error
-        );
-        Err(error)
+        Err(io::Error::from_raw_os_error(
+            unsafe { RtlNtStatusToDosError(result) } as i32,
+        ))
     } else {
         Ok(())
     }
@@ -179,6 +171,16 @@ fn attributes(handle: &impl AsRawHandle) -> io::Result<u32> {
         ));
     }
     Ok(info.FileAttributes)
+}
+
+fn require_unencrypted(attributes: u32) -> io::Result<()> {
+    if attributes & FILE_ATTRIBUTE_ENCRYPTED != 0 {
+        return Err(io::Error::new(
+            io::ErrorKind::Unsupported,
+            "EFS-encrypted objects are not supported: replacement and derived copies must not lose encryption",
+        ));
+    }
+    Ok(())
 }
 
 // Native child opens accept only one stream-free leaf, never a Win32-normalized '.' path.
@@ -249,17 +251,6 @@ fn nt_open_counted(
             0,
         )
     };
-    #[cfg(test)]
-    if native_status < 0 {
-        eprintln!(
-            "NtCreateFile name={:?}, access={:#010x}, share={:#x}, disposition={}, options={:#010x}",
-            String::from_utf16_lossy(wide),
-            access | SYNCHRONIZE,
-            share,
-            disposition,
-            options
-        );
-    }
     status(native_status)?;
     // NtCreateFile returned an owned synchronous handle on success.
     Ok(cap_std::fs::File::from_std(unsafe {
@@ -277,6 +268,7 @@ fn directory(parent: &Dir, name: &OsStr, disposition: u32) -> io::Result<Dir> {
         FILE_DIRECTORY_FILE,
     )?;
     let attrs = attributes(&file)?;
+    require_unencrypted(attrs)?;
     if attrs & FILE_ATTRIBUTE_REPARSE_POINT != 0 || attrs & FILE_ATTRIBUTE_DIRECTORY == 0 {
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
@@ -305,8 +297,9 @@ fn pin(root: &Dir) -> io::Result<Dir> {
         FILE_OPEN,
         FILE_DIRECTORY_FILE,
     )?;
-    if attributes(&file)? & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY)
-        != FILE_ATTRIBUTE_DIRECTORY
+    let attrs = attributes(&file)?;
+    require_unencrypted(attrs)?;
+    if attrs & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY
     {
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
@@ -487,7 +480,9 @@ fn open_file(parent: &Dir, name: &OsStr, mutate: bool) -> OrgFilesystemResult<ca
         FILE_OPEN,
         FILE_NON_DIRECTORY_FILE,
     )?;
-    if attributes(&file)? & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+    let attrs = attributes(&file)?;
+    require_unencrypted(attrs)?;
+    if attrs & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
         return Err(OrgFilesystemError::OutsideWorkspace(
             name.to_string_lossy().into_owned(),
         ));
@@ -686,7 +681,6 @@ fn security(file: &cap_std::fs::File) -> io::Result<Vec<u8>> {
 }
 
 #[derive(PartialEq, Eq)]
-#[cfg_attr(test, derive(Debug))]
 struct SecurityFingerprint {
     protected: bool,
     owner: Vec<u8>,
@@ -786,13 +780,6 @@ fn preserve_security(original: &cap_std::fs::File, stage: &cap_std::fs::File) ->
     if security_fingerprint(&mut security(stage)?)? != expected
         || security_fingerprint(&mut security(original)?)? != expected
     {
-        #[cfg(test)]
-        eprintln!(
-            "security preservation mismatch: captured={:?}; stage={:?}; retained_original={:?}",
-            expected,
-            security(stage).and_then(|mut value| security_fingerprint(&mut value)),
-            security(original).and_then(|mut value| security_fingerprint(&mut value)),
-        );
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
             "Windows security descriptor changed during preservation",
@@ -802,14 +789,16 @@ fn preserve_security(original: &cap_std::fs::File, stage: &cap_std::fs::File) ->
 }
 
 fn create_file(directory: &Dir, name: &str) -> io::Result<cap_std::fs::File> {
-    nt_open(
+    let file = nt_open(
         directory,
         OsStr::new(name),
         FILE_ALL_ACCESS,
         FILE_SHARE_READ,
         FILE_CREATE,
         FILE_NON_DIRECTORY_FILE,
-    )
+    )?;
+    require_unencrypted(attributes(&file)?)?;
+    Ok(file)
 }
 
 fn write_json<T: Serialize>(
@@ -1454,7 +1443,9 @@ fn recover_directory(directory: &Dir, relative: &Path) -> OrgFilesystemResult<()
                 continue;
             };
             let attrs = attributes(&file)?;
-            if attrs & FILE_ATTRIBUTE_REPARSE_POINT == 0 && attrs & FILE_ATTRIBUTE_DIRECTORY != 0 {
+            if attrs & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_ENCRYPTED) == 0
+                && attrs & FILE_ATTRIBUTE_DIRECTORY != 0
+            {
                 let child = open_directory(directory, &name)?;
                 recover_directory(&child, &relative.join(name))?;
             }
@@ -1528,7 +1519,7 @@ fn scan_directory(
             continue;
         };
         let attrs = attributes(&file)?;
-        if attrs & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+        if attrs & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_ENCRYPTED) != 0 {
             continue;
         }
         if attrs & FILE_ATTRIBUTE_DIRECTORY != 0 {
@@ -2017,6 +2008,59 @@ mod tests {
                 .unwrap(),
             OLD.as_bytes()
         );
+    }
+
+    #[test]
+    #[ignore = "Requires EFS-enabled NTFS and a disposable user profile; Windows readiness opts in"]
+    fn windows_encrypted_objects_do_not_leak_plaintext_or_lose_encryption() {
+        use windows_sys::Win32::Storage::FileSystem::EncryptFileW;
+        let workspace = tempdir().unwrap();
+        let root = open_workspace_capability(workspace.path()).unwrap();
+        root.write("secret.org", OLD).unwrap();
+        let path = workspace.path().join("secret.org");
+        let encrypt = |path: &Path| {
+            let wide: Vec<u16> = path.as_os_str().encode_wide().chain([0]).collect();
+            assert_ne!(
+                unsafe { EncryptFileW(wide.as_ptr()) },
+                0,
+                "EFS fixture requires an enabled NTFS environment: {}",
+                io::Error::last_os_error()
+            );
+        };
+        encrypt(&path);
+        assert_eq!(std::fs::read(&path).unwrap(), OLD.as_bytes());
+        assert!(matches!(
+            read_org_document_with_capability(&root, "secret.org"),
+            Err(OrgFilesystemError::Io(error)) if error.kind() == io::ErrorKind::Unsupported
+        ));
+        assert!(matches!(
+            write_org_document_with_capability(&root, "secret.org", NEW, Some(&revision(OLD.as_bytes()))),
+            Err(OrgFilesystemError::Io(error)) if error.kind() == io::ErrorKind::Unsupported
+        ));
+        assert!(!scan_org_workspace_with_capability(&root)
+            .unwrap()
+            .documents
+            .iter()
+            .any(|document| document.relative_path == "secret.org"));
+        assert_eq!(std::fs::read(&path).unwrap(), OLD.as_bytes());
+        assert_ne!(
+            attributes(&root.open("secret.org").unwrap()).unwrap() & FILE_ATTRIBUTE_ENCRYPTED,
+            0
+        );
+        let entries: Vec<_> = root
+            .entries()
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect();
+        assert_eq!(entries, [OsString::from("secret.org")]);
+
+        encrypt(workspace.path());
+        assert!(matches!(
+            write_org_document_with_capability(&root, "new.org", NEW, Some("<missing>")),
+            Err(OrgFilesystemError::Io(error)) if error.kind() == io::ErrorKind::Unsupported
+        ));
+        assert!(!workspace.path().join("new.org").exists());
+        assert_eq!(std::fs::read(&path).unwrap(), OLD.as_bytes());
     }
 
     #[test]

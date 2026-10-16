@@ -21,7 +21,7 @@
    - `org_filesystem::export::windows_platform::tests`
    - `org_clock_context::platform::tests`
    - `tauri::commands::org_document_commands::tests`
-3. 任一组失败或没有选中测试，门禁失败。仍收集其他组结果，不能因为一个失败隐藏后面的诊断。
+3. 工作流使用 `--include-ignored`，在一次性 Windows NTFS 环境实际执行 EFS 边界用例；它会创建真正的加密文件/目录，验证拒绝明文读取、派生索引和替换写入，不会把缺少 EFS 能力跳过成通过。普通本地测试默认忽略此需隔离环境的用例。任一组失败或没有选中测试，门禁失败；仍收集其他组结果，不能因为一个失败隐藏后面的诊断。
 4. 只有原生组通过，才构建真实前端与 `grain.exe`，运行 `scripts/build-msix.ps1 -ReadinessOnly`。测试身份为 `Grain.WindowsReadiness`，不使用旧商店产品，不是可提交的 Store 身份。
 5. Windows PowerShell 运行 `scripts/test-windows-msix.ps1`，安装实际 MSIX、验证包身份与可见窗口、连接其真实 WebView2。`scripts/windows-msix-smoke.mjs` 检查权限拒绝、创建碰撞、过期 revision、Unicode/CRLF 原生保存、文件树打开、编辑器输入与 Ctrl+S，以及全进程重启后再打开。
 6. 如有 WACK，实际运行并保留报告；缺少工具或未认证的环境必须明确标记，不能据此声称获得 Store 认证。
@@ -61,6 +61,7 @@ WACK 成功也只是该环境的工具结果；商店发布必须有 Partner Cen
 - Native 失败：保留预期的拒绝路径、ACL/身份检查和无覆盖语义，不为绿色 CI 绕开安全边界。
 - Build 失败：检查实际 Rust/TypeScript/SDK 错误，不能用已有旧 EXE 代替构建。
 - Install/launch 失败：检查签名、身份、WebView2 和 Appx 事件；保留截图及日志。
+- WebView2 已加载但 CDP 不可达：150+ Runtime 会忽略高完整性进程的环境变量和 HKCU 覆盖。Smoke 使用仅匹配本应用的 HKLM `AdditionalBrowserArguments`，在退出时恢复；不设置 `*` 全局规则，也不修改生产 EXE。见 [上游安全加固说明](https://github.com/MicrosoftEdge/WebView2Feedback/issues/5645#issuecomment-4934355430)。
 - WACK 失败：查看原始 XML 和工具日志，不能把非零退出或未知报告当作通过。
 - Cleanup 失败：检查本次包、叶证书与调试覆盖是否还存在，不能留下一台被修改信任设置的普通用户电脑。
 

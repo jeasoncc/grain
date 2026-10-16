@@ -18,6 +18,9 @@ Grain is transitioning from a SQLite/Lexical writing application to a local-firs
 - [Deployment](./deployment/README.md)
 - [Windows installation](./windows-install-guide.md)
 - [Microsoft Store publishing](./microsoft-store-guide.md)
+- [MSIX packaging and signing boundaries](./msix-packaging-guide.md)
+- [Windows readiness automation](./msix-automation-guide.md)
+- [Disposable Windows MSIX verification](./msix-quick-start.md)
 - [AUR publishing](./AUR发布指南.md)
 
 ## Other applications
@@ -36,5 +39,6 @@ The repository contains historical documentation for the former Novel Editor pro
 - CodeMirror is the primary Org editor.
 - SQLite/Lexical documentation applies only to the explicit legacy route unless stated otherwise.
 - No real historical `grain.db` should be read or modified without explicit authorization.
+- `archive/` preserves historical reports, including obsolete paths and publishing claims. Use the current release guides above, not archived instructions.
 
 When updating documentation, clearly label legacy-only behavior and avoid describing SQLite body storage as the current source of truth.

@@ -33,13 +33,13 @@ bun run tauri build --no-bundle
 回到仓库根目录，逐条检查退出码及实际执行的测试数：
 
 ```powershell
-cargo test --manifest-path packages/rust-core/Cargo.toml --lib org_filesystem::windows -- --nocapture
+cargo test --manifest-path packages/rust-core/Cargo.toml --lib org_filesystem::windows -- --nocapture --include-ignored
 cargo test --manifest-path packages/rust-core/Cargo.toml --lib org_filesystem::export::windows_platform::tests -- --nocapture
 cargo test --manifest-path packages/rust-core/Cargo.toml --lib org_clock_context::platform::tests -- --nocapture
 cargo test --manifest-path packages/rust-core/Cargo.toml --lib tauri::commands::org_document_commands::tests -- --nocapture
 ```
 
-测试失败或零测试均未通过门禁。推荐直接使用仓库的 Windows Native Readiness 工作流，它会保留每组日志并在失败时阻止后续打包发布。
+测试失败或零测试均未通过门禁。第一条命令显式执行默认忽略的 EFS 边界测试，只能在启用 EFS 的一次性 NTFS / 用户环境运行；它使用真正的加密文件和目录，环境缺少能力会失败，不算通过。推荐使用 Windows Native Readiness 工作流，它会保留每组日志并在失败时阻止后续打包发布。
 
 ## 打包与安装后验证
 
@@ -74,6 +74,6 @@ powershell.exe -NoProfile -File ./scripts/test-windows-msix.ps1
 - GitHub 测试 MSIX 不是已由 Store 签名的安装包。
 - `desktop-v*` 标签不自动提交商店；正式 Release 的 MSIX job 也必须安装验证它将上传的同一个包。
 - 0.1.605 的 Windows Org 写入不可用，不得当作商店候选。
-- 更新现有产品前，必须明确旧 IndexedDB/`grain.db` 不自动迁移的兼容性决定。
+- Org 版使用独立新产品，不覆盖旧条目；旧 IndexedDB/`grain.db` 不自动迁移，须先备份并使用旧版导出。
 
 下一步见 [Microsoft Store 提交指南](./microsoft-store-guide.md)，完整实现与信任边界见 [MSIX 打包指南](./msix-packaging-guide.md)。

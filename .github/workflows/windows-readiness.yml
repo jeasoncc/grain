@@ -82,7 +82,7 @@ jobs:
             $name = $filter.Replace('::', '-')
             $log = "artifacts/windows-readiness/native-$name.log"
             $ErrorActionPreference = 'Continue'
-            & cargo test --manifest-path packages/rust-core/Cargo.toml --lib $filter -- --nocapture 2>&1 | Tee-Object $log
+            & cargo test --manifest-path packages/rust-core/Cargo.toml --lib $filter -- --nocapture --include-ignored 2>&1 | Tee-Object $log
             $code = $LASTEXITCODE
             $ErrorActionPreference = 'Stop'
             $text = Get-Content $log -Raw

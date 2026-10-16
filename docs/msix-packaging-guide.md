@@ -52,6 +52,8 @@ Manifest 当前最低系统为 Windows 10 build 17763。一次 `windows-latest` 
 
 `runFullTrust` 是桌面桥接能力，不是 UWP 沙箱保证。独立新产品必须使用自己由 Partner Center 分配的身份。
 
+Manifest 的 UI 资源语言为 `en-US`，与当前主要英文界面一致；支持中文 Org 正文并不表示已有完整中文 UI。本地 EFS 加密对象不作为受支持的 workspace 内容，避免替换保存或派生副本丢失原有加密；Windows readiness 会在隔离 NTFS 环境实际核对此拒绝边界。
+
 ## WebView2 前置条件
 
 此包**没有内置 WebView2 Runtime，也没有部署运行时的 MSI/NSIS 引导程序**。需要预先安装 [Microsoft Edge WebView2 Evergreen Runtime](https://developer.microsoft.com/microsoft-edge/webview2/consumer/)，不是只安装 Edge 浏览器。

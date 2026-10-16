@@ -86,7 +86,7 @@ try {
   <Dependencies>
     <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0" />
   </Dependencies>
-  <Resources><Resource Language="zh-CN" /></Resources>
+  <Resources><Resource Language="en-US" /></Resources>
   <Applications>
     <Application Id="Grain" Executable="grain.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements DisplayName="$displayName" Description="Local Org files, notes, and tasks"
