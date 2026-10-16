@@ -21,7 +21,9 @@ function Find-SdkTool([string]$Name) {
 try {
     $config = Get-Content (Join-Path $repo 'apps/desktop/src-tauri/tauri.conf.json') -Raw | ConvertFrom-Json
     if ($config.version -notmatch '^\d+\.\d+\.\d+$') { throw 'MSIX requires the real numeric desktop release version (major.minor.patch).' }
-    $version = [version]($config.version + '.0')
+    $appVersion = [version]($config.version + '.0')
+    # Store forbids major 0; offset every major to preserve ordering across pre-1 and later releases.
+    $version = [version]::new($appVersion.Major + 1, $appVersion.Minor, $appVersion.Build, 0)
     foreach ($component in @($version.Major, $version.Minor, $version.Build, $version.Revision)) {
         if ($component -gt 65535) { throw "Version component exceeds MSIX range: $version" }
     }
@@ -102,6 +104,7 @@ try {
         identity = $identity
         publisher = $publisher
         version = $version.ToString()
+        appVersion = $config.version
         architecture = 'x64'
         purpose = $purpose
         storeProductId = $productId
@@ -121,7 +124,7 @@ try {
 ### MSIX package
 - Identity: ``$identity`` / ``$publisher``
 - Purpose: ``$purpose``; Store product: ``$productId``. Submit only after the same package passes installed-app verification.
-- Version: ``$version``; architecture: ``x64``
+- App version: ``$($config.version)``; Store package version: ``$version``; architecture: ``x64``
 - SHA-256: ``$((Get-FileHash $package -Algorithm SHA256).Hash)``
 - WebView2 Evergreen is a prerequisite, **not bundled or installed by this MSIX**. Provision Evergreen separately, including on clean Windows 10. Readiness explicitly checks/provisions the runtime; an install-only pass does not prove runtime availability.
 - Self-signing/MakeAppx success is **not** Store certification.
