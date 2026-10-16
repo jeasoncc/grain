@@ -187,9 +187,12 @@ mod tests {
     use super::*;
 
     fn directory() -> tempfile::TempDir {
+        // Windows runner TEMP can contain RUNNER~1. Resolve only this trusted fixture base;
+        // production picker destinations must still reject short-name/reparse aliases.
+        let base = std::env::temp_dir().canonicalize().unwrap();
         tempfile::Builder::new()
             .prefix("grain-windows-export-")
-            .tempdir()
+            .tempdir_in(base)
             .unwrap()
     }
 

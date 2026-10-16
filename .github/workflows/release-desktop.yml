@@ -272,13 +272,27 @@ jobs:
         shell: pwsh
         run: ./scripts/build-msix.ps1
 
+      - name: Verify installed MSIX before publication
+        shell: powershell
+        run: ./scripts/test-windows-msix.ps1
+
       # 上传 MSIX 产物
       - name: Upload MSIX artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: msix-package
           path: artifacts/windows-msix/
           if-no-files-found: error
+
+      - name: Upload installed MSIX evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: msix-readiness-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/windows-readiness/
+          if-no-files-found: warn
+          retention-days: 14
 
       # 发布到 GitHub Release
       - name: Upload MSIX to Release

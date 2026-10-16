@@ -114,8 +114,8 @@ pub struct OrgWorkspaceSelection {
 impl OrgWorkspaceRegistry {
     fn approve(&self, root: &Path) -> Result<(PathBuf, Dir, String), String> {
         let canonical = canonical_directory(root)?;
-        // Bind the selected directory before publishing approval. The returned and retained
-        // handles refer to this inode even if the ambient display path is later replaced.
+        // Bind the selected directory before publishing approval. Unix retains the inode
+        // across root renames; Windows denies root renames until every retained handle closes.
         let directory = Dir::open_ambient_dir(&canonical, ambient_authority())
             .map_err(|error| format!("Cannot open Org workspace: {error}"))?;
         let token = uuid::Uuid::new_v4().to_string();
@@ -892,7 +892,7 @@ mod tests {
         )
     }
 
-    #[cfg(any(unix, windows))]
+    #[cfg(unix)]
     #[test]
     fn registry_retains_selected_directory_after_root_swap() {
         let parent = tempdir().unwrap();
@@ -943,7 +943,7 @@ mod tests {
         assert!(registry.require_approved(&display_path, &token).is_err());
     }
 
-    #[cfg(any(unix, windows))]
+    #[cfg(unix)]
     #[test]
     fn released_generation_rejects_queued_work_but_retains_acquired_descriptor_after_root_swap() {
         let parent = tempdir().unwrap();
@@ -999,6 +999,94 @@ mod tests {
                 .unwrap(),
             original
         );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_registry_pins_selected_directory_until_lease_release() {
+        let parent = tempdir().unwrap();
+        let selected = parent.path().join("selected");
+        let retained = parent.path().join("retained");
+        fs::create_dir(&selected).unwrap();
+        fs::write(selected.join("original.org"), "original").unwrap();
+
+        let registry = OrgWorkspaceRegistry::default();
+        let (display, selection, token) = registry.approve(&selected).unwrap();
+        drop(selection);
+        // Windows refuses the swap itself while the registry retains the root.
+        assert_eq!(fs::rename(&selected, &retained).unwrap_err().raw_os_error(), Some(32));
+        assert!(!retained.exists());
+        assert_eq!(registry.approved_display_path(&display, &token).unwrap(), display);
+        let approved = registry.require_approved(&display, &token).unwrap();
+        assert_eq!(approved.read_to_string("original.org").unwrap(), "original");
+        approved.write("original.org", "updated through approved descriptor").unwrap();
+        drop(approved);
+        assert_eq!(fs::read_to_string(selected.join("original.org")).unwrap(),
+            "updated through approved descriptor");
+
+        registry.revoke(&display, &token).unwrap();
+        // Once all handles are released, a genuine replacement can occupy the old name.
+        fs::rename(&selected, &retained).unwrap();
+        fs::create_dir(&selected).unwrap();
+        fs::write(selected.join("replacement.org"), "replacement").unwrap();
+        assert!(registry.require_approved(&display, &token).is_err());
+        assert!(registry.approved_display_path(&display, &token).is_err());
+        assert!(registry.require_approved(&retained, &token).is_err());
+        let (replacement_display, replacement, replacement_token) = registry.approve(&selected).unwrap();
+        assert_eq!(replacement_display, display);
+        assert_ne!(replacement_token, token);
+        assert_eq!(replacement.read_to_string("replacement.org").unwrap(), "replacement");
+        assert!(replacement.read_to_string("original.org").is_err());
+        assert_eq!(fs::read_to_string(retained.join("original.org")).unwrap(),
+            "updated through approved descriptor");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_released_generation_retains_acquired_descriptor_and_blocks_root_swap() {
+        let parent = tempdir().unwrap();
+        let selected = parent.path().join("selected");
+        let retained = parent.path().join("retained");
+        fs::create_dir(&selected).unwrap();
+        fs::write(selected.join("document.org"), "* Original\n").unwrap();
+        let registry = OrgWorkspaceRegistry::default();
+        let (display_g1, selection_g1, token_g1) = registry.approve(&selected).unwrap();
+        drop(selection_g1);
+        let captured_g1 = registry.require_approved(&display_g1, &token_g1).unwrap();
+        registry.revoke(&display_g1, &token_g1).unwrap();
+        assert!(registry.require_approved(&display_g1, &token_g1).is_err());
+        // Already-authorized work still owns a capability, so the OS still pins its root.
+        assert_eq!(fs::rename(&selected, &retained).unwrap_err().raw_os_error(), Some(32));
+        assert_eq!(captured_g1.read_to_string("document.org").unwrap(), "* Original\n");
+        captured_g1.write("document.org", "* Written through captured G1\n").unwrap();
+
+        let (display_g2, selection_g2, token_g2) = registry.approve(&selected).unwrap();
+        drop(selection_g2);
+        assert_eq!(display_g1, display_g2);
+        assert_ne!(token_g1, token_g2);
+        let authorized_g2 = registry.require_approved(&display_g2, &token_g2).unwrap();
+        assert!(same_directory_capability(&captured_g1, &authorized_g2).unwrap());
+        assert_eq!(authorized_g2.read_to_string("document.org").unwrap(),
+            "* Written through captured G1\n");
+        // Reapproval cannot revive queued work carrying a released generation.
+        assert!(registry.require_approved(&display_g1, &token_g1).is_err());
+        registry.revoke(&display_g2, &token_g2).unwrap();
+        drop(authorized_g2);
+        assert_eq!(fs::rename(&selected, &retained).unwrap_err().raw_os_error(), Some(32));
+        drop(captured_g1);
+
+        fs::rename(&selected, &retained).unwrap();
+        fs::create_dir(&selected).unwrap();
+        fs::write(selected.join("document.org"), "* Original\n").unwrap();
+        let (display_g3, replacement, token_g3) = registry.approve(&selected).unwrap();
+        assert_eq!(display_g3, display_g1);
+        assert_ne!(token_g3, token_g1);
+        assert_ne!(token_g3, token_g2);
+        assert!(registry.require_approved(&display_g1, &token_g1).is_err());
+        assert!(registry.require_approved(&display_g2, &token_g2).is_err());
+        assert_eq!(replacement.read_to_string("document.org").unwrap(), "* Original\n");
+        assert_eq!(fs::read_to_string(retained.join("document.org")).unwrap(),
+            "* Written through captured G1\n");
     }
 
     #[cfg(target_os = "linux")]
@@ -1121,17 +1209,35 @@ mod tests {
         }
         let directory = registry.require_approved(&path, &second).unwrap();
         assert!(descriptor_watch_path(&path, &directory).is_err());
-        fs::rename(&selected, parent.path().join("retained")).unwrap();
-        fs::create_dir(&selected).unwrap();
-        fs::write(selected.join("notes.org"), "* Replacement\n").unwrap();
-        assert!(registry.approve(&selected).is_err());
-        assert!(reveal_approved_workspace_path(&registry, &path, &second,
-            Some(Path::new("notes.org")), |_| panic!("replacement reached opener")).is_err());
+        let retained = parent.path().join("retained");
+        // A live capability prevents the named root from being swapped on Windows.
+        assert_eq!(fs::rename(&selected, &retained).unwrap_err().raw_os_error(), Some(32));
+        reveal_approved_workspace_path(&registry, &path, &second,
+            Some(Path::new("notes.org")), |actual| {
+                assert_eq!(actual, path.join("notes.org"));
+                Ok(())
+            }).unwrap();
         assert_eq!(directory.read_to_string("notes.org").unwrap(), "* Notes\n");
         registry.revoke(&path, &second).unwrap();
+        assert!(reveal_approved_workspace_path(&registry, &path, &second, None,
+            |_| panic!("released lease reached opener")).is_err());
+        // Acquired work retains the root even after its lease is released.
+        assert_eq!(fs::rename(&selected, &retained).unwrap_err().raw_os_error(), Some(32));
+        drop(directory);
+        fs::rename(&selected, &retained).unwrap();
+        fs::create_dir(&selected).unwrap();
+        fs::write(selected.join("notes.org"), "* Replacement\n").unwrap();
         let (replacement, _, token) = registry.approve(&selected).unwrap();
         assert!(reveal_approved_workspace_path(&registry, &replacement, &second, None,
             |_| panic!("old lease authorized replacement")).is_err());
+        assert!(reveal_approved_workspace_path(&registry, &replacement, &first, None,
+            |_| panic!("first lease authorized replacement")).is_err());
+        reveal_approved_workspace_path(&registry, &replacement, &token,
+            Some(Path::new("notes.org")), |actual| {
+                assert_eq!(actual, replacement.join("notes.org"));
+                assert_eq!(fs::read_to_string(actual).unwrap(), "* Replacement\n");
+                Ok(())
+            }).unwrap();
         reveal_approved_workspace_path(&registry, &replacement, &token, None, |_| Ok(())).unwrap();
     }
 

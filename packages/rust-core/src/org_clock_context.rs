@@ -131,7 +131,7 @@ mod platform {
     use windows_sys::Win32::Foundation::{FILETIME, SYSTEMTIME};
     use windows_sys::Win32::System::Time::{
         FileTimeToSystemTime, GetDynamicTimeZoneInformation, GetTimeZoneInformationForYear,
-        SystemTimeToFileTime, SystemTimeToTzSpecificLocalTimeEx,
+        SystemTimeToFileTime, SystemTimeToTzSpecificLocalTime, SystemTimeToTzSpecificLocalTimeEx,
         DYNAMIC_TIME_ZONE_INFORMATION, TIME_ZONE_ID_INVALID, TIME_ZONE_INFORMATION,
     };
 
@@ -212,6 +212,15 @@ mod platform {
                 second.wSecond, second.wMilliseconds)
     }
 
+    fn local_with_rules(rules: &TIME_ZONE_INFORMATION, utc: &SYSTEMTIME) -> Result<SYSTEMTIME, String> {
+        let mut local = SYSTEMTIME::default();
+        // SAFETY: both directions use this owned rule snapshot, never a registry reload.
+        if unsafe { SystemTimeToTzSpecificLocalTime(rules, utc, &mut local) } == 0 {
+            return Err(native_error("timezone conversion failed"));
+        }
+        Ok(local)
+    }
+
     struct NativeZone(DYNAMIC_TIME_ZONE_INFORMATION);
 
     impl NativeZone {
@@ -224,10 +233,32 @@ mod platform {
             Ok(Self(zone))
         }
 
+        fn rules(&self, local_year: u16) -> Result<TIME_ZONE_INFORMATION, String> {
+            if self.0.DynamicDaylightTimeDisabled || self.0.TimeZoneKeyName[0] == 0 {
+                // Disabling dynamic rules freezes the captured transitions. Clearing
+                // both dates additionally disables DST; a populated key must not undo it.
+                return Ok(TIME_ZONE_INFORMATION {
+                    Bias: self.0.Bias, StandardBias: self.0.StandardBias,
+                    DaylightBias: self.0.DaylightBias, StandardDate: self.0.StandardDate,
+                    DaylightDate: self.0.DaylightDate, ..TIME_ZONE_INFORMATION::default()
+                });
+            }
+            let mut rules = TIME_ZONE_INFORMATION::default();
+            // SAFETY: owned output and the captured zone identity. Windows requires
+            // the local year, which can differ from the UTC year at New Year.
+            if unsafe { GetTimeZoneInformationForYear(local_year, &self.0, &mut rules) } == 0 {
+                return Err(native_error("year-specific timezone rules are unavailable"));
+            }
+            Ok(rules)
+        }
+
         fn local(&self, utc: &SYSTEMTIME) -> Result<SYSTEMTIME, String> {
+            if self.0.DynamicDaylightTimeDisabled || self.0.TimeZoneKeyName[0] == 0 {
+                return local_with_rules(&self.rules(utc.wYear)?, utc);
+            }
             let mut local = SYSTEMTIME::default();
-            // SAFETY: use the captured Windows zone, including its historical registry
-            // identity and DynamicDaylightTimeDisabled policy, not an implicit fallback.
+            // SAFETY: the captured dynamic zone identity lets Windows resolve historical
+            // local-year crossings. Fixed policies use the owned rules above, not Ex.
             if unsafe { SystemTimeToTzSpecificLocalTimeEx(&self.0, utc, &mut local) } == 0 {
                 return Err(native_error("timezone conversion failed"));
             }
@@ -238,47 +269,28 @@ mod platform {
             let nominal = milliseconds(local)?;
             let mut result = None;
             // Inverse Windows conversions choose an arbitrary side of a fold. Instead,
-            // enumerate every native bias and accept exactly one native round trip.
-            // Adjacent years cover UTC/local year crossings with historical rule changes.
-            let mut biases = [0_i32; 9];
+            // enumerate native biases and accept exactly one native round trip using
+            // the same immutable local-year rules. Ex can reload registry transitions
+            // even when the captured descriptor explicitly disables dynamic DST.
+            let rules = self.rules(local.wYear)?;
+            let mut biases = [0_i32; 3];
             let mut count = 0;
-            for year in local.wYear.saturating_sub(1).max(1601)..=local.wYear.saturating_add(1).min(30827) {
-                let rules = if self.0.DynamicDaylightTimeDisabled || self.0.TimeZoneKeyName[0] == 0 {
-                    // Disabled dynamic rules mean the captured fixed transition set,
-                    // not a request to silently load different historical registry rules.
-                    TIME_ZONE_INFORMATION {
-                        Bias: self.0.Bias, StandardBias: self.0.StandardBias,
-                        DaylightBias: self.0.DaylightBias, StandardDate: self.0.StandardDate,
-                        DaylightDate: self.0.DaylightDate, ..TIME_ZONE_INFORMATION::default()
-                    }
-                } else {
-                    let mut rules = TIME_ZONE_INFORMATION::default();
-                    // SAFETY: owned output and the captured native timezone descriptor.
-                    if unsafe { GetTimeZoneInformationForYear(year, &self.0, &mut rules) } == 0 {
-                        return Err(native_error("year-specific timezone rules are unavailable"));
-                    }
-                    rules
-                };
-                // Windows ignores StandardBias/DaylightBias without transition dates;
-                // include the base offset as well, then let the OS validate each one.
-                for adjustment in [0, rules.StandardBias, rules.DaylightBias] {
-                    let bias = rules.Bias.checked_add(adjustment)
-                        .filter(|value| (-1_440..=1_440).contains(value))
-                        .ok_or_else(|| "Native Windows timezone bias exceeds its supported range".to_string())?;
-                    if !biases[..count].contains(&bias) {
-                        biases[count] = bias;
-                        count += 1;
-                    }
-                }
-                if self.0.DynamicDaylightTimeDisabled || self.0.TimeZoneKeyName[0] == 0 {
-                    break;
+            // Windows ignores StandardBias/DaylightBias without transition dates;
+            // native conversion, not a guessed offset, validates each candidate.
+            for adjustment in [0, rules.StandardBias, rules.DaylightBias] {
+                let bias = rules.Bias.checked_add(adjustment)
+                    .filter(|value| (-1_440..=1_440).contains(value))
+                    .ok_or_else(|| "Native Windows timezone bias exceeds its supported range".to_string())?;
+                if !biases[..count].contains(&bias) {
+                    biases[count] = bias;
+                    count += 1;
                 }
             }
             for bias in &biases[..count] {
                 let candidate = nominal.checked_add(i64::from(*bias) * 60_000)
                     .ok_or_else(|| "Native Windows calendar exceeds exact timestamp precision".to_string())?;
                 let utc = systemtime(candidate)?;
-                if same_calendar(&self.local(&utc)?, local) {
+                if same_calendar(&local_with_rules(&rules, &utc)?, local) {
                     if result.is_some_and(|previous| previous != candidate) {
                         return Err("Exact GNU clock context is required for an ambiguous local time".into());
                     }
@@ -362,14 +374,42 @@ mod platform {
                 utc([2007, 3, 11, 19, 0]));
             assert_eq!(zone.encode(&normalize([2026, 1, 1, 0, 15]).unwrap()).unwrap(),
                 utc([2026, 1, 1, 8, 15]));
-            // Pass an explicit native fixed/no-DST policy without modifying the host.
+            // Freeze actual 2006 transitions without modifying the host: disabled
+            // dynamic rules retain these dates rather than loading 2007 registry DST.
+            let fixed = zone.rules(2006).unwrap();
             zone.0.DynamicDaylightTimeDisabled = true;
+            zone.0.Bias = fixed.Bias;
+            zone.0.StandardBias = fixed.StandardBias;
+            zone.0.DaylightBias = fixed.DaylightBias;
+            zone.0.StandardDate = fixed.StandardDate;
+            zone.0.DaylightDate = fixed.DaylightDate;
+            assert_eq!(zone.encode(&normalize([2007, 3, 12, 12, 0]).unwrap()).unwrap(),
+                utc([2007, 3, 12, 20, 0]));
+            assert!(same_calendar(&zone.local(&systemtime(utc([2007, 3, 12, 20, 0])).unwrap()).unwrap(),
+                &normalize([2007, 3, 12, 12, 0]).unwrap()));
+            assert!(zone.encode(&normalize([2007, 4, 1, 2, 30]).unwrap()).is_err());
+            assert!(zone.encode(&normalize([2007, 10, 28, 1, 30]).unwrap()).is_err());
+            // Clearing the captured transitions additionally disables DST. The
+            // still-populated Pacific registry key must not restore a fold or gap.
             zone.0.StandardDate = SYSTEMTIME::default();
             zone.0.DaylightDate = SYSTEMTIME::default();
             assert_eq!(zone.encode(&normalize([2026, 11, 1, 1, 30]).unwrap()).unwrap(),
                 utc([2026, 11, 1, 9, 30]));
             assert_eq!(zone.encode(&normalize([2026, 3, 8, 2, 30]).unwrap()).unwrap(),
                 utc([2026, 3, 8, 10, 30]));
+            let now = utc([2026, 11, 1, 9, 30]) + 123;
+            let snapshot = zone.capture(&[[2026, 11, 1, 1, 30]], now).unwrap();
+            assert_eq!(snapshot.now_epoch_ms, now);
+            assert_eq!(snapshot.today_start_epoch_ms, utc([2026, 11, 1, 8, 0]));
+            assert_eq!(snapshot.today_end_epoch_ms, utc([2026, 11, 2, 8, 0]));
+            assert_eq!(snapshot.calendar_epoch_ms, vec![utc([2026, 11, 1, 9, 30])]);
+            let local_now = zone.local(&systemtime(now).unwrap()).unwrap();
+            assert_eq!((local_now.wHour, local_now.wMinute, local_now.wMilliseconds), (1, 30, 123));
+            // An explicit unnamed zone also uses only the captured rules.
+            zone.0.TimeZoneKeyName = [0; 128];
+            zone.0.DynamicDaylightTimeDisabled = false;
+            assert_eq!(zone.encode(&normalize([2026, 11, 1, 1, 30]).unwrap()).unwrap(),
+                utc([2026, 11, 1, 9, 30]));
         }
 
         #[test]

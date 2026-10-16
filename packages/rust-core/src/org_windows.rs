@@ -1,7 +1,8 @@
 //! Handle-relative Windows document transactions. No ambient pathname is used after approval.
 //!
-//! NT opens never traverse a reparse point. Ancestors deny delete sharing; observed files deny
-//! write/delete sharing through CAS and publication. Native rename uses a retained source handle,
+//! NT opens never traverse a reparse point. Directory pins reopen the retained object with an
+//! empty native name, not Win32 ReOpenFile or ".". Ancestors deny delete sharing; observed files
+//! deny write/delete sharing through CAS and publication. Native rename uses a retained source handle,
 //! a retained destination directory and ReplaceIfExists=false. Journals and recovery bodies are
 //! intentionally never garbage-collected here. Windows write-through handles and file flushes
 //! are used; these are not a claim that Windows provides POSIX directory-fsync power-loss ordering.
@@ -18,9 +19,7 @@ use windows_sys::Wdk::Storage::FileSystem::{
     FILE_OPEN_REPARSE_POINT, FILE_RENAME_INFORMATION, FILE_SYNCHRONOUS_IO_NONALERT,
     FILE_WRITE_THROUGH,
 };
-use windows_sys::Win32::Foundation::{
-    RtlNtStatusToDosError, HANDLE, INVALID_HANDLE_VALUE, UNICODE_STRING,
-};
+use windows_sys::Win32::Foundation::{RtlNtStatusToDosError, HANDLE, UNICODE_STRING};
 use windows_sys::Win32::Globalization::{CompareStringOrdinal, CSTR_EQUAL};
 use windows_sys::Win32::Security::{
     GetKernelObjectSecurity, GetLengthSid, GetSecurityDescriptorControl, GetSecurityDescriptorDacl,
@@ -31,9 +30,8 @@ use windows_sys::Win32::Security::{
 };
 use windows_sys::Win32::Storage::FileSystem::{
     FileAttributeTagInfo, FileBasicInfo, FileIdInfo, GetFileInformationByHandleEx, GetFileType,
-    GetFinalPathNameByHandleW, ReOpenFile, DELETE, FILE_ALL_ACCESS, FILE_ATTRIBUTE_DIRECTORY,
+    GetFinalPathNameByHandleW, DELETE, FILE_ALL_ACCESS, FILE_ATTRIBUTE_DIRECTORY,
     FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_REPARSE_POINT, FILE_ATTRIBUTE_TAG_INFO, FILE_BASIC_INFO,
-    FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT, FILE_FLAG_WRITE_THROUGH,
     FILE_ID_INFO, FILE_LIST_DIRECTORY, FILE_READ_ATTRIBUTES, FILE_READ_DATA, FILE_SHARE_DELETE,
     FILE_SHARE_READ, FILE_SHARE_WRITE, FILE_TRAVERSE, FILE_TYPE_DISK, FILE_WRITE_DATA,
     READ_CONTROL, SYNCHRONIZE, VOLUME_NAME_NONE,
@@ -120,11 +118,19 @@ fn raw(handle: &impl AsRawHandle) -> HANDLE {
     handle.as_raw_handle().cast()
 }
 
+#[track_caller]
 fn status(result: i32) -> io::Result<()> {
     if result < 0 {
-        Err(io::Error::from_raw_os_error(
-            unsafe { RtlNtStatusToDosError(result) } as i32,
-        ))
+        let error = io::Error::from_raw_os_error(unsafe { RtlNtStatusToDosError(result) } as i32);
+        // Temporary native-run diagnostics: retain the unwrapped OS error for classification.
+        #[cfg(test)]
+        eprintln!(
+            "Windows native call at {} failed: NTSTATUS={:#010x}, {}",
+            std::panic::Location::caller(),
+            result as u32,
+            error
+        );
+        Err(error)
     } else {
         Ok(())
     }
@@ -194,10 +200,27 @@ fn nt_open(
             "native opens require one stream-free leaf",
         ));
     }
+    nt_open_counted(parent, &mut wide, access, share, disposition, kind)
+}
+
+// An empty counted name reopens RootDirectory itself. Only pin() uses that form; child opens
+// above must remain validated leaves. Unlike ReOpenFile, this supports directory handles.
+fn nt_open_counted(
+    parent: &Dir,
+    wide: &mut [u16],
+    access: u32,
+    share: u32,
+    disposition: u32,
+    kind: u32,
+) -> io::Result<cap_std::fs::File> {
     let unicode = UNICODE_STRING {
         Length: (wide.len() * 2) as u16,
         MaximumLength: (wide.len() * 2) as u16,
-        Buffer: wide.as_mut_ptr(),
+        Buffer: if wide.is_empty() {
+            null_mut()
+        } else {
+            wide.as_mut_ptr()
+        },
     };
     let object = OBJECT_ATTRIBUTES {
         Length: size_of::<OBJECT_ATTRIBUTES>() as u32,
@@ -209,7 +232,9 @@ fn nt_open(
     };
     let mut handle = null_mut();
     let mut result = IO_STATUS_BLOCK::default();
-    status(unsafe {
+    let options =
+        kind | FILE_OPEN_REPARSE_POINT | FILE_SYNCHRONOUS_IO_NONALERT | FILE_WRITE_THROUGH;
+    let native_status = unsafe {
         NtCreateFile(
             &mut handle,
             access | SYNCHRONIZE,
@@ -219,11 +244,23 @@ fn nt_open(
             FILE_ATTRIBUTE_NORMAL,
             share,
             disposition,
-            kind | FILE_OPEN_REPARSE_POINT | FILE_SYNCHRONOUS_IO_NONALERT | FILE_WRITE_THROUGH,
+            options,
             null(),
             0,
         )
-    })?;
+    };
+    #[cfg(test)]
+    if native_status < 0 {
+        eprintln!(
+            "NtCreateFile name={:?}, access={:#010x}, share={:#x}, disposition={}, options={:#010x}",
+            String::from_utf16_lossy(wide),
+            access | SYNCHRONIZE,
+            share,
+            disposition,
+            options
+        );
+    }
+    status(native_status)?;
     // NtCreateFile returned an owned synchronous handle on success.
     Ok(cap_std::fs::File::from_std(unsafe {
         std::fs::File::from_raw_handle(handle)
@@ -257,20 +294,17 @@ pub(crate) fn open_directory(parent: &Dir, name: &OsStr) -> io::Result<Dir> {
 }
 
 fn pin(root: &Dir) -> io::Result<Dir> {
-    // NtCreateFile does not normalize "." like Win32 path APIs. ReOpenFile addresses the
-    // retained object directly and changes its sharing mode without reopening an ambient path.
-    let handle = unsafe {
-        ReOpenFile(
-            raw(root),
-            FILE_LIST_DIRECTORY | FILE_TRAVERSE | FILE_READ_ATTRIBUTES | SYNCHRONIZE,
-            FILE_SHARE_READ | FILE_SHARE_WRITE,
-            FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_WRITE_THROUGH,
-        )
-    };
-    if handle == INVALID_HANDLE_VALUE {
-        return Err(io::Error::last_os_error());
-    }
-    let file = cap_std::fs::File::from_std(unsafe { std::fs::File::from_raw_handle(handle) });
+    // ReOpenFile always requests FILE_NON_DIRECTORY_FILE, even with BACKUP_SEMANTICS.
+    // An empty NT name instead reopens the retained directory object, never an ambient path
+    // or a literal "." child. The new handle denies delete sharing for the whole operation.
+    let file = nt_open_counted(
+        root,
+        &mut [],
+        FILE_LIST_DIRECTORY | FILE_TRAVERSE | FILE_READ_ATTRIBUTES,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        FILE_OPEN,
+        FILE_DIRECTORY_FILE,
+    )?;
     if attributes(&file)? & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY)
         != FILE_ATTRIBUTE_DIRECTORY
     {
