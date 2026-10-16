@@ -1,90 +1,39 @@
 # 发布命令速查表
 
-## 🚀 一键发布
+从仓库根目录执行。当前[桌面发布](automated-release-workflow.md)仅提供 GitHub Release 安装包。
+
+## GitHub 安装包
+
 ```bash
-npm run tag:all              # 发布到所有平台
+bun run version:bump
+bun install --lockfile-only --ignore-scripts
+(cd apps/desktop && bun run test && bun run tauri build --debug --no-bundle)
 ```
 
-## 🌐 跨平台
+提交并上传全部发布改动后：
+
 ```bash
-npm run tag:desktop          # GitHub Releases (所有桌面格式)
-npm run tag:web              # Web 应用部署
+bun run tag:desktop
 ```
 
-## 🐧 Linux 平台
-```bash
-# 全部 Linux 平台
-npm run tag:linux:all        # 发布到所有 Linux 平台
+此命令创建并推送根版本对应的 `desktop-v` 标签。不要覆盖旧标签。核对 Actions 中五个 Tauri 目标与 MSIX 任务，以及对应 Release 的实际附件，不能只看 Release 页面是否存在。
 
-# 单个平台
-npm run tag:linux:snap       # Snap Store
-npm run tag:linux:flatpak    # Flathub
-npm run tag:linux:aur        # AUR 源码包
-npm run tag:linux:aur-bin    # AUR 二进制包
-npm run tag:linux:ppa        # Debian PPA
-npm run tag:linux:copr       # Fedora COPR
-npm run tag:linux:obs        # openSUSE OBS
-npm run tag:linux:gentoo     # Gentoo Overlay
+## 独立命令
+
+```bash
+bun run tag:help
+bun run tag:snap
+bun run tag:web
 ```
 
-## 🪟 Windows 平台
-```bash
-# 全部 Windows 平台
-npm run tag:windows:all      # 发布到所有 Windows 平台
+`tag:help` 不创建标签。Snap 和 Web 是独立发布，使用前需确认各自的身份、权限与发布条件。
 
-# 单个平台
-npm run tag:windows:winget   # Microsoft Winget
-npm run tag:windows:chocolatey # Chocolatey
-npm run tag:windows:scoop    # Scoop
-```
+`tag:linux` 只组合 desktop + snap；`tag:all` 只组合 desktop + snap + web，不是外部包管理器的全渠道上架命令。只发 GitHub 安装包时不要使用这两个组合。
 
-## 🍎 macOS 平台
-```bash
-# 全部 macOS 平台
-npm run tag:macos:all        # 发布到所有 macOS 平台
+## 手动渠道
 
-# 单个平台
-npm run tag:macos:homebrew   # Homebrew
-```
+AUR、Flatpak、PPA、COPR、OBS、Gentoo、Winget、Scoop、Chocolatey 和 Homebrew 只保留手动 `workflow_dispatch`，不接受独立渠道 tag 发布。运行前检查包名归属、维护权限、工作流实际上传步骤和上游审核；生成 Actions 附件或 PR 不等于上架。
 
-## 📋 常用组合
+AUR `grain` / `grain-bin` 和 Scoop Extras `grain` 属于 grain-lang，不得用作本编辑器的发布或安装身份。
 
-### 快速发布主流平台
-```bash
-npm run tag:desktop
-npm run tag:linux:snap
-npm run tag:linux:flatpak
-npm run tag:windows:winget
-npm run tag:web
-```
-
-### 发布到所有包管理器
-```bash
-npm run tag:linux:all
-npm run tag:windows:all
-npm run tag:macos:all
-```
-
-### 测试发布
-```bash
-npm run tag:linux:aur-bin    # 快速 Linux 测试
-npm run tag:windows:scoop    # 快速 Windows 测试
-```
-
-## 🔧 辅助命令
-```bash
-npm run version:bump         # 更新版本号
-npm run stats:check          # 检查下载统计
-npm run icons:update         # 更新应用图标
-```
-
-## 📊 平台覆盖率
-
-| 平台类型 | 命令数量 | 覆盖用户群 |
-|---------|---------|-----------|
-| Linux | 8 个平台 | ~90% Linux 用户 |
-| Windows | 3 个平台 | ~80% Windows 用户 |
-| macOS | 1 个平台 | ~70% macOS 用户 |
-| Web | 1 个平台 | 所有平台用户 |
-
-**总计**: 13 个发布平台 + GitHub Releases + Web 部署 = 15 种分发方式
+当前桌面发布不生成 `latest.json`。用户更新以 GitHub Release 安装包为准，不能宣传签名自动更新已可用。

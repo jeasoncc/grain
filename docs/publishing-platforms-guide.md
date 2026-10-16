@@ -1,183 +1,40 @@
-# Novel Editor 发布平台指南
+# Grain 发布平台与验收边界
 
-## 🚀 快速发布命令
+## 当前发布入口
 
-使用 npm 脚本可以快速创建标签并触发自动发布：
+`desktop-v*.*.*` 仅触发 Windows、macOS 和 Linux 的 GitHub Release 安装包构建。发布命令是 `bun run tag:desktop`，不是外部商店的全渠道发布。
 
-```bash
-# 跨平台发布
-npm run tag:desktop          # 桌面应用 (GitHub Releases - 所有平台)
-npm run tag:web              # Web 应用部署
-npm run tag:all              # 创建所有标签，触发全平台发布
+- [发布步骤与完整验收](automated-release-workflow.md)
+- [平台安装包说明](platform-specific-publishing.md)
+- [发布命令速查表](publishing-cheatsheet.md)
+- [Linux 安装指南](linux-installation-guide.md)
 
-# Linux 平台发布
-npm run tag:linux:snap       # Snap Store
-npm run tag:linux:flatpak    # Flathub (Flatpak)
-npm run tag:linux:aur        # AUR 源码包
-npm run tag:linux:aur-bin    # AUR 二进制包
-npm run tag:linux:ppa        # Debian PPA (Ubuntu/Debian)
-npm run tag:linux:copr       # Fedora COPR (Fedora/RHEL)
-npm run tag:linux:obs        # openSUSE Build Service
-npm run tag:linux:gentoo     # Gentoo Overlay
+## 不同结果不能混为一谈
 
-# Windows 平台发布
-npm run tag:windows:winget   # Winget (Windows 包管理器)
-npm run tag:windows:chocolatey # Chocolatey (Windows 包管理器)
-npm run tag:windows:scoop    # Scoop (Windows 轻量包管理器)
+| 结果 | 能证明什么 | 不能证明什么 |
+| --- | --- | --- |
+| 构建任务成功 | 对应目标完成该任务配置的构建 | 应用已在目标系统完成原生功能实测 |
+| Actions 附件 | 文件已保存在该次运行中 | 文件已发布到 GitHub Release 或外部商店 |
+| GitHub Release 安装包 | 对应版本文件可从 Release 下载 | 其他架构全部成功、商店已上架或自动更新可用 |
+| 渠道清单或提交 PR | 元数据已生成或提交审核 | 上游已合并、审核通过或目标版本已可安装 |
+| 商店/包管理器可安装 | 匹配本应用身份与目标版本的包已分发 | 仅凭同名软件搜索结果不能建立该结论 |
 
-# macOS 平台发布
-npm run tag:macos:homebrew   # Homebrew (macOS 包管理器)
-```
+检查具体版本时报告实际 Actions、附件与安装结果，不用一张“已支持全部平台”的静态列表替代证据。
 
-详细说明请参考：
-- [平台特定发布指南](./platform-specific-publishing.md) - 按平台分类的详细指南
-- [Flatpak 和 Winget 发布指南](./flatpak-winget-publishing.md) - 特定平台详细说明
+## 外部渠道的现状
 
-## 📋 发布状态跟踪
+桌面发布不再自动派发外部渠道，也没有外部渠道发布编排器。已有工作流只保留手动入口，不作为已上架证明：
 
-### ✅ 已发布平台
-- [x] GitHub Releases
-- [x] AUR (Arch Linux)
-- [x] Snap Store
-- [x] Flathub (Flatpak)
-- [x] Winget (Windows 包管理器)
-- [x] Chocolatey (Windows 包管理器)
-- [x] Scoop (Windows 轻量包管理器)
-- [x] Homebrew (macOS 包管理器)
-- [x] Web 应用 (Vercel/Netlify/GitHub Pages)
-- [x] Debian PPA (Ubuntu/Debian/Mint)
-- [x] Fedora COPR (Fedora/RHEL/CentOS)
-- [x] openSUSE Build Service (openSUSE/SUSE)
-- [x] Gentoo Overlay (Gentoo Linux)
+- AUR `grain` / `grain-bin` 与 Scoop Extras `grain` 属于 grain-lang，不是本编辑器，不能沿用这些包名。
+- Flatpak 与 Gentoo 流程可以只生成 Actions 附件；Flathub 或独立 overlay 发布是另一条链路。
+- 部分渠道的实际上传步骤受与手动触发不相符的事件条件限制。不能把工作流绿灯解释成上传成功。
+- Winget 提交还需要有效的授权凭据与上游审核；缺少凭据时可能只打印手动说明。
+- Snap 与 Web 是独立标签，不在仅 GitHub 安装包的发布中运行。
 
-### 🚀 优先发布平台
+渠道恢复发布之前，必须解决包名与维护权限，核对目标仓库/项目、凭据、真实上传行为和审核结果，再验证具体版本的实际可用性。[Flatpak/Winget 说明](flatpak-winget-publishing.md)列出相应工作流的边界。
 
-#### 高优先级 (1-2周内)
-- [ ] **Microsoft Store** - 你已有MSIX打包
-- [ ] **AppImage** - 跨Linux发行版
-- [ ] **Product Hunt** - 产品发现平台
+## 更新与平台能力
 
-#### 中优先级 (1个月内)
-- [ ] **Homebrew** - macOS包管理器
-- [ ] **Chocolatey** - Windows包管理器
-- [ ] **AlternativeTo** - 软件替代品网站
-- [ ] **Reddit** - r/linux, r/writing, r/selfhosted
+当前发布不生成签名更新清单，使用 GitHub 安装包手动更新。[自动更新说明](auto-update-guide.md)描述启用该能力所需的完整契约。
 
-#### 低优先级 (有时间时)
-- [ ] **Scoop** - Windows轻量包管理器
-- [ ] **Debian PPA** - Ubuntu/Debian包
-- [ ] **RPM包** - Fedora/RHEL包
-- [ ] **SourceForge** - 开源软件平台
-
-## 🎯 目标用户群体平台
-
-### 写作者社区
-- [ ] **Scrivener论坛** - 专业写作软件用户
-- [ ] **NaNoWriMo社区** - 小说写作月参与者
-- [ ] **WritingForums.org** - 英文写作社区
-- [ ] **知乎写作话题** - 中文写作社区
-- [ ] **豆瓣写作小组** - 文艺创作者
-
-### 技术社区
-- [ ] **Hacker News** - 技术产品发布
-- [ ] **Dev.to** - 开发者博客平台
-- [ ] **Indie Hackers** - 独立开发者
-- [ ] **Tauri Discord** - Tauri应用展示
-
-## 📦 各平台发布要求
-
-### Microsoft Store
-- **要求**: MSIX包 (✅ 已有)
-- **费用**: $19一次性费用
-- **审核时间**: 1-3天
-- **文档**: https://docs.microsoft.com/en-us/windows/uwp/publish/
-
-### Winget
-- **要求**: 公开下载链接
-- **费用**: 免费
-- **方式**: PR到winget-pkgs仓库
-- **文档**: https://docs.microsoft.com/en-us/windows/package-manager/
-
-### Homebrew
-- **要求**: macOS二进制文件
-- **费用**: 免费
-- **方式**: PR到homebrew-cask
-- **文档**: https://docs.brew.sh/Adding-Software-to-Homebrew
-
-### AppImage
-- **要求**: Linux二进制 + AppImage打包
-- **费用**: 免费
-- **工具**: appimagetool
-- **文档**: https://appimage.org/
-
-### Product Hunt
-- **要求**: 产品截图、描述、网站
-- **费用**: 免费
-- **最佳时间**: 周二-周四发布
-- **文档**: https://help.producthunt.com/
-
-## 🛠️ 技术准备清单
-
-### 需要创建的包格式
-- [ ] **AppImage** - 便携Linux应用
-- [ ] **macOS .dmg** - macOS安装包
-- [ ] **Chocolatey .nupkg** - Windows包
-- [ ] **Homebrew Formula** - macOS包配置
-
-### 需要准备的材料
-- [ ] **应用截图** (多个平台尺寸)
-- [ ] **应用图标** (各种尺寸)
-- [ ] **产品描述** (中英文版本)
-- [ ] **功能特性列表**
-- [ ] **用户指南/文档**
-- [ ] **演示视频** (可选但推荐)
-
-## 📈 发布策略建议
-
-### 阶段1: 扩大Linux覆盖
-1. 创建AppImage版本
-2. 提交到更多Linux发行版
-
-### 阶段2: Windows生态
-1. 发布到Microsoft Store
-2. 添加到Winget
-3. 创建Chocolatey包
-
-### 阶段3: macOS支持
-1. 构建macOS版本
-2. 发布到Homebrew
-3. 考虑Mac App Store
-
-### 阶段4: 社区推广
-1. 在写作社区分享
-2. 技术社区展示
-3. 产品发现平台
-
-## 📊 成功指标
-
-### 短期目标 (1个月)
-- [ ] 5个新平台发布
-- [ ] 100+ 总下载量
-- [ ] 10+ GitHub stars
-
-### 中期目标 (3个月)
-- [ ] 10个平台发布
-- [ ] 500+ 总下载量
-- [ ] 50+ GitHub stars
-- [ ] 首个用户反馈/Issue
-
-### 长期目标 (6个月)
-- [ ] 15个平台发布
-- [ ] 1000+ 总下载量
-- [ ] 100+ GitHub stars
-- [ ] 活跃用户社区
-
-## 🔗 有用链接
-
-- [Tauri发布指南](https://tauri.app/v1/guides/distribution/)
-- [跨平台应用发布最佳实践](https://github.com/sindresorhus/awesome-electron#distribution)
-- [开源项目推广指南](https://github.com/zenika-open-source/promote-open-source-project)
-
----
-
-**提示**: 优先选择你的目标用户最可能使用的平台。对于小说编辑器，写作社区和创作者平台可能比纯技术平台更有效。
+某平台有安装包不等于所有 Org 文件系统操作已经在该平台等价支持。能力与数据恢复规则以[桌面端指南](../apps/desktop/README.md#file-mutation-rules)为准。

@@ -1,223 +1,26 @@
-# Grain 自动更新配置指南
+# Grain 自动更新边界
 
-## 概述
+## 当前状态
 
-Grain 使用 Tauri 内置的自动更新功能，从 GitHub Releases 自动下载和安装更新。
+桌面 tag 发布只提供 GitHub Release 安装包，**不发布 `latest.json`，不承诺应用内自动更新可用**。请从 [GitHub Releases](https://github.com/jeasoncc/grain/releases) 选择相应版本与架构，手动下载安装包。
 
-## 工作原理
+旧发布流程手写的清单为各平台填入空 `signature`，并把普通安装包 URL 当作更新资产。这不是可验证的签名更新发布，已从桌面工作流移除；不要通过跳过验签、使用空签名或复用其他平台文件来绕过错误。
 
-```
-应用启动 → 检查更新 → 发现新版本 → 提示用户 → 下载安装 → 重启应用
-```
+`apps/desktop/src-tauri/tauri.conf.json` 仍包含 updater 公钥和清单地址。保留客户端配置不代表相应服务端资产已经发布；新 Release 没有清单时，应用内检查不能替代手动下载。
 
-## 配置步骤
+## 启用签名更新所需的完整契约
 
-### 1. 生成签名密钥
+签名自动更新需要单独实现并验证以下链路，而非只增加一个 JSON 文件：
 
-```bash
-npm run updater:generate-keys
-```
+- 每个支持平台及架构都有匹配的 Tauri updater 资产和真实签名。
+- 构建使用与客户端公钥匹配的私钥；私钥只保存在受保护的构建凭据中，不进入源码或 Release。
+- 清单中的版本、平台键、资产 URL 与签名对应到同一份实际上传的字节。
+- Windows、macOS 和 Linux 的更新资产按当前 Tauri updater 协议生成，不能假定所有普通安装包都能互换。
+- 从已安装的旧版本实际完成检查、下载、验签、安装和重启，并确认用户配置与 Org 文件保持完整。
 
-这会生成：
-- **私钥**: `~/.tauri/grain-updater.key` (保密！)
-- **公钥**: 显示在终端 (需要添加到配置)
+只有这些条件得到实际验证后，才能将发布标记为支持自动更新。GitHub 安装包打包成功不证明这条链路成立。
 
-### 2. 更新 tauri.conf.json
+## 参考
 
-将生成的公钥替换 `WILL_BE_GENERATED`:
-
-```json
-{
-  "plugins": {
-    "updater": {
-      "pubkey": "YOUR_PUBLIC_KEY_HERE"
-    }
-  }
-}
-```
-
-### 3. 配置 GitHub Secrets
-
-在 GitHub 仓库设置中添加 Secret:
-
-- **Name**: `TAURI_SIGNING_PRIVATE_KEY`
-- **Value**: `~/.tauri/grain-updater.key` 文件的内容
-
-### 4. 更新 GitHub Actions
-
-在 `.github/workflows/release-desktop.yml` 中添加签名步骤：
-
-```yaml
-- name: Sign and create updater artifacts
-  env:
-    TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-  run: |
-    # Build will automatically sign if key is present
-    bun run build:prod:desktop
-```
-
-## 使用方式
-
-### 前端集成
-
-在设置页面添加更新检查按钮：
-
-```tsx
-import { UpdateChecker } from "@/components/blocks/update-checker";
-
-function SettingsPage() {
-  return (
-    <div>
-      <UpdateChecker />
-    </div>
-  );
-}
-```
-
-### 手动检查更新
-
-```typescript
-import { checkForUpdates, downloadAndInstall } from "@/services/updater";
-
-// 检查更新
-const updateInfo = await checkForUpdates();
-
-if (updateInfo.available) {
-  console.log(`New version: ${updateInfo.latestVersion}`);
-  
-  // 下载并安装
-  await downloadAndInstall((progress) => {
-    console.log(`Download progress: ${progress}%`);
-  });
-}
-```
-
-## 发布流程
-
-### 1. 创建新版本
-
-```bash
-# 递增版本号
-npm run version:bump
-
-# 提交更改
-git add .
-git commit -m "chore: bump version to 0.1.X"
-
-# 创建标签
-npm run tag:desktop
-
-# 推送
-git push origin main --tags
-```
-
-### 2. GitHub Actions 自动构建
-
-推送标签后，GitHub Actions 会：
-1. 构建所有平台的安装包
-2. 使用私钥签名
-3. 生成 `latest.json` 文件
-4. 上传到 GitHub Releases
-
-### 3. latest.json 格式
-
-```json
-{
-  "version": "0.1.92",
-  "notes": "Release notes here",
-  "pub_date": "2024-12-18T12:00:00Z",
-  "platforms": {
-    "windows-x86_64": {
-      "signature": "...",
-      "url": "https://github.com/.../grain_0.1.92_x64_en-US.msi"
-    },
-    "darwin-x86_64": {
-      "signature": "...",
-      "url": "https://github.com/.../grain_0.1.92_x64.dmg"
-    },
-    "linux-x86_64": {
-      "signature": "...",
-      "url": "https://github.com/.../grain_0.1.92_amd64.AppImage"
-    }
-  }
-}
-```
-
-## 更新策略
-
-### 自动检查
-
-- 应用启动时自动检查
-- 每24小时后台检查一次
-
-### 用户控制
-
-- 用户可以选择"稍后更新"
-- 用户可以手动检查更新
-- 下载进度实时显示
-
-## 安全性
-
-### 签名验证
-
-- 所有更新包都使用私钥签名
-- 客户端使用公钥验证签名
-- 防止中间人攻击
-
-### HTTPS
-
-- 所有下载通过 HTTPS
-- GitHub CDN 提供可靠性
-
-## 故障排除
-
-### 问题: 更新检查失败
-
-**原因**: 网络问题或 GitHub API 限制
-
-**解决**: 
-```typescript
-try {
-  await checkForUpdates();
-} catch (error) {
-  console.error("Update check failed:", error);
-  // 显示友好错误提示
-}
-```
-
-### 问题: 签名验证失败
-
-**原因**: 公钥配置错误
-
-**解决**: 
-1. 检查 `tauri.conf.json` 中的公钥
-2. 确保与生成的公钥一致
-
-### 问题: 下载失败
-
-**原因**: 网络中断或磁盘空间不足
-
-**解决**: 
-- 提供重试机制
-- 检查磁盘空间
-
-## 最佳实践
-
-1. **版本号规范**: 使用语义化版本 (0.1.X)
-2. **发布说明**: 每次发布都写清楚更新内容
-3. **测试**: 在测试环境验证更新流程
-4. **回滚**: 保留旧版本以便回滚
-5. **通知**: 重大更新提前通知用户
-
-## 相关文件
-
-- `apps/desktop/src-tauri/Cargo.toml` - 添加 updater 依赖
-- `apps/desktop/src-tauri/tauri.conf.json` - 更新器配置
-- `apps/desktop/src/services/updater.ts` - 更新服务
-- `apps/desktop/src/components/blocks/update-checker.tsx` - UI 组件
-- `.github/workflows/release-desktop.yml` - 构建和签名
-
-## 参考资料
-
+- [当前发布工作流](automated-release-workflow.md)
 - [Tauri Updater 文档](https://v2.tauri.app/plugin/updater/)
-- [GitHub Releases API](https://docs.github.com/en/rest/releases)

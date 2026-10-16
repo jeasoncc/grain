@@ -1,186 +1,61 @@
-# 自动化发布工作流
+# GitHub 安装包发布工作流
 
-## 🚀 概述
+## 发布边界
 
-我们已经实现了完全自动化的发布流程，确保正确的时序性和依赖关系。
+`desktop-v*.*.*` 标签触发 `.github/workflows/release-desktop.yml`，仅构建并上传 GitHub Release 安装包。推送 `main` 本身不会触发桌面发布。
 
-## 🔄 工作流程
+| 目标 | GitHub Release 安装包 |
+| --- | --- |
+| Windows x64 | MSI、NSIS EXE、MSIX |
+| macOS Apple Silicon | aarch64 DMG |
+| macOS Intel | x64 DMG |
+| Linux x86_64 | DEB、RPM、AppImage |
+| Linux ARM64 | DEB、RPM、AppImage |
 
-### 1. Desktop 优先发布
-当 `desktop-v*` 标签被推送时：
-1. **Desktop 工作流**开始构建所有桌面格式（Windows/macOS/Linux）
-2. 构建完成后，自动检测是否有其他平台的标签等待发布
-3. 自动触发所有依赖 desktop release 的平台工作流
+安装包存在不等于对应操作系统上的 Org 文件系统能力已经等价支持。文件操作与恢复边界以[桌面端指南](../apps/desktop/README.md#file-mutation-rules)为准。
 
-### 2. 自动触发机制
-Desktop 工作流完成后会：
-- 🔍 检查是否存在同版本的其他平台标签
-- 🚀 自动触发对应的工作流
-- 📝 创建进度跟踪评论
-- 🔔 发送通知
+桌面发布不会再自动派发 AUR、Flatpak、PPA、COPR、OBS、Gentoo、Winget、Scoop、Chocolatey 或 Homebrew 工作流，也没有自动等待这些渠道的发布编排器。
 
-### 3. 支持的触发方式
-每个工作流现在支持三种触发方式：
-- **标签推送**: `{platform}-v*.*.*`
-- **手动触发**: GitHub Actions 界面
-- **自动触发**: Desktop 工作流完成后
+## 创建发布
 
-## 📋 发布方式
+从仓库根目录操作，先确认 GitHub 推送身份可用：
 
-### 方式 1: 一键发布所有平台（推荐）
 ```bash
-npm run tag:all
+bun run version:bump
+bun install --lockfile-only --ignore-scripts
 ```
 
-**流程**:
-1. 创建 `desktop-v0.1.54` 标签 → 触发 Desktop 构建
-2. 创建所有其他平台标签 → 等待 Desktop 完成
-3. Desktop 完成后 → 自动触发所有其他平台
-4. 20-30 分钟后 → 所有平台发布完成
+版本源是根目录 `package.json`。发布脚本同步桌面/Web 包、Tauri/Cargo 和已有渠道元数据；渠道元数据的版本变化不代表已经上架。通过 Tauri 构建同步原生 `Cargo.lock`：
 
-### 方式 2: 分步发布
 ```bash
-# 1. 先发布 desktop
-npm run tag:desktop
-
-# 2. 等待 desktop 完成后，发布其他平台
-npm run tag:linux:flatpak
-npm run tag:windows:winget
-# 等等...
+(cd apps/desktop && bun run test && bun run tauri build --debug --no-bundle)
 ```
 
-### 方式 3: 使用发布编排器
-通过 GitHub Actions 界面运行 "Release Orchestrator" 工作流：
-- 可以选择特定平台
-- 可以指定版本号
-- 自动创建进度跟踪 issue
+提交并上传所有本次发布改动后，运行：
 
-## 🎯 依赖关系
-
-### 需要 Desktop Release 的平台
-这些平台会等待 desktop 构建完成后自动触发：
-- ✅ **Flatpak** - 需要源码和 release
-- ✅ **Winget** - 需要 MSI 文件
-- ✅ **Chocolatey** - 需要 NSIS 安装包
-- ✅ **Scoop** - 需要 NSIS 安装包
-- ✅ **Homebrew** - 需要 DMG 文件
-- ✅ **PPA** - 需要 DEB 文件
-- ✅ **COPR** - 需要 RPM 文件
-- ✅ **OBS** - 需要源码
-- ✅ **AUR** - 需要源码
-- ✅ **AUR-bin** - 需要 DEB 文件
-- ✅ **Gentoo** - 需要源码
-
-### 独立的平台
-这些平台不依赖 desktop release：
-- 🔄 **Snap** - 直接从源码构建
-- 🌐 **Web** - 直接部署 web 应用
-
-## 📊 监控和跟踪
-
-### 1. GitHub Actions 界面
-- 查看所有工作流状态
-- 实时日志和错误信息
-- 重新运行失败的工作流
-
-### 2. 自动创建的评论
-Desktop 工作流完成后会在 commit 上创建评论，包含：
-- ✅ 构建状态
-- 🚀 触发的平台列表
-- 📥 下载链接
-- ⏱️ 预计完成时间
-
-### 3. 进度跟踪 Issue（可选）
-Release Orchestrator 会创建跟踪 issue，包含：
-- 📋 所有平台的状态
-- 🔗 相关链接
-- 📊 时间线
-
-## 🔧 故障排除
-
-### 问题 1: 某个平台工作流失败
-**解决方案**:
-1. 在 GitHub Actions 中重新运行失败的工作流
-2. 或者手动触发该平台的工作流
-3. 检查错误日志并修复问题
-
-### 问题 2: Desktop 工作流失败
-**解决方案**:
-1. 修复 desktop 构建问题
-2. 重新推送 desktop 标签
-3. 其他平台会自动重新触发
-
-### 问题 3: 自动触发不工作
-**可能原因**:
-- GitHub Actions 权限问题
-- 工作流文件语法错误
-- API 限制
-
-**解决方案**:
-1. 检查工作流权限设置
-2. 手动触发工作流
-3. 查看 GitHub Actions 日志
-
-## 🎉 优势
-
-### 1. 时序保证
-- Desktop 总是首先完成
-- 其他平台自动等待依赖就绪
-- 避免了手动协调的复杂性
-
-### 2. 容错性
-- 单个平台失败不影响其他平台
-- 可以重新运行失败的工作流
-- 保持原有的手动触发能力
-
-### 3. 可见性
-- 自动创建进度跟踪
-- 实时状态更新
-- 完整的发布历史
-
-### 4. 灵活性
-- 支持全平台发布
-- 支持选择性发布
-- 支持手动干预
-
-## 📝 最佳实践
-
-### 1. 发布前检查
 ```bash
-# 检查版本号
-npm run version:bump --dry-run
-
-# 检查构建状态
-npm run build:prod:desktop
-
-# 提交所有更改
-git add .
-git commit -m "chore: prepare for release v0.1.54"
-git push
+bun run tag:desktop
 ```
 
-### 2. 发布流程
-```bash
-# 一键发布（推荐）
-npm run tag:all
+该命令读取根版本、创建带注释的 `desktop-v` 标签并推送到 `origin`。不要覆盖、删除或移动已经发布的标签；修复应使用新的补丁版本。直接手动运行工作流只做所选 ref 的构建，发布仍使用明确的版本标签。
 
-# 或者分步发布
-npm run tag:desktop
-# 等待完成后...
-npm run tag:linux:all
-npm run tag:windows:all
-npm run tag:macos:all
-```
+## 发布成功的验收
 
-### 3. 发布后验证
-- 检查 GitHub Releases 页面
-- 验证各平台的包管理器
-- 测试下载和安装
+1. 在 [Release Desktop App](https://github.com/jeasoncc/grain/actions/workflows/release-desktop.yml) 中找到对应标签与提交，确认五个 Tauri 矩阵任务以及 MSIX 任务的实际结果。
+2. 打开该标签的 [GitHub Release](https://github.com/jeasoncc/grain/releases)，核对版本、架构和上表中的安装包。其他任务可能先创建 Release；Release 页面存在本身不能证明全部打包成功。
+3. 下载实际安装包，核对下载内容与发布的 SHA256。构建、附件上传、安装和原生功能实测是不同的验证层次，分别报告。
+4. 查看失败任务的步骤及日志。日志过期时只能报告仍可见的任务结果，不能猜测具体编译错误。
 
-## 🔮 未来改进
+## 外部渠道
 
-- [ ] 添加发布状态仪表板
-- [ ] 集成 Slack/Discord 通知
-- [ ] 自动化版本号管理
-- [ ] 发布质量检查
-- [ ] 回滚机制
+现有渠道工作流仅保留手动入口，不在此发布流程中执行。运行前必须确认项目身份、包名维护权限、凭据、实际上传步骤及上游审核。
+
+已核对的 AUR `grain` / `grain-bin` 与 Scoop Extras `grain` 属于 **grain-lang 语言项目**，不是本编辑器。不要使用这些名称发布本项目，也不要将这些包的可用性作为本编辑器发布成功的证据。
+
+Flatpak/Gentoo 等工作流可能只生成 Actions 附件；一些渠道的发布步骤受不可达的事件条件限制。Actions 绿灯、准备好的清单或已创建的审核 PR，都不等于目标版本已经在商店可安装。
+
+Snap 与 Web 仍有独立标签。`tag:linux` 只创建 desktop + snap，`tag:all` 只创建 desktop + snap + web；它们不是全部渠道上架命令。仅发布 GitHub 安装包时使用 `tag:desktop`。
+
+## 自动更新
+
+当前发布不生成 `latest.json`。旧清单的签名字段为空，不能作为有效的签名自动更新发布。请从对应 GitHub Release 手动下载安装包；签名更新的要求见[自动更新说明](auto-update-guide.md)。

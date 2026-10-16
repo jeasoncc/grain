@@ -4,7 +4,7 @@
 # 创建并推送 Git Tag 以触发 CI/CD 构建流程
 # 
 # 发布架构：
-# - desktop tag 触发主构建，完成后自动触发所有依赖平台
+# - desktop tag 仅构建并发布 GitHub Release 安装包，不触发外部渠道
 # - snap tag 独立触发（从源码构建）
 # - web tag 独立触发
 
@@ -44,56 +44,26 @@ get_version_from_json() {
 
 # 函数：显示帮助信息
 show_help() {
-    echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
-    echo -e "${BLUE}                    Git Tag 发布脚本                           ${NC}"
-    echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${BLUE}Git Tag 发布脚本${NC}"
     echo ""
     echo "用法: $0 {命令}"
     echo ""
-    echo -e "${CYAN}🚀 推荐命令：${NC}"
-    echo -e "  ${GREEN}desktop${NC}  - 发布桌面应用（推荐）"
-    echo -e "           触发主构建，完成后自动触发所有依赖平台："
-    echo -e "           🐧 Linux: flatpak, aur, aur-bin, ppa, copr, obs, gentoo"
-    echo -e "           🪟 Windows: winget, scoop, chocolatey"
-    echo -e "           🍎 macOS: homebrew"
+    echo -e "${CYAN}GitHub 安装包发布：${NC}"
+    echo -e "  ${GREEN}desktop${NC}  - Windows/macOS/Linux 安装包（推荐）"
+    echo "           仅上传 GitHub Release，不触发外部包管理器"
     echo ""
-    echo -e "${CYAN}📦 独立发布命令：${NC}"
-    echo -e "  ${GREEN}snap${NC}     - Snap Store 发布（独立构建，不依赖 desktop）"
+    echo -e "${CYAN}独立发布命令：${NC}"
+    echo -e "  ${GREEN}snap${NC}     - 独立 Snap Store 发布，需先确认包名和凭据"
     echo -e "  ${GREEN}web${NC}      - Web 应用部署"
     echo ""
-    echo -e "${CYAN}🎯 组合命令：${NC}"
-    echo -e "  ${GREEN}all${NC}      - 发布所有平台（desktop + snap + web）"
+    echo -e "${CYAN}组合命令：${NC}"
+    echo -e "  ${GREEN}linux${NC}    - desktop + snap"
+    echo -e "  ${GREEN}all${NC}      - desktop + snap + web"
     echo ""
-    echo -e "${YELLOW}📋 发布架构说明：${NC}"
+    echo "其他渠道只保留手动 workflow_dispatch；使用前检查包名归属、权限和实际发布步骤。"
+    echo "这些命令不生成自动更新清单；下载入口为 GitHub Release 安装包。"
     echo ""
-    echo "  ┌─────────────────────────────────────────────────────────┐"
-    echo "  │                    desktop tag                          │"
-    echo "  │                        ↓                                │"
-    echo "  │              构建 Windows/macOS/Linux                   │"
-    echo "  │              (MSI, NSIS, MSIX, DMG, DEB, RPM, AppImage) │"
-    echo "  │                        ↓                                │"
-    echo "  │              自动触发依赖平台发布                        │"
-    echo "  │  ┌─────────────┬─────────────┬─────────────┐           │"
-    echo "  │  │   Linux     │   Windows   │    macOS    │           │"
-    echo "  │  │  flatpak    │   winget    │   homebrew  │           │"
-    echo "  │  │  aur        │   scoop     │             │           │"
-    echo "  │  │  aur-bin    │  chocolatey │             │           │"
-    echo "  │  │  ppa, copr  │             │             │           │"
-    echo "  │  │  obs, gentoo│             │             │           │"
-    echo "  │  └─────────────┴─────────────┴─────────────┘           │"
-    echo "  └─────────────────────────────────────────────────────────┘"
-    echo ""
-    echo "  ┌─────────────────┐    ┌─────────────────┐"
-    echo "  │    snap tag     │    │     web tag     │"
-    echo "  │       ↓         │    │       ↓         │"
-    echo "  │  Snap Store     │    │   Web 部署      │"
-    echo "  │  (独立构建)     │    │                 │"
-    echo "  └─────────────────┘    └─────────────────┘"
-    echo ""
-    echo -e "${BLUE}示例：${NC}"
-    echo "  $0 desktop    # 发布桌面应用（自动触发所有依赖平台）"
-    echo "  $0 snap       # 只发布 Snap"
-    echo "  $0 all        # 发布所有平台"
+    echo "示例: $0 desktop"
 }
 
 # 函数：创建并推送单个标签
@@ -196,19 +166,15 @@ main() {
             echo -e "  1. 构建 Windows (MSI, NSIS, MSIX)"
             echo -e "  2. 构建 macOS (DMG, APP)"
             echo -e "  3. 构建 Linux (DEB, RPM, AppImage)"
-            echo -e "  4. 自动触发依赖平台发布"
+            echo -e "  4. 上传 GitHub Release，不触发外部包管理器"
             echo ""
             create_and_push_tag "desktop" "$VERSION"
             
             echo ""
             echo -e "${GREEN}🎉 Desktop 发布已启动！${NC}"
             echo ""
-            echo -e "${CYAN}📋 构建完成后将自动触发：${NC}"
-            echo -e "  🐧 Linux: flatpak, aur, aur-bin, ppa, copr, obs, gentoo"
-            echo -e "  🪟 Windows: winget, scoop, chocolatey"
-            echo -e "  🍎 macOS: homebrew"
-            echo ""
-            echo -e "${YELLOW}⏱️  预计总时间: 20-30 分钟${NC}"
+            echo -e "${CYAN}在 GitHub Actions 检查全部打包任务及对应 Release 安装包。${NC}"
+            echo "外部渠道和签名自动更新不在本次发布范围内。"
             ;;
             
         snap)
@@ -231,27 +197,14 @@ main() {
             echo -e "${YELLOW}⏱️  预计时间: 5-10 分钟${NC}"
             ;;
             
-        # 这些平台现在由 desktop 自动触发，不需要单独创建 tag
-        aur|aur-bin|flatpak|ppa|copr|obs|gentoo|winget|scoop|chocolatey|homebrew)
-            echo -e "${YELLOW}⚠️  $tag_type 平台由 desktop 自动触发${NC}"
-            echo ""
-            echo -e "${BLUE}这些平台会在 desktop 构建完成后自动发布：${NC}"
-            echo -e "  🐧 Linux: flatpak, aur, aur-bin, ppa, copr, obs, gentoo"
-            echo -e "  🪟 Windows: winget, scoop, chocolatey"
-            echo -e "  🍎 macOS: homebrew"
-            echo ""
-            echo -e "${GREEN}推荐使用:${NC}"
-            echo -e "  npm run tag:desktop  # 发布桌面应用（自动触发所有依赖平台）"
-            exit 1
-            ;;
             
         # 保留 linux 命令作为 desktop + snap 的组合
         linux)
-            echo -e "${BLUE}🐧 Linux 完整发布${NC}"
+            echo -e "${BLUE}Linux 安装包与独立 Snap 标签${NC}"
             echo ""
             echo -e "${YELLOW}📋 发布流程：${NC}"
             echo -e "  1. desktop: 构建 DEB, RPM, AppImage"
-            echo -e "     └─ 自动触发: flatpak, aur, aur-bin, ppa, copr, obs, gentoo"
+            echo -e "     └─ 仅上传 GitHub Release，不触发其他 Linux 渠道"
             echo -e "  2. snap: 独立构建发布到 Snap Store"
             echo ""
             
@@ -271,15 +224,15 @@ main() {
             fi
             
             echo ""
-            echo -e "${GREEN}🎉 Linux 完整发布已启动！${NC}"
+            echo -e "${GREEN}Desktop 与 Snap 构建已启动。${NC}"
             echo -e "${YELLOW}⏱️  预计总时间: 20-30 分钟${NC}"
             ;;
             
         all)
-            echo -e "${BLUE}🌍 发布所有平台${NC}"
+            echo -e "${BLUE}创建 desktop、snap 和 web 标签${NC}"
             echo ""
             echo -e "${YELLOW}📋 发布流程：${NC}"
-            echo -e "  1. desktop: 构建所有桌面包，自动触发依赖平台"
+            echo -e "  1. desktop: 构建所有桌面包，仅上传 GitHub Release"
             echo -e "  2. snap: 独立构建发布到 Snap Store"
             echo -e "  3. web: 部署 Web 应用"
             echo ""
@@ -304,10 +257,10 @@ main() {
             fi
             
             echo ""
-            echo -e "${GREEN}🎉 所有平台发布已启动！${NC}"
+            echo -e "${GREEN}Desktop、Snap 和 Web 构建已启动。${NC}"
             echo ""
             echo -e "${CYAN}📋 发布状态：${NC}"
-            echo -e "  • desktop - 正在构建（完成后自动触发依赖平台）"
+            echo -e "  • desktop - 正在构建 GitHub Release 安装包"
             echo -e "  • snap - 正在构建"
             echo -e "  • web - 正在部署"
             echo ""

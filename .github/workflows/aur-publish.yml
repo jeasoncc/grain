@@ -1,7 +1,7 @@
 name: Publish to AUR
 
 # 依赖 desktop 构建完成，只通过 workflow_dispatch 触发
-# desktop 完成后会自动触发此工作流
+# 仅可手动运行；发布前必须确认渠道包名、维护权限与安装包归属。
 on:
   workflow_dispatch:
     inputs:

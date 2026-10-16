@@ -4,22 +4,23 @@
 
 ### create-tag.sh
 
-创建 Git 标签以触发 CI/CD 发布流程。
+创建并推送 Git 标签。`desktop-v*.*.*` 只发布 GitHub Release 中的 Windows、macOS 和 Linux 安装包，不自动发布到外部包管理器，也不生成自动更新清单。
 
-**使用**：
 ```bash
-# 智能 Linux 发布（推荐）
-npm run tag:linux
+# GitHub 安装包发布
+bun run tag:desktop
 
-# 单独发布 desktop
-npm run tag:desktop
+# 独立发布，使用前确认对应平台的包名和权限
+bun run tag:snap
+bun run tag:web
 
-# 单独发布 snap
-npm run tag:linux:snap
-
-# 查看帮助
-./scripts/create-tag.sh --help
+# 查看帮助，不创建标签
+bun run tag:help
 ```
+
+`tag:linux` 只组合 desktop 与 snap；`tag:all` 只组合 desktop、snap、web，不代表所有渠道已上架。外部包管理器只保留手动 `workflow_dispatch`，需要单独核对包名归属、凭据、提交与审核结果。
+
+完整边界与验收步骤见[发布工作流](../docs/automated-release-workflow.md)。
 
 ### bump-version.sh
 
@@ -43,8 +44,11 @@ npm run version:bump
 - `apps/web/package.json`
 - `apps/desktop/src-tauri/tauri.conf.json`
 - `apps/desktop/src-tauri/Cargo.toml`
-- `aur/PKGBUILD`
-- `aur/PKGBUILD-bin`
+- `aur/PKGBUILD`、`aur/PKGBUILD-binary`
+- `snap/snapcraft.yaml`、`flatpak/com.lotus.Grain.yml`
+- `winget-manifests/Jeason.Grain*.yaml`
+
+更新版本后用 `bun install --lockfile-only --ignore-scripts` 更新 `bun.lock`，并通过 Tauri 构建同步原生 `Cargo.lock`。版本同步不等于渠道发布。
 
 ### update-icons.sh
 
