@@ -117,9 +117,9 @@ jobs:
             throw "Real Windows app build failed ($code)."
           }
 
-      - name: Build and sign isolated x64 readiness MSIX
+      - name: Build and sign the assigned Grain Org x64 MSIX
         shell: pwsh
-        run: ./scripts/build-msix.ps1 -ReadinessOnly
+        run: ./scripts/build-msix.ps1
 
       - name: Install, launch, save, restart, and certify when available
         # Appx cmdlets run natively in Windows PowerShell, not an implicit PS7 compatibility session.

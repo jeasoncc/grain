@@ -1,11 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$OutputDirectory = 'artifacts/windows-msix',
-    [string]$Executable = 'apps/desktop/src-tauri/target/release/grain.exe',
-    [string]$StoreProductId = $env:GRAIN_STORE_PRODUCT_ID,
-    [string]$StoreIdentity = $env:GRAIN_STORE_IDENTITY,
-    [string]$StorePublisher = $env:GRAIN_STORE_PUBLISHER,
-    [switch]$ReadinessOnly
+    [string]$Executable = 'apps/desktop/src-tauri/target/release/grain.exe'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -29,30 +25,13 @@ try {
     foreach ($component in @($version.Major, $version.Minor, $version.Build, $version.Revision)) {
         if ($component -gt 65535) { throw "Version component exceeds MSIX range: $version" }
     }
-    if ($ReadinessOnly) {
-        # A real, installable CI-only package, never an assigned Store product identity.
-        $identity = 'Grain.WindowsReadiness'
-        $publisher = 'CN=Grain Windows Readiness'
-        $productId = $null
-        $purpose = 'readiness-only'
-        $suffix = '_readiness'
-        $displayName = 'Grain Windows Readiness'
-    } else {
-        if ([string]::IsNullOrWhiteSpace($StoreProductId) -or
-            [string]::IsNullOrWhiteSpace($StoreIdentity) -or
-            [string]::IsNullOrWhiteSpace($StorePublisher)) {
-            throw 'The independent Org app requires its real Partner Center Product ID, package identity and publisher. Set GRAIN_STORE_PRODUCT_ID, GRAIN_STORE_IDENTITY and GRAIN_STORE_PUBLISHER; never reuse the legacy app. Use -ReadinessOnly only for disposable Windows verification.'
-        }
-        if ($StoreProductId -eq '9NV7M2PW25B3' -or $StoreIdentity -eq 'Jeason.5842835EA9EE6') {
-            throw 'Refusing to package an Org update for the retained legacy Store app.'
-        }
-        $identity = $StoreIdentity
-        $publisher = $StorePublisher
-        $productId = $StoreProductId
-        $purpose = 'store-candidate'
-        $suffix = ''
-        $displayName = 'Grain Org'
-    }
+    # Assigned by Partner Center on 2026-10-16 for the independent Org product.
+    # The legacy Wheat Editor product is not an update target.
+    $identity = 'Jeason.GrainOrg'
+    $publisher = 'CN=056C6E40-362E-4DC2-A03D-B19B795AA254'
+    $productId = '9PF3WZLSWZHX'
+    $purpose = 'store-candidate'
+    $displayName = 'Grain Org'
     $identityXml = [Security.SecurityElement]::Escape($identity)
     $publisherXml = [Security.SecurityElement]::Escape($publisher)
     $output = [IO.Path]::GetFullPath((Join-Path $repo $OutputDirectory))
@@ -98,7 +77,7 @@ try {
 </Package>
 "@
     [IO.File]::WriteAllText((Join-Path $stage 'AppxManifest.xml'), $manifest, [Text.UTF8Encoding]::new($false))
-    $package = Join-Path $output "grain_$($config.version)_x64$suffix.msix"
+    $package = Join-Path $output "grain_$($config.version)_x64.msix"
     $makeAppx = Find-SdkTool 'makeappx.exe'
     $signTool = Find-SdkTool 'signtool.exe'
     $toolLog = Join-Path $output 'makeappx.log'
@@ -141,7 +120,7 @@ try {
         @"
 ### MSIX package
 - Identity: ``$identity`` / ``$publisher``
-- Purpose: ``$purpose``; Store product: ``$productId``. Readiness-only identities must never be submitted to Store.
+- Purpose: ``$purpose``; Store product: ``$productId``. Submit only after the same package passes installed-app verification.
 - Version: ``$version``; architecture: ``x64``
 - SHA-256: ``$((Get-FileHash $package -Algorithm SHA256).Hash)``
 - WebView2 Evergreen is a prerequisite, **not bundled or installed by this MSIX**. Provision Evergreen separately, including on clean Windows 10. Readiness explicitly checks/provisions the runtime; an install-only pass does not prove runtime availability.

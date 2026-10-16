@@ -262,9 +262,11 @@ Workspace approvals issue native capability leases. Every Org filesystem/index i
 
 Ordinary Linux saves prove descriptor-source publication support before capture and retain a durable identity-bound journal. Approved reopening recovers before scan: unpublished old files restore; confirmed publication is retained. Foreign inodes and unowned artifacts are preserved and rejected. The old pathname has an observable capture gap: this is not no-gap atomic replacement or unsaved-buffer restart recovery. Darwin ordinary Save/Delete and other unsupported publication platforms refuse before preparation/capture; no named-source fallback is used. Linux process-interruption smoke covers both publication sides, not power loss or other-platform parity.
 
-Confirmed overwrites preserve their original inode and journal in `.grain-original-*.tmp`; confirmed deletes move the original into `.grain-deleted-*.tmp` rather than permanently unlinking it. Native receipts and workspace scans expose recovery paths. Already-open external fds can still mutate these originals: they are live recovery files, not immutable backups, and are not automatically replayed or garbage-collected. Retention consumes disk until explicit external cleanup. Real Linux native smoke verified writes through the original fd after save/delete ACK remain byte-exact at a named recovery path with `nlink=1`; this does not establish strict in-place-write atomic CAS or other-platform parity.
+Windows publishes through retained native directory/file handles, full volume/file identity and no-replace native rename/link operations. Ancestors deny delete sharing; captured sources deny write/delete sharing. Owner, group, DACL protection and effective mandatory integrity labels are preserved. Reparse points and EFS-encrypted files/directories are refused rather than traversed or copied into plaintext. Save/delete originals and transaction evidence remain inside `.grain-win-write-*.tmp`; recovery verifies identity and bytes and preserves foreign artifacts, including unsupported Unix/migration journals. Native process-interruption checks do not establish physical power-loss ordering or POSIX directory-fsync equivalence. There is no transaction garbage collection or immutable-backup guarantee.
 
-All recognized stage, original, journal and publication-probe objects remain named; there is no automatic transaction garbage collection. New journals use v3; genuine active v1/v2 provenance remains readable. A real Linux bg166 v1 interrupted-recovery smoke retained all three original/staged/journal objects and `nlink=1` on an already-open stage descriptor. Late non-UTF8/NUL writes through that same descriptor remained discoverable by inode, while scoped native reads kept the exact restored original. Two same-process reopens retained names and did not replay the stage. This does not qualify v2/v3 probes, OS-process restart, crash/fsync injection or strict concurrent in-place-write CAS.
+On Linux, confirmed overwrites preserve their original inode and journal in `.grain-original-*.tmp`; confirmed deletes move the original into `.grain-deleted-*.tmp` rather than permanently unlinking it. Native receipts and workspace scans expose recovery paths. Already-open external fds can still mutate these originals: they are live recovery files, not immutable backups, and are not automatically replayed or garbage-collected. Retention consumes disk until explicit external cleanup. Real Linux native smoke verified writes through the original fd after save/delete ACK remain byte-exact at a named recovery path with `nlink=1`; this does not establish strict in-place-write atomic CAS or other-platform parity.
+
+All recognized stage, original, journal and publication-probe objects remain named; there is no automatic transaction garbage collection. Linux journals use v3; genuine active v1/v2 provenance remains readable. A real Linux bg166 v1 interrupted-recovery smoke retained all three original/staged/journal objects and `nlink=1` on an already-open stage descriptor. Late non-UTF8/NUL writes through that same descriptor remained discoverable by inode, while scoped native reads kept the exact restored original. Two same-process reopens retained names and did not replay the stage. This does not qualify v2/v3 probes, OS-process restart, crash/fsync injection or strict concurrent in-place-write CAS.
 
 The opt-in Capture scratch journal above is separate from the native filesystem publication journal: it restores only an explicitly selected scratch draft and never writes an Org file by itself.
 
@@ -369,6 +371,8 @@ never opens historical `grain.db`. Both modes reject historical body writers and
 `save_file`/`ensure_directory_and_save` commands. `GRAIN_DB_FILENAME` configures the API server,
 not this Tauri boundary. Restart without the variable to return to normal Org mode.
 
+Windows historical SQLite recovery/migration remains unsupported. The native Windows Org file backend does not authorize opening or converting historical database bodies.
+
 ## Editor transition
 
 CodeMirror is the primary editor and raw Org files are the body authority. The historical route
@@ -379,9 +383,13 @@ Do not add new Lexical-based document features. New writing functionality belong
 
 ## Known release gates
 
-- Windows-equivalent ACL, identity and atomic no-clobber guarantees
+- macOS native document publication remains unsupported.
+- Windows native IME composition, all minimum OS/non-NTFS environments and physical power-loss behavior are not established by the hosted smoke.
+- MSIX installation, WACK findings and Microsoft Store certification are separate gates; see the [Store guide](../../docs/microsoft-store-guide.md).
 
 ## Current native evidence
+
+Windows run [38885398218](https://github.com/jeasoncc/grain/actions/runs/38885398218) exercised 42 native filesystem/export/calendar/lease cases, including real NTFS EFS refusal. Its installed production app passed capability rejection, no-clobber/stale-write checks, visible file-tree opening, Unicode editor input, Ctrl+S with exact CRLF disk bytes and visible reopening after process restart. The run used the earlier CI-only package identity and ended with a WACK `WARNING`, not clean certification; the actual new Store identity must pass its own installed-package checks.
 
 An authorized fresh isolated historical copy completed the actual native migration UI,
 verification and recovery drill. Version-2 recovery restored one workspace, six nodes and

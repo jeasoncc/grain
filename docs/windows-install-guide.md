@@ -14,9 +14,9 @@ Grain 当前源码以本地 `.org` 文件为正文，不再提供旧富文本正
 
 ## Microsoft Store 与 MSIX
 
-Org 版将使用**独立新商店产品**，不会覆盖旧「小麦写作 / Wheat Editor」`9NV7M2PW25B3`。新的 Store 链接必须在产品实际创建、提交并发布后取得；当前不能用旧链接冒充 Org 版。
+Org 版已创建**独立新产品 Grain Org**，Store ID `9PF3WZLSWZHX`，不会覆盖旧「小麦写作 / Wheat Editor」`9NV7M2PW25B3`。产品创建不等于发布；只有门户显示正式上线且对应版本可安装，才能作为商店来源。不能用旧链接冒充 Org 版。
 
-Windows CI 的 `grain_*_x64_readiness.msix` 使用 `Grain.WindowsReadiness` 测试身份，只供一次性 Windows 验证，**不能提交商店或提供普通用户安装**。正式候选的 `package-info.json` 会标记 `store-candidate`；这也只代表候选，不代表已经认证。
+当前 Windows CI 为 `Jeason.GrainOrg` 生成 `grain_<版本>_x64.msix`，`package-info.json` 标记 `store-candidate`，仍只代表待验证、待审核的候选。历史 `Grain.WindowsReadiness` / `_readiness.msix` 产物不能提交商店或提供普通用户安装。
 
 临时自签名 CI 包不是 Store 签名包。不要把测试证书加入个人机器的根证书库，也不要按过期教程全局放宽信任。只有可销毁验证环境可以运行仓库的测试安装脚本，见 [MSIX 快速验证](./msix-quick-start.md)。
 

@@ -22,9 +22,9 @@
    - `org_clock_context::platform::tests`
    - `tauri::commands::org_document_commands::tests`
 3. 工作流使用 `--include-ignored`，在一次性 Windows NTFS 环境实际执行 EFS 边界用例；它会创建真正的加密文件/目录，验证拒绝明文读取、派生索引和替换写入，不会把缺少 EFS 能力跳过成通过。普通本地测试默认忽略此需隔离环境的用例。任一组失败或没有选中测试，门禁失败；仍收集其他组结果，不能因为一个失败隐藏后面的诊断。
-4. 只有原生组通过，才构建真实前端与 `grain.exe`，运行 `scripts/build-msix.ps1 -ReadinessOnly`。测试身份为 `Grain.WindowsReadiness`，不使用旧商店产品，不是可提交的 Store 身份。
+4. 只有原生组通过，才构建真实前端与 `grain.exe`，运行 `scripts/build-msix.ps1`。使用 Partner Center 实际分配给 `Grain Org` 的 `Jeason.GrainOrg` / `9PF3WZLSWZHX`，不使用旧商店产品。
 5. Windows PowerShell 运行 `scripts/test-windows-msix.ps1`，安装实际 MSIX、验证包身份与可见窗口、连接其真实 WebView2。`scripts/windows-msix-smoke.mjs` 检查权限拒绝、创建碰撞、过期 revision、Unicode/CRLF 原生保存、文件树打开、编辑器输入与 Ctrl+S，以及全进程重启后再打开。
-6. 如有 WACK，实际运行并保留报告；缺少工具或未认证的环境必须明确标记，不能据此声称获得 Store 认证。
+6. 如有 WACK，实际运行并保留报告。读取真实 `REPORT/@OVERALL_RESULT`，拒绝部分/未知报告、非零退出以及任何必需检查的非 PASS；仅可选检查有问题的 `WARNING` 明确报告为 `passed-with-wack-warnings`，不是干净 WACK 通过或 Store 认证，完整 findings 留待提交前核对。缺少工具必须明确标记。
 7. 不论成功失败，都尝试上传已有包、完整原生日志、截图和报告；保留期 14 天。
 
 运行时不存在时，smoke 会在验证 Microsoft 签名后单独配置 WebView2 Evergreen。MSIX 本身不包含这个引导程序。
@@ -33,7 +33,7 @@
 
 Readiness run：
 
-- `windows-msix-<run_id>-<run_attempt>`：实际 `_readiness.msix`、公开测试证书、Manifest、`package-info.json`、MakeAppx/SignTool 日志；`purpose=readiness-only`，不能提交 Store。
+- `windows-msix-<run_id>-<run_attempt>`：实际 `grain_<版本>_x64.msix`、公开测试证书、Manifest、`package-info.json`、MakeAppx/SignTool 日志；`purpose=store-candidate`，必须通过同一 run 的完整安装验证后才可提交。
 - `windows-readiness-<run_id>-<run_attempt>`：各测试日志、构建日志、`installed-package.json`、原生/编辑器结果、全进程重启结果、WebView2/窗口截图和最终 readiness 报告；具体文件仅在对应阶段执行后存在。
 
 Release MSIX job：
@@ -42,7 +42,7 @@ Release MSIX job：
 - `msix-readiness-<run_id>-<run_attempt>`：该正式候选包的安装后证明。
 - 仅安装 smoke 成功后，才把 `.msix` 上传到对应 GitHub Release。失败 artifact 可用于诊断，不能当作可发布包。
 
-Release 使用独立 Org 产品的真实身份，要求先配置 `GRAIN_STORE_PRODUCT_ID`、`GRAIN_STORE_IDENTITY`、`GRAIN_STORE_PUBLISHER` repository variables。缺少配置或试图使用保留的旧产品 `9NV7M2PW25B3` 会失败，不会退回测试身份或旧应用。
+Readiness 和 Release 都使用打包脚本中固定的新产品公开身份，无需另行配置 repository variables。不会切换到保留的旧产品 `9NV7M2PW25B3`。早期 runs 的 `Grain.WindowsReadiness` / `_readiness.msix` 是历史测试包，不可上传 Store。
 
 下载后核对包 SHA-256 与 `package-info.json`，并核对报告里真正安装和运行的版本/身份。只看绿色下载按钮、文件大小或自签名成功不足以通过门禁。
 
@@ -51,6 +51,8 @@ Release 使用独立 Org 产品的真实身份，要求先配置 `GRAIN_STORE_PR
 已执行的原生断点/恢复检查属于进程中断与保留证据模型，不是物理断电或 POSIX 目录 fsync 等价性证明。Windows 不提供当前实现可宣称的 Linux 完整语义对等。
 
 可见编辑器 smoke 不测试 Windows 原生 IME composition，不覆盖所有 Windows 版本、文件系统、离线干净机器或第三方安全软件环境。保存测试使用真实磁盘字节和真实应用，不使用浏览器替身、mock 文件系统或伪造认证结果。
+
+截图来自直接调整尺寸后的真实原生窗口，不设置 Playwright viewport、不模拟设备也不放大图片。`*-process.json` 记录真实 client area，`*-viewport.json` 记录 WebView 和 PNG 像素尺寸；提交截图要求至少 1366 × 768、PNG 不超过 50 MB，smoke 直接核验原始图片。
 
 WACK 成功也只是该环境的工具结果；商店发布必须有 Partner Center 的真实提交 ID 和状态。没有认证工具或商店权限时，报告该缺口，不吞掉错误或填写假的通过结果。
 

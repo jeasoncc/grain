@@ -79,10 +79,10 @@ npm run stats:check
 仅在一次性 Windows 构建环境，从仓库根运行：
 
 ```powershell
-./scripts/build-msix.ps1 -ReadinessOnly
+./scripts/build-msix.ps1
 ```
 
-该模式使用 `Grain.WindowsReadiness` 独立测试身份，包名带 `_readiness`，不能提交商店。正式模式不带此开关，必须提供独立 Org 产品的 `GRAIN_STORE_PRODUCT_ID`、`GRAIN_STORE_IDENTITY`、`GRAIN_STORE_PUBLISHER`（或对应 `-Store*` 参数）；缺少配置或沿用旧产品身份会失败。
+脚本固定使用 Partner Center 为独立 **Grain Org** 分配的 `Jeason.GrainOrg` / `9PF3WZLSWZHX`，不需要额外 repository variables 或商店账号凭据。输出 `grain_<版本>_x64.msix`、`purpose=store-candidate`；只能在同一个包通过安装后验证后上传，不能把自签名当作认证。历史 `_readiness` 测试身份不再生成，也不能提交 Store。
 
 ### test-windows-msix.ps1 / windows-msix-smoke.mjs
 

@@ -233,10 +233,6 @@ jobs:
     permissions:
       contents: write
     # 只在打 tag 时运行
-    env:
-      GRAIN_STORE_PRODUCT_ID: ${{ vars.GRAIN_STORE_PRODUCT_ID }}
-      GRAIN_STORE_IDENTITY: ${{ vars.GRAIN_STORE_IDENTITY }}
-      GRAIN_STORE_PUBLISHER: ${{ vars.GRAIN_STORE_PUBLISHER }}
     if: startsWith(github.ref, 'refs/tags/desktop-v')
     
     steps:

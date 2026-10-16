@@ -15,7 +15,7 @@ bun run tauri build --no-bundle
 在仓库根目录执行：
 
 ```powershell
-./scripts/build-msix.ps1 -ReadinessOnly
+./scripts/build-msix.ps1
 ```
 
 默认输入为 `apps/desktop/src-tauri/target/release/grain.exe`。脚本读取真实 `tauri.conf.json` 版本，核验 PE machine 是 x64，直接放入：
@@ -32,17 +32,11 @@ AppxManifest.xml
 
 ## 身份与版本
 
-Windows CI 使用独立测试身份 `Grain.WindowsReadiness`，Publisher 为 `CN=Grain Windows Readiness`，元数据 `purpose` 为 `readiness-only`，包名带 `_readiness`。它能真实安装运行，但不是 Store 分配的身份，不能提交商店。
+Windows readiness 和 Release 都为实际分配的新产品 **Grain Org** 打包：Product ID `9PF3WZLSWZHX`，Package Identity `Jeason.GrainOrg`。完整 Publisher/PFN 见[商店身份表](./microsoft-store-guide.md#独立-org-产品不更新旧应用)。
 
-正式商店模式不带 `-ReadinessOnly`，必须从新 Org 产品的 Partner Center「产品标识」取得并提供：
+公开身份固定在 `scripts/build-msix.ps1`，不需要账号凭据或 Actions repository variables。脚本只接受输出目录和 EXE 路径参数，不能通过运行参数退回历史产品 `9NV7M2PW25B3`。
 
-- `GRAIN_STORE_PRODUCT_ID`
-- `GRAIN_STORE_IDENTITY`（Package/Identity/Name）
-- `GRAIN_STORE_PUBLISHER`（Package/Identity/Publisher）
-
-可通过同名脚本参数 `-StoreProductId`、`-StoreIdentity`、`-StorePublisher` 传入；Release job 使用同名 Actions repository variables。正式包元数据为 `store-candidate`，仍须安装验证和商店审核。
-
-维护者已选择保留历史产品 `9NV7M2PW25B3`；脚本拒绝使用该 Product ID 或 `Jeason.5842835EA9EE6` 包身份。没有新身份时失败，不伪造 Store 标识，也不退回旧产品。
+输出为 `grain_<版本>_x64.msix`，`purpose=store-candidate`。这是候选，不是已经认证或发布。历史 `Grain.WindowsReadiness` 测试身份产物不能提交 Store，当前不再生成该模式。
 
 所有包都明确使用 `ProcessorArchitecture=x64`、Application Id `Grain` 和 `Windows.FullTrustApplication`。
 

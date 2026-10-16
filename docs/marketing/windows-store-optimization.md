@@ -2,7 +2,7 @@
 
 这是独立 Org 产品的提交资料，不是已上架声明。维护者已决定保留旧「小麦写作 / Wheat Editor」`9NV7M2PW25B3`；不要替换旧条目，不复用旧包身份或旧富文本截图。
 
-名称优先使用 **Grain Org**，仅在 Partner Center 实际保留成功后填写。分类建议 **Productivity / 生产力**。应用界面当前主要为英文，支持 UTF-8 中文等正文；中文商店文案不表示已有完整中文界面。不得填写未经验证的安装量、排名、用户数、认证徽章或发行状态。
+**Grain Org** 已在 Partner Center 实际保留，Store ID `9PF3WZLSWZHX`；发布状态以真实门户为准。分类为 **Productivity / 生产力**。应用界面当前主要为英文，支持 UTF-8 中文等正文；中文商店文案不表示已有完整中文界面。不得填写未经验证的安装量、排名、用户数、认证徽章或发行状态。
 
 ## zh-CN 商店文案
 
@@ -22,6 +22,7 @@ Agenda 汇总任务和计划；Capture 模板帮助记录笔记和待办。使�
 
 重要边界：
 - 需要 Microsoft Edge WebView2 Evergreen Runtime；MSIX 不内置或安装它。部分 Windows 10 机器须先从微软安装运行时。
+- 界面当前主要为英文，中文商店说明不代表已有完整中文界面。
 - Windows 使用受支持的本地文件系统原语；reparse/junction/符号链接和 EFS 加密对象不作为普通 workspace 内容，避免替换或派生副本丢失加密。Windows 文件监听、GNU 专用功能及历史库恢复/迁移有独立限制。
 - 应用没有自动把旧 IndexedDB 或 grain.db 作品转换为 Org 的能力。旧产品独立保留；先备份并使用旧版导出，不删除历史数据库。
 - 文件操作可能保留含旧正文的 .grain-*.tmp 原件及事务证据。它们可被外部修改，不是不可变备份，不会自动安全擦除或清理。
@@ -96,7 +97,7 @@ Org mode; local notes; writing; tasks; open source; outliner; knowledge manageme
 
 [微软截图要求](https://learn.microsoft.com/windows/apps/publish/publish-your-app/msix/screenshots-and-images)：Desktop PNG 至少 **1366 × 768**，每张不超过 **50 MB**。至少一张截图；可提供最多 10 张 Desktop 截图。界面内容须真实，不叠加额外营销文案或认证标志。每种商店语言分别上传并填写不超过 200 字符的说明。
 
-Windows readiness artifact 的 `exercise-after.png` / `reopen-after.png` 是真实应用 WebView2 证据，桌面截图用于诊断实际窗口。使用前必须亲自查看、核对像素尺寸、确认 smoke 成功且没有错误面板/私人数据；低分辨率桌面图不能放大后伪称原始合格截图。最终正式身份包还须重新安装核对。
+Windows readiness artifact 的 `exercise-after.png` / `reopen-after.png` 是真实应用 WebView2 证据，桌面截图用于诊断实际窗口。Smoke 直接调整真实原生窗口并验证 PNG 至少 1366 × 768，将 client area 与原始 PNG 尺寸分别记录在 `*-process.json` / `*-viewport.json`；不模拟浏览器 viewport、不放大图片。使用前必须亲自查看、确认正式身份包的 smoke 成功且没有错误面板/私人数据。历史 run `38885398218` 的 1028 × 749 截图不满足 Store 要求，不可上传。
 
 建议的真实画面及说明：
 

@@ -15,6 +15,7 @@ const savedSource = `${edited}${uiLine}\r\n`;
 let browser;
 let page;
 const logs = [];
+let afterCaptured = false;
 const errors = [];
 
 async function openVisibleDocument(relativePath, expectedText) {
@@ -148,12 +149,20 @@ try {
     await writeFile(path.join(output, 'reopen-result.json'), JSON.stringify({ status: 'passed', ...result, editorReopen: true }, null, 2));
   }
   assert.equal(errors.length, 0, `Installed app raised JavaScript errors: ${errors.join('\n')}`);
+  const image = await page.screenshot({ path: path.join(output, `${phase}-after.png`) });
+  afterCaptured = true;
+  const dimensions = { width: image.readUInt32BE(16), height: image.readUInt32BE(20) };
+  await writeFile(path.join(output, `${phase}-viewport.json`), JSON.stringify({
+    ...await page.evaluate(() => ({ innerWidth, innerHeight, devicePixelRatio })), png: dimensions,
+  }, null, 2));
+  assert.ok(dimensions.width >= 1366 && dimensions.height >= 768 && image.byteLength <= 50 * 1024 * 1024,
+    `Real native-window screenshot does not meet Store requirements: ${dimensions.width}x${dimensions.height}`);
   console.log(`${phase}: installed Tauri document and visible editor boundary passed (Unicode, CRLF, real filesystem).`);
 } catch (error) {
   await writeFile(path.join(output, `${phase}-failure.txt`), error.stack ?? String(error));
   throw error;
 } finally {
-  if (page && !page.isClosed()) {
+  if (page && !page.isClosed() && !afterCaptured) {
     await page.screenshot({ path: path.join(output, `${phase}-after.png`) }).catch(error => logs.push(`Screenshot failure: ${error.message}`));
   }
   await writeFile(path.join(output, `${phase}-webview.log`), [...logs, ...errors].join('\n'));

@@ -46,13 +46,13 @@ cargo test --manifest-path packages/rust-core/Cargo.toml --lib tauri::commands::
 仍在仓库根目录：
 
 ```powershell
-./scripts/build-msix.ps1 -ReadinessOnly
+./scripts/build-msix.ps1
 powershell.exe -NoProfile -File ./scripts/test-windows-msix.ps1
 ```
 
-构建脚本读取真实桌面版本，例如 0.1.606 的 CI 包为 `grain_0.1.606_x64_readiness.msix`、Manifest 为 `0.1.606.0`。它使用独立的 `Grain.WindowsReadiness` 测试身份，检查 x64 PE 类型并生成短期测试签名；不需要 cargo-packager、MSIX Packaging Tool、PFX 或密码。此包不能提交 Store。
+构建脚本读取真实桌面版本，例如 0.1.606 输出 `grain_0.1.606_x64.msix`、Manifest 为 `0.1.606.0`。它使用 Partner Center 已分配的 `Jeason.GrainOrg` / `9PF3WZLSWZHX`，检查 x64 PE 类型并生成短期测试签名；不需要 cargo-packager、MSIX Packaging Tool、PFX 或密码。
 
-正式候选必须取得独立 Org 产品的真实 Product ID、Package Identity、Publisher，配置 `GRAIN_STORE_PRODUCT_ID`、`GRAIN_STORE_IDENTITY`、`GRAIN_STORE_PUBLISHER` 后，不带 `-ReadinessOnly` 运行构建。脚本拒绝沿用旧产品身份，具体配置见 [商店指南](./microsoft-store-guide.md)。
+公开的新产品身份已经固定在打包脚本，无需额外设置 repository variables。元数据 `purpose=store-candidate` 不表示已通过安装门禁或 Store 认证；只能提交完整验证成功的同一个包。历史测试身份包不能上传，见[商店指南](./microsoft-store-guide.md)。
 
 安装脚本会验证实际包和运行时、加入本次叶证书的临时 `LocalMachine\TrustedPeople` 信任、安装并启动真正 MSIX、通过真实 WebView2 操作原生接口及可见编辑器、保存 Unicode/CRLF 内容、完全停止应用并重启验证。它只对本次应用配置 loopback 调试，并在退出时卸载本次包、移除信任和还原覆盖；清理失败不能算通过。
 

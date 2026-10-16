@@ -68,10 +68,23 @@ function Start-InstalledApp([string]$Phase) {
             $name = [Text.StringBuilder]::new([int]$length)
             $code = [GrainReadiness.Native]::GetPackageFullName($candidate.Handle, [ref]$length, $name)
             if ($code -ne 0 -or $name.ToString() -ne $installed.PackageFullName) { throw 'Activated process does not have the installed MSIX identity.' }
+            # Resize the real native window, not an emulated browser viewport or upscaled image.
+            $null = [GrainReadiness.Native]::ShowWindow($candidate.MainWindowHandle, 9)
+            if (-not [GrainReadiness.Native]::SetWindowPos($candidate.MainWindowHandle, [IntPtr]::Zero, 0, 0, 1440, 960, 0x0416)) {
+                throw [ComponentModel.Win32Exception]::new([Runtime.InteropServices.Marshal]::GetLastWin32Error())
+            }
+            $client = [GrainReadiness.Rect]::new()
+            if (-not [GrainReadiness.Native]::GetClientRect($candidate.MainWindowHandle, [ref]$client)) {
+                throw [ComponentModel.Win32Exception]::new([Runtime.InteropServices.Marshal]::GetLastWin32Error())
+            }
+            $width = $client.Right - $client.Left
+            $height = $client.Bottom - $client.Top
+            if ($width -lt 1366 -or $height -lt 768) { throw "Native client area is too small for Store screenshots: ${width}x${height}." }
             [ordered]@{
                 phase = $Phase; pid = $candidate.Id; executable = $candidate.Path
                 packageFullName = $name.ToString(); windowTitle = $candidate.MainWindowTitle
                 windowHandle = $candidate.MainWindowHandle.ToInt64(); sessionId = $candidate.SessionId
+                clientWidth = $width; clientHeight = $height
             } | ConvertTo-Json | Set-Content (Join-Path $output "$Phase-process.json") -Encoding UTF8
             return $candidate
         }
@@ -98,8 +111,15 @@ using System;
 using System.Text;
 using System.Runtime.InteropServices;
 namespace GrainReadiness {
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Rect { public int Left, Top, Right, Bottom; }
     public static class Native {
         [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr window);
+        [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr window, int command);
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int width, int height, uint flags);
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool GetClientRect(IntPtr window, ref Rect rect);
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         public static extern int GetPackageFullName(IntPtr process, ref uint length, StringBuilder name);
     }
@@ -211,21 +231,52 @@ namespace GrainReadiness {
         }
         if (-not (Test-Path $report)) { $result.wack = 'missing report'; throw 'WACK returned no XML report; no certification result can be claimed.' }
         [xml]$reportXml = Get-Content $report -Raw
-        $verdict = $reportXml.SelectSingleNode("//*[local-name()='OVERALL_RESULT']")
-        # Unknown schemas/results fail closed rather than turning an exit code into a pass.
-        if (-not $verdict -or $verdict.InnerText.Trim() -notin @('PASS', 'PASSED')) {
-            $result.wack = 'failed or unrecognized report verdict'
-            $detail = Get-Content $report -Tail 60 | Out-String
-            throw "WACK report did not contain a recognized passing OVERALL_RESULT:`n$detail"
+        $reportRoot = $reportXml.DocumentElement
+        # WACK stores the verdict in a REPORT attribute, not an OVERALL_RESULT element.
+        if ($reportRoot.LocalName -ne 'REPORT' -or $reportRoot.GetAttribute('PARTIAL_RUN') -ne 'FALSE') {
+            throw 'WACK returned an unrecognized or partial report.'
         }
-        $result.wack = 'passed hosted-runner checks; not Store certification'
-        Add-Summary '- WACK produced a real passing report for this hosted environment. Microsoft Store certification remains a separate review.'
+        $verdict = $reportRoot.GetAttribute('OVERALL_RESULT')
+        $tests = @($reportRoot.SelectNodes('REQUIREMENTS/REQUIREMENT/TEST'))
+        if ($tests.Count -eq 0) { throw 'WACK report contains no test results.' }
+        $findings = @()
+        foreach ($test in $tests) {
+            $node = $test.SelectSingleNode('RESULT')
+            $optional = $test.GetAttribute('OPTIONAL')
+            if (-not $node -or $node.InnerText.Trim() -notin @('PASS', 'FAIL', 'WARNING') -or $optional -notin @('TRUE', 'FALSE')) {
+                throw 'WACK returned an unrecognized test result or requirement.'
+            }
+            if ($node.InnerText.Trim() -ne 'PASS') {
+                $findings += [pscustomobject]@{
+                    name = $test.GetAttribute('NAME'); result = $node.InnerText.Trim(); optional = ($optional -eq 'TRUE')
+                    messages = @($test.SelectNodes('MESSAGES/MESSAGE') | ForEach-Object { $_.GetAttribute('TEXT') })
+                }
+            }
+        }
+        $result.wackVerdict = $verdict
+        $result.wackFindings = $findings
+        $requiredFindings = @($findings | Where-Object { -not $_.optional })
+        if ($verdict -notin @('PASS', 'WARNING') -or $requiredFindings.Count -gt 0 -or
+            ($verdict -eq 'PASS' -and $findings.Count -gt 0) -or ($verdict -eq 'WARNING' -and $findings.Count -eq 0)) {
+            $result.wack = 'failed or unrecognized checks; certification NOT verified'
+            throw "WACK $verdict; non-passing checks:`n$($findings | ConvertTo-Json -Depth 4)"
+        }
+        if ($verdict -eq 'WARNING') {
+            # An optional static scan is not a clean pass. Preserve its findings for review.
+            $result.wack = 'WARNING: optional findings require review; not a clean WACK pass or Store certification'
+            $result.status = 'passed-with-wack-warnings'
+            Write-Warning $result.wack
+            Add-Summary ("- **WACK WARNING; not certified.** All mandatory checks passed, but optional findings remain: " + (($findings | ForEach-Object { $_.name + ': ' + $_.result }) -join '; ') + ". Review wack-report.xml and readiness-result.json before submission.")
+        } else {
+            $result.wack = 'PASS on hosted runner; not Store certification'
+            Add-Summary '- WACK produced a real PASS report for this hosted environment. Microsoft Store certification remains a separate review.'
+        }
     } else {
         $result.wack = 'unavailable: App Certification Kit is not installed on this runner; certification NOT verified'
         Write-Warning $result.wack
         Add-Summary "- **WACK not run:** $($result.wack). Run the package through WACK on a supported Windows certification machine before submission."
     }
-    $result.status = 'passed'
+    if ($result.status -eq 'running') { $result.status = 'passed' }
 } catch {
     $failure = $_
     $result.status = 'failed'

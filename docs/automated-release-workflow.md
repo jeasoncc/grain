@@ -14,7 +14,7 @@
 
 安装包存在不等于对应操作系统上的 Org 文件系统能力已经等价支持。文件操作与恢复边界以[桌面端指南](../apps/desktop/README.md#file-mutation-rules)为准。
 
-`main` 上相关变动会先触发 [Windows Native Readiness](https://github.com/jeasoncc/grain/actions/workflows/windows-readiness.yml)，运行真实 Windows 文件、导出、日历与权限回归，再安装运行一个明确标记 `readiness-only` 的独立测试 MSIX。它不创建 Release，也不是可提交的 Store 包。
+`main` 上相关变动会先触发 [Windows Native Readiness](https://github.com/jeasoncc/grain/actions/workflows/windows-readiness.yml)，运行真实 Windows 文件、导出、日历与权限回归，再安装运行 **Grain Org** 的正式身份候选 MSIX。候选标记 `store-candidate`；它不创建 GitHub Release，也不自动提交 Store。
 
 桌面发布不会再自动派发 AUR、Flatpak、PPA、COPR、OBS、Gentoo、Winget、Scoop、Chocolatey 或 Homebrew 工作流，也没有自动等待这些渠道的发布编排器。
 
@@ -41,7 +41,7 @@ bun run tag:desktop
 
 该命令读取根版本、创建带注释的 `desktop-v` 标签并推送到 `origin`。不要覆盖、删除或移动已经发布的标签；修复应使用新的补丁版本。直接手动运行工作流只做所选 ref 的构建，发布仍使用明确的版本标签。
 
-Windows 修复版本必须先通过实机门禁。Org 版保留旧商店产品、建立独立新条目；取得真实新身份并配置 `GRAIN_STORE_PRODUCT_ID`、`GRAIN_STORE_IDENTITY`、`GRAIN_STORE_PUBLISHER` repository variables 后再创建正式标签。MSIX job 在缺少身份或使用旧产品身份时失败，不退回测试包；当前待发布版本为 0.1.606，不能因版本已递增就宣称已经发布。
+Windows 修复版本必须先通过实机门禁再创建正式标签。独立 **Grain Org** 产品 `9PF3WZLSWZHX` / `Jeason.GrainOrg` 已由 Partner Center 分配并固定在打包脚本中，不能更新保留的旧应用。当前待发布版本为 0.1.606，不能因版本已递增就宣称已经发布。
 
 ## 发布成功的验收
 
@@ -53,7 +53,7 @@ Windows 修复版本必须先通过实机门禁。Org 版保留旧商店产品�
 
 ## Microsoft Store
 
-本标签流程不向 Partner Center 提交。测试证书、托管 Windows smoke 或 WACK 结果均不是商店审核结论。Org 版使用独立新产品，不能更新旧「小麦写作」`9NV7M2PW25B3`，也不能提交 CI 的 `Grain.WindowsReadiness` 身份。
+本标签流程不向 Partner Center 提交。测试证书、托管 Windows smoke 或 WACK 结果均不是商店审核结论。Org 版使用独立新产品，不能更新旧「小麦写作」`9NV7M2PW25B3`，也不能提交历史 CI 的 `Grain.WindowsReadiness` 测试身份。
 
 新产品身份、公开隐私政策、真实 Windows 截图、WebView2 依赖和旧格式不自动迁移说明都准备完毕后，再按[Microsoft Store 指南](./microsoft-store-guide.md)提交，记录实际 submission ID 与审核/发布状态。
 
