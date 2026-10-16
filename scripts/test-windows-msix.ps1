@@ -58,8 +58,10 @@ function Start-InstalledApp([string]$Phase) {
     Start-Process explorer.exe -ArgumentList "shell:AppsFolder\$aumid" | Out-Null
     $deadline = (Get-Date).AddSeconds(90)
     do {
+        # Ignore the untitled HWND exposed while the main window is still initializing.
         $candidate = Get-Process grain -ErrorAction SilentlyContinue | Where-Object {
-            $_.Path -eq (Join-Path $installed.InstallLocation 'grain.exe') -and $_.MainWindowHandle -ne [IntPtr]::Zero
+            $_.Path -eq (Join-Path $installed.InstallLocation 'grain.exe') -and $_.MainWindowHandle -ne [IntPtr]::Zero -and
+                -not [string]::IsNullOrWhiteSpace($_.MainWindowTitle)
         } | Select-Object -First 1
         if ($candidate -and [GrainReadiness.Native]::IsWindowVisible($candidate.MainWindowHandle)) {
             [uint32]$length = 0
@@ -72,6 +74,19 @@ function Start-InstalledApp([string]$Phase) {
             if ($dpiContext -eq [IntPtr]::Zero -or -not [GrainReadiness.Native]::AreDpiAwarenessContextsEqual($dpiContext, [IntPtr]::new(-4))) {
                 throw "Installed window is not PerMonitorV2 DPI aware (context $($dpiContext.ToInt64()))."
             }
+            # Wait for the actual app page before resizing its native host window.
+            $ready = $false
+            for ($attempt = 0; $attempt -lt 120; $attempt++) {
+                try {
+                    $targets = Invoke-RestMethod 'http://127.0.0.1:9222/json/list' -TimeoutSec 2
+                    $ready = [bool]($targets | Where-Object {
+                        $_.type -eq 'page' -and $_.url -match '^https?://tauri\.localhost(?:/|$)'
+                    })
+                } catch { $ready = $false }
+                if ($ready) { break }
+                Start-Sleep -Milliseconds 500
+            }
+            if (-not $ready) { throw 'Installed WebView2 app page did not become reachable.' }
             # Resize the real native window, not an emulated browser viewport or upscaled image.
             $null = [GrainReadiness.Native]::ShowWindow($candidate.MainWindowHandle, 9)
             if (-not [GrainReadiness.Native]::SetWindowPos($candidate.MainWindowHandle, [IntPtr]::Zero, 0, 0, 1440, 960, 0x0416)) {
@@ -200,18 +215,11 @@ namespace GrainReadiness {
     foreach ($phase in @('exercise', 'reopen')) {
         $process = Start-InstalledApp $phase
         Save-DesktopScreenshot "$phase-desktop.png"
-        # Give CDP time to become reachable without replacing or mocking the app.
-        $ready = $false
-        for ($attempt = 0; $attempt -lt 120; $attempt++) {
-            try {
-                $null = Invoke-RestMethod 'http://127.0.0.1:9222/json/version' -TimeoutSec 2
-                $ready = $true
-                break
-            } catch { Start-Sleep -Milliseconds 500 }
-        }
-        if (-not $ready) { throw 'Installed WebView2 debugging endpoint did not become reachable.' }
+        $ErrorActionPreference = 'Continue'
         & node (Join-Path $PSScriptRoot 'windows-msix-smoke.mjs') $phase $output 2>&1 | Tee-Object (Join-Path $output "$phase.log")
-        if ($LASTEXITCODE -ne 0) {
+        $smokeCode = $LASTEXITCODE
+        $ErrorActionPreference = 'Stop'
+        if ($smokeCode -ne 0) {
             $detail = Get-Content (Join-Path $output "$phase.log") -Tail 35 | Out-String
             throw "Installed native and editor smoke failed ($phase):`n$detail"
         }
