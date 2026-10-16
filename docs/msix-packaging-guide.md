@@ -40,7 +40,7 @@ Windows readiness 和 Release 都为实际分配的新产品 **Grain Org** 打�
 
 所有包都明确使用 `ProcessorArchitecture=x64`、Application Id `Grain` 和 `Windows.FullTrustApplication`。
 
-三段桌面版本追加 `.0`，例如 `0.1.606` → `0.1.606.0`。各分量必须在 MSIX 允许范围内，不能硬编码成旧版本。Manifest 明确声明 `ProcessorArchitecture="x64"`，不能把 x64 EXE 标成 neutral。
+Store 不允许包版本首段为 `0`，末段保留为 `0`。脚本把桌面版本 `major.minor.patch` 映射为 `(major + 1).minor.patch.0`，例如 `0.1.606` → `1.1.606.0`，未来 `1.0.0` → `2.0.0.0`，保持升级顺序而不改变应用自身版本。各分量不得超过 65535；`package-info.json` 分别记录 `appVersion` 与实际包 `version`。参见[微软版本规则](https://learn.microsoft.com/windows/apps/publish/publish-your-app/msix/app-package-requirements#version-numbering-for-windows-10-and-11-packages)。Manifest 明确声明 `ProcessorArchitecture="x64"`，不能把 x64 EXE 标成 neutral。
 
 Manifest 当前最低系统为 Windows 10 build 17763。一次 `windows-latest` 成功不代表已在所有最低版本、ARM64 仿真环境或文件系统上验证。当前没有原生 ARM64 MSIX。
 

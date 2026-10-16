@@ -50,7 +50,7 @@ cargo test --manifest-path packages/rust-core/Cargo.toml --lib tauri::commands::
 powershell.exe -NoProfile -File ./scripts/test-windows-msix.ps1
 ```
 
-构建脚本读取真实桌面版本，例如 0.1.606 输出 `grain_0.1.606_x64.msix`、Manifest 为 `0.1.606.0`。它使用 Partner Center 已分配的 `Jeason.GrainOrg` / `9PF3WZLSWZHX`，检查 x64 PE 类型并生成短期测试签名；不需要 cargo-packager、MSIX Packaging Tool、PFX 或密码。
+构建脚本读取真实桌面版本，例如 `0.1.606` 输出 `grain_0.1.606_x64.msix`，Store Manifest 版本为 `1.1.606.0`。Store 包的 major 始终为应用 major 加一，满足首段非零并保持后续升级顺序；应用自身版本不变，见[版本规则](./msix-packaging-guide.md#身份与版本)。脚本使用 Partner Center 已分配的 `Jeason.GrainOrg` / `9PF3WZLSWZHX`，检查 x64 PE 类型并生成短期测试签名；不需要 cargo-packager、MSIX Packaging Tool、PFX 或密码。
 
 公开的新产品身份已经固定在打包脚本，无需额外设置 repository variables。元数据 `purpose=store-candidate` 不表示已通过安装门禁或 Store 认证；只能提交完整验证成功的同一个包。历史测试身份包不能上传，见[商店指南](./microsoft-store-guide.md)。
 
@@ -60,7 +60,7 @@ powershell.exe -NoProfile -File ./scripts/test-windows-msix.ps1
 
 ## 核对证据
 
-- `artifacts/windows-msix/package-info.json`：真实版本、架构、身份、包/EXE SHA-256、运行时要求。
+- `artifacts/windows-msix/package-info.json`：应用 `appVersion`、实际包 `version`、架构、身份、包/EXE SHA-256、运行时要求。
 - `artifacts/windows-msix/AppxManifest.xml`：明确的 x64 身份和 `runFullTrust`。
 - `artifacts/windows-readiness/installed-package.json`：实际安装位置和包身份。
 - `exercise-result.json`、`reopen-result.json`、真实窗口/WebView2 截图及对应日志。
