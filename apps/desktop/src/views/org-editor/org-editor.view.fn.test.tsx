@@ -78,6 +78,43 @@ describe("OrgEditor", () => {
 			expect(view.state.sliceDoc()).toBe(source)
 		}
 	})
+
+	it("leaves unflagged IME keys native before the first preedit mutation and resumes table navigation after cancellation", () => {
+		vi.useFakeTimers()
+		const source = "| 2 | 3 |\r\n| 4 | 5 |\r\noutside\0😀中文"
+		const onSave = vi.fn()
+		const onChange = vi.fn()
+		render(<OrgEditor value={source} initialCursor={2} onSave={onSave} onChange={onChange} />)
+		const view = getEditorView()
+		const selection = view.state.selection
+		fireEvent.compositionStart(view.contentDOM)
+		expect(view.compositionStarted).toBe(true)
+		expect(view.composing).toBe(false)
+		for (const init of [
+			{ key: "Enter", keyCode: 13 },
+			{ key: "Tab", keyCode: 9 },
+			{ key: "Escape", keyCode: 27 },
+			{ key: "s", keyCode: 83, ctrlKey: true },
+		]) {
+			const event = new KeyboardEvent("keydown", { ...init, bubbles: true, cancelable: true })
+			fireEvent(view.contentDOM, event)
+			fireEvent.keyUp(window, init)
+			expect(event.defaultPrevented).toBe(false)
+			expect(view.state.sliceDoc()).toBe(source)
+			expect(view.state.selection.eq(selection, true)).toBe(true)
+		}
+		expect(undoDepth(view.state)).toBe(0)
+		expect(onSave).not.toHaveBeenCalled()
+		expect(onChange).not.toHaveBeenCalled()
+		fireEvent.compositionEnd(view.contentDOM, { data: "" })
+		expect(view.compositionStarted).toBe(false)
+		// WebKit can deliver the IME confirmation key after compositionend.
+		act(() => { vi.advanceTimersByTime(150) })
+		fireEvent.keyDown(view.contentDOM, { key: "Enter", keyCode: 13 })
+		fireEvent.keyUp(window, { key: "Enter", keyCode: 13 })
+		expect(view.state.doc.lineAt(view.state.selection.main.head).number).toBe(2)
+		expect(view.state.sliceDoc()).toBe(source)
+	})
 	it("aligns a valid raw table during navigation in one undo event", () => {
 		const source = "|😀|2|\r\n|3|long|\r\noutside\0😀"
 		render(<OrgEditor value={source} initialCursor={1} onSave={vi.fn()} />)

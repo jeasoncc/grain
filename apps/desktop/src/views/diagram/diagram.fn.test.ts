@@ -4,13 +4,10 @@
  */
 
 import { describe, expect, it } from "vitest"
-import type { DiagramState } from "@/types/diagram"
 import {
-	createDefaultDiagramState,
 	DEFAULT_KROKI_URL,
 	getKrokiMermaidUrl,
 	getKrokiPlantUMLUrl,
-	isKrokiEnabled,
 	isValidKrokiUrl,
 	normalizeKrokiUrl,
 } from "./diagram.fn"
@@ -49,32 +46,6 @@ describe("getKrokiMermaidUrl", () => {
 
 	it("should throw when URL not configured", () => {
 		expect(() => getKrokiMermaidUrl("")).toThrow("Kroki server URL not configured")
-	})
-})
-
-describe("isKrokiEnabled", () => {
-	it("should return true when enabled and URL configured", () => {
-		const state: DiagramState = {
-			enableKroki: true,
-			krokiServerUrl: "https://kroki.io",
-		}
-		expect(isKrokiEnabled(state)).toBe(true)
-	})
-
-	it("should return false when disabled", () => {
-		const state: DiagramState = {
-			enableKroki: false,
-			krokiServerUrl: "https://kroki.io",
-		}
-		expect(isKrokiEnabled(state)).toBe(false)
-	})
-
-	it("should return false when URL empty", () => {
-		const state: DiagramState = {
-			enableKroki: true,
-			krokiServerUrl: "",
-		}
-		expect(isKrokiEnabled(state)).toBe(false)
 	})
 })
 
@@ -120,10 +91,3 @@ describe("DEFAULT_KROKI_URL", () => {
 	})
 })
 
-describe("createDefaultDiagramState", () => {
-	it("should create state with default values", () => {
-		const state = createDefaultDiagramState()
-		expect(state.krokiServerUrl).toBe(DEFAULT_KROKI_URL)
-		expect(state.enableKroki).toBe(true)
-	})
-})

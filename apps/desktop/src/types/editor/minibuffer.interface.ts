@@ -29,6 +29,8 @@ export interface OrgMinibufferSession {
 	readonly id: number
 	readonly prompt: string
 	readonly inputLabel?: string
+	/** Captured operation/target context, displayed read-only beside the parameter input. */
+	readonly description?: string
 	readonly emptyMessage?: string
 	/** Read-only exact source projection; never an edit authority. */
 	readonly preview?: { readonly title: string; readonly source: string; readonly detail: string }
@@ -39,6 +41,8 @@ export interface OrgMinibufferSession {
 	/** Command/file selection can accept the highlighted candidate, unlike free-form metadata. */
 	readonly acceptCandidate?: boolean
 	readonly initialInput: string
+	/** UTF-16 input offsets applied once on open; native readers retain selection ownership. */
+	readonly initialSelection?: readonly [number, number]
 	readonly candidates: readonly string[]
 	readonly annotatedCandidates?: readonly OrgMinibufferCandidate[]
 	readonly matchingMode?: "substring" | "multi-term" | "path"

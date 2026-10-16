@@ -211,7 +211,7 @@ impl WindowRegistry {
         }
         if webview_label == window_label
             && self.windows.get(webview_label).is_some_and(|entry| !entry.closing)
-            && matches!(command, "post_org_window_intent" | "set_org_main_window_visible" | "close_org_detached_window" | "collate_org_match_strings" | "capture_org_match_clock_context")
+            && matches!(command, "post_org_window_intent" | "set_org_main_window_visible" | "close_org_detached_window" | "collate_org_match_strings" | "capture_org_match_clock_context" | "read_configuration_file")
         {
             return Ok(());
         }
@@ -250,6 +250,34 @@ pub(crate) fn authorize_org_window_command(caller: &Webview, command: &str) -> R
     let registry = caller.state::<OrgDetachedWindowRegistry>();
     let windows = registry.lock()?;
     windows.authorize_command(caller.label(), caller.window_ref().label(), command)
+}
+
+/// Invalidate only registered Source webviews through their existing confined DOM bridge.
+/// Children keep zero core/plugin privileges and always reread the fixed native file.
+#[tauri::command]
+pub fn notify_configuration_reload(
+    app: AppHandle,
+    caller: Webview,
+    registry: State<'_, OrgDetachedWindowRegistry>,
+) -> Result<(), String> {
+    require_main(&caller)?;
+    let windows = registry.lock()?;
+    let mut failures = Vec::new();
+    for (label, entry) in &windows.windows {
+        if entry.closing {
+            continue;
+        }
+        if let Some(window) = app.get_webview_window(label) {
+            if let Err(error) = window.eval("window.dispatchEvent(new Event('grain:configuration-reload'))") {
+                failures.push(format!("{label}: {error}"));
+            }
+        }
+    }
+    if failures.is_empty() {
+        Ok(())
+    } else {
+        Err(format!("Could not invalidate native Source configuration: {}", failures.join("; ")))
+    }
 }
 
 #[tauri::command]
@@ -607,6 +635,21 @@ mod tests {
         assert!(windows.authorize_command("unregistered", "unregistered", "post_org_window_intent").is_err());
         assert!(windows.caller(&child.label, "main", &child.binding).is_err());
         assert!(windows.caller(&child.label, &child.label, "wrong-binding").is_err());
+    }
+
+    #[test]
+    fn configuration_access_is_read_only_for_registered_live_detached_views() {
+        let mut windows = WindowRegistry::default();
+        let child = windows.reserve("source".into(), binding()).unwrap();
+        assert!(windows.authorize_command(&child.label, &child.label, "read_configuration_file").is_ok());
+        for command in ["create_configuration_file", "open_configuration_file", "notify_configuration_reload"] {
+            assert!(windows.authorize_command(&child.label, &child.label, command).is_err());
+            assert!(windows.authorize_command("main", "main", command).is_ok());
+        }
+        assert!(windows.authorize_command("unregistered", "unregistered", "read_configuration_file").is_err());
+        assert!(windows.authorize_command("main", &child.label, "read_configuration_file").is_err());
+        windows.retire(&child);
+        assert!(windows.authorize_command(&child.label, &child.label, "read_configuration_file").is_err());
     }
 
     #[test]

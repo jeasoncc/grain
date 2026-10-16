@@ -28,6 +28,7 @@ import { createElement, StrictMode } from "react"
 import { useOrgAgendaParameters } from "@/hooks/use-org-agenda-parameters"
 import { OrgAgendaContainer } from "@/views/org-workspace/org-agenda.container.fn"
 import { useSettings } from "@/hooks/use-settings"
+import { useConfigurationState } from "@/state/configuration.state"
 import * as E from "fp-ts/Either"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
@@ -38,6 +39,7 @@ import {
 	moveOrgDocumentFlow,
 	openDefaultOrgWorkspaceFlow,
 	reopenDefaultOrgWorkspaceFlow,
+	revealOrgWorkspacePathFlow,
 	openOrgDocumentFlow,
 	saveOrgDocumentFlow,
 	scanOrgWorkspaceFlow,
@@ -81,6 +83,7 @@ import * as workingCopyFlow from "@/flows/org-workspace/org-save-working-copy.fl
 import * as saveAllFlow from "@/flows/org-workspace/org-save-all.flow"
 import {
 	type OrgLiveBuffer,
+	type OrgWorkspaceController,
 	type OrgSaveAllOutcome,
 	canContinueAfterOrgSave,
 	hasDefaultWorkspacePreference,
@@ -142,6 +145,7 @@ vi.mock("@/flows/org-workspace/org-workspace.flow", () => ({
 	moveOrgDocumentFlow: vi.fn(),
 	openDefaultOrgWorkspaceFlow: vi.fn(),
 	reopenDefaultOrgWorkspaceFlow: vi.fn(),
+	revealOrgWorkspacePathFlow: vi.fn(),
 	openOrgDocumentFlow: vi.fn(),
 	saveOrgDocumentFlow: vi.fn(),
 	scanOrgWorkspaceFlow: vi.fn(),
@@ -440,8 +444,8 @@ describe("Org capture entry and transient drafts", () => {
 				kind: "delete",
 				object: "original",
 			}))
-			let deleting!: Promise<void>
-			act(() => { deleting = hook.result.current.deleteActiveDocument() })
+			let deleting!: Promise<boolean>
+			act(() => { deleting = hook.result.current.deleteDocument(hook.result.current.activeDocument!) })
 			expect(deleteOrgDocumentFlow).not.toHaveBeenCalled()
 			if (decision === "edit" || decision === "aba") {
 				act(() => hook.result.current.updateContent("newer source"))
@@ -1313,11 +1317,13 @@ describe("Org capture entry and transient drafts", () => {
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 	})
 	it.each([
-		"orgBehaviorConfigurationJson",
-		"orgKeymapConfigurationJson",
-	] as const)("retires an actual Root Agenda read on %s ABA without late ghost buffers", async (configuration) => {
+		["orgBehaviorConfigurationJson", " "],
+		["orgKeymapConfigurationJson", " "],
+		["orgBehaviorConfigurationJson", ""],
+	] as const)("retires an actual Root Agenda read on %s reload through %j without late ghost buffers", async (configuration, intermediate) => {
 		vi.useRealTimers()
 		const previous = useSettings.getState()
+		const previousConfiguration = useConfigurationState.getState()
 		let signal!: AbortSignal
 		const hook = renderHook(() => {
 			const owner = useOrgWorkspace()
@@ -1339,8 +1345,7 @@ describe("Org capture entry and transient drafts", () => {
 		})
 		try {
 			act(() => {
-				useSettings.getState().setOrgBehaviorConfigurationJson("")
-				useSettings.getState().setOrgKeymapConfigurationJson("")
+				useSettings.setState({ orgBehaviorConfigurationJson: "", orgKeymapConfigurationJson: "" })
 			})
 			agendaOwner = () => hook.result.current.owner
 			await act(async () => {
@@ -1355,12 +1360,13 @@ describe("Org capture entry and transient drafts", () => {
 			await act(async () => {
 				hook.result.current.parameters.start(agendaRow(source), "schedule")
 			})
-			const change = configuration === "orgBehaviorConfigurationJson"
-				? useSettings.getState().setOrgBehaviorConfigurationJson
-				: useSettings.getState().setOrgKeymapConfigurationJson
 			act(() => {
-				change(" ")
-				change("")
+				useConfigurationState.setState({ status: "loading", error: "Reloading configuration.", generation: {} })
+				useSettings.setState({ [configuration]: intermediate })
+				useConfigurationState.setState({ status: "ready", error: null, generation: {} })
+				useConfigurationState.setState({ status: "loading", error: "Reloading configuration.", generation: {} })
+				useSettings.setState({ [configuration]: "" })
+				useConfigurationState.setState({ status: "ready", error: null, generation: {} })
 			})
 			expect(hook.result.current.parameters.session).toBeNull()
 			expect(signal.aborted).toBe(true)
@@ -1374,8 +1380,11 @@ describe("Org capture entry and transient drafts", () => {
 		} finally {
 			hook.unmount()
 			act(() => {
-				useSettings.getState().setOrgBehaviorConfigurationJson(previous.orgBehaviorConfigurationJson)
-				useSettings.getState().setOrgKeymapConfigurationJson(previous.orgKeymapConfigurationJson)
+				useSettings.setState({
+					orgBehaviorConfigurationJson: previous.orgBehaviorConfigurationJson,
+					orgKeymapConfigurationJson: previous.orgKeymapConfigurationJson,
+				})
+				useConfigurationState.setState(previousConfiguration)
 			})
 		}
 	})
@@ -3652,7 +3661,7 @@ describe("Org capture entry and transient drafts", () => {
 				E.right({ ...captured, relativePath: "renamed.org" }),
 			)
 			await act(async () => {
-				await result.current.moveActiveDocument("renamed.org")
+				await result.current.moveDocument(result.current.activeDocument!, "renamed.org")
 			})
 		}
 		resolve(E.right({ relativePath: "z.org", revision: "late", source: "", headings: [] }))
@@ -4854,6 +4863,50 @@ describe("independent Org buffers", () => {
 		return hook
 	}
 
+	it("reveals without changing dirty buffers or accepting unscanned targets, and reports opener failure", async () => {
+		const { result } = await parkDirtyA()
+		const runtime = result.current.activeBufferRuntime
+		const buffers = result.current.openBuffers
+		vi.mocked(revealOrgWorkspacePathFlow).mockReturnValue(async () => E.right(undefined))
+		await act(async () => {
+			expect(await result.current.revealWorkspacePath(null)).toBe(true)
+			expect(await result.current.revealWorkspacePath(a.relativePath)).toBe(true)
+			expect(await result.current.revealWorkspacePath("../outside.org")).toBe(false)
+		})
+		expect(result.current.activeBufferRuntime).toBe(runtime)
+		expect(result.current.openBuffers).toEqual(buffers)
+		vi.mocked(revealOrgWorkspacePathFlow).mockReturnValue(async () => E.left(fileError))
+		await act(async () => {
+			expect(await result.current.revealWorkspacePath(a.relativePath)).toBe(false)
+		})
+		expect(result.current.error).toBe(fileError.message)
+		expect(result.current.activeBufferRuntime).toBe(runtime)
+	})
+
+	it("returns creation acceptance only after success and rejects failed or retired creation", async () => {
+		const { result } = await setup()
+		const retired = result.current
+		vi.mocked(createOrgDirectoryFlow).mockReturnValue(async () => E.left(fileError))
+		vi.mocked(saveOrgDocumentFlow).mockReturnValueOnce(async () => E.left(fileError))
+		await act(async () => {
+			expect(await result.current.createDirectory("blocked")).toBe(false)
+			expect(await result.current.createDocument("blocked.org")).toBe(false)
+		})
+		vi.mocked(createOrgDirectoryFlow).mockReturnValue(async () => E.right(undefined))
+		await act(async () => {
+			expect(await result.current.createDirectory("accepted")).toBe(true)
+			expect(await result.current.createDocument("accepted.org")).toBe(true)
+		})
+		await act(async () => {
+			await result.current.openDefaultWorkspace()
+		})
+		await act(async () => {
+			expect(await retired.createDirectory("retired")).toBe(false)
+			expect(await retired.createDocument("retired.org")).toBe(false)
+			expect(await retired.revealWorkspacePath(null)).toBe(false)
+		})
+	})
+
 	it("switches a missing dirty parked buffer by ID without saving", async () => {
 		const { result } = await parkDirtyA()
 		const id = result.current.openBuffers.find(
@@ -4992,7 +5045,7 @@ describe("independent Org buffers", () => {
 			object: "original",
 		}))
 		await act(async () => {
-			await result.current.deleteActiveDocument()
+			await result.current.deleteDocument(result.current.activeDocument!)
 		})
 		vi.mocked(openOrgDocumentFlow).mockClear()
 		await act(async () => {
@@ -5077,13 +5130,13 @@ describe("independent Org buffers", () => {
 		{
 			name: "move",
 			flow: moveOrgDocumentFlow,
-			run: (controller: ReturnType<typeof useOrgWorkspace>) =>
-				controller.moveActiveDocument("other.org"),
+			run: (controller: OrgWorkspaceController) =>
+				controller.moveDocument(controller.activeDocument!, "other.org"),
 		},
 		{
 			name: "delete",
 			flow: deleteOrgDocumentFlow,
-			run: (controller: ReturnType<typeof useOrgWorkspace>) => controller.deleteActiveDocument(),
+			run: (controller: OrgWorkspaceController) => controller.deleteDocument(controller.activeDocument!),
 		},
 	]
 	for (const mode of ["factoryThrow", "synchronousThrow", "rejectingTask"] as const) {
@@ -5469,9 +5522,9 @@ describe("independent Org buffers", () => {
 		})
 		act(() => result.current.updateContent("B unsaved body"))
 		await act(async () => {
-			if (command === "delete") await retained.deleteActiveDocument()
+			if (command === "delete") await retained.deleteDocument(a)
 			if (command === "capture") await retained.captureTodo("old A", a.relativePath)
-			if (command === "move") await retained.moveActiveDocument("moved.org")
+			if (command === "move") await retained.moveDocument(a, "moved.org")
 			if (command === "refile")
 				expect((await retained.refileSubtree(0, b.relativePath)).kind).toBe("rejected")
 			if (command === "archive") expect((await retained.archiveSubtree(0)).kind).toBe("rejected")
@@ -5517,7 +5570,7 @@ describe("independent Org buffers", () => {
 
 	it("uses a live saved revision for a retained same-activation delete callback", async () => {
 		const { result } = await setup()
-		const retainedDelete = result.current.deleteActiveDocument
+		const retainedDelete = result.current.deleteDocument
 		act(() => result.current.updateContent("saved A body"))
 		await act(async () => {
 			await result.current.saveDocument()
@@ -5529,7 +5582,7 @@ describe("independent Org buffers", () => {
 			object: "original",
 		}))
 		await act(async () => {
-			await retainedDelete()
+			await retainedDelete(result.current.activeDocument!)
 		})
 		expect(deleteOrgDocumentFlow).toHaveBeenCalledWith(
 			expect.objectContaining({ relativePath: a.relativePath, expectedRevision: "saved" }),
@@ -5627,8 +5680,8 @@ describe("independent Org buffers", () => {
 			await retained.createDirectory("old-dir")
 			await retained.createDocument("old.org")
 			await retained.captureTodo("old capture")
-			await retained.deleteActiveDocument()
-			await retained.moveActiveDocument("old-move.org")
+			await retained.deleteDocument(a)
+			await retained.moveDocument(a, "old-move.org")
 			await retained.refileSubtree(0, b.relativePath)
 			await retained.archiveSubtree(0)
 			await retained.migrateLegacyWorkspace(legacy)
@@ -5744,14 +5797,14 @@ describe("independent Org buffers", () => {
 		return parkDirtyA()
 	}
 	it("keeps active and parked input unsaved when autosave is off, cancels queued admission, and still permits manual Save", async () => {
-		useSettings.getState().setAutoSave(false)
+		useSettings.setState({ autoSave: false })
 		const { result } = await parkAutosaveA()
 		act(() => result.current.updateContent("B explicitly unsaved"))
 		await act(async () => { await vi.advanceTimersByTimeAsync(60000) })
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
-		act(() => useSettings.getState().setAutoSave(true))
+		act(() => useSettings.setState({ autoSave: true }))
 		await act(async () => { await vi.advanceTimersByTimeAsync(400) })
-		act(() => useSettings.getState().setAutoSave(false))
+		act(() => useSettings.setState({ autoSave: false }))
 		await act(async () => { await vi.advanceTimersByTimeAsync(60000) })
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 		expect(result.current.liveBuffers.find(buffer => buffer.document.relativePath === a.relativePath)).toMatchObject({
@@ -5781,7 +5834,7 @@ describe("independent Org buffers", () => {
 	it("rearms already queued input for a changed configured quiet interval", async () => {
 		const { result } = await parkAutosaveA()
 		await act(async () => { await vi.advanceTimersByTimeAsync(400) })
-		act(() => useSettings.getState().setAutoSaveInterval(3))
+		act(() => useSettings.setState({ autoSaveInterval: 3 }))
 		await act(async () => { await vi.advanceTimersByTimeAsync(2999) })
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 		expect(result.current.liveBuffers.find(buffer => buffer.document.relativePath === a.relativePath)?.isDirty).toBe(true)
@@ -5834,7 +5887,7 @@ describe("independent Org buffers", () => {
 			await act(async () => { await vi.advanceTimersByTimeAsync(1000) })
 			expect(result.current.isEditorReadOnly).toBe(false)
 			act(() => {
-				useSettings.getState().setAutoSave(false)
+				useSettings.setState({ autoSave: false })
 				view.dispatch({ changes: { from: view.state.doc.length, insert: " tail" } })
 				result.current.updateContent("B concurrent input")
 			})
@@ -5985,7 +6038,7 @@ describe("independent Org buffers", () => {
 		const { result } = await parkDirtyA()
 		await act(async () => {
 			await result.current.captureTodo("capture", a.relativePath)
-			await result.current.moveActiveDocument(a.relativePath)
+			await result.current.moveDocument(result.current.activeDocument!, a.relativePath)
 		})
 		expect(captureOrgTodoFlow).not.toHaveBeenCalled()
 		expect(moveOrgDocumentFlow).not.toHaveBeenCalled()
@@ -6176,8 +6229,8 @@ describe("independent Org buffers", () => {
 			expect(await old.switchBuffer(id)).toBe(false)
 			expect(await old.closeDocumentPath(a.relativePath)).toBe(false)
 			expect(await old.closeActiveDocument()).toBe(false)
-			await old.moveActiveDocument("stale.org")
-			await old.deleteActiveDocument()
+			await old.moveDocument(a, "stale.org")
+			await old.deleteDocument(a)
 		})
 		expect(openOrgDocumentFlow).not.toHaveBeenCalled()
 		expect(moveOrgDocumentFlow).not.toHaveBeenCalled()
@@ -6239,7 +6292,7 @@ describe("independent Org buffers", () => {
 			E.right({ relativePath: b.relativePath, revision: "moved" }),
 		)
 		await act(async () => {
-			await result.current.moveActiveDocument(b.relativePath)
+			await result.current.moveDocument(result.current.activeDocument!, b.relativePath)
 		})
 		expect(result.current.activeBufferId).toBe(sourceId)
 		expect(result.current.openBuffers).toHaveLength(1)
@@ -6261,7 +6314,7 @@ describe("independent Org buffers", () => {
 			E.right({ relativePath: "renamed.org", revision: a.revision }),
 		)
 		await act(async () => {
-			await result.current.moveActiveDocument("renamed.org")
+			await result.current.moveDocument(result.current.activeDocument!, "renamed.org")
 		})
 		expect(result.current.activeBufferId).toBe(id)
 		expect(result.current.openBuffers[0]?.relativePath).toBe("renamed.org")
@@ -6958,7 +7011,7 @@ describe("Org save-all snapshot transaction", () => {
 			E.right({ relativePath: "renamed.org", revision: "a.org-1" }),
 		)
 		await act(async () => {
-			await result.current.moveActiveDocument("renamed.org")
+			await result.current.moveDocument(result.current.activeDocument!, "renamed.org")
 		})
 		expect(result.current.activeBufferId).toBe(id)
 		vi.mocked(openOrgDocumentFlow).mockReturnValue(async () =>
@@ -6992,6 +7045,7 @@ describe("Org save-all snapshot transaction", () => {
 		})
 		act(() => result.current.updateContent("base a.org"))
 		if (mode === "delete") {
+			vi.mocked(useConfirm()).mockResolvedValueOnce(true)
 			vi.mocked(deleteOrgDocumentFlow).mockImplementationOnce((input) => async () => E.right({
 				sourceRelativePath: input.relativePath,
 				relativePath: `.grain-originals/deleted/${input.relativePath}`,
@@ -6999,7 +7053,7 @@ describe("Org save-all snapshot transaction", () => {
 				object: "original",
 			}))
 			await act(async () => {
-				await result.current.deleteActiveDocument()
+				await result.current.deleteDocument(result.current.activeDocument!)
 			})
 		} else {
 			vi.mocked(useConfirm()).mockResolvedValueOnce(true)

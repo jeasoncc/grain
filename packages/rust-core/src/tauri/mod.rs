@@ -10,10 +10,12 @@
 //! - 所有 Tauri commands 的实现
 
 mod commands;
+mod configuration;
 mod desktop_mode;
 mod org_execution;
 
 pub use commands::*;
+pub use configuration::{create_configuration_file, open_configuration_file, read_configuration_file};
 pub use desktop_mode::get_desktop_mode;
 
 use crate::db::connection::DbConnection;
@@ -133,6 +135,10 @@ pub fn create_builder() -> tauri::Builder<tauri::Wry> {
 
     let handler: fn(tauri::ipc::Invoke<tauri::Wry>) -> bool = tauri::generate_handler![
             desktop_mode::get_desktop_mode,
+            configuration::read_configuration_file,
+            configuration::create_configuration_file,
+            configuration::open_configuration_file,
+            notify_configuration_reload,
             create_org_detached_window,
             post_org_window_intent,
             post_org_window_projection,
@@ -153,6 +159,7 @@ pub fn create_builder() -> tauri::Builder<tauri::Wry> {
             unwatch_org_workspace,
             release_org_workspace,
             scan_org_workspace,
+            reveal_org_workspace_path,
             read_org_document,
             read_org_migration_recovery_bundle,
             write_org_document,

@@ -2310,3 +2310,818 @@ restoration. The isolated test services were stopped. At the user's request, the
 same optimized executable was also opened on the actual Hyprland desktop, using
 the normal user profile without a remote inspector, and left running for inspection.
 
+## Review-driven core fixes and editor-first workspace (2026-10-13)
+
+The seven reviewed defects are corrected without changing Source authority,
+command authorization, raw-text representation, or shared history ownership:
+
+1. `useApplicationCommandRegistration` keeps metadata-stable registration proxies
+   with current command implementations. Availability is derived only while the
+   palette is visible, including producer-only updates; execution still revalidates
+   the current command. Closed Note Actions and inactive Source footer calculations
+   no longer run their hidden availability/word-count work.
+2. `org-clock-owner.ts` records unused/null history epochs without reading or
+   parsing Source on ordinary commits. Undo/Redo restores and validates known
+   epochs; branch pruning still prevents a recreated CLOCK row from reviving a
+   discarded epoch. Raw-offset mapping uses Text line coordinates and separator
+   widths rather than allocated prefix strings.
+3. Native projection's local-effect fast path now requires the complete selection
+   to remain equal. Selection changes accompanying registered local effects use
+   the existing canonical queue/codec; the effects themselves stay window-local.
+4. Native publications are fenced by slot identity, generation and ownership.
+   Failed publication fences immediately, then releases registration, projection,
+   subscriptions and workflow authority after the active observer/busy boundary.
+   Accepted Source is not rolled back; physical-window draft recovery and explicit
+   close remain available.
+5. The retained Inspector panel uses the installed v4 Panel collapse/expand API.
+   Hidden/default-external Inspector allocation is zero, without destroying Source
+   or Inspector bodies. Configured side/bottom placements do not reserve a second
+   default panel.
+6. Composition checkpoints accumulate accepted ChangeSets. Settlement consumes
+   those changes instead of diffing the whole document; net-zero cancellation
+   compares touched replacements and preserves the prior selection/history.
+   Rejected preflight/commit, including early history settlement, cannot discard
+   pending composition state.
+7. Workspace restoration is staged against the exact session, root and capability.
+   Hydration/persistence waits for admitted document opening and the matching React
+   active document before restoring Inspector. Failed/missing opens preserve saved
+   preferences and existing rejection diagnostics instead of persisting null/false
+   or retrying indefinitely.
+
+The workspace drops its duplicate title bar, Agenda's duplicate header/footer,
+and redundant document path/saved-status chrome. Commands live in the ribbon;
+the global idle command button remains a fallback on surfaces without that local
+trigger. Detach is in Note Actions. Dirty, read-only, busy and recovery information
+is retained; the unified tool inventory remains a discovery/open affordance.
+
+### Verification and limits
+
+Unified desktop verification passed **195 files / 4305 tests**. TypeScript, Vite
+production and the embedded Tauri debug build passed. The executable SHA-256 is
+`0294d2347d44a5cf3d30db50d97c83f7c158752a40c63422f78b01e101ccaadf`.
+The existing >500 kB Vite chunk warning remains; Rust tests were not rerun.
+Targeted ESLint on the seven production files **failed: 342 errors / 148 warnings**,
+including imperative-state/try-catch and layer constraints. No lint configuration,
+rule bypass, or unrelated runtime architecture rewrite was introduced.
+
+The same 2,077,746-UTF-16, 9,811-heading, zero-CLOCK fixture was used for the
+before/after core probes. Its complete Source SHA-256 is
+`849c87aa877c5ae9cf252b5367c8574f1afdaf01aee1946ec719f4e3d0620321`.
+
+| Core probe, p50 | Before | After |
+| --- | ---: | ---: |
+| Ordinary input commit with unused Clock owner | 37.010 ms | 0.794 ms |
+| Clock commit callback | 35.508 ms | 0.006625 ms |
+| Composition settlement | 23.407 ms | 0.520 ms |
+
+Input probes discard three warmups from eighteen commits; composition probes
+discard one warmup from six runs. Both input variants and every composition run
+restored the exact full Source and EOF selection with one Undo. These are bare
+core timings, not GUI/key-to-paint latency; composition annotations are not a
+native IME test. An isolated actual React provider with 79 Org descriptors performed
+zero availability checks across closed producer renders and after closing, while
+visible updates and command execution retained current availability checks.
+
+The built native app ran under owned Xvfb with an isolated profile:
+
+- Default Inspector opened at 299.109375 px, collapsed to **0 px** for Agenda,
+  and returned without replacing Source DOM/EditorView or changing Source.
+  Configured 381 px side and 271 px bottom docks left default allocation at zero.
+- Actual page reload retained `ops.org`, `inspectorVisible: true`, the restored
+  Inspector width and exact Source.
+- A genuine fold-gutter effect combined with native selection `4 -> 1` was
+  accepted through actual IPC; the subsequent native Open agenda workflow opened
+  the main Agenda without an origin error.
+- Trusted XTest keyboard input appended `__native_fix_probe__`; canonical Main
+  converged, and one native Undo restored the exact original CRLF/NUL/astral Source
+  in both Main and child. A directly unregistered scroll effect was correctly
+  rejected; retained input was explicitly acknowledged/discarded and that owned
+  view closed. No effect whitelist was relaxed for the probe.
+- Publication failure isolation was exercised with the real coordinator/runtime
+  and EditorView through an injected transport failure in jsdom, not a real IPC
+  outage. Accepted Source survived, failed authority/subscriptions were removed,
+  and physical close remained possible.
+
+Evidence:
+- `local://grain-core-review-evidence.json` (before)
+- `local://grain-core-fix-evidence.json` (checks, core probes and native observations)
+- `/tmp/grain-eight-native.cq7URo/core-fix-agenda.png`
+- `/tmp/grain-eight-native.cq7URo/core-fix-source.png`
+
+## Navigation and on-demand tool UX (2026-10-14)
+
+The workspace now reserves persistent space for writing, not a second inventory
+of commands. The existing theme, Source runtime, tool registry and compiled tool
+lifetimes remain unchanged.
+
+- Without a saved tree preference, folders start collapsed except the active
+  note's ancestors. Saved expansion is preserved. Navigating to a note expands
+  its ancestors and scrolls only the file-tree viewport; manually collapsing the
+  same active path is respected.
+- **File navigation** exposes **Reveal active file** and **Collapse all folders**.
+  Reveal clears a filter that hides the current note. The active file's row menu
+  exposes the existing move/rename and guarded delete workflows; the redundant
+  **Current note** dock is removed.
+- The full-width bottom tool inventory is replaced by the ribbon's **Application
+  tools** menu. Closed registered tools remain openable; open tools expose
+  separate Focus and Close actions, with dirty/read-only/pending state. A
+  registered tool surface without a local launcher uses a floating fallback;
+  an empty registry does not render an empty Tools button.
+- Document tabs use a clear active underline, quieter inactive close controls,
+  and parent-directory qualifiers for duplicate filenames. The tab rail reveals
+  the active tab without moving Source. **Open notes** lists every open path,
+  including tabs outside the visible rail.
+- Selecting from **Open notes** tears down the menu before navigation and returns
+  focus to the admitted Source, rather than to the menu trigger. `onSelectTab`
+  returns `boolean | Promise<boolean>`; the production owner and real-controller
+  fixtures return the actual navigation result. Deferred focus reads the
+  **current** command port: a restored but not-yet-loaded tab is absent from a
+  prior render's live-buffer list. Root/grant/session, focused window, focus lease,
+  selected path and intervening input focus fence the handoff.
+
+### Verification
+
+- Final desktop suite: **196 files, 4318 tests passed**. The first-mount regression
+  failed before the live-port fix and passed afterward; duplicate-name switching
+  preserves dirty canonical runtime identity, exact bytes and Undo history.
+- `bun run tauri build --debug --no-bundle` passed TypeScript, Vite and the native
+  build. The existing 557.13 kB chunk-size warning remains.
+- Built Tauri/WebKit, owned Xvfb, private HOME/XDG and D-Bus, trusted XTest input:
+  at 1400×900 the same editor area grew from **808.671875 to 834 px** after removing
+  the bottom inventory. The compact fixture tree showed **5 instead of 31 rows**;
+  inherited saved expansion was separately preserved.
+- Collapse/reveal kept the long note's same EditorView, exact Source, EOF
+  selection and settled 5218 px scroll position. Opening/closing Inspector kept
+  Source and selection; layout rounding changed scroll by at most 1 px.
+- At 1024×768, 12 open paths were reachable through the menu, with no horizontal
+  page overflow. First-mounted project and overflow notes received actual Source
+  focus; the overflow rail moved to 821 px, then revealed the selected project at
+  250 px. Keyboard selection, same-note selection and Escape were exercised.
+  Immediate trusted typing after selection and one Undo restored exact CRLF,
+  Chinese and emoji Source without a manual editor-focus workaround.
+- Dirty Capture close cancellation retained the same draft editor and contents.
+  Settings navigation also prompted before discarding a dirty tool; cancellation
+  preserved draft identity and canonical Source. Test-owned drafts were explicitly
+  discarded through the actual confirmation UI.
+
+Limits: no real-user desktop/profile, IME or production latency claim. Clean
+Settings retires its workspace tools and correctly has no empty launcher;
+registered floating fallback and retained read-only retirement are covered by
+component tests. ESLint was not rerun and its existing failing gate was not
+bypassed. Rust source is unchanged; Rust tests were not rerun.
+
+Evidence:
+- `local://grain-ui-refinement-evidence.json`
+- `/tmp/grain-ui-KBza4B/ui-before.png`
+- `/tmp/grain-ui-KBza4B/ui-after.png` (same three-tab workload)
+- `/tmp/grain-ui-KBza4B/ui-tools.png`
+- `/tmp/grain-ui-KBza4B/ui-narrow-fixed.png`
+- `/tmp/grain-ui-KBza4B/ui-final-wide.png`
+
+## Border hierarchy refinement (2026-10-14)
+
+Borders now describe real boundaries, not every nested container. Source/history,
+command ownership and tool lifetimes are unchanged.
+
+- Source has no outer active-window frame or gutter rule. Toolbar/status-bar
+  strokes, sidebar/ribbon header rules, ribbon group rules and tree indentation
+  strokes are removed. Indentation, active-file accents and the active-tab
+  underline remain.
+- Source focus no longer paints the entire centered document like a form input.
+  CodeMirror keeps its drawn caret, selection and existing editor styling.
+  Ordinary text fields retain their focused form treatment.
+- A split keeps one faint center divider and its active caption tint. Workspace
+  resize handles remain full-sized with one quieter line. Inspector headers are
+  borderless; Capture uses tonal surfaces instead of a top stroke, shadow and
+  boxed preview.
+- Configured side/bottom docks own their boundary line; embedded frames add no
+  second border or shadow. A floating popup still has one softened outline and
+  its existing small shadow.
+- Default keyboard outlines live in the base CSS layer, so controls that already
+  provide a focus ring do not also receive a second outline. Forced-color mode
+  explicitly restores a 2 px system outline for controls and a 1 px inset Source
+  indicator instead of relying on shadows.
+
+Verification: native TypeScript/Vite/Tauri debug build passed; the existing
+557.07 kB chunk warning remains. Actual built WebKit in private Xvfb verified:
+all four Source-frame edges, the gutter edge, toolbar/footer edges and ribbon/file
+header edges measure **0 px**; focused Source background is transparent. Native
+keyboard focus changed from **2 px outline plus 2 px ring** to one **2 px ring**.
+Split activation still selects the secondary view; only the primary right edge
+measures 1 px, with both exact Sources and primary EditorView identity retained.
+Inspector and Capture preserve canonical Source; Capture has no body shadow or
+preview border. A configured side dock has one 1 px dock edge and a borderless
+378 px frame; a 560×405 floating Inspector retains one border and small shadow.
+Trusted typing and one Undo preserve exact CRLF/Chinese/emoji Source and the same
+EditorView. Quick Open still receives text focus and returns focus to Source.
+Default Light and Default Dark were both exercised through Appearance settings.
+
+Forced colors were additionally checked in a throwaway Chromium media smoke
+using the actual loaded native CSS and actual Settings control markup: controls
+retain a solid 2 px system outline with no shadow; Source retains a solid 1 px
+indicator and system caret color. This is not a native OS high-contrast claim.
+The light native editor's drawn caret was visible, 1 px wide and 19 px high.
+The private theme and placement preferences were restored afterward.
+
+Style-only changes: no new permanent tests or full-suite rerun; verification is
+the actual surface and input smoke, not CSS-string assertions. No installed
+package or user desktop/profile was replaced. Rust tests and ESLint were not
+rerun; no existing gate was bypassed.
+
+Evidence:
+- `local://grain-border-refinement-evidence.json`
+- `/tmp/grain-ui-KBza4B/borders-before.png`
+- `/tmp/grain-ui-KBza4B/borders-after.png`
+- `/tmp/grain-ui-KBza4B/borders-light.png`
+- `/tmp/grain-ui-KBza4B/borders-split.png`
+- `/tmp/grain-ui-KBza4B/borders-inspector.png`
+- `/tmp/grain-ui-KBza4B/borders-capture.png`
+- `/tmp/grain-ui-KBza4B/borders-popup.png`
+
+## Source-first UI refinements (2026-10-14)
+
+The subsequent native investigation identified seven reachable improvements;
+all seven are now implemented without changing Source authority or publication.
+
+- Org TODO text uses the existing `--error` semantic text color rather than the
+  dark destructive button fill. The destructive fill/foreground pair remains.
+- The document tab rail observes its own width and reveals the selected tab on
+  resize, Inspector changes and sidebar changes, without focusing it.
+- Source uses a named inline-size container. Below **50 rem** of actual document
+  pane width, split windows stack vertically; with enough width they return
+  side-by-side. Their keys/EditorViews remain stable. Sidebar/Inspector choices
+  and saved panel preferences are not rewritten; the tradeoff is less vertical
+  space per split instead of unreadably narrow text.
+- Capture presents template, explicit memory-only/unencrypted-recovery status,
+  target review, draft and primary actions. Native Details & help contains the
+  raw revision, internal target metadata and default-key instructions. Warnings
+  and reconciliation controls remain outside Details. The scratch is borderless
+  and sized with `clamp(14rem,32vh,22rem)`; primary buttons are 32 px high.
+  The body caps at `min(65vh,36rem)` and flexes within configured tool frames.
+  Native smoke caught an indefinite `100%` inside the initial cap defeating it;
+  the final build fixes that boundary without touching capture state logic.
+- Real Card components use the existing density/radius variables through `cn`,
+  preserving local `pb-4`/`pt-0` overrides. Sample Card reuses those components.
+  Obsolete card selectors/helpers and the accidental dialog/menu radius coupling
+  are removed; existing dialog/menu font scaling remains.
+- The Icons selected badge uses the primary/primary-foreground pair directly,
+  not `hsl()` around a complete hex color.
+- Editor/Typography inputs, font +/- buttons and all four slider thumbs have
+  names and label relationships. Slider unit descriptions follow immediate
+  local values before the existing 150 ms persistence debounce. Spell Check and
+  PlantUML switches also associate their existing labels/help. LSP references
+  verified every Slider/DebouncedSlider consumer before the contract change.
+
+Native proof (private Xvfb profile; real built WebKit and trusted XTest input):
+- Dark TODO contrast **1.78 → 6.45**, with the destructive fill unchanged.
+- At 1024×768 with Inspector, the selected 150 px tab is **149.89 px visible**
+  instead of 15.89 px. Split text lines are **440.80 px** instead of ~192 px.
+  Widening/restoring space returns horizontal splits with both original
+  EditorViews and exact Source retained.
+- Trusted Source input and Undo restore exact CRLF/Chinese/emoji bytes.
+  Capture Details expansion preserves its scratch instance and Undo. Explicit
+  Finish published the probe entry into the private inbox; canonical project
+  Source stayed exact. The private probe entry was removed afterward.
+- Capture draft height at the minimum window is **245.75 px** instead of
+  143.81 px. Expanded producer body is bounded at **499.19 px**. A configured
+  35vw×50vh popup is **356.39×382 px**, with three reachable 32 px actions.
+- Compact/Spacious real-card horizontal padding measures **12/32 px**; local
+  header bottom padding remains 16 px and content top padding remains 0.
+  Actual cards and preview both follow 0/16 px radius.
+- Light Icons badge measures blue `rgb(37,99,235)` with a white check. Actual
+  slider names/units and switches were inspected; keyboard changes worked.
+  Line Height reported 1.7 while the saved value was still 1.6, then persisted.
+  Quick Open receives keyboard focus and Escape restores Source focus.
+
+TypeScript/Vite/Tauri debug builds passed (`artifact://3778`, final cap correction
+`artifact://3794`); the existing 557.07 kB chunk warning remains. No new permanent
+tests or Vitest/ESLint/Rust-test rerun; affected presentation assertions were
+checked and no obsolete wording/class assertions were found. Native screen
+reader and OS high-contrast output were not measured. Private theme, typography
+and tool-placement changes were restored; user profile/installed package were
+not replaced.
+
+Evidence: `local://grain-ui-optimization-implementation-evidence.json`.
+Screenshots under `/tmp/grain-ui-KBza4B/`: `optimization-dark.png`,
+`optimization-light.png`, `optimization-narrow-split.png`,
+`optimization-wide-split.png`, `optimization-capture.png`,
+`optimization-capture-details.png`, `optimization-capture-popup.png`,
+`optimization-card-settings.png`, `optimization-icon-light.png`,
+`optimization-final.png`.
+
+## Task-based Settings cutover (2026-10-14)
+
+Settings now uses the same window and interface typography as the Source-first
+workspace: a small return bar, six persistent task categories (Appearance,
+Editor, Capture, Agenda, Keymaps and Tool layout), and Tools & information at the
+bottom. Appearance and Editor expose their subordinate pages locally. Recovery,
+export guidance, logs, service diagnostics and About live under the information
+group. `/settings` commits the workspace departure before its client-side
+redirect to Appearance, so the workspace discard guard does not also guard an
+uncommitted redirect.
+
+- Flat form sections replace the dashboard/card layout. Control rows adapt to
+  available width; JSON editors and actions remain one column. Org Source
+  typography/theme samples are read-only and next to their controls, not a
+  pretend novel editor with an inert Save action.
+- All **56 themes**, **17 icon themes**, and **eight font quick-add choices** are
+  retained. Theme/icon selectors have search, current-choice state and keyboard
+  operation. Native WebKit's white menulist paint in dark mode required scoped
+  select appearance/color styling; the native popup remains keyboard-operable.
+- UI font size remains 12–18 px, Source size 12–32 px, line height 1.2–2.5 and
+  letter spacing −0.05–0.2 em. Existing 150 ms slider debounce is retained.
+  Text multipliers are explicitly 0.875/1/1.125/1.25, not layout-density claims.
+  UI/font restore actions affect only their named scope.
+- The inactive language, spell-check and tab-position controls/backing APIs are
+  removed. Card size/radius preferences, variables, options and setters are
+  removed too, superseding the retained-card behavior recorded above. Existing
+  Card primitives use fixed padding/radius while preserving local overrides.
+  Historical user/workspace serialization is not a new localization or spell
+  checking implementation and was intentionally not changed.
+- Preference controls apply immediately. Five versioned JSON forms retain local
+  drafts and explicit Save/restore actions. `SettingsDraftGuard` tracks each
+  mounted draft, blocks category/return/history navigation with a cancel/discard
+  decision, checks the draft generation after approval, and registers
+  before-unload protection. It does not cache drafts, add a global Save, or
+  weaken producer authority.
+- Long schema/help text is folded; validation/storage errors and Capture's
+  unencrypted plaintext recovery warning are not. Recovery deletion approval,
+  generation rechecks, storage rollback, historical read-only access, Source
+  export picker/grants and accepted-effect drain remain unchanged.
+- Diagram settings are a **service connection diagnostic**, not an Org renderer
+  switch. The fixed PlantUML sample and network/privacy boundary are explicit.
+  A successful test retains the address; failure restores the previous address.
+  Address-only save makes no network request. About separates package build
+  metadata, native versions and browser-reported platform information.
+- Logs expose query/deletion errors instead of presenting failure as an empty
+  database. The native query currently reports the existing **no such table:
+  logs** backend error. This cutover does not add a table or fabricate log rows.
+  The ALL-log deletion confirmation remains; its decisions are covered by the
+  retained contract tests, not a claim of successful native log deletion.
+
+Verification used the rebuilt Tauri/WebKit application in an isolated profile,
+trusted XTest input, and native screenshots:
+
+- **14 pages × 4 layout/theme/text combinations** (56 measurements): 1400×900
+  default dark, 1024×768 default dark, and 1024×768 maximum 18 px × 1.25 text in
+  both Default Light and Default Dark. No page/main horizontal overflow.
+  Default narrow Editor scroll height is **1068 px**, formerly **4965 px**;
+  its Source sample begins at **702.39 px**, formerly about **4825 px**.
+- Theme search/keyboard Light↔Dark selection, icon search/actual navigation
+  glyph changes, 12/32 px Source bounds, debounced line/letter-spacing keyboard
+  bounds, and live auto-save interval bounds were exercised.
+- All five JSON forms retained invalid drafts on cancellation and left saved
+  configuration unchanged; approval discarded only the requested draft.
+  Browser history cancellation restored the Agenda route and its draft.
+  A real rejected Web Storage write displayed its error, restored saved keymap
+  authority and retained the editable draft; the temporary failure injection
+  was removed.
+- A real Capture producer created one permitted plaintext journal. Cancelling
+  deletion retained both permission and journal; explicit approval deleted it
+  and restored recovery-off defaults. A settled dirty tool required one valid
+  discard decision to enter Settings; authority checks were not relaxed.
+- Two real loopback POST requests contained only the fixed PlantUML sample:
+  success saved the tested address; HTTP 503 restored the previous address.
+  No Source document body was sent.
+- Default Light/Dark validation text contrast is **14.68:1 / 16.30:1**.
+  Errors use readable foreground text plus an error border, not destructive
+  button-fill text.
+- Exact **381-character CRLF/Chinese/emoji Source** and native Undo survived
+  Settings navigation, typography/configuration changes and tool retirement.
+  The exact-Undo scenario passed again on the final rebuilt application.
+- TypeScript/Vite/Tauri debug build passed (`artifact://3864`); the existing
+  557.28 kB chunk warning remains. **93 unique tests in nine existing settings
+  contract files passed**; a meaningful keymap repair test's action query was
+  updated for the scoped restore control. Retired card/copy assertions were
+  removed rather than repinned. This was not a full repository test run.
+
+Screen-reader and OS high-contrast behavior were not measured. User profile and
+installed package were not replaced. Temporary HTTP/failure-injection state was
+removed; private test Source and preferences were restored.
+
+Evidence: `local://grain-settings-redesign-evidence.json`. Native screenshots
+under `/tmp/grain-ui-KBza4B/`: `settings-redesign-appearance-dark-wide.png`,
+`settings-redesign-appearance-light-wide.png`,
+`settings-redesign-editor-dark-narrow.png`,
+`settings-redesign-editor-dark-max-narrow.png`,
+`settings-redesign-capture-light-max-narrow.png`,
+`settings-redesign-capture-light-error-max-narrow.png`,
+`settings-redesign-capture-dark-error-narrow.png`,
+`settings-redesign-native-theme-menu-root.png`, and
+`settings-redesign-source-undo.png`. The GTK theme popup is a separate X11
+surface; its proof uses a root-display screenshot, not a main-window-only grab.
+
+## File-only configuration cutover (2026-10-15)
+
+This supersedes the task-based Settings cutover above. Preferences are file-only,
+not file-primary with a secondary graphical editor. Settings routes, forms,
+configuration textboxes, theme pickers, preference mutation actions and browser
+preference mirrors are removed. Logs and About remain ordinary information
+routes; Source tools, work parameters and destructive/security consent remain.
+Earlier feature/changelog reports describe their historical interfaces, not
+current configuration entry points.
+
+### Authority and native boundary
+
+- Native `app_config_dir()/config.json` is the only preference authority. Linux
+  uses `$XDG_CONFIG_HOME/com.lotus.grain/config.json`, falling back to
+  `~/.config/com.lotus.grain/config.json`.
+- **Open configuration file** delegates this fixed path to the OS default
+  application. **Reload configuration** explicitly rereads it; there is no
+  configuration-file watcher or arbitrary editor shell command.
+- The strict JSON root requires `version: 1`. Missing fields receive defaults;
+  unknown fields, invalid bounds and domain errors reject the complete file
+  before projection. Appearance, Source/interface fonts, saving, word counts,
+  Capture, keymaps, Org behavior, Agenda views, tool placement and diagram
+  services are human-readable objects, not JSON encoded inside JSON strings.
+- First missing-file startup validates the five retired preference stores before
+  atomic no-clobber creation. Real font-store values win over obsolete duplicate
+  font fields. Legacy keys are removed only after an accepted file load. An
+  existing file wins, is never rewritten or expanded, and is not replaced when
+  malformed. Malformed/unsupported legacy values remain recoverable rather than
+  being silently discarded.
+- Native creation uses private Unix modes, flushed contents and no-clobber
+  installation; ordinary file/directory symlinks are supported, while a dangling
+  file symlink is not replaced. Fixed-path IO and error cases have isolated Rust
+  coverage. Reloading a missing file refuses automatic recreation.
+- Configuration lifecycle state and preference projections are memory-only.
+  Reload revokes the shared declaration generation before IO, including
+  identical-text and ABA transitions. Failed loads preserve previous visuals
+  and canonical Source/history while declarative input/workflow producers remain
+  unavailable; accepted effects drain without rollback.
+- Capture recovery remains explicit plaintext opt-in. Opt-out neither reads nor
+  deletes saved journals. **Delete saved Capture drafts** is a separate data
+  command: recovery must be off, publication must not be pending, and approval
+  rechecks the captured generation/pending boundary. Cancellation does not
+  re-enable permission; deletion neither publishes Org nor discards live scratch.
+
+### Offline terminal themes and native windows
+
+The complete 811-palette iTerm2-Color-Schemes catalog is pinned to
+`21f281d0834846eef984f75774638e7d16bac068`. The vendored Windows Terminal JSON
+objects preserve original fields and values; provenance records archive,
+source-set and catalog SHA-256 digests. LICENSE/CREDITS retain upstream and
+individual-theme attribution. No upstream script execution or runtime download
+is involved.
+
+Names are exact upstream identities, not inferred aliases. Background luminance
+determines light/dark classification; system mode validates an explicit pair.
+Semantic adaptation is lazy/cached, preserves the original terminal palette and
+derives readable text, status, boundary, cursor and destructive roles. Retired
+manual palettes retain only 56 migration key/name/type records, not their unused
+color allocations. A retired name without an exact upstream match produces an
+explicit GitHub/GitHub Dark migration notice and first-file `$comment`.
+
+Actual native inspection found the detached bootstrap bypassed router-owned
+configuration, font injection and theme initialization. Both entries now mount
+the same `ConfigurationLifecycle`; the reusable detached Source view itself does
+not initiate physical configuration IO.
+
+Reload invalidation is main-only: Rust dispatches a payload-free
+`grain:configuration-reload` DOM event to registered nonclosing Source webviews,
+which reread the fixed file without rebroadcasting. Detached views can read
+configuration but cannot create/open it or send invalidation. Their capability
+still has `permissions: []`; synchronization does not grant ambient core/plugin
+event access. Existing Source binding, intent and canonical history protocols
+remain authoritative.
+
+### File popups, recovery and Agenda
+
+File dropdowns use a single subdued 1 px border and small shadow. Native dark
+Delete text exposed an inappropriate legacy button-fill red; destructive roles
+now derive from the selected palette and focused items use paired accent
+foreground/background. Measured settled native contrast: **7.17:1** dark Delete,
+**5.77:1** dark focused Delete, **8.25:1** light focused Delete.
+
+Retained filesystem objects no longer create an always-on workspace warning.
+**Workspace tools → Recovery files…** exposes read-only paths and explains that
+stages/journals/probes are mutable recovery objects, not immutable backups or
+authoritative Source. It promises no automatic restoration, replay, deletion or
+garbage collection.
+
+Agenda explains that it collects scheduled tasks, deadlines and dated events
+from Org Source and opens their original locations. The empty state is centered
+in the remaining content area and provides a valid heading/SCHEDULED example.
+It does not maintain a separate calendar authority.
+
+### Verification and limits
+
+Actual Tauri/WebKitGTK runs used an isolated Linux/X11 profile, trusted XTest
+input, native inspection and screenshots:
+
+- First startup migrated the five legacy stores, disclosed the retired theme
+  replacement and preserved exact 381-character CRLF/Chinese/emoji Source.
+- Editing the file applied Catppuccin Mocha/GitHub and Source/interface sizes.
+  A valid theme/autosave/recovery change combined with invalid Source size 99
+  rejected the whole file, retaining old visuals, bytes and Source.
+- Invalid existing-file startup retained its bytes and safe 16 px/14 px visuals.
+  A confirmed malformed legacy value was ignored when a minimal existing
+  `{"version":1}` file was reloaded; the file was not expanded. This malformed
+  legacy precedence observation is a reload proof, not a restart-persistence
+  claim.
+- Two actual native windows loaded matching fonts/themes, synchronized valid,
+  invalid and missing-file reloads, and recovered without Source remounts.
+  Trusted child input reached the shared owner; identical-file reload followed
+  by one child Undo restored exact Source in both views. Main-only notification
+  IPC was rejected from the child; Attach preserved Source.
+- Real Capture scratch produced an opted-in plaintext journal. Identical-file
+  reload froze the old producer. Opt-out retained journal bytes; declining
+  deletion retained permission-off and data, approval deleted only the journal.
+  Dismissing dirty scratch still required the normal tool-close decision.
+- Open configuration file launched actual Neovim through a temporary private
+  OS file association. A real external edit/save did not change Grain until
+  Reload. The association fixture was removed and the original private
+  association restored; no embedded editor or configurable shell was added.
+- File menus were visually checked in both palettes, including keyboard focus.
+  Recovery details showed actual retained paths with no destructive controls.
+  A real scheduled Source entry appeared in Agenda and opened its original
+  line; Undo/manual Save restored the exact fixture. Final empty Agenda and
+  Files-header menus were checked on the final build.
+- **23 targeted frontend files / 813 tests passed** (`artifact://3976`).
+  **9 configuration-related Rust tests passed** (`artifact://3979`), including
+  native window role and desktop-mode boundaries. TypeScript/Vite/Tauri debug
+  build passed (`artifact://3975`), producing
+  `apps/desktop/src-tauri/target/debug/grain`. The >500 kB chunk warning remains;
+  the largest emitted JavaScript chunk is 1,025.59 kB.
+- The documented partial-font, system-pair and Vim configuration examples were
+  executed through the real parser. Current English/Chinese READMEs, desktop
+  guide and theme documentation use file-only instructions; obsolete icon UI
+  guides are explicitly marked historical.
+
+This is not a full repository test run or visual certification of every palette.
+OS color-scheme switching, screen readers, high-contrast mode and other platforms
+were not exercised in this cutover. Private Source/configuration fixtures were
+restored; the user profile and installed application were not replaced.
+
+Evidence: `local://grain-file-configuration-evidence.json`. Screenshots under
+`/tmp/grain-ui-KBza4B/` include `file-config-final-invalid-main.png`,
+`file-config-final-invalid-child.png`,
+`file-config-final-file-menu-dark-focused.png`,
+`file-config-final-file-menu-light-focused.png`,
+`file-config-final-files-header-dark.png`,
+`file-config-final-agenda-empty-dark.png`,
+`file-config-agenda-source-entry-dark.png`,
+`file-config-recovery-details-dark.png`, and
+`file-config-external-nvim.png`.
+
+## Doom/Treemacs file-tree cutover (2026-10-15)
+
+> Historical implementation and verification. The ordinary file-tree/context-menu
+> cutover below supersedes these default keys, help UI and combined rename/move
+> reader; this section is not the current file-tree contract.
+
+### Binding authority and supported boundary
+
+The user's installed Doom configuration enables Treemacs with Evil/default
+bindings. Inspection covered `~/.config/doom/init.el`, `config.el`, `org-note.el`,
+the enabled module under
+`~/.config/emacs/sources/doom+/modules/ui/treemacs/`, and installed Treemacs/Evil
+sources under `~/.config/emacs/.local/straight/repos/`. No Treemacs binding
+overrides were found in those user configuration files.
+
+This is installed-source/configuration evidence, not a live Treemacs buffer
+query: the running Emacs had no available server/socket. No Emacs server was
+started, modes enabled or user configuration changed. Binding research is
+retained in `agent://DoomTreeBindings/report`.
+
+The port retains local `j/k`, `h/u`, `l`/Enter, `g g`/`G`, `c f`/`c d`, `R`/`m`,
+`d`, `r`/`g r`, `y r`/`y a`, `C-w l`, `q` and `?` semantics. Rename and move
+share one full-relative-path reader. Arrows and Home/End are Grain accessibility
+alternatives, not claimed Doom bindings. No global Space leader, recursive
+directory deletion, directory rename, filesystem copy or Tab tag tree was added.
+
+### One scoped input path and quieter file operations
+
+`file-tree` is a validated version-1 keymap scope. It inherits workspace and
+application bindings, never `org-source`; Source does not inherit tree bindings.
+Only actual focused tree rows accept these commands. Existing input ownership,
+IME/parameter protection, generation revocation, transient maps and passive
+Which-Key remain authoritative. Menu/help hints derive executable bindings from
+the same configuration, including remapping and explicit null unbinding.
+
+The tree has independent cursor selection, roving focus and treeitem level /
+sibling metadata. Moving the cursor does not activate Source. Every Org file,
+including unopened files, has a right-click / ellipsis menu naming the target,
+with separate Open, Manage and Copy groups. Files-header controls are direct;
+the old two-item header dropdown is gone.
+
+Create file/directory and rename/move now use the sole application bottom
+minibuffer. The obsolete centered input dialog and its tests were removed;
+Capture's real confirmation view remains. Prompts retain their workspace,
+configuration generation and activation, allow pre-commit cancellation and
+drain accepted effects. Rename completion uses rendered pending focus state:
+a ref-only request could miss an already-published native workspace render and
+leave focus on body. Successful rename now focuses its surviving row.
+
+Read-only shortcut help stays bounded and keyboard-scrollable, with its Close
+control visible while scrolling. Closing it restores the tree cursor; `q`
+unmounts the tree before returning focus to the retained Source port.
+
+### Targeted mutation and deletion safety
+
+Controller mutation APIs now take an explicit `OrgDocumentEntryInterface`:
+`moveDocument(entry, path)` and `deleteDocument(entry)` return confirmed boolean
+outcomes. Old active-only APIs and callers were cut over without aliases.
+An unopened move updates metadata without allocating/activating a Source buffer.
+Existing dirty source/destination, grant, revision, path and effect guards remain.
+
+Deletion captures the target baseline and per-file lifetime before asynchronous
+approval. The controller owns exactly one application confirmation for clean
+and dirty files; Cancel has initial focus. Dirty-target consent explicitly
+discards unsaved input. Activating another file does not retarget approval;
+opening/editing a formerly unopened target invalidates old consent. Native
+expected-revision publication and recovery-receipt validation remain required.
+Unrelated dirty Source, selection and canonical history are not replaced.
+
+Saved originals are mutable manual recovery objects, not editor Undo or immutable
+backups. The existing read-only **Workspace tools → Recovery files…** view exposes
+their recorded paths; no replay, restore, cleanup or new directory destruction
+authority was introduced.
+
+### Verification and limits
+
+- **8 focused frontend files / 508 tests passed**, including parser/router scope
+  isolation, real Source/history preservation, captured-target confirmation,
+  newer-target invalidation and rename/help focus restoration.
+- TypeScript/Vite/Tauri debug build passed (`artifact://4067`), producing
+  `apps/desktop/src-tauri/target/debug/grain`. The existing >500 kB warning remains;
+  the largest JavaScript chunk is 1,025.27 kB.
+- Actual isolated Linux/X11 Tauri/WebKitGTK with trusted XTest input exercised
+  navigation, `c f`/`c d`, `R`/`m`, `d`, refresh, both clipboard paths, Which-Key,
+  help scrolling/close, `C-w l` and `q`. Source received literal tree-key text
+  when focused instead of interpreting it as file commands.
+- Unopened rename/delete beside dirty Source retained the same EditorView/state.
+  Rename immediately followed by keyboard `d` targeted the renamed row. Clean
+  and dirty cancellation each showed one confirmation with Cancel focused.
+- An external disk edit during confirmation produced a native revision-conflict
+  refusal and preserved the newer file. Refresh plus fresh consent deleted only
+  that new revision. A retained original's SHA-256 matched the exact initial
+  CRLF/Chinese/emoji fixture.
+- File configuration disabled `d` and rebound deletion to `x`; actual menu hints
+  and input changed together. Settled dark/light menu focus and compact deletion
+  confirmations were inspected. Configuration/theme reloads preserved Source
+  and exact Undo/Redo. The original 381-character CRLF/Chinese/emoji Source and
+  private configuration were restored with matching SHA-256 digests.
+
+This is not a full repository run, live Emacs keymap query or other-platform
+mutation certification. Native filesystem platform limitations remain unchanged.
+Disposable Org files/directories were removed; owned native/display/bus services
+and inspector tabs were closed. The user's notes, Doom configuration and
+installed application were not replaced.
+
+Evidence: `local://grain-doom-tree-evidence.json`. Native screenshots under
+`/tmp/grain-ui-KBza4B/` include `doom-tree-file-menu-dark-focused-settled.png`,
+`doom-tree-file-menu-light-focused.png`, `doom-tree-delete-confirm-dark.png`,
+`doom-tree-delete-confirm-light.png`, `doom-tree-create-minibuffer-dark.png`,
+`doom-tree-help-final-polished-dark.png` and `doom-tree-final-workspace-dark.png`.
+
+## Ordinary file-tree and context-menu cutover
+
+### Current contract and ownership
+
+The [file-tree guide](../../apps/desktop/README.md#file-tree) replaces historical
+Doom/Treemacs defaults. Navigation uses arrows, Home/End and Enter; the subsequent
+interaction polish adds scoped F2, Delete, F5 and Mod-F. Tree-specific letter
+bindings, leader maps, help and Which-Key rendering remain removed. Explicit
+user bindings/maps remain supported; retired built-in map/help references fail
+whole-document validation. Source bindings and optional Vim are unchanged.
+
+Files, directories and the workspace root have distinct menus. Radix context
+menus open at the real pointer position; row ellipses share the same captured
+target, actions, disabled reasons and configured hints. Menu/Shift-F10 opens the
+focused target's menu, and Escape returns focus without stealing a newer menu or
+reader. Blank-area/header actions explicitly target root, not the selected row.
+
+Rename accepts a basename only. Move completes existing directories, retains the
+filename and uses `/` for root, including Tab completion. The existing shared
+bottom reader retains failed input; successful creation/mutation is a confirmed
+boolean outcome, not inferred from a resolved promise. Busy/dirty relocation and
+stale workspace/configuration/target lifetimes are guarded. Reader-owned
+validation errors now retire on successful correction or cancellation rather
+than surviving as stale global errors.
+
+Deletion still uses one revision-bound confirmation with Cancel initially
+focused. Dirty-target consent and native manual recovery remain unchanged;
+neither OS Trash nor editor Undo is claimed. Unrelated dirty Source/history is
+not activated or replaced by targeted file management.
+
+System reveal uses `reveal_org_workspace_path` in the normal main window only.
+It holds the existing approved-workspace lease, verifies the retained named root
+and safe relative target, and rejects symlinks, traversal and reserved recovery
+paths before calling the native opener. No generic filesystem permission or
+detached-window privilege was added. External file managers consume a named path
+after handoff; that later access cannot be made atomic by retaining our descriptor.
+Platforms without the required root-identity verification fail closed.
+
+### Cutover verification and limits
+
+- Final integrated run: **16 frontend files / 717 tests passed**, including
+  keymap/configuration validation, ordinary scoped navigation, captured targets,
+  dirty relocation guards, failed-reader retention, root completion, shared
+  feedback retirement, workspace flows and retained Source behavior.
+- Two native `reveal_` tests passed via `packages/rust-core/Cargo.toml`, covering
+  unsafe targets, replaced named roots and opener-error propagation.
+- TypeScript/Vite build passed (`artifact://4121`), followed by the Tauri native
+  debug build with `tauri/custom-protocol`. The existing >500 kB chunk warning
+  remains; the largest JavaScript chunk is 1,025.59 kB.
+- Actual isolated Linux/X11 Tauri/WebKitGTK with trusted XTest input verified
+  pointer-positioned menus, directory/root/blank targets, ordinary navigation,
+  inert former letter keys, Menu/Shift-F10 and Escape focus return.
+- Native creation/collision, basename validation, directory move and root Tab
+  completion, three clipboard paste round trips, refresh/filter/reveal/collapse,
+  dirty-target cancellation and targeted file deletion were exercised. Corrected
+  and cancelled reader errors were rechecked in the final rebuilt desktop.
+- Real Thunar windows and exactly three observed
+  `org.freedesktop.FileManager1.ShowItems` calls proved file, directory and root
+  handoff. Main-window traversal and unissued-lease invocations failed without
+  additional file-manager calls.
+- Unrelated dirty Source retained its exact EditorView state across file
+  operations; native Undo/Redo restored the draft and exact original
+  CRLF/Chinese/emoji text. The restored on-disk fixture matched its SHA-256 after
+  native shutdown. The then-optional `F2` binding passed the real parser.
+
+This is focused regression coverage, not a full-repository run or other-platform
+UI certification. Native visual inspection covered the isolated dark theme.
+No file duplication, directory rename/move, recursive deletion or restoration UI
+was introduced. Disposable files/directories were removed, owned native/file
+manager/display/bus services and inspector tabs closed, and the user's notes,
+configuration and installed application were not replaced.
+
+Evidence: `local://grain-tree-context-cutover-evidence.json`. Screenshots under
+`/tmp/grain-ui-KBza4B/` include `tree-context-file-pointer-dark.png`,
+`tree-context-directory-keyboard-dark.png`, `tree-context-root-pointer-dark.png`,
+`tree-context-dirty-relocation-disabled-dark.png`,
+`tree-context-move-root-reader-dark.png`, `tree-context-real-file-manager.png`,
+`tree-context-final-file-menu-dark.png` and `tree-context-final-workspace-dark.png`.
+
+## File-tree interaction polish
+
+The ordinary tree now shows full filenames, unsaved markers and matching/total
+file counts. Idle row actions are quiet but remain available on hover, keyboard
+focus, open menus and touch. Captured menu headers show the name and relative
+path or workspace-root location, with a visible dirty-relocation explanation.
+
+F2, Delete, F5 and Mod-F are scoped to focused tree rows. Filter input retains
+normal editing/IME behavior: arrows focus a matching file without activating it,
+Enter deliberately opens the first match, and Escape clears before returning to
+the tree cursor. Clear controls and no-match feedback keep the recovery path
+visible. Directory creation clears an obstructing filter and focuses the new
+expanded location without replacing Source.
+
+Shared reader sessions accept optional read-only context and an initial UTF-16
+selection range. Range selection runs once after the initial controlled value
+is committed; same-session candidate updates do not replace user input or
+selection. Native-input sessions retain their own select-all/end behavior.
+Create/rename select only the stem; move selects the destination. Known occupied
+names receive numbered suggestions, and concrete collision errors retain input.
+Visible Confirm/Cancel controls supplement the existing keyboard routes.
+These changes do not extend native grants or directory mutation authority.
+
+Verification:
+
+- Final focused integration run: **15 frontend files / 535 tests passed**,
+  covering scoped shortcuts, filtering, creation, reader
+  selection/focus, configuration remaps/unbindings, Capture, Agenda, sparse
+  reads, Org-roam and retained Source. Capture navigation tests now address the
+  real `treeitem`, rather than the retired file-button surface.
+- Two new sidebar behavior regressions failed before implementation
+  (`artifact://4137`); the integrated run passed after implementation.
+- A shifted-arrow regression reproduced filter focus theft (`artifact://4175`).
+  After the fix, native Shift-Down/Up retained normal text selection, Shift-Enter
+  did not activate a result, and unmodified Enter still opened the match.
+- TypeScript/Vite and native Tauri debug builds passed (`artifact://4178`).
+  The existing >500 kB JavaScript chunk warning remains unchanged in kind.
+- Actual isolated Linux/X11 Tauri/WebKitGTK with trusted XTest input verified
+  contextual menus, dirty markers/reasons, stem-only replacement, numbered
+  suggestions, collision correction, root/directory Tab completion, scoped F2,
+  filter focus/selection/activation, both Escape stages, both clear controls and
+  creation through an empty filtered tree.
+- Delete-key cancellation and five confirmed fixture deletions each opened one
+  confirmation with Cancel initially focused. Confirmed deletion, rename, move,
+  filtering and directory creation retained unrelated dirty Source text and
+  exact EditorState; file-only rename also retained the EditorView.
+- Native F5 preserved Source after external watcher discovery. Controlled
+  regression coverage separately verifies discovery by F5; the native watcher
+  had already observed the external fixture before the key press.
+- Native dark and light screenshots were inspected. Reloading the private
+  theme configuration preserved the draft. Native Undo/Redo restored the exact
+  original and draft, including CRLF, Chinese and emoji.
+- The documented `Delete` null-unbinding passed the production keymap parser,
+  removing that shortcut while retaining the default rename binding.
+- After native shutdown, both private configuration and Source SHA-256 hashes
+  matched their pre-run values. Own visible fixture files and new directories
+  were removed; owned app/display/bus services and inspector tabs were closed.
+  The user's notes, configuration and installed application were untouched.
+
+This is focused regression and isolated Linux UI evidence, not a full-repository,
+screen-reader or other-platform certification. Native IME composition and
+optional Source Vim were not separately exercised; IME guards have regression
+coverage, and Source Vim configuration was unchanged.
+
+Evidence: `local://grain-tree-polish-evidence.json`. Screenshots under
+`/tmp/grain-ui-KBza4B/` include `tree-polish-context-dark.png`,
+`tree-polish-create-reader-dark.png`, `tree-polish-no-matches-dark.png`,
+`tree-polish-dirty-context-light.png`, `tree-polish-rename-reader-light.png`,
+`tree-polish-filter-native-selection-dark.png` and
+`tree-polish-final-workspace-dark.png`.
+

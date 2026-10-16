@@ -43,7 +43,7 @@ describe("Org minibuffer", () => {
 	])("accepts single click detail %s but ignores a double click across sessions", (detail) => {
 		const first = makeSession()
 		const { rerender } = render(<OrgMinibuffer session={first} />)
-		const button = screen.getByRole("button", { name: "Accept minibuffer" })
+		const button = screen.getByRole("button", { name: "Confirm minibuffer" })
 		fireEvent.click(button, { detail })
 		expect(first.onAccept).toHaveBeenCalledOnce()
 		const next = makeSession({ id: 2 })
@@ -309,6 +309,65 @@ describe("Org minibuffer", () => {
 		expect(input).toHaveValue("work grain ")
 		fireEvent.keyDown(input, { key: "Enter" })
 		expect(session.onAccept).toHaveBeenCalledWith("work grain ")
+	})
+
+	it.each([
+		["draft.org", [0, 5] as const, "renamed.org"],
+		["notes/🐉draft.org", [6, 13] as const, "notes/renamed.org"],
+	] as const)("replaces only the requested filename stem in %s", (initialInput, initialSelection, expected) => {
+		const session = makeSession({ initialInput, initialSelection, candidates: [] })
+		render(<OrgMinibuffer session={session} />)
+		const input = screen.getByRole("combobox") as HTMLInputElement
+		expect(input).toHaveFocus()
+		expect([input.selectionStart, input.selectionEnd]).toEqual(initialSelection)
+		act(() => {
+			input.setRangeText("renamed", input.selectionStart!, input.selectionEnd!, "end")
+			fireEvent.input(input, { inputType: "insertText", data: "renamed" })
+		})
+		expect(input).toHaveValue(expected)
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(session.onAccept).toHaveBeenCalledExactlyOnceWith(expected)
+	})
+
+	it("preserves edits and user selection across same-session candidate and context refreshes", () => {
+		const session = makeSession({
+			initialInput: "notes/draft.org",
+			initialSelection: [6, 11],
+			description: "Rename notes/draft.org",
+		})
+		const { rerender } = render(<OrgMinibuffer session={session} />)
+		const input = screen.getByRole("combobox") as HTMLInputElement
+		fireEvent.change(input, { target: { value: "notes/revised.org" } })
+		input.setSelectionRange(8, 11)
+		fireEvent.select(input)
+		rerender(<OrgMinibuffer session={{
+			...session,
+			initialSelection: [0, 5],
+			candidates: ["notes/revised.org"],
+			description: "Captured file: notes/draft.org",
+		}} />)
+		expect(input).toHaveValue("notes/revised.org")
+		expect([input.selectionStart, input.selectionEnd]).toEqual([8, 11])
+		fireEvent.keyDown(input, { key: "Enter" })
+		expect(session.onAccept).toHaveBeenCalledExactlyOnceWith("notes/revised.org")
+	})
+
+	it.each([undefined, false])("retains native open selection ownership with selectValueOnOpen=%s", (selectValueOnOpen) => {
+		const initialInput = "write notes/draft.org"
+		render(<OrgMinibuffer session={makeSession({
+			initialInput,
+			initialSelection: [6, 11],
+			nativeInput: {
+				bind: vi.fn(), onInput: vi.fn(), onKeyDown: () => false, onKeyUp: vi.fn(),
+				selectValueOnOpen,
+			},
+		})} />)
+		const input = screen.getByRole("combobox") as HTMLInputElement
+		expect(input).toHaveValue(initialInput)
+		expect(input).toHaveFocus()
+		expect([input.selectionStart, input.selectionEnd]).toEqual([
+			selectValueOnOpen === false ? initialInput.length : 0, initialInput.length,
+		])
 	})
 
 	it("completes the token at the caret rather than the trailing token", () => {

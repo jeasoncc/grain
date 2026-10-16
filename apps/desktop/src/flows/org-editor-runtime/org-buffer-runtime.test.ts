@@ -29,6 +29,7 @@ import {
 	type OrgBufferWindowHandle,
 } from "./org-buffer-runtime"
 import { createOrgWindowEffectRegistry } from "./org-window-effects"
+import { orgCompositionHistory } from "./org-composition-history"
 import { setOrgSparseTree } from "@/views/org-editor/org-sparse-tree.extension"
 import { decodeOrgNativeTransaction, encodeOrgNativeTransaction } from "@/flows/org-native-window/org-native-window-protocol"
 import type { OrgSparseTreeQuery } from "@/types/org"
@@ -685,6 +686,34 @@ describe("canonical Org buffer/window runtime", () => {
 		expect(a.handle.undo()).toBe(false)
 		expect(a.view.state.sliceDoc()).toBe("Zabc\r\ndef!")
 	})
+	it("maps grouped EOF history and retains a detached origin's exact live redo caret across controller edits", () => {
+		const source = "甲\r\n🙂乙"
+		const { runtime } = buffer(source)
+		const end = runtime.state.doc.length
+		const before = EditorSelection.create([EditorSelection.cursor(end, -1, 2, 17)])
+		const origin = window(runtime, "origin", { selection: before })
+		const peer = window(runtime, "peer")
+		type(origin.view, "你", 1000)
+		type(origin.view, "好", 1100)
+		expect(undoDepth(runtime.state)).toBe(1)
+		runtime.applyControllerSource(runtime.source, `!${source}你好`)
+		peer.view.dispatch({ selection: EditorSelection.create([EditorSelection.cursor(2, -1, 2, 29)]) })
+		origin.handle.detach()
+		expect(peer.handle.undo()).toBe(true)
+		expect(runtime.source).toBe(`!${source}`)
+		expect(peer.view.state.selection.eq(EditorSelection.create([
+			EditorSelection.cursor(end + 1, -1, 2, 17),
+		]), true)).toBe(true)
+		runtime.applyControllerSource(runtime.source, `??!${source}`)
+		expect(peer.handle.redo()).toBe(true)
+		expect(runtime.source).toBe(`??!${source}你好`)
+		expect(peer.view.state.selection.main).toMatchObject({
+			anchor: 4, head: 4, assoc: -1, bidiLevel: 2, goalColumn: 29,
+		})
+		expect(peer.handle.undo()).toBe(true)
+		expect(runtime.source).toBe(`??!${source}`)
+		expect(peer.view.state.selection.main.head).toBe(end + 3)
+	})
 	it("does not rerun origin extenders, rejects injected peer effects atomically", () => {
 		const extender = vi.fn(() => null)
 		const { runtime } = buffer()
@@ -918,7 +947,7 @@ describe("canonical Org buffer/window runtime", () => {
 })
 
 describe("canonical composition settlement (CM transactions, not native evidence)", () => {
-	function lifecycle(view: EditorView, group = crypto.randomUUID(), wire = false) {
+	function lifecycle(view: EditorView, group: string = crypto.randomUUID(), wire = false) {
 		const selection = view.state.selection
 		const dispatch = (spec: TransactionSpec) => {
 			const transaction = view.state.update(spec)
@@ -930,8 +959,8 @@ describe("canonical composition settlement (CM transactions, not native evidence
 					annotations: [Transaction.userEvent.of(first ? "input.type.compose.start" : "input.type.compose"),
 						orgSemanticHistory.of({ selection, group, composition: "update" })] })
 			},
-			end() {
-				dispatch({ annotations: [Transaction.addToHistory.of(false),
+			end(changes?: TransactionSpec["changes"], finalSelection?: TransactionSpec["selection"]) {
+				dispatch({ changes, selection: finalSelection, annotations: [Transaction.addToHistory.of(false),
 					orgSemanticHistory.of({ selection, group, composition: "end" })] })
 			},
 		}
@@ -962,6 +991,50 @@ describe("canonical composition settlement (CM transactions, not native evidence
 			expect(origin.handle.redo()).toBe(true)
 			expect(runtime.source).toBe("你好Gather evidence")
 		})
+		it(`includes changed composition-end ranges without normalizing raw text or seed selection${wire ? " through detached codecs" : ""}`, () => {
+			const source = "ab\r\ncd\n\uD800\0ef"
+			const { runtime } = buffer(source)
+			const before = EditorSelection.create([
+				EditorSelection.cursor(0, -1, 2, 17), EditorSelection.range(10, 8),
+			], 1)
+			const origin = window(runtime, "origin", { selection: before })
+			const peer = window(runtime, "peer", { selection: EditorSelection.cursor(3) })
+			const composition = lifecycle(origin.view, undefined, wire)
+			composition.update(0, 1, "ni", 2, true)
+			composition.end([
+				{ from: 0, to: 2, insert: "你" },
+				{ from: 9, to: 11, insert: "🙂" },
+			], EditorSelection.cursor(10))
+			expect(runtime.source).toBe("你b\r\ncd\n\uD800\0🙂")
+			expect(peer.view.state.sliceDoc()).toBe(runtime.source)
+			expect(undoDepth(runtime.state)).toBe(1)
+			expect(origin.handle.undo()).toBe(true)
+			expect(runtime.source).toBe(source)
+			expect(origin.view.state.selection.eq(before, true)).toBe(true)
+			expect(origin.handle.redo()).toBe(true)
+			expect(runtime.source).toBe("你b\r\ncd\n\uD800\0🙂")
+			expect(origin.view.state.selection.main.head).toBe(10)
+		})
+		it(`restores a pre-existing redo branch and exact seed selection on changed-end cancellation${wire ? " through detached codecs" : ""}`, () => {
+			const { runtime } = buffer("Gather")
+			const origin = window(runtime, "origin")
+			type(origin.view, "A")
+			expect(origin.handle.undo()).toBe(true)
+			const before = EditorSelection.create([EditorSelection.range(3, 1), EditorSelection.cursor(6, -1)], 1)
+			origin.view.dispatch({ selection: before })
+			const composition = lifecycle(origin.view, undefined, wire)
+			composition.update(1, 3, "ni hao", 7, true)
+			composition.end({ from: 1, to: 7, insert: "at" }, EditorSelection.cursor(3))
+			expect(runtime.source).toBe("Gather")
+			expect(origin.view.state.selection.eq(before, true)).toBe(true)
+			expect(undoDepth(runtime.state)).toBe(0)
+			expect(redoDepth(runtime.state)).toBe(1)
+			expect(origin.handle.redo()).toBe(true)
+			expect(runtime.source).toBe("AGather")
+			expect(origin.handle.undo()).toBe(true)
+			expect(runtime.source).toBe("Gather")
+			expect(origin.handle.undo()).toBe(false)
+		})
 		it(`cancellation neither consumes a prior edit nor reintroduces preedit on redo${wire ? " through detached codecs" : ""}`, () => {
 			const { runtime } = buffer("Gather")
 			const origin = window(runtime, "origin")
@@ -980,6 +1053,54 @@ describe("canonical composition settlement (CM transactions, not native evidence
 			expect(origin.handle.redo()).toBe(true)
 			expect(runtime.source).toBe("AGather")
 			expect(origin.view.state.selection.eq(priorSelection, true)).toBe(true)
+		})
+		it.each([false, true])(`keeps EOF input live after Chinese undo with empty lifecycle=%s${wire ? " through detached codecs" : ""}`, (emptyLifecycle) => {
+			const source = "🙂甲\r\n乙\n\uD800\0tail"
+			const { runtime } = buffer(source)
+			const end = runtime.state.doc.length
+			const before = EditorSelection.create([EditorSelection.cursor(end, -1, 2, 17)])
+			const origin = window(runtime, "origin", { selection: before })
+			const peer = window(runtime, "peer")
+			const first = lifecycle(origin.view, undefined, wire)
+			first.update(end, end, "丢失", end + 2, true)
+			first.end()
+			if (emptyLifecycle) {
+				const empty = lifecycle(origin.view, undefined, wire)
+				const seed = origin.view.state.selection
+				origin.view.dispatch({ selection: EditorSelection.cursor(end + 1), userEvent: "select" })
+				empty.end(undefined, seed)
+			}
+			expect(origin.handle.undo()).toBe(true)
+			expect(runtime.source).toBe(source)
+			expect(origin.view.state.selection.eq(before, true)).toBe(true)
+			const cancelled = lifecycle(origin.view, undefined, wire)
+			cancelled.update(end, end, "ceshi", end + 5, true)
+			expect(runtime.source).toBe(`${source}ceshi`)
+			expect(peer.view.state.sliceDoc()).toBe(runtime.source)
+			cancelled.update(end, end + 5, "", end)
+			cancelled.end()
+			expect(runtime.source).toBe(source)
+			expect(origin.view.state.selection.eq(before, true)).toBe(true)
+			expect(undoDepth(runtime.state)).toBe(0)
+			expect(redoDepth(runtime.state)).toBe(1)
+			expect(origin.handle.redo()).toBe(true)
+			expect(runtime.source).toBe(`${source}丢失`)
+			expect(origin.view.state.selection.main.head).toBe(end + 2)
+			expect(origin.handle.undo()).toBe(true)
+			const next = lifecycle(origin.view, undefined, wire)
+			next.update(end, end, "ceshi", end + 5, true)
+			expect(runtime.source).toBe(`${source}ceshi`)
+			next.update(end, end + 5, "测试", end + 2)
+			next.end()
+			expect(runtime.source).toBe(`${source}测试`)
+			expect(undoDepth(runtime.state)).toBe(1)
+			expect(origin.handle.undo()).toBe(true)
+			expect(runtime.source).toBe(source)
+			expect(origin.view.state.selection.eq(before, true)).toBe(true)
+			expect(origin.handle.redo()).toBe(true)
+			expect(runtime.source).toBe(`${source}测试`)
+			expect(origin.view.state.selection.main.head).toBe(end + 2)
+			expect(peer.view.state.sliceDoc()).toBe(runtime.source)
 		})
 	}
 	it("seals peer interleaving and retains accepted Source when the composing window retires after grant revocation", () => {
@@ -1017,5 +1138,137 @@ describe("canonical composition settlement (CM transactions, not native evidence
 		expect(runtime.source).toBe("niGather")
 		expect(origin.handle.undo()).toBe(true)
 		expect(runtime.source).toBe("Gather")
+	})
+	it("keeps accumulated composition local when a chained end batch fails projection preflight or commit acceptance", () => {
+		let allowed = true, inject = false
+		const { runtime } = buffer("Gather", { canCommit: () => allowed })
+		const origin = window(runtime, "origin")
+		const unknown = StateEffect.define<null>()
+		const peer = window(runtime, "peer", {
+			extensions: EditorState.transactionExtender.of(() => inject ? { effects: unknown.of(null) } : null),
+		})
+		const selection = origin.view.state.selection
+		const group = "rejected-composition-batch"
+		const composition = lifecycle(origin.view, group)
+		composition.update(0, 0, "ni", 2, true)
+		const first = origin.view.state.update({
+			changes: { from: 0, to: 2, insert: "hao" },
+			annotations: orgSemanticHistory.of({ selection, group, composition: "update" }),
+		})
+		const end = first.state.update({
+			changes: { from: 0, to: 3, insert: "你好" },
+			selection: EditorSelection.cursor(2),
+			annotations: orgSemanticHistory.of({ selection, group, composition: "end" }),
+		})
+		const retained = runtime.state, originState = origin.view.state, peerState = peer.view.state
+		inject = true
+		expectCode(() => origin.handle.dispatchTransactions([first, end]), "unknown-effect")
+		inject = false
+		allowed = false
+		expectCode(() => origin.handle.dispatchTransactions([first, end]), "commit-denied")
+		expect(runtime.state).toBe(retained)
+		expect(origin.view.state).toBe(originState)
+		expect(peer.view.state).toBe(peerState)
+		expect(runtime.source).toBe("niGather")
+		allowed = true
+		composition.end()
+		expect(runtime.source).toBe("niGather")
+		expect(undoDepth(runtime.state)).toBe(1)
+		expect(origin.handle.undo()).toBe(true)
+		expect(runtime.source).toBe("Gather")
+		expect(origin.view.state.selection.eq(selection, true)).toBe(true)
+	})
+	it("does not settle retained composition when early history projection or commit acceptance is rejected", () => {
+		let allowed = true, inject = false
+		const { runtime } = buffer("Gather", { canCommit: () => allowed })
+		const origin = window(runtime, "origin")
+		const unknown = StateEffect.define<null>()
+		const peer = window(runtime, "peer", {
+			extensions: EditorState.transactionExtender.of(() => inject ? { effects: unknown.of(null) } : null),
+		})
+		const composition = lifecycle(origin.view)
+		composition.update(0, 0, "ni", 2, true)
+		const retained = runtime.state, originState = origin.view.state, peerState = peer.view.state
+		inject = true
+		expectCode(() => origin.handle.undo(), "unknown-effect")
+		inject = false
+		allowed = false
+		expectCode(() => origin.handle.undo(), "commit-denied")
+		expect(runtime.state).toBe(retained)
+		expect(origin.view.state).toBe(originState)
+		expect(peer.view.state).toBe(peerState)
+		expect(runtime.source).toBe("niGather")
+		allowed = true
+		composition.update(0, 2, "你好", 2)
+		expect(origin.handle.undo()).toBe(true)
+		expect(runtime.source).toBe("Gather")
+		expect(origin.view.state.selection.main.head).toBe(0)
+		expect(origin.handle.redo()).toBe(true)
+		expect(runtime.source).toBe("你好Gather")
+		expect(origin.view.state.selection.main.head).toBe(2)
+	})
+})
+
+describe("browser composition lifecycle ownership (modeled DOM lifecycle, not native IME evidence)", () => {
+	afterEach(() => vi.useRealTimers())
+
+	it.each(["你好", ""])("retains the active lifecycle across pre-mutation selection and delayed preedit before ending with %j", async (committed) => {
+		vi.useFakeTimers()
+		const source = "🙂甲\r\n乙\n\uD800\0tail"
+		const { runtime } = buffer(source)
+		const before = EditorSelection.create([EditorSelection.cursor(2, -1, 2, 17)])
+		const phases: string[] = []
+		const origin = window(runtime, "origin", { selection: before, extensions: [
+			orgCompositionHistory(() => true),
+			EditorView.updateListener.of(update => {
+				for (const transaction of update.transactions) {
+					const phase = transaction.annotation(orgSemanticHistory)?.composition
+					if (phase) phases.push(phase)
+				}
+			}),
+		] })
+		const peer = window(runtime, "peer")
+		// Cancellation must preserve an existing redo branch as well as Source.
+		type(origin.view, "A")
+		expect(origin.handle.undo()).toBe(true)
+		expect(origin.view.state.selection.eq(before, true)).toBe(true)
+		origin.view.contentDOM.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }))
+		expect(origin.view.compositionStarted).toBe(true)
+		expect(origin.view.composing).toBe(false)
+		origin.view.dispatch({ selection: EditorSelection.cursor(3), userEvent: "select" })
+		await vi.advanceTimersByTimeAsync(75)
+		// A selection-only consumer update before the first preedit is not an
+		// IME end and must not restore the seed cursor under the active IME.
+		expect(origin.view.state.selection.main.head).toBe(3)
+		expect(phases).toEqual([])
+		expect(runtime.source).toBe(source)
+		origin.view.dispatch({ changes: { from: 3, insert: "ni" },
+			selection: EditorSelection.cursor(5), userEvent: "input.type.compose.start" })
+		await vi.advanceTimersByTimeAsync(75)
+		expect(phases).toEqual(["update"])
+		expect(runtime.source).toBe("🙂甲ni\r\n乙\n\uD800\0tail")
+		origin.view.dispatch({ changes: { from: 3, to: 5, insert: committed },
+			selection: EditorSelection.cursor(3 + committed.length), userEvent: "input.type.compose" })
+		origin.view.contentDOM.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true, data: committed }))
+		await vi.advanceTimersByTimeAsync(75)
+		expect(phases).toEqual(["update", "update", "end"])
+		expect(runtime.source).toBe(`🙂甲${committed}\r\n乙\n\uD800\0tail`)
+		expect(peer.view.state.sliceDoc()).toBe(runtime.source)
+		if (committed) {
+			expect(undoDepth(runtime.state)).toBe(1)
+			expect(origin.handle.undo()).toBe(true)
+			expect(runtime.source).toBe(source)
+			expect(origin.view.state.selection.eq(before, true)).toBe(true)
+			expect(origin.handle.redo()).toBe(true)
+			expect(runtime.source).toBe(`🙂甲${committed}\r\n乙\n\uD800\0tail`)
+			expect(origin.view.state.selection.main.head).toBe(3 + committed.length)
+		} else {
+			expect(origin.view.state.selection.eq(before, true)).toBe(true)
+			expect(undoDepth(runtime.state)).toBe(0)
+			expect(redoDepth(runtime.state)).toBe(1)
+			expect(origin.handle.redo()).toBe(true)
+			expect(runtime.source).toBe("🙂A甲\r\n乙\n\uD800\0tail")
+		}
+		expect(peer.view.state.sliceDoc()).toBe(runtime.source)
 	})
 })

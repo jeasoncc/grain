@@ -46,6 +46,150 @@ The security-critical Rust implementation is in:
 - `packages/rust-core/src/tauri/commands/org_index_commands.rs`
 - `packages/rust-core/src/tauri/commands/legacy_migration_commands.rs`
 
+## File configuration
+
+There are no graphical preferences pages, JSON configuration forms or theme pickers. Run **Open configuration file** from Execute command to open the fixed native `app_config_dir()/config.json` path with the system default application. Edit it in your editor, save, then run **Reload configuration**. There is no automatic configuration-file watcher.
+
+On Linux the path is `$XDG_CONFIG_HOME/com.lotus.grain/config.json`, or `~/.config/com.lotus.grain/config.json` without `XDG_CONFIG_HOME`. This is separate from the approved Org workspace and application data directory.
+
+This complete document is sufficient; omitted fields use defaults:
+
+```json
+{
+  "version": 1,
+  "appearance": {
+    "mode": "theme",
+    "theme": "Catppuccin Mocha"
+  },
+  "font": {
+    "source": { "size": 18 },
+    "interface": { "size": 15 }
+  }
+}
+```
+
+Use strict JSON, not comments or trailing commas; optional `$comment` is a string. `version` must be `1`. Unknown fields, invalid bounds, unknown terminal theme names and invalid domain declarations reject the entire document before preference projection. Existing visual preferences and canonical Source/history remain intact; configured input/Capture/Agenda/tool producers fail closed until a valid reload. Reload revokes old producer generations even when the file bytes are identical; accepted effects drain without rollback.
+
+| Section | Controls |
+|---|---|
+| `appearance` | Exact terminal theme name, `theme`/`system` mode, light/dark system pair, theme transitions and icon theme |
+| `font` | Source/interface families and sizes, Source spacing and interface scale |
+| `saving` | `autoSave` and `autoSaveInterval` in seconds, an integer from 1 through 60 |
+| `wordCount` | Counting mode and badge visibility |
+| `capture` | Version-1 templates and explicit plaintext `draftRecovery` permission |
+| `keymaps` | Version-1 scoped bindings (including `file-tree`), leaders, transients and optional Source modal engine |
+| `org` | Version-1 Org behavior, including Refile targets |
+| `agenda` | Version-1 named views |
+| `tools` | Version-1 tool-placement rules |
+| `diagrams` | Optional absolute HTTP(S) `serverUrl`; empty disables it |
+
+Missing-file startup performs one validated migration from the retired browser preference stores, then removes those keys only after an accepted file load. An existing file takes precedence and is never rewritten or expanded with defaults. Malformed legacy data prevents first-file creation rather than being silently discarded. Reloading a missing file reports the problem without recreating it. Runtime navigation/window state and Capture journals are not alternative preference authorities.
+
+Main and detached Source windows load the same file and share reload invalidation. Detached windows can only read it; creation, external opening and notification remain main-only, without granting detached core/plugin privileges. Configuration reload does not remount Source views or replace their shared Undo history.
+
+There are 811 offline palettes from [iTerm2-Color-Schemes](https://github.com/mbadolato/iTerm2-Color-Schemes), selected by exact upstream name rather than the retired manual theme keys. See the [theme guide](../../docs/desktop/THEMES_GUIDE.md) for system mode, provenance and migration behavior.
+
+## File tree
+
+The file tree uses ordinary navigation, without built-in Vim/Treemacs letter
+bindings or tree-specific shortcut help. Selection is independent of the open
+Source; managing another file does not open it first.
+
+| Focused tree row key | Action |
+|---|---|
+| `Up` / `Down` | Select the previous / next visible row |
+| `Left` | Collapse an expanded directory, otherwise select its parent |
+| `Right` | Expand a directory, otherwise select its first child |
+| `Home` / `End` | Select the first / last visible row |
+| `Enter` | Open a file or toggle a directory |
+| `F2` | Rename the selected Org file |
+| `Delete` | Confirm deletion of the selected Org file; Cancel is initially focused |
+| `F5` | Refresh the workspace |
+| `Mod-F` (`Ctrl-F` / `Cmd-F`) | Focus the file filter and select its query |
+| `Menu` / `Shift-F10` | Open the focused row's context menu |
+| `Esc` in a menu | Close it and return focus to its origin |
+
+Right-click opens a menu at the pointer. Menus identify the captured file or
+directory by name and path, with a workspace-root caption for top-level entries.
+Unavailable relocation actions explain when the file needs saving. The row-end
+**…** button exposes the same actions and availability; it appears on hover,
+keyboard focus or an open menu, and remains visible on touch devices.
+
+| Target | Actions |
+|---|---|
+| Org file | Open; Rename…; Move to…; copy relative path, absolute path or Org link; Show in file manager; Delete… |
+| Directory | New Org file…; New directory…; Expand/Collapse; copy relative or absolute path; Show in file manager |
+| Blank file viewport / Files heading / root **…** | New Org file…; New directory…; Refresh; Reveal active file; Collapse all; Show in file manager |
+
+The compact Files header keeps the file count, New Org file, Refresh and root
+**…**. Rows show the actual filename, including `.org`, and mark unsaved buffers.
+Header/blank-area creation starts at the workspace root, never a previously
+selected row; directory creation starts in that directory.
+
+Filtering shows matching/total file counts and an actionable empty state. In the
+filter, `Down` / `Up` focuses the first / last matching file without opening it;
+`Enter` opens the first match. `Esc` first clears a nonempty query while retaining
+input focus, then returns to the tree cursor when the query is empty. Both clear
+buttons return focus to the filter. Text editing, modified keys and IME input in
+the filter are not treated as tree shortcuts; Source keeps its own key handling.
+
+Create, rename and move use the shared nonmodal bottom reader, with target
+context and visible **Confirm** / **Cancel** controls. New file and rename readers
+initially select only the filename stem, preserving `.org` and, for creation,
+the parent path when typing a replacement. New directory readers select the
+basename; successful directory creation clears filtering, expands its ancestors
+and focuses the new row without opening another Source.
+
+Suggested names avoid known file/directory collisions, using numbered names
+such as `untitled-2.org` or `new-folder-2`. Existing entries are never overwritten.
+**Rename** accepts only a basename ending in `.org`, keeping its parent directory.
+**Move to** selects the existing destination directory, keeping the filename;
+`/` means the workspace root. `Tab` completes the destination.
+`Esc` / `Ctrl-G` cancels before commit. Invalid paths or collisions name the
+conflicting target and retain the reader text for correction. Accepting or
+cancelling clears its own validation feedback. Local failure feedback remains
+dismissible rather than disappearing on the success timer. Busy/stale targets
+cannot authorize old actions, and dirty files must be saved before rename or
+move. An unrelated dirty buffer does not need to be saved.
+
+Bindings and menu hints still derive from `config.json` → `keymaps`. For example,
+merge this section into the existing configuration to disable the tree's
+`Delete` shortcut while keeping its menu action, then run **Reload configuration**:
+
+```json
+{
+  "version": 1,
+  "keymaps": {
+    "version": 1,
+    "bindings": [
+      { "scope": "file-tree", "key": "Delete", "command": null }
+    ]
+  }
+}
+```
+
+The `file-tree` scope and explicit custom bindings/maps remain supported.
+References to retired built-in tree transient maps or `file-tree.help` must be
+removed or replaced with supported explicit configuration; invalid reloads are
+rejected as a whole. No user configuration is silently rewritten.
+
+Deletion captures the row's saved revision before one confirmation; Cancel is
+the default. A newly opened/edited target or stale disk revision cannot authorize
+an old delete. Unsaved input in the target requires explicit discard consent.
+Saved bytes have a native manual recovery path under **Workspace tools →
+Recovery files…**; this is not OS Trash, editor Undo, an immutable backup or
+automatic restoration. Operating on another file preserves unrelated dirty
+Source/history.
+
+**Show in file manager** uses a main-window native command and a live approved
+workspace grant. It rejects traversal, symlinks, reserved recovery paths and
+released grants; platforms without retained-root identity verification fail
+closed. The external file manager handles the selected path after handoff.
+
+This is an Org workspace tree, not a general file manager: no file duplication,
+directory rename/move, recursive deletion or Treemacs Tab tag tree is added.
+Plain Source input and its optional Vim mode retain their own bindings.
+
 ## Org editing keys
 
 The editor keeps raw Org text intact while supporting an initial Org-compatible command set:
@@ -71,13 +215,13 @@ The editor keeps raw Org text intact while supporting an initial Org-compatible 
 | `Ctrl-C .` / `Ctrl-C !` | Insert an active or inactive timestamp |
 | `Mod-S` | Save immediately |
 
-Press `Ctrl-C` with no selection to start the Org prefix; after 350 ms, passive Which-Key help shows the next bindings without taking focus. `Ctrl-C Ctrl-X` opens the extra-command prefix. Prefixes wait by default rather than expiring while you read; Esc/C-g, blur, pointer navigation, composition or context navigation cancels them. Selected Ctrl-C still copies normally. **Settings → Editor → Org keymaps** accepts validated version-1 scoped bindings and transient maps with optional timeouts; blank configuration retains the existing defaults.
+Press `Ctrl-C` with no selection to start the Org prefix; after 350 ms, passive Which-Key help shows the next bindings without taking focus. `Ctrl-C Ctrl-X` opens the extra-command prefix. Prefixes wait by default rather than expiring while you read; Esc/C-g, blur, pointer navigation, composition or context navigation cancels them. Selected Ctrl-C still copies normally. The `keymaps` section of `config.json` accepts validated version-1 scoped bindings and transient maps with optional timeouts; omitting it retains the existing defaults.
 
 `Alt-X` / `Ctrl-P` / `Ctrl-K` opens Execute command in the shared application minibuffer; `Ctrl-O` opens nonmodal Quick Open. Escape/C-g cancels and aborts unaccepted asynchronous reads/navigation; accepted effects drain. M-x, header actions, editor keys, Note actions, Which-Key and native-child commands use one captured application command registry and unified result/echo path. Captures retain their actual Source/window rather than whichever Main buffer becomes active later. Workspace shortcuts defer to consumed editor chords, IME composition and active parameter input.
 
 Heading Tags, Schedule, Deadline and Property use a non-modal bottom minibuffer: Enter accepts, Tab completes, C-n/C-p selects candidates, M-p/M-n browses per-command session history, and Esc/C-g cancels. Planning prompts prefill existing dates or today's date and validate real YYYY-MM-DD calendar dates; they are not full Org date readers. Edits commit as isolated CodeMirror undo transactions. Property uses KEY=VALUE, with existing properties as completion candidates. Cross-file Refile and Archive require saved source content, retain copy-first verification, and cannot be canceled after transfer begins. Same-file Refile supports dirty buffers as described below. A failed/uncertain transfer retires the prompt; reread both files before retrying. See [editor runtime design](../../docs/design/doom-editor-runtime.md).
 
-Agenda now supports selected-row arrows/`n`/`p`, Enter to open, and repeat-safe **`t`** or **Cycle TODO** to act without leaving Agenda. Actions use an isolated canonical buffer transaction—not a direct file write. Live dirty sources override disk-derived rows; unopened sources are explicitly read and parked without editor activation. Complete grant/session/revision, runtime incarnation/generation and raw heading/timestamp anchors are required before acting. Missing legacy provenance remains display-only; stale or unresolved rows refuse edits. Dirty parked results are protected on close, eligible for independent quiet-input autosave, and saved by explicit Save All. Agenda focus and late navigation are scoped so asynchronous results do not steal later user navigation. Editor and Agenda planning share a bounded date reader: `YYYY-MM-DD`, `today`/`tomorrow`/`yesterday` (今天/明天/昨天), signed days/weeks such as `+3d`/`-2w`, and strictly-next weekdays such as `next mon`. Relative input resolves using accept-time local today, then only validated ISO reaches Root. Input history retains the user's expression. Clock errors and ambiguous planning casing fail closed; full calendar/time/range/repeater input remains future work.
+Agenda collects scheduled tasks, deadlines and dated events from Org Source; it is not a separate calendar database. Opening an entry returns to its original file. Agenda supports selected-row arrows/`n`/`p`, Enter to open, and repeat-safe **`t`** or **Cycle TODO** to act without leaving Agenda. Actions use an isolated canonical buffer transaction—not a direct file write. Live dirty sources override disk-derived rows; unopened sources are explicitly read and parked without editor activation. Complete grant/session/revision, runtime incarnation/generation and raw heading/timestamp anchors are required before acting. Missing legacy provenance remains display-only; stale or unresolved rows refuse edits. Dirty parked results are protected on close, eligible for independent quiet-input autosave, and saved by explicit Save All. Agenda focus and late navigation are scoped so asynchronous results do not steal later user navigation. Editor and Agenda planning share a bounded date reader: `YYYY-MM-DD`, `today`/`tomorrow`/`yesterday` (今天/明天/昨天), signed days/weeks such as `+3d`/`-2w`, and strictly-next weekdays such as `next mon`. Relative input resolves using accept-time local today, then only validated ISO reaches Root. Input history retains the user's expression. Clock errors and ambiguous planning casing fail closed; full calendar/time/range/repeater input remains future work.
 
 Use **`s` / Schedule** and **`d` / Deadline** for bottom-minibuffer date editing, with existing field-date prefill, validation/history and no-change preservation. Preparation allocates no buffers; pending reads may be cancelled, while cancellation locks at the actual canonical commit boundary so committed edits are never reported as cancelled. Date reordering returns focus to the original heading/action. The shared application tool host is implemented; complete calendar/repeater behavior, repeat/reschedule logging and general unsaved-buffer restart recovery remain release gates.
 
@@ -93,25 +237,25 @@ Same-file Refile is available through the normal file → heading minibuffer: ch
 
 Body Sparse Tree is available through Execute command, Note actions, or **C-c /**. Enter `todo`, `todo:STATE`, `tag:NAME`, or `text:LITERAL`; completion derives declared states and local tags from eligible source. Matching headings, their own body sections and ancestor paths remain visible; unrelated body sections are hidden in the originating window only. Clear sparse tree restores visibility without rewriting raw Org or adding canonical undo history. Hidden-source edits and selection-reveal bypasses are rejected even with `filter:false`; visible edits remain usable, with canonical peer/history changes safely reprojected. Text matches heading titles case-sensitively. `tag:NAME` stays local; `itag:NAME` explicitly includes eligible file, ancestor and own tags. Compose with `match: todo AND (itag:work OR tag:urgent) AND NOT todo:DONE`, using NOT > AND > OR, parentheses and quoted `text:"literal"`. Legacy `text:LITERAL` retains its entire literal tail. Invalid queries preserve the prior view; limits are 8192 UTF-16 units, depth 32 and 128 nodes. Full Org query grammar remains future work. No match keeps the document visible.
 
-Vim is a production opt-in through Org keymaps JSON: `{"version":1,"modalEngine":"vim"}`; blank configuration leaves modal editing disabled. The owned upstream adapter uses canonical buffer history and the shared minibuffer instead of a second editor/body writer. Actual Linux WebKitGTK **focused XTest** input has exercised `dw`, dot/count, named registers, macros, text objects, visual/block deletion, one-session insert Undo and whole-astral deletion. These keyboard commands omit `--window` and verify the owned native window plus Source focus; earlier targeted `xdotool --window` evidence was XSendEvent, not XTest. Actual Fcitx5 Rime displayed native preedit/candidates without changing Source, committed `哦` in Vim insert mode, and one canonical Undo restored exact Source; cancellation added no Source input and correctly left Vim in insert mode. GTK/XIM still marks first ASCII keys `repeat=true`; repeated modal keys remain usable while held configured command shortcuts cannot repeat their producer. Native Undo publication must be awaited, not inferred from the key command's exit. Broader workflows/platforms remain separate acceptance gates. [Runtime experiments](../../experiments/doom-runtime/README.md) are synthetic feasibility evidence, not production acceptance.
+Vim is a production opt-in through `config.json`: `{"version":1,"keymaps":{"version":1,"modalEngine":"vim"}}`; omitting `keymaps` leaves modal editing disabled. The owned upstream adapter uses canonical buffer history and the shared minibuffer instead of a second editor/body writer. Actual Linux WebKitGTK **focused XTest** input has exercised `dw`, dot/count, named registers, macros, text objects, visual/block deletion, one-session insert Undo and whole-astral deletion. These keyboard commands omit `--window` and verify the owned native window plus Source focus; earlier targeted `xdotool --window` evidence was XSendEvent, not XTest. Actual Fcitx5 Rime displayed native preedit/candidates without changing Source, committed `哦` in Vim insert mode, and one canonical Undo restored exact Source; cancellation added no Source input and correctly left Vim in insert mode. GTK/XIM still marks first ASCII keys `repeat=true`; repeated modal keys remain usable while held configured command shortcuts cannot repeat their producer. Native Undo publication must be awaited, not inferred from the key command's exit. Broader workflows/platforms remain separate acceptance gates. [Runtime experiments](../../experiments/doom-runtime/README.md) are synthetic feasibility evidence, not production acceptance.
 
 The application retains independent in-memory Org buffers: switching A → B → A does not force a save and preserves source, revision, canonical history, selection and viewport. **Split editor** initially duplicates the current buffer; navigation changes only the focused window, so A/B can remain visible together. Same-buffer projections share text/undo while selections, folds, effects and scroll stay window-local. **Detach** opens a real native view of the same canonical buffer; **Attach** and **Close view** are separate from closing its buffer. Native bindings fence grants, incarnations, proposal order and acknowledged canonical revisions; unknown effects are refused. Actual Linux/X11 two-webview acceptance includes independent A/B native save receipts, newer input while an earlier receipt waits, shared exact multi-range Undo/Redo, child rebind, window-only Attach/Close and child-local folds. The overlap holds an unmodified real receipt after native publication; it does not prove parallel native disk IO. Codec/ABA negatives are regression evidence, not credential-replay or cross-platform native proof. Broader acceptance remains tracked in [editor runtime design](../../docs/design/doom-editor-runtime.md).
 
 Window viewport capture runs before DOM removal, including StrictMode replay; an untouched pending restoration cannot overwrite its cached bookmark with zero offsets. Newer wheel, pointer, keyboard or reveal intent cancels restoration. Real browser A → B → A and Capture finish/cancel preserve a nonzero viewport independently of the peer window.
 
-Refile uses file → heading → raw-range preview/yes-no confirmation. Target lookup is cancellable and read-only; final acceptance binds disk revision, exact heading offset and source lifetime. **Settings → Editor → Org behavior** configures Refile targets. An explicit configured file allowlist refuses a missing target before preview/confirmation/effects; the default typed-new-file and Archive conventions are unchanged. Insertion adjusts only legitimate heading stars, preserving other raw bytes. Cross-file copy confirmation precedes source removal; partial/uncertain transfers protect both paths without destructive rollback. **Review / reconcile file** opens exact retained/disk Source snapshots: cancellation changes neither body nor baseline; adopting different disk Source requires discard consent and a fresh canonical history incarnation, while keeping Source accepts only the reviewed baseline and requires a later explicit CAS Save. Each path is reconciled separately; settling the source cannot authorize or clear the target. Acceptance rereads disk; unchanged background mismatch observations do not revoke a review, but new uncertain mutations, manual target drift and stale source/window/grant lifetimes do.
+Refile uses file → heading → raw-range preview/yes-no confirmation. Target lookup is cancellable and read-only; final acceptance binds disk revision, exact heading offset and source lifetime. The `org` section of `config.json` configures Refile targets. An explicit configured file allowlist refuses a missing target before preview/confirmation/effects; the default typed-new-file and Archive conventions are unchanged. Insertion adjusts only legitimate heading stars, preserving other raw bytes. Cross-file copy confirmation precedes source removal; partial/uncertain transfers protect both paths without destructive rollback. **Review / reconcile file** opens exact retained/disk Source snapshots: cancellation changes neither body nor baseline; adopting different disk Source requires discard consent and a fresh canonical history incarnation, while keeping Source accepts only the reviewed baseline and requires a later explicit CAS Save. Each path is reconciled separately; settling the source cannot authorize or clear the target. Acceptance rereads disk; unchanged background mismatch observations do not revoke a review, but new uncertain mutations, manual target drift and stale source/window/grant lifetimes do.
 
-Capture configuration is declarative JSON in **Settings → Editor → Org Capture**: `version: 1`, `templates`, and explicit `draftRecovery`. Blank configuration retains the built-in TODO/note inbox templates; malformed nonblank configuration reports errors without silently using defaults. Templates declare `id`, `label`, `entryType` (`entry`, `plain`, `item`, `checkitem`, `table-line`), an approved relative `.org` file/heading/datetree target, and literal `source`. Heading targets require an exact unambiguous heading path; datetrees freeze the local Capture date and create only missing date headings at Finish. File/heading list and table captures use the first eligible body container, not a child heading's container.
+Capture configuration is the `capture` object in `config.json`: `version: 1`, `templates`, and explicit `draftRecovery`. Omitting this section retains the built-in TODO/note inbox templates and recovery-off default; invalid declarations reject the whole file without silently using defaults. Templates declare `id`, `label`, `entryType` (`entry`, `plain`, `item`, `checkitem`, `table-line`), an approved relative `.org` file/heading/datetree target, and literal `source`. Heading targets require an exact unambiguous heading path; datetrees freeze the local Capture date and create only missing date headings at Finish. File/heading list and table captures use the first eligible body container, not a child heading's container.
 
 The bottom minibuffer selects a template and accepts sequential `%^{prompt|default|candidates}` answers. Expansion supports `%?`, `%t/%T/%u/%U`, bounded `%<FORMAT>`, `%i`, `%a/%l/%L`, `%f/%F`, `%%`, and numbered prompt references. Time and exact Source context freeze before prompts; inserted answers/regions remain literal and are never rescanned or evaluated. `%i` preserves the contiguous raw selection and line endings; discontiguous selections are rejected only for templates requesting `%i`. Unsupported escapes, executable forms, functions and external includes are errors. The nonmodal multiline scratch tool opens at the first `%?` caret. `C-c C-c`/Mod-S finish, `C-c C-k`/C-g abort before writing; empty structurally valid drafts remain editable but meaningful content is required to finish.
 
 Target preview is read-only. Finish rechecks scope, source and target revision, then performs one captured revision-checked content write through the existing workspace owner. Preview/stale-target rejection makes no content write and keeps the draft editable. An uncertain publication retains a readonly, copyable draft and disables retry; dismissal or journal deletion does not roll back files. Finish/cancellation restore the exact surviving Editor or Agenda origin and Source selection/focus without adding Source history.
 
-Capture drafts are memory-only by default. Explicit `draftRecovery: true` stores plaintext scratch metadata/body in this webview's local storage, scoped to the approved root—not a capability token, writer, filesystem baseline or automatic replay authority. Reopening acquires a fresh grant; **Resume saved Capture draft** or readonly viewing is explicit. Frozen target/time/body survive restart; Finish still previews/rechecks the real file. Publication checkpoints cannot be downgraded from publishing/uncertain to editable. Storage/quota failures preserve the draft and refuse publication before native writing. Turning recovery off requires an application dialog before deleting saved Capture metadata; cancellation preserves permission and saved drafts. Ordinary unsaved-buffer restart recovery remains separate. Genuine native Rime preedit/commit/cancel and exact canonical Undo have been exercised; broader IME routes/platforms are not implied.
+Capture drafts are memory-only by default. Explicit `capture.draftRecovery: true` in `config.json` stores plaintext scratch metadata/body in this webview's local storage, scoped to the approved root—not a capability token, writer, filesystem baseline or automatic replay authority. Reopening acquires a fresh grant; **Resume saved Capture draft** or readonly viewing is explicit. Frozen target/time/body survive restart; Finish still previews/rechecks the real file. Publication checkpoints cannot be downgraded from publishing/uncertain to editable. Storage/quota failures preserve the draft and refuse publication before native writing. Setting the permission to false and reloading neither reads nor deletes old journals. The separate **Delete saved Capture drafts** command requires recovery off, no pending publication and application confirmation; cancellation retains the journals without re-enabling permission. Deletion never publishes Org content or discards the in-memory scratch. Ordinary unsaved-buffer restart recovery remains separate. Genuine native Rime preedit/commit/cancel and exact canonical Undo have been exercised; broader IME routes/platforms are not implied.
 
-Every dirty Org buffer has an independent quiet-input autosave deadline controlled by **Settings → General → Auto save / interval**. Disabling clears unaccepted queues; accepted native work drains. Invalid/nonfinite intervals do not schedule writes, including corrupt numeric-looking stored strings; editing B does not postpone quiet A. Frontend file-effect owners reserve affected paths, so disjoint files can proceed independently while workspace-wide effects remain barriers. Native Rust filesystem mutations still share a process-global lock; this is not parallel native disk publication. Captured saves advance only their confirmed baseline and retain newer Source/history. Failed automatic saving pauses that path; typing or restored permissions do not silently retry it. Switch Buffer and Save All are available from Execute command or Ctrl-Shift-B/Ctrl-Shift-S (Meta equivalents on macOS). Save All snapshots bodies/revisions, saves sequentially without navigation and stops on failure without rollback. This is memory-only, not general unsaved-buffer restart recovery.
+Every dirty Org buffer has an independent quiet-input autosave deadline controlled by `saving.autoSave` and `saving.autoSaveInterval` in `config.json`. Disabling clears unaccepted queues; accepted native work drains. The interval must be an integer from 1 through 60 seconds; invalid values reject the whole configuration rather than being clamped or activating new saving preferences. Editing B does not postpone quiet A. Frontend file-effect owners reserve affected paths, so disjoint files can proceed independently while workspace-wide effects remain barriers. Native Rust filesystem mutations still share a process-global lock; this is not parallel native disk publication. Captured saves advance only their confirmed baseline and retain newer Source/history. Failed automatic saving pauses that path; typing or restored permissions do not silently retry it. Switch Buffer and Save All are available from Execute command or Ctrl-Shift-B/Ctrl-Shift-S (Meta equivalents on macOS). Save All snapshots bodies/revisions, saves sequentially without navigation and stops on failure without rollback. This is memory-only, not general unsaved-buffer restart recovery.
 
-Workspace source/baseline/lifetime and effect ownership publish immutable snapshots; React subscribes and sends intents instead of holding a second body authority. Save ACKs, confirmed target installations and explicit per-file reconciliation use central session rules. Native close, workspace switching, dirty deletion and destructive tools use abortable application confirmation, not `window.confirm`. Pending effects and aggregate dirty/unresolved state block destructive close; **Keep editing** preserves surviving Source/scratch focus and exact selection. **Discard and close** remains bound to its captured current state.
+Workspace source/baseline/lifetime and effect ownership publish immutable snapshots; React subscribes and sends intents instead of holding a second body authority. Save ACKs, confirmed target installations and explicit per-file reconciliation use central session rules. Native close, workspace switching, file deletion (clean or dirty) and destructive tools use abortable application confirmation, not `window.confirm`. Pending effects and aggregate dirty/unresolved state block destructive close; **Keep editing** preserves surviving Source/scratch focus and exact selection. **Discard and close** remains bound to its captured current state.
 
 
 Workspace approvals issue native capability leases. Every Org filesystem/index invocation must carry the originating token; stale grants cannot acquire a later same-path directory. Same-path reapproval retains the original descriptor and rejects inode replacement. Releases remove only their exact grant. Linux watches are descriptor-bound; other platforms currently fail closed for watching and retain active-document polling/manual workspace refresh.
@@ -162,17 +306,27 @@ Root `bun run dev` starts only desktop Vite, without the historical Warp API. Us
 ## Focused Org verification
 
 ```bash
-bunx vitest run \
+bun run test \
+  src/pipes/org/org-keymap-configuration.pipe.test.ts \
+  src/flows/org-command/org-prefix-keymap.test.ts \
+  src/hooks/use-org-scoped-input.test.tsx \
+  src/views/org-workspace/org-workspace-sidebar.view.fn.test.tsx \
+  src/views/org-workspace/org-backlinks.container.fn.test.tsx \
+  src/views/org-workspace/org-split-runtime.integration.test.tsx \
   src/hooks/use-org-workspace.test.ts \
-  src/io/file/org-file.repository.test.ts \
-  src/flows/org-workspace/org-workspace.flow.test.ts \
-  src/pipes/org/org-text.pipe.test.ts \
-  src/views/org-workspace/org-action-dialog.view.fn.test.tsx
+  src/views/ui/confirm.test.tsx
 
 cargo test --manifest-path ../../packages/rust-core/Cargo.toml --offline --lib
 ```
 
-The current full desktop regression run passed 195 files / 4,267 tests. Obsolete desktop legacy-only contracts were removed with their retired callers; this does not weaken the Org filesystem or selected-workspace recovery boundaries.
+The previously recorded full desktop regression run passed 195 files / 4,267 tests. Obsolete desktop legacy-only contracts were removed with their retired callers; this does not weaken the Org filesystem or selected-workspace recovery boundaries.
+
+The file-tree cutover passed the eight frontend suites above: **508 tests**.
+TypeScript/Vite/Tauri debug build and actual isolated Linux/X11 UI smoke passed:
+unopened rename/delete beside dirty Source, default-safe cancellation, stale
+native revision rejection, clipboard paths, scoped keys/remapping, dark/light
+menus, focus handoff and exact CRLF/Chinese/emoji Source Undo/Redo. This is not a
+new full-repository test run.
 
 ## Default workspace
 

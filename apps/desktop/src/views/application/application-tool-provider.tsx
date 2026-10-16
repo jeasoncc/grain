@@ -5,6 +5,9 @@ import { createApplicationToolRegistry, type ApplicationToolDescriptor, type App
 import { useConfirm } from "@/views/ui/confirm"
 import type { CompiledExtensionToolHandle, CompiledExtensionToolWindow, TrustedCompiledExtension } from "@/flows/application/trusted-compiled-extension"
 import { useApplicationPopupConfiguration, getApplicationPopupConfiguration, subscribeApplicationPopupConfiguration } from "@/hooks/use-application-popup-configuration"
+import { Wrench } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/views/ui/dropdown-menu"
+import { getConfigurationError } from "@/state/configuration.state"
 
 const Context = createContext<ApplicationToolRegistry | null>(null)
 const Docks = createContext<Partial<Record<ApplicationToolLayout, HTMLDivElement>> | null>(null)
@@ -92,7 +95,7 @@ function createCompiledSurfaceHost(docks: Partial<Record<ApplicationToolLayout, 
 const CompiledSurfaces = createContext<CompiledSurfaceHost | null>(null)
 
 function applyFramePlacement(frame: HTMLElement, tool: Pick<ApplicationToolWindow, "size" | "layout">) {
-	frame.className = "pointer-events-auto flex min-h-0 min-w-0 shrink-0 flex-col overflow-auto border bg-background shadow-sm"
+	frame.className = `pointer-events-auto flex min-h-0 min-w-0 shrink-0 flex-col overflow-auto bg-background ${tool.layout === "popup" ? "border border-border/50 shadow-sm" : ""}`
 	frame.style.width = tool.size?.widthPercent !== undefined ? `${tool.size.widthPercent}vw` : tool.layout === "side" ? "min(380px, 45vw)" : tool.layout === "popup" ? "70vw" : "100%"
 	frame.style.height = tool.size?.heightPercent !== undefined ? `${tool.size.heightPercent}vh` : tool.layout === "bottom" ? "30vh" : tool.layout === "popup" ? "60vh" : "100%"
 	frame.style.maxWidth = "90vw"
@@ -159,19 +162,21 @@ export function ApplicationToolProvider({ children }: { readonly children: React
 	return <Context.Provider value={registry}>
 		<Docks.Provider value={docks}>
 		<CompiledSurfaces.Provider value={compiledHost}>
-		<div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden">
-			{E.isLeft(configuration) && <p role="alert" className="shrink-0 border-b p-2 text-sm">Saved popup configuration is invalid: {configuration.left.message} Placement remains at the last valid policy (producer placement before any valid policy). Repair it in Editor settings.</p>}
+		<div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden [&:has([data-application-tool-trigger])_[data-application-tool-fallback]]:hidden">
+			{E.isLeft(configuration) && !getConfigurationError() && <p role="alert" className="shrink-0 border-b p-2 text-sm">Tool configuration is unavailable: {configuration.left.message} Placement remains at the last valid policy. Fix config.json and run Reload configuration.</p>}
 			{unmatched.length > 0 && <p role="status" className="shrink-0 border-b p-2 text-xs">Placement selectors with no currently registered producer: {unmatched.map((rule) => rule.id ?? rule.prefix).join(", ")}. These rules do not create or load tools.</p>}
 			<div className="flex min-h-0 flex-1">
 				<div className="flex min-h-0 min-w-0 flex-1 flex-col">
 					<div ref={(host) => { if (host) docks.main = host }} data-application-tool-dock="main" className="flex min-h-0 flex-col overflow-auto" style={{ display: occupied("main") ? undefined : "none", flex: occupied("main") ? "1 1 0%" : undefined }} />
 					<div className="min-h-0 flex-1">{children}</div>
 				</div>
-				<div ref={(host) => { if (host) docks.side = host }} data-application-tool-dock="side" className="flex min-h-0 shrink-0 flex-col overflow-auto border-l bg-background" style={{ display: occupied("side") ? undefined : "none", maxWidth: "90%" }} />
+				<div ref={(host) => { if (host) docks.side = host }} data-application-tool-dock="side" className="flex min-h-0 shrink-0 flex-col overflow-auto border-l border-border/40 bg-background" style={{ display: occupied("side") ? undefined : "none", maxWidth: "90%" }} />
 			</div>
-			<div ref={(host) => { if (host) docks.bottom = host }} data-application-tool-dock="bottom" className="flex min-h-0 shrink-0 flex-col overflow-auto border-t bg-background" style={{ display: occupied("bottom") ? undefined : "none", maxHeight: "65%" }} />
+			<div ref={(host) => { if (host) docks.bottom = host }} data-application-tool-dock="bottom" className="flex min-h-0 shrink-0 flex-col overflow-auto border-t border-border/40 bg-background" style={{ display: occupied("bottom") ? undefined : "none", maxHeight: "65%" }} />
 			<div ref={(host) => { if (host) docks.popup = host }} data-application-tool-dock="popup" className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center overflow-auto" style={{ display: occupied("popup") ? undefined : "none" }} />
-			<ApplicationToolInventory />
+			<div data-application-tool-fallback="true" className="absolute bottom-3 right-3 z-30">
+				<ApplicationToolMenu />
+			</div>
 			{compiledSurfaces.map((surface) => <ApplicationCompiledToolBody key={surface.frame.dataset.compiledSurfaceId} surface={surface} host={compiledHost} />)}
 		</div>
 		</CompiledSurfaces.Provider>
@@ -308,19 +313,69 @@ function ApplicationCompiledToolBody({ surface, host }: { readonly surface: Comp
 		{surface.children(tool)}
 	</div>, frame)
 }
-function ApplicationToolInventory() {
-	const { tools, open, focus, close } = useApplicationTools()
+/** A local launcher suppresses the provider's floating fallback, without owning tool lifetimes. */
+export function ApplicationToolLauncher({ compact = false }: { readonly compact?: boolean }) {
+	return <ApplicationToolMenu compact={compact} local />
+}
+
+function ApplicationToolMenu({ compact = false, local = false }: { readonly compact?: boolean; readonly local?: boolean }) {
+	const { tools, registry } = useApplicationTools()
+	const trigger = useRef<HTMLButtonElement>(null)
+	const selectedAction = useRef<(() => void) | null>(null)
+	const dirtyCount = tools.filter((tool) => tool.state.dirty).length
 	if (!tools.length) return null
-	return <nav aria-label="Application tools" className="flex shrink-0 flex-wrap gap-2 border-t bg-background px-3 py-1 text-xs">
-		{tools.map((tool) => <span key={tool.lease.identity} className="inline-flex items-center gap-1">
-			<button type="button" aria-label={`${tool.open ? "Focus" : "Open"} ${tool.label} tool window`} aria-pressed={tool.open} disabled={tool.closing}
-				onPointerDown={(event) => event.preventDefault()}
-				onClick={() => { if (tool.open) focus(tool.lease); else open(tool.lease) }}>
-				{tool.label}{tool.state.dirty ? " *" : ""}{tool.state.readOnly ? " (read-only)" : ""}
+	return <DropdownMenu modal={false} onOpenChange={(open) => { if (open) selectedAction.current = null }}>
+		<DropdownMenuTrigger asChild>
+			<button ref={trigger} type="button" aria-label="Application tools"
+				aria-description={dirtyCount ? `${dirtyCount} tool${dirtyCount === 1 ? "" : "s"} with unsaved drafts` : undefined}
+				title={dirtyCount ? `Tools · ${dirtyCount} unsaved draft${dirtyCount === 1 ? "" : "s"}` : "Tools"}
+				data-application-tool-trigger={local ? "true" : undefined}
+				className={`relative flex h-8 shrink-0 items-center justify-center gap-2 rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${compact ? "w-8" : "border bg-background px-2 text-xs shadow-sm"}`}>
+				<Wrench aria-hidden="true" className="size-[17px]" />
+				{!compact && <span>Tools</span>}
+				{dirtyCount > 0 && <span aria-hidden="true" className="absolute right-1 top-1 size-1.5 rounded-full bg-amber-500" />}
 			</button>
-			{tool.open && <button type="button" aria-label={`Close ${tool.label}`} disabled={tool.closing || tool.state.pending}
-				onPointerDown={(event) => event.preventDefault()}
-				onClick={() => { void close(tool.lease) }}>×</button>}
-		</span>)}
-	</nav>
+		</DropdownMenuTrigger>
+		<DropdownMenuContent aria-label="Application tools" side={compact ? "right" : "bottom"} align="start"
+			className="max-h-[min(70vh,32rem)] w-72 overflow-y-auto"
+			onCloseAutoFocus={(event) => {
+				const action = selectedAction.current
+				selectedAction.current = null
+				if (!action) return
+				// Tear down the menu before focus/open or confirmation captures its origin.
+				event.preventDefault()
+				queueMicrotask(() => {
+					if (!trigger.current?.isConnected) return
+					trigger.current.focus({ preventScroll: true })
+					action()
+				})
+			}}>
+			<DropdownMenuLabel>Tools <span className="font-normal text-muted-foreground">· {tools.length}</span></DropdownMenuLabel>
+			{tools.map((tool, index) => <DropdownMenuGroup key={tool.lease.identity} aria-label={tool.label}>
+				{index > 0 && <DropdownMenuSeparator />}
+				<DropdownMenuLabel className="pb-0 text-xs font-normal text-muted-foreground">
+					{tool.open ? tool.layout : "Closed"}
+					{tool.state.dirty && " · Unsaved draft"}
+					{tool.state.readOnly && " · Read-only"}
+					{tool.state.pending && " · Pending"}
+					{tool.closing && " · Closing"}
+				</DropdownMenuLabel>
+				<DropdownMenuItem aria-label={`${tool.open ? "Focus" : "Open"} ${tool.label} tool window`} disabled={tool.closing}
+					onSelect={() => {
+						selectedAction.current = () => {
+							if (tool.open) registry.focus(tool.lease, tool.windowId)
+							else registry.open(tool.lease)
+						}
+					}}>
+					<span className="min-w-0 flex-1 truncate">{tool.label}</span>
+					<span className="ml-2 text-xs text-muted-foreground">{tool.open ? "Focus" : "Open"}</span>
+				</DropdownMenuItem>
+				{tool.open && <DropdownMenuItem aria-label={`Close ${tool.label}`} disabled={tool.closing || tool.state.pending}
+					className="text-xs text-muted-foreground"
+					onSelect={() => { selectedAction.current = () => { void registry.close(tool.lease, tool.windowId) } }}>
+					Close tool
+				</DropdownMenuItem>}
+			</DropdownMenuGroup>)}
+		</DropdownMenuContent>
+	</DropdownMenu>
 }

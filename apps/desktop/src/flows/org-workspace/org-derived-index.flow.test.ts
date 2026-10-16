@@ -16,6 +16,7 @@ const unused = () => {
 const repositoryWith = (overrides: Partial<OrgFileRepository>): OrgFileRepository => ({
 	clearDerivedIndex: unused,
 	createDirectory: unused,
+	revealWorkspacePath: unused,
 	deleteDocument: unused,
 	getDerivedIndexStats: unused,
 	moveDocument: unused,

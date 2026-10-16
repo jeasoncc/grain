@@ -1,252 +1,45 @@
-# 主题系统文档
+# 主题系统
 
-## 概述
+## 配置权威
 
-应用现在拥有一个强大的主题系统，包含17个精心设计的主题，支持丰富的颜色自定义和编辑器语法高亮。
+`app_config_dir()/config.json` 是唯一偏好配置来源。设置路由、主题选择器、偏好修改 actions 与 Zustand persist 镜像已删除。`useTheme` 等 hooks 只读取内存投影；组件不能建立另一套持久化偏好。
 
-## 主题列表
+`src/pipes/configuration/configuration-document.pipe.ts` 先校验完整版本 1 文档，`src/flows/configuration/configuration.flow.ts` 再发布字体、主题、图标和其他投影。重载在 IO 之前撤销声明式配置 generation，完全校验后才重新开放；无效配置保留原视觉状态与 canonical Source/history，不回退到旧浏览器配置。
 
-### 浅色主题 (9个)
-1. **Default Light** - 默认浅色主题
-2. **GitHub Light** - GitHub 浅色主题
-3. **Solarized Light** - 护眼浅色主题
-4. **Quiet Light** ⭐ - 柔和温暖的浅色主题（推荐）
-5. **Light+** - VSCode 默认浅色主题
-6. **Atom One Light** - 流行的 Atom 浅色主题
-7. **Winter is Coming (Light)** - 清新的蓝色调浅色主题
-8. **Ayu Light** - 现代简约的浅色主题
-9. **Gruvbox Light** - 复古温暖浅色主题
+外部编辑不会自动应用。Open configuration file 交由系统默认应用打开固定路径；Reload configuration 显式重新读取。已有配置文件不回写；首次无文件启动才允许迁移和原子创建。
 
-### 深色主题 (8个)
-1. **Default Dark** - 默认深色主题
-2. **GitHub Dark** - GitHub 深色主题
-3. **One Dark Pro** - 经典 Atom 深色主题
-4. **Dracula** ⭐ - 吸血鬼紫色主题（推荐）
-5. **Nord** - 北欧冷色调主题
-6. **Monokai Pro** - 经典 Monokai 主题
-7. **Solarized Dark** - 护眼深色主题
-8. **Tokyo Night** ⭐ - 流行的深蓝紫色主题（推荐）
-9. **Material Theme Ocean** - 优雅的海洋蓝主题
-10. **Palenight** - 柔和的紫色深色主题
-11. **Gruvbox Dark** - 复古温暖深色主题
+## 离线终端目录
 
-## 颜色系统
+数据来自 [iTerm2-Color-Schemes](https://github.com/mbadolato/iTerm2-Color-Schemes)，固定 revision `21f281d0834846eef984f75774638e7d16bac068`。`src/types/theme/iterm2/` 保存：
 
-### 基础颜色
-- `background` / `foreground` - 主背景和前景色
-- `card` / `cardForeground` - 卡片背景和文字
-- `popover` / `popoverForeground` - 弹出层颜色
-- `primary` / `primaryForeground` - 主色调
-- `secondary` / `secondaryForeground` - 次要色
-- `muted` / `mutedForeground` - 柔和色
-- `accent` / `accentForeground` - 强调色
-- `border` / `input` / `ring` - 边框、输入框、焦点环
+- `catalog.json`：811 个 Windows Terminal JSON 配色对象，保留原字段和值，按来源文件名排序。
+- `provenance.json`：上游 revision、归档 SHA-256、来源集合摘要、目录 SHA-256 与生成规则。
+- `LICENSE`、`CREDITS.md`：集合许可证、上游署名和个别作者权利说明。
 
-### 侧边栏颜色
-- `sidebar` / `sidebarForeground` - 侧边栏背景和文字
-- `sidebarPrimary` / `sidebarPrimaryForeground` - 侧边栏主色
-- `sidebarAccent` / `sidebarAccentForeground` - 侧边栏强调色
-- `sidebarBorder` - 侧边栏边框
+主题加载不联网，不执行上游脚本。变更目录时必须同步固定来源、完整集合、摘要与署名，不添加名称推断或静默别名。
 
-### 编辑器扩展颜色
-- `editorCursor` - 光标颜色
-- `editorSelection` - 选中文本背景
-- `editorLineHighlight` - 当前行高亮
+## 语义适配
 
-### 状态颜色
-- `success` - 成功状态（绿色）
-- `warning` - 警告状态（黄色）
-- `error` - 错误状态（红色）
-- `info` - 信息状态（蓝色）
+`src/pipes/theme/terminal-theme.pipe.ts` 保留原始终端色板，并派生 Grain 的界面、编辑器、语法和状态角色。浅/深分类依据背景相对亮度；系统模式的两个名字必须分别通过浅/深校验。
 
-### 语法高亮颜色
-- `syntaxHeading` - 标题颜色（H1-H6）
-- `syntaxBold` - 粗体文字颜色
-- `syntaxItalic` - 斜体文字颜色
-- `syntaxLink` - 链接颜色
-- `syntaxCode` - 代码颜色
-- `syntaxQuote` - 引用块颜色
-- `syntaxComment` - 注释颜色
+`src/utils/themes.util.ts` 按精确上游名称查找，按需适配并缓存。旧手写主题只保留迁移所需的 key/name/type 元数据，不再分配或应用退役调色板。`getThemeByKey` 与 `getThemeByName` 都使用新目录的精确名称；`getLegacyThemeByKey` 仅供一次迁移。
 
-## CSS 类使用
+语义适配校正可读性而不修改 `catalog.json` 或 `Theme.terminalPalette`：文本角色至少 4.5:1，边界与光标角色至少 3:1。危险操作使用 `destructive` / `destructiveForeground`，不能把适合按钮填充的暗红直接当成深色弹层文字。菜单获得焦点后使用成对的 accent 背景/前景。
 
-### 状态颜色类
-```css
-.text-success  /* 成功文字 */
-.text-warning  /* 警告文字 */
-.text-error    /* 错误文字 */
-.text-info     /* 信息文字 */
+界面使用 `--background`、`--foreground`、`--popover`、`--border`、`--destructive` 等语义变量；不要在业务组件中硬编码某一主题的颜色。
 
-.bg-success    /* 成功背景 */
-.bg-warning    /* 警告背景 */
-.bg-error      /* 错误背景 */
-.bg-info       /* 信息背景 */
-```
+## 原生生命周期
 
-### 编辑器样式
-编辑器内容会自动应用语法高亮：
-- 标题（H1-H6）使用 `syntaxHeading` 颜色
-- 粗体使用 `syntaxBold` 颜色
-- 斜体使用 `syntaxItalic` 颜色
-- 链接使用 `syntaxLink` 颜色，带下划线效果
-- 行内代码使用 `syntaxCode` 颜色和背景
-- 引用块使用 `syntaxQuote` 颜色和左边框
+主路由和 `main.tsx` 的分离 Source 启动分支都挂载 `ConfigurationLifecycle`，统一配置初始化、同步、主题监听、字体样式和错误反馈。可复用的 `DetachedOrgWindow` 视图不负责物理配置 IO。
 
-## 使用方法
+每个挂载的主题生命周期只拥有一个 `prefers-color-scheme` listener，并在卸载时清理。`appearance.mode: "theme"` 使用指定主题；`"system"` 选择显式 lightTheme/darkTheme。DOM 适配更新语义变量、dark class 和 color-scheme，并清理被替代的过渡工作。
 
-### 在组件中使用主题
-```typescript
-import { useTheme } from "@/hooks/use-theme";
+主窗口完成重载后调用 main-only `notify_configuration_reload`。Rust 只向登记且未关闭的 Source webview 分发无载荷 `grain:configuration-reload` DOM 事件；接收方重新读取固定文件，不信任事件传入的配置对象，也不反向广播。
 
-function MyComponent() {
-  const { 
-    theme,           // 当前主题 key
-    setTheme,        // 设置主题
-    currentTheme,    // 当前主题对象
-    isDark,          // 是否深色主题
-    mode,            // 主题模式: "light" | "dark" | "system"
-    setMode,         // 设置模式
-    isSystem,        // 是否跟随系统
-    enableTransition,// 是否启用过渡动画
-    setEnableTransition, // 设置过渡动画
-    toggleMode,      // 循环切换模式
-  } = useTheme();
-  
-  // 切换主题
-  setTheme("quiet-light");
-  
-  // 设置跟随系统模式
-  setMode("system");
-  
-  // 获取当前主题信息
-  console.log(currentTheme?.name); // "Quiet Light"
-  console.log(isDark); // false
-  console.log(isSystem); // false
-}
-```
+分离窗口只能调用 `read_configuration_file`；创建、外部打开和通知均被原生窗口角色守卫拒绝。它的 Tauri capability 仍为 `permissions: []`，不为配置同步添加 core/plugin event 权限。Source 意图和投影继续使用既有绑定与 canonical history 协议。
 
-### 在CSS中使用颜色变量
-```css
-.my-element {
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-  border: 1px solid hsl(var(--border));
-}
+## 验证边界
 
-.my-button {
-  background: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
-}
+配置、迁移、主题适配及原生窗口等 23 个定向测试文件共 813 项通过；原生配置相关 Rust 测试 9 项通过。Tauri debug 构建通过。实际 Linux WebKitGTK 双窗口验证了启动字体/主题、正常/无效/丢失文件重载、视图身份保留及共享精确 Undo；浅/深弹层检查包含焦点后的危险操作文字。
 
-.my-success-message {
-  color: hsl(var(--success));
-}
-```
-
-### 在内联样式中使用
-```tsx
-<div style={{ 
-  background: currentTheme?.colors.background,
-  color: currentTheme?.colors.foreground 
-}}>
-  内容
-</div>
-```
-
-## 技术实现
-
-### 颜色格式转换
-主题系统自动将十六进制颜色（`#ffffff`）转换为 HSL 格式（`0 0% 100%`），以兼容 Tailwind CSS 的颜色变量系统。
-
-### 默认值
-如果主题没有定义扩展颜色，系统会自动生成合理的默认值：
-- 编辑器颜色基于主色调
-- 状态颜色使用标准的绿/黄/红/蓝
-- 语法高亮颜色基于主题的基础颜色
-
-### 主题持久化
-使用 Zustand persist 中间件实现主题持久化，数据保存在 `localStorage` 的 `novel-editor-theme` 键中。持久化的数据包括：
-- `themeKey` - 当前选择的主题
-- `mode` - 主题模式（light/dark/system）
-- `enableTransition` - 是否启用过渡动画
-
-### 系统主题跟随
-当主题模式设置为 `system` 时，应用会：
-1. 自动检测系统的深色/浅色模式偏好
-2. 监听系统主题变化事件（`prefers-color-scheme`）
-3. 实时切换到对应的默认主题
-
-### 过渡动画
-主题切换时支持平滑过渡动画（300ms），通过 CSS 类 `.theme-transition` 实现。可以在主题选择器中开关此功能。
-
-## 自定义主题
-
-要添加新主题，在 `src/lib/themes.ts` 中添加：
-
-```typescript
-{
-  key: "my-theme",
-  name: "My Theme",
-  description: "我的自定义主题",
-  type: "light", // 或 "dark"
-  colors: {
-    // 必需的基础颜色
-    background: "#ffffff",
-    foreground: "#000000",
-    // ... 其他必需颜色
-    
-    // 可选的扩展颜色
-    editorCursor: "#0066ff",
-    syntaxHeading: "#0066ff",
-    // ... 其他可选颜色
-  }
-}
-```
-
-## 最佳实践
-
-1. **使用语义化颜色变量**：优先使用 `--primary`、`--success` 等语义化变量，而不是硬编码颜色
-2. **支持深色模式**：确保组件在浅色和深色主题下都能正常显示
-3. **测试多个主题**：在不同主题下测试UI，确保对比度和可读性
-4. **使用状态颜色**：成功/警告/错误消息使用对应的状态颜色
-5. **编辑器内容**：在 `.editor-container` 内的内容会自动应用语法高亮
-
-## 编辑器样式增强
-
-### 文本选中样式
-- 浅色模式：40% 透明度的主色调背景
-- 深色模式：50% 透明度的主色调背景
-- 使用主题的 `editorSelection` 颜色（如果定义）
-
-### 当前行高亮
-- 编辑时当前行会有淡色背景高亮
-- 使用主题的 `editorLineHighlight` 颜色
-- 支持段落、标题、引用等元素
-
-### 光标颜色
-- 使用主题的 `editorCursor` 颜色
-- 默认使用 `primary` 颜色
-
-### 打字机模式
-- 非当前段落淡化（60% 透明度）
-- 当前段落完全显示
-- 屏幕中央有淡色指示线
-- 平滑的透明度过渡动画
-
-## 已实现功能
-
-- [x] 主题持久化（Zustand persist）
-- [x] 系统主题跟随（自动检测并监听系统深色/浅色模式）
-- [x] 主题切换过渡动画（可开关）
-- [x] 17个预设主题
-- [x] 增强的文本选中样式
-- [x] 当前行高亮效果
-- [x] 主题感知的光标颜色
-- [x] 打字机模式视觉增强
-
-## 未来计划
-
-- [ ] 主题导入/导出功能
-- [ ] 可视化主题编辑器
-- [ ] 更多预设主题
-- [ ] 主题分享社区
+这是定向验证，不是全仓库、跨平台、屏幕阅读器或 OS 高对比度认证。证据与限制见[运行时设计记录](../../design/doom-editor-runtime.md#file-only-configuration-cutover-2026-10-15)。用户配置示例见[主题指南](../THEMES_GUIDE.md)。

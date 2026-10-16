@@ -8,12 +8,14 @@ import { useApplicationCommandHost, useApplicationCommandRegistration, type Appl
 import type { ApplicationToolOrigin } from "@/flows/application/application-tool-registry"
 import { freezeOrgAgendaEntrySnapshot } from "@/pipes/org/org-agenda-command-plan.pipe"
 import type { OrgAgendaCommand } from "@/types/org/org-agenda-command.types"
+import type { OrgAgendaViewConfiguration } from "@/pipes/org/org-agenda-configuration.pipe"
 import { OrgWhichKey } from "./org-which-key.view.fn"
 
 export interface OrgAgendaViewProps {
 	readonly entries: readonly OrgAgendaEntry[]
 	readonly error: string | null
 	readonly isLoading: boolean
+	readonly view?: OrgAgendaViewConfiguration | null
 	readonly onOpenEntry: (entry: OrgAgendaEntry) => void
 	readonly onAction?: (entry: OrgAgendaEntry, action: OrgAgendaCommand["kind"], origin?: ApplicationToolOrigin | null) => void
 	readonly captureOrigin?: (entry: OrgAgendaEntry) => ApplicationToolOrigin | null
@@ -71,6 +73,7 @@ export const OrgAgendaView = memo(function OrgAgendaView({
 	entries,
 	error,
 	isLoading,
+	view = null,
 	onOpenEntry,
 	onAction,
 	onCancelAction,
@@ -228,23 +231,41 @@ export const OrgAgendaView = memo(function OrgAgendaView({
 	return (
 		<main
 			ref={rootRef}
-			className="min-w-0 flex-1 overflow-auto"
+			className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto"
 			aria-label="Org agenda"
 			tabIndex={-1}
 			aria-busy={actionPending || isLoading}
 			onKeyDown={handleKeyDown}
 		>
 			<OrgWhichKey prefix={input.prefix} />
+			<header className="shrink-0 space-y-2 px-4 pb-4 pt-6 sm:px-8">
+				<h1 className="text-base font-semibold">Agenda</h1>
+				<p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+					{view?.mode === "todo" ? "TODO headings" : view?.mode === "match" ? "Matching headings" : "Scheduled tasks, deadlines and dated events"} from Org Source. Open an entry to return to its original file.
+				</p>
+				{!error && <p className="max-w-2xl break-words text-xs leading-relaxed text-muted-foreground">
+					{view?.files ? view.files.length ? view.files.join(", ") : "No files in this view" : "All workspace Org files"}
+					{view?.window ? ` · ${view.window.start}, ${view.window.span} days` : view ? " · Heading list" : " · All Source dates"}
+					{view?.todo ? ` · TODO: ${typeof view.todo === "string" ? view.todo : view.todo.join(", ")}` : ""}
+					{view?.match ? ` · Match: ${view.match}` : ""}
+				</p>}
+			</header>
 			{isLoading ? (
-				<p className="text-sm text-muted-foreground">Loading agenda…</p>
+				<p role="status" className="px-4 py-4 text-sm text-muted-foreground sm:px-8">Loading agenda…</p>
 			) : error ? (
-				<p role="alert" className="text-sm text-destructive">
+				<p role="alert" className="px-4 py-4 text-sm text-destructive sm:px-8">
 					{error}
 				</p>
 			) : entries.length === 0 ? (
-				<div className="text-center text-muted-foreground">
-					<CalendarDays className="mx-auto mb-2 size-6" />
-					<p className="text-sm">No matching Org agenda items in this view.</p>
+				<div className="flex flex-1 shrink-0 flex-col px-4 py-8 sm:px-8">
+					<div className="mx-auto my-auto w-full max-w-md space-y-3 text-center">
+						<CalendarDays aria-hidden="true" className="mx-auto mb-4 size-6 text-muted-foreground" />
+						<h2 className="text-base font-medium">{view ? "No matching items" : "Nothing planned yet"}</h2>
+						<p className="text-sm leading-relaxed text-muted-foreground">
+							{view ? "This view has no matching Org entries. Check its configured files and filters in config.json." : "Add a scheduled date or deadline below a heading in an Org Source file to collect it here."}
+						</p>
+						{!view && <pre aria-label="Example Org planning entry" className="overflow-auto bg-muted/30 px-4 py-3 text-left font-mono text-xs leading-relaxed">{"* TODO Review notes\nSCHEDULED: <2026-10-14 Wed>"}</pre>}
+					</div>
 				</div>
 			) : (
 				<div className="mx-auto max-w-[760px] space-y-6 px-8 pb-16 pt-6">

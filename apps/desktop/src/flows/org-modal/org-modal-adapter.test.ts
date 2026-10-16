@@ -390,6 +390,27 @@ describe("owned upstream Vim adapter", () => {
 		stale.onAccept("beta"); stale.onKeyUp(event, window.input)
 		expect(window.runtime.source).toBe("alpha beta alpha")
 	})
+	it("keeps Vim insert ownership for an unflagged IME Escape before the first preedit mutation", async () => {
+		vi.useFakeTimers()
+		const source = "中文😀\r\nbody\0"
+		const window = mount(source)
+		window.key("i")
+		const selection = window.view.state.selection
+		window.view.contentDOM.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }))
+		expect(window.view.compositionStarted).toBe(true)
+		expect(window.view.composing).toBe(false)
+		expect(window.key("Escape")).toBe(false)
+		expect(window.view.contentDOM.dataset.modalMode).toBe("insert")
+		expect(window.view.state.selection.eq(selection, true)).toBe(true)
+		expect(window.runtime.source).toBe(source)
+		expect(undoDepth(window.runtime.state)).toBe(0)
+		window.view.contentDOM.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true, data: "" }))
+		await vi.advanceTimersByTimeAsync(50)
+		window.key("Escape")
+		expect(window.view.contentDOM.dataset.modalMode).toBe("normal")
+		expect(window.runtime.source).toBe(source)
+		expect(undoDepth(window.runtime.state)).toBe(0)
+	})
 	it("records only the net own IME commit for dot and keeps one canonical undo event", async () => {
 		vi.useFakeTimers()
 		const window = mount("alpha")

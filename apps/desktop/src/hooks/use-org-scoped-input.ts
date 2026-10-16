@@ -16,7 +16,7 @@ interface GlobalInputRoute {
 const globalRoutes = new Set<GlobalInputRoute>()
 const scopePriority: Record<OrgKeymapScope, number> = {
 	application: 0, workspace: 1, "org-source": 2,
-	"org-capture": 3, "org-roam": 3, "org-agenda": 3, "org-todo-note": 3, "org-remark": 3,
+	"file-tree": 3, "org-capture": 3, "org-roam": 3, "org-agenda": 3, "org-todo-note": 3, "org-remark": 3,
 }
 
 /** Non-Source producers share the same resolver and a focus/configuration-bound prefix lease. */

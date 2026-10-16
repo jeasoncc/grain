@@ -33,7 +33,7 @@ export interface OrgPrefixKeyInput {
 }
 
 
-export type OrgKeymapScope = "application" | "workspace" | "org-source" | "org-capture" | "org-roam" | "org-agenda" | "org-todo-note" | "org-remark"
+export type OrgKeymapScope = "application" | "workspace" | "file-tree" | "org-source" | "org-capture" | "org-roam" | "org-agenda" | "org-todo-note" | "org-remark"
 export type OrgInputCommand = string
 export interface OrgScopedBinding {
 	readonly scope: OrgKeymapScope

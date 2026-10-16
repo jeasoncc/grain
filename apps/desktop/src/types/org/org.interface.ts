@@ -251,6 +251,7 @@ export type OrgFileOperation =
 	| "unwatch"
 	| "read"
 	| "release"
+	| "reveal"
 	| "write"
 	| "writeMigration"
 	| "verifyMigration"

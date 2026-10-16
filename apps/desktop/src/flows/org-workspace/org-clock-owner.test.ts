@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { EditorState, EditorSelection } from "@codemirror/state"
+import { isolateHistory } from "@codemirror/commands"
 import { EditorView } from "@codemirror/view"
 import { createOrgBufferRuntime } from "@/flows/org-editor-runtime"
 import type { OrgBufferRuntime, OrgBufferWindowHandle } from "@/flows/org-editor-runtime"
@@ -99,6 +100,71 @@ describe("root-owned canonical Clock epoch identity", () => {
 		expect(result).toMatchObject({ kind: "report", runningMinutes: null })
 		expect(peer.handle.undo()).toBe(true)
 		expect(await owner.captureSource("clock-report", capture(a, 0), a, () => true)!()).toMatchObject({ kind: "report", runningMinutes: 0 })
+	})
+	it("does not revive a discarded epoch when ordinary input recreates its row on a history branch", async () => {
+		const { owner, buffers, capture, attach } = setup(["* A\nbody"])
+		const runtime = buffers[0].runtime
+		const peer = attach(runtime, runtime.state.doc.length)
+		peer.view.dispatch({ changes: { from: peer.view.state.doc.length, insert: "\nordinary 😀\0" } })
+		const unclocked = runtime.source
+		expect(await owner.captureSource("clock-in", capture(runtime, 0), runtime, () => true)!()).toMatchObject({ kind: "success" })
+		const clocked = runtime.source
+		expect(peer.handle.undo()).toBe(true)
+		expect(runtime.source).toBe(unclocked)
+		expect(owner.captureSparseClock(runtime.source, "/workspace/0.org").activeClock).toBeNull()
+		expect(peer.handle.redo()).toBe(true)
+		expect(owner.captureSparseClock(runtime.source, "/workspace/0.org").activeClock?.startedAtEpochMs).toBe(epoch)
+		expect(peer.handle.undo()).toBe(true)
+		peer.view.dispatch({ changes: { from: 0, to: peer.view.state.doc.length, insert: clocked }, annotations: isolateHistory.of("full") })
+		expect(peer.handle.redo()).toBe(false)
+		expect(runtime.source).toBe(clocked)
+		expect(await owner.captureSource("clock-report", capture(runtime, 0), runtime, () => true)!()).toMatchObject({ kind: "report", runningMinutes: null })
+		expect(peer.handle.undo()).toBe(true)
+		expect(runtime.source).toBe(unclocked)
+		expect(peer.handle.redo()).toBe(true)
+		expect(owner.captureSparseClock(runtime.source, "/workspace/0.org").activeClock).toBeNull()
+		// Epoch-free commits must not make command ownership or ambiguity checks stale.
+		expect(runtime.applyCommandEdit(runtime.source, { from: runtime.source.length, to: runtime.source.length,
+			insert: "\n* B\nCLOCK: [2026-10-09 Fri 10:00]\n", cursor: 0 })).toBe(true)
+		const ambiguous = runtime.source
+		expect(await owner.captureSource("clock-out", capture(runtime, 0), runtime, () => true)!()).toMatchObject({ kind: "rejected" })
+		expect(runtime.source).toBe(ambiguous)
+		expect(peer.handle.undo()).toBe(true)
+		expect(runtime.source).toBe(clocked)
+		expect(await owner.captureSource("cancel-clock", capture(runtime, 0), runtime, () => true)!()).toMatchObject({ kind: "success" })
+		expect(active(runtime)).toBeNull()
+	})
+	it.each(["\n", "\r\n", "\r"])("maps raw UTF-16 edits at Clock row boundaries and invalidates a replaced %j break", async separator => {
+		const original = `outside\0😀${separator}* A${separator}body${separator}tail\0`
+		const { owner, buffers, capture, attach } = setup([original])
+		const runtime = buffers[0].runtime
+		const peer = attach(runtime, 0)
+		expect(await owner.captureSource("clock-in", capture(runtime, original.indexOf("* A")), runtime, () => true)!()).toMatchObject({ kind: "success" })
+		const clocked = runtime.source
+		const row = active(runtime)!
+		const prefix = `prefix😀\0${separator}`, before = `note😀${separator}`, after = `after\0${separator}`
+		expect(runtime.applyCommandEdits(clocked, [
+			{ from: 0, to: 0, insert: prefix, cursor: 0 },
+			{ from: row.from, to: row.from, insert: before, cursor: 0 },
+			{ from: row.breakTo, to: row.breakTo, insert: after, cursor: 0 },
+		])).toBe(true)
+		const mapped = prefix + clocked.slice(0, row.from) + before + clocked.slice(row.from, row.breakTo) + after + clocked.slice(row.breakTo)
+		expect(runtime.source).toBe(mapped)
+		expect(active(runtime)?.from).toBe(row.from + prefix.length + before.length)
+		now += 120000
+		expect(await owner.captureSource("clock-report", capture(runtime, 0), runtime, () => true)!()).toMatchObject({ kind: "report", runningMinutes: 2 })
+		expect(peer.handle.undo()).toBe(true)
+		expect(runtime.source).toBe(clocked)
+		expect(peer.handle.redo()).toBe(true)
+		expect(runtime.source).toBe(mapped)
+		const clockLine = peer.view.state.doc.lineAt(peer.view.state.doc.toString().indexOf("CLOCK:"))
+		peer.view.dispatch({ changes: { from: clockLine.to, to: clockLine.to + 1, insert: separator } })
+		expect(runtime.source).toBe(mapped)
+		expect(await owner.captureSource("clock-report", capture(runtime, 0), runtime, () => true)!()).toMatchObject({ kind: "report", runningMinutes: null })
+		expect(peer.handle.undo()).toBe(true)
+		expect(owner.captureSparseClock(runtime.source, "/workspace/0.org").activeClock?.startedAtEpochMs).toBe(epoch)
+		expect(peer.handle.redo()).toBe(true)
+		expect(owner.captureSparseClock(runtime.source, "/workspace/0.org").activeClock).toBeNull()
 	})
 	it("retires delayed Source and captured native sparse contexts on exact runtime revision drift", async () => {
 		const { owner, buffers, capture } = setup(["* A\nbody"])

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 import * as E from "fp-ts/Either"
-import type { OrgPrefixKeyInput, OrgPrefixSession, OrgKeymapConfiguration } from "@/types/editor/org-keymap.interface"
+import type { OrgPrefixKeyInput, OrgPrefixSession, OrgKeymapConfiguration, OrgKeymapScope } from "@/types/editor/org-keymap.interface"
 import { parseOrgKeymapConfiguration, DEFAULT_ORG_KEYMAP_CONFIGURATION } from "@/pipes/org/org-keymap-configuration.pipe"
-import { MAX_ORG_PREFIX_TIMEOUT_MS, ORG_PREFIX_BINDINGS, ORG_EXTRA_PREFIX_BINDINGS, ORG_PREFIX_TIMEOUT_MS, resolveOrgInput } from "./org-prefix-keymap"
+import { getOrgInputCommandKeys, MAX_ORG_PREFIX_TIMEOUT_MS, ORG_PREFIX_BINDINGS, ORG_EXTRA_PREFIX_BINDINGS, ORG_PREFIX_TIMEOUT_MS, resolveOrgInput } from "./org-prefix-keymap"
 
 const input = (key: string, overrides: Partial<OrgPrefixKeyInput> = {}): OrgPrefixKeyInput => ({ key, ctrlKey: false, altKey: false, metaKey: false, shiftKey: false, isComposing: false, keyCode: 0, defaultPrevented: false, ...overrides })
 const owner = {}
@@ -111,5 +111,156 @@ describe("resolveOrgInput", () => {
 		const configuration = configured({ version: 1, bindings: [{ scope: "org-source", key: "Mod-s", command: null }] })
 		expect(resolve(null, input("s", { ctrlKey: true }), 200, undefined, configuration)).toEqual(idle)
 		expect(resolve(null, input(" "))).toEqual(idle)
+	})
+	it("routes ordinary tree navigation and file actions without reserving letters or prefix keys", () => {
+		const route = (event: OrgPrefixKeyInput) => resolveOrgInput({
+			configuration: DEFAULT_ORG_KEYMAP_CONFIGURATION, scope: "file-tree", current: null, input: event,
+			now: 200, selectionEmpty: true, nextId: 1, owner, generation,
+		})
+		for (const [key, commandId] of [
+			["ArrowDown", "file-tree.next"], ["ArrowUp", "file-tree.previous"],
+			["ArrowLeft", "file-tree.collapse"], ["ArrowRight", "file-tree.expand"],
+			["Home", "file-tree.first"], ["End", "file-tree.last"], ["Enter", "file-tree.open"],
+			["F2", "file-tree.rename"], ["Delete", "file-tree.delete"], ["F5", "file-tree.refresh"],
+		]) expect(route(input(key))).toEqual({ ...idle, commandId, consumed: true })
+		for (const key of ["j", "k", "h", "l", "u", "m", "d", "r", "q", "c", "g", "y", "?", "Tab"])
+			expect(route(input(key))).toEqual(idle)
+		for (const key of ["G", "R"]) expect(route(input(key, { shiftKey: true }))).toEqual(idle)
+		expect(route(input("w", { ctrlKey: true }))).toEqual(idle)
+		for (const modifier of [{ ctrlKey: true }, { metaKey: true }])
+			expect(route(input("f", modifier))).toEqual({ ...idle, commandId: "file-tree.filter", consumed: true })
+		for (const key of ["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Home", "End", "Enter"])
+			expect(resolve(null, input(key))).toEqual(idle)
+	})
+	it("keeps standard file actions out of Source, global and other tool scopes", () => {
+		for (const scope of ["org-source", "workspace", "application", "org-agenda", "org-remark"] as const) {
+			for (const event of [input("F2"), input("Delete"), input("F5"), input("f", { ctrlKey: true }), input("f", { metaKey: true })]) {
+				expect(resolveOrgInput({
+					configuration: DEFAULT_ORG_KEYMAP_CONFIGURATION, scope, current: null, input: event,
+					now: 200, selectionEmpty: true, nextId: 1, owner, generation,
+				})).toEqual(idle)
+			}
+		}
+	})
+	it.each([
+		["f2", input("F2")], ["delete", input("Delete")], ["f5", input("F5")],
+		["Mod-F", input("f", { ctrlKey: true })], ["Mod-F", input("f", { metaKey: true })],
+	] as const)("honors remapping and null unbinding for the standard tree key %s", (key, event) => {
+		for (const command of ["file-tree.filter", null] as const) {
+			const configuration = configured({ version: 1, bindings: [
+				{ scope: "file-tree", key, command },
+				{ scope: "workspace", key, command: "save" },
+			] })
+			expect(resolveOrgInput({
+				configuration, scope: "file-tree", current: null, input: event,
+				now: 200, selectionEmpty: true, nextId: 1, owner, generation,
+			})).toEqual({ ...idle, commandId: command, consumed: command !== null })
+		}
+	})
+	it("supports explicit tree bindings, unbinding and custom prefix maps with authoritative hints", () => {
+		const configuration = configured({ version: 1, bindings: [
+			{ scope: "file-tree", key: "j", command: "file-tree.previous" },
+			{ scope: "file-tree", key: "ArrowDown", command: null },
+		], leaders: [{ scope: "file-tree", key: "y", map: "file-tree:y" }],
+		transients: [{ id: "file-tree:y", label: "Link", scope: "file-tree", timeoutMs: null,
+			bindings: [{ key: "x", command: "file-tree.copy-org-link" }] }] })
+		const route = (event: OrgPrefixKeyInput, current: OrgPrefixSession | null = null) => resolveOrgInput({
+			configuration, scope: "file-tree", current, input: event, now: 200, selectionEmpty: true, nextId: 1, owner, generation,
+		})
+		expect(route(input("j")).commandId).toBe("file-tree.previous")
+		expect(route(input("ArrowDown"))).toEqual(idle)
+		expect(route(input("x"), route(input("y")).session).commandId).toBe("file-tree.copy-org-link")
+		expect(getOrgInputCommandKeys(configuration, "file-tree", "file-tree.copy-org-link")).toEqual(["y x"])
+	})
+	it("isolates file-tree and Source keys while inheriting workspace and application authority", () => {
+		const configuration = configured({ version: 1, bindings: [
+			{ scope: "file-tree", key: "j", command: "file-tree.delete" },
+			{ scope: "org-source", key: "F11", command: "todo" },
+			{ scope: "workspace", key: "A-s", command: "save" },
+			{ scope: "application", key: "A-x", command: "execute-command" },
+		] })
+		const route = (scope: OrgKeymapScope, event: OrgPrefixKeyInput) => resolveOrgInput({
+			configuration, scope, current: null, input: event, now: 200, selectionEmpty: true, nextId: 1, owner, generation,
+		})
+		expect(route("file-tree", input("j")).commandId).toBe("file-tree.delete")
+		for (const scope of ["org-source", "workspace", "application", "org-agenda"] as const)
+			expect(route(scope, input("j"))).toEqual(idle)
+		expect(route("file-tree", input("F11"))).toEqual(idle)
+		expect(route("file-tree", input("c", { ctrlKey: true }))).toEqual(idle)
+		expect(route("file-tree", input("s", { altKey: true })).commandId).toBe("save")
+		expect(route("file-tree", input("x", { altKey: true })).commandId).toBe("execute-command")
+	})
+	it("applies file-tree overrides and explicit unbinding before inherited commands", () => {
+		const configuration = configured({ version: 1, bindings: [
+			{ scope: "file-tree", key: "Mod-s", command: "file-tree.refresh" },
+			{ scope: "file-tree", key: "A-x", command: null },
+		] })
+		const route = (event: OrgPrefixKeyInput) => resolveOrgInput({
+			configuration, scope: "file-tree", current: null, input: event, now: 200, selectionEmpty: true, nextId: 1, owner, generation,
+		})
+		expect(route(input("s", { ctrlKey: true })).commandId).toBe("file-tree.refresh")
+		expect(route(input("x", { altKey: true }))).toEqual(idle)
+		expect(resolve(null, input("s", { ctrlKey: true }), 200, undefined, configuration).commandId).toBe("save")
+		expect(resolve(null, input("x", { altKey: true }), 200, undefined, configuration).commandId).toBe("execute-command")
+	})
+	it("leases nested file-tree prefixes to the same scope, generation and owner", () => {
+		const configuration = configured({ version: 1, leaders: [{ scope: "file-tree", key: "Space", map: "files" }], transients: [
+			{ id: "files", label: "Files", scope: "file-tree", timeoutMs: null, bindings: [{ key: "c", map: "paths" }] },
+			{ id: "paths", label: "Paths", scope: "file-tree", timeoutMs: 500, bindings: [{ key: "F12", command: "file-tree.copy-relative-path" }] },
+		] })
+		const options = { configuration, scope: "file-tree" as OrgKeymapScope, current: null as OrgPrefixSession | null,
+			input: input(" "), now: 200, selectionEmpty: true, nextId: 1, owner, generation }
+		const prefix = resolveOrgInput(options).session
+		expect(prefix).toMatchObject({ label: "Files", expiresAt: null })
+		const child = resolveOrgInput({ ...options, current: prefix, input: input("c") }).session
+		expect(child).toMatchObject({ label: "Paths", expiresAt: 700, bindings: [{ keyLabel: "F12", commandId: "file-tree.copy-relative-path", label: "Copy relative file path" }] })
+		const suffix = { ...options, current: child, input: input("F12") }
+		expect(resolveOrgInput(suffix).commandId).toBe("file-tree.copy-relative-path")
+		for (const replacement of [{ generation: {} }, { owner: {} }, { scope: "org-source" as const }, { scope: "workspace" as const }, { now: 700 }])
+			expect(resolveOrgInput({ ...suffix, ...replacement })).toEqual(idle)
+	})
+	it.each([{ isComposing: true }, { keyCode: 229 }, { defaultPrevented: true }, { repeat: true }, { altGraphKey: true }, { isParameterInput: true }])("protects file-tree commands and prefixes from owned input %j", (overrides) => {
+		const configuration = configured({ version: 1, bindings: [{ scope: "file-tree", key: "x", command: "refresh" }],
+			leaders: [{ scope: "file-tree", key: "Space", map: "files" }],
+			transients: [{ id: "files", label: "Files", scope: "file-tree", timeoutMs: null, bindings: [{ key: "F12", command: "refresh" }] }] })
+		const options = { configuration, scope: "file-tree" as const, current: null as OrgPrefixSession | null,
+			input: input(" "), now: 200, selectionEmpty: true, nextId: 1, owner, generation }
+		const prefix = resolveOrgInput(options).session
+		for (const [current, event] of [
+			[null, input("x")], [null, input(" ")], [prefix, input("F12")],
+			[null, input("F2")], [null, input("Delete")], [null, input("F5")],
+			[null, input("f", { ctrlKey: true })], [null, input("f", { metaKey: true })],
+		] as const) {
+			expect(resolveOrgInput({ ...options, current, input: { ...event, ...overrides } })).toEqual({
+				...idle, protected: true, consumed: "repeat" in overrides && current === null,
+			})
+		}
+	})
+})
+
+describe("getOrgInputCommandKeys", () => {
+	it("shows only current reachable bindings, including nested prefixes and excluding unbound or shadowed keys", () => {
+		const configuration = configured({ version: 1, bindings: [
+			{ scope: "application", key: "F12", command: "tags" },
+			{ scope: "file-tree", key: "F12", command: null },
+			{ scope: "file-tree", key: "A-l", command: "tags" },
+		], leaders: [{ scope: "file-tree", key: "C-l", map: "files" }], transients: [
+			{ id: "files", label: "Files", scope: "file-tree", timeoutMs: null, bindings: [{ key: "y", map: "paths" }] },
+			{ id: "paths", label: "Paths", scope: "file-tree", timeoutMs: null, bindings: [{ key: "r", command: "tags" }, { key: "x", map: "files" }] },
+		] })
+		expect([...getOrgInputCommandKeys(configuration, "file-tree", "tags")].sort()).toEqual(["A-l", "C-l y r"])
+		expect(getOrgInputCommandKeys(configuration, "application", "tags")).toEqual(["F12"])
+		expect(getOrgInputCommandKeys(configuration, "org-source", "tags")).not.toContain("A-l")
+		expect(getOrgInputCommandKeys(configuration, "file-tree", "todo")).toEqual([])
+		expect(getOrgInputCommandKeys(null, "file-tree", "tags")).toEqual([])
+	})
+	it("reflects remapped and removed leaders without advertising unreachable cancellation suffixes", () => {
+		const transients = [{ id: "files", label: "Files", scope: "file-tree", timeoutMs: null,
+			bindings: [{ key: "Escape", command: "tags" }, { key: "t", command: "tags" }] }]
+		const remapped = configured({ version: 1, bindings: [{ scope: "file-tree", key: "C-l", command: null }],
+			leaders: [{ scope: "file-tree", key: "A-l", map: "files" }], transients })
+		expect(getOrgInputCommandKeys(remapped, "file-tree", "tags")).toEqual(["A-l t"])
+		const unbound = configured({ version: 1, bindings: [{ scope: "file-tree", key: "A-l", command: null }], transients })
+		expect(getOrgInputCommandKeys(unbound, "file-tree", "tags")).toEqual([])
 	})
 })

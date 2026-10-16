@@ -1,7 +1,7 @@
 // Font Style Injector - Apply font settings globally
 import { useEffect, useRef } from "react"
 import { useFontSettings } from "@/state/font.state"
-import { CARD_SIZE_OPTIONS, UI_SCALE_OPTIONS } from "@/types/font"
+import { UI_SCALE_OPTIONS } from "@/types/font"
 
 export function FontStyleInjector() {
 	const {
@@ -9,8 +9,6 @@ export function FontStyleInjector() {
 		uiFontFamily,
 		uiFontSize,
 		uiScale,
-		cardSize,
-		cardBorderRadius,
 		fontSize,
 		lineHeight,
 		letterSpacing,
@@ -30,9 +28,7 @@ export function FontStyleInjector() {
 		// Use requestAnimationFrame to batch DOM updates
 		rafRef.current = requestAnimationFrame(() => {
 			const scaleOption = UI_SCALE_OPTIONS.find((s) => s.value === uiScale)
-			const cardSizeOption = CARD_SIZE_OPTIONS.find((c) => c.value === cardSize)
 			const scale = scaleOption?.scale || 1
-			const cardPadding = cardSizeOption?.padding || "1rem"
 
 			// Create style element only once
 			if (!styleElRef.current) {
@@ -54,8 +50,6 @@ export function FontStyleInjector() {
         --font-editor: ${fontFamily};
         --ui-font-size: ${uiFontSize}px;
         --ui-scale: ${scale};
-        --card-padding: ${cardPadding};
-        --card-border-radius: ${cardBorderRadius}px;
         --editor-font-size: ${fontSize}px;
         --editor-line-height: ${lineHeight};
         --editor-letter-spacing: ${letterSpacing}em;
@@ -76,20 +70,10 @@ export function FontStyleInjector() {
         font-size: calc(var(--ui-font-size) * var(--ui-scale));
       }
 
-      /* Cards and UI Components */
-      .card,
-      [data-card],
+      /* Dialogs and menus share UI typography, not card roundness. */
       [role="dialog"],
       [role="menu"] {
         font-size: calc(var(--ui-font-size) * var(--ui-scale));
-        border-radius: var(--card-border-radius);
-      }
-
-      /* Card Header and Content - Use CSS Variables */
-      .card-header,
-      .card-content,
-      .card-footer {
-        padding: var(--card-padding);
       }
 
       /* Button Scaling */
@@ -129,8 +113,6 @@ export function FontStyleInjector() {
 		uiFontFamily,
 		uiFontSize,
 		uiScale,
-		cardSize,
-		cardBorderRadius,
 		fontSize,
 		lineHeight,
 		letterSpacing,

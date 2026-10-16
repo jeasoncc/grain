@@ -94,6 +94,7 @@ import {
 	setOrgRemarkNoteRange,
 	setOrgRemarkSnapshot,
 } from "./org-remark.extension"
+import { getConfigurationError } from "@/state/configuration.state"
 
 
 const orgInputConfiguration = Facet.define<OrgInputConfigurationSnapshot, OrgInputConfigurationSnapshot | null>({
@@ -341,7 +342,7 @@ const editorTheme = EditorView.theme({
 	},
 	".cm-gutters": {
 		backgroundColor: "var(--background)",
-		borderRight: "1px solid color-mix(in srgb, var(--border) 60%, transparent)",
+		borderRight: "none",
 		color: "var(--muted-foreground)",
 	},
 	".cm-activeLineGutter": {
@@ -366,7 +367,7 @@ const editorTheme = EditorView.theme({
 		backgroundColor: "color-mix(in srgb, var(--primary) 10%, transparent)",
 	},
 	".cm-org-tags": { color: "var(--primary)" },
-	".cm-org-todo": { color: "var(--destructive)" },
+	".cm-org-todo": { color: "var(--error)" },
 	".cm-scroller": {
 		fontFamily:
 			"var(--font-editor, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace)",
@@ -941,7 +942,8 @@ export const OrgEditor = memo(function OrgEditor({
 		const onWindowBlur = () => { publishPrefix(null); inputAdapterRef.current?.cancel?.(); modalAdapterRef.current?.suspendInput() }
 		window.addEventListener("blur", onWindowBlur)
 		let lastRoutedKey: KeyboardEvent | null = null
-		const fallbackProtected = (editor: EditorView) => editor.composing || Boolean(lastRoutedKey &&
+		// compositionStarted also owns keys before the first preedit DOM change.
+		const fallbackProtected = (editor: EditorView) => editor.compositionStarted || Boolean(lastRoutedKey &&
 			(lastRoutedKey.isComposing || lastRoutedKey.keyCode === 229 || lastRoutedKey.defaultPrevented ||
 				lastRoutedKey.getModifierState("AltGraph") || modalAdapterRef.current?.ownsInput(lastRoutedKey.target) ||
 				Boolean((lastRoutedKey.target as Element | null)?.closest?.("[data-org-parameter-session]"))))
@@ -1049,9 +1051,9 @@ export const OrgEditor = memo(function OrgEditor({
 					}
 					lastRoutedKey = event
 					const policy = editor.state.facet(orgInputConfiguration)
-					if (orgInputIsProtected(input) || editor.composing) {
+					if (orgInputIsProtected(input) || editor.compositionStarted) {
 						const guarded = resolveOrgInput({ configuration: policy?.generation === getOrgInputConfiguration().generation ? policy.configuration : null,
-							scope: inputScopeRef.current, current: null, input: { ...input, isComposing: input.isComposing || editor.composing },
+							scope: inputScopeRef.current, current: null, input: { ...input, isComposing: input.isComposing || editor.compositionStarted },
 							now: Date.now(), nextId: prefixId + 1, selectionEmpty: editor.state.selection.ranges.every((range) => range.empty),
 							owner: commandOwnerRef.current, generation: getOrgInputConfiguration().generation })
 						publishPrefix(null)
@@ -1996,9 +1998,9 @@ export const OrgEditor = memo(function OrgEditor({
 
 	return (
 		<div className="flex h-full min-h-0 w-full flex-col">
-			{inputConfiguration.error && (
+			{inputConfiguration.error && !getConfigurationError() && (
 				<div role="alert" className="shrink-0 px-3 py-1 text-sm">
-					Saved keymap configuration is invalid: {inputConfiguration.error} Repair it in Settings → Editor → Org input keymaps.
+					Keymap configuration is unavailable: {inputConfiguration.error} Edit keymaps in config.json, then run Reload configuration.
 				</div>
 			)}
 			{todoMessage && (

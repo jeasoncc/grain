@@ -1,12 +1,12 @@
 import { history, undo, undoDepth } from "@codemirror/commands"
 import { Compartment, EditorSelection, EditorState } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { type ReactNode, useLayoutEffect, useRef, useState } from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { useSettings } from "@/hooks/use-settings"
 import { ConfirmProvider } from "@/views/ui/confirm"
-import { ApplicationCompiledToolSurface, ApplicationToolProvider, ApplicationToolSurface, useApplicationToolRegistration, useApplicationTools } from "./application-tool-provider"
+import { ApplicationCompiledToolSurface, ApplicationToolLauncher, ApplicationToolProvider, ApplicationToolSurface, useApplicationToolRegistration, useApplicationTools } from "./application-tool-provider"
 import type { ApplicationToolRegistry } from "@/flows/application/application-tool-registry"
 import { createApplicationCommandRegistry } from "@/flows/application-command-registry"
 import { createTrustedCompiledExtension, type CompiledExtensionToolHandle, type TrustedCompiledExtension } from "@/flows/application/trusted-compiled-extension"
@@ -15,6 +15,74 @@ import { useTrustedCompiledExtension } from "./trusted-compiled-extension"
 
 const initialSettings = useSettings.getState()
 afterEach(() => { cleanup(); useSettings.setState(initialSettings) })
+
+async function chooseTool(action: string, trigger = screen.getByRole("button", { name: "Application tools" })) {
+	fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false })
+	fireEvent.click(await screen.findByRole("menuitem", { name: action }))
+	await waitFor(() => expect(screen.queryByRole("menu", { name: "Application tools" })).not.toBeInTheDocument())
+}
+
+describe("application tool launcher", () => {
+	it("opens registered closed tools from the fallback and restores tool focus after menu teardown", async () => {
+		const requestClose = vi.fn(() => true)
+		function Producer() {
+			const owner = useRef({}).current
+			const lease = useApplicationToolRegistration(owner, { id: "shell.preview", label: "Preview", layout: "side",
+				state: { dirty: false, pending: false, fence: 1 }, requestClose })
+			return <ApplicationToolSurface lease={lease}><textarea aria-label="Preview body" defaultValue="literal preview" /></ApplicationToolSurface>
+		}
+		useSettings.setState({ applicationPopupConfigurationJson: "" })
+		render(<ConfirmProvider><ApplicationToolProvider><Producer /></ApplicationToolProvider></ConfirmProvider>)
+		const trigger = screen.getByRole("button", { name: "Application tools" })
+		expect(screen.queryByRole("textbox", { name: "Preview body" })).not.toBeInTheDocument()
+		await chooseTool("Open Preview tool window")
+		const body = screen.getByRole("textbox", { name: "Preview body" })
+		await waitFor(() => expect(body).toHaveFocus())
+		await chooseTool("Focus Preview tool window")
+		await waitFor(() => expect(body).toHaveFocus())
+		await chooseTool("Close Preview")
+		await waitFor(() => expect(body).not.toBeInTheDocument())
+		expect(trigger).toHaveFocus()
+		await chooseTool("Open Preview tool window")
+		await waitFor(() => expect(screen.getByRole("textbox", { name: "Preview body" })).toHaveFocus())
+	})
+
+	it("keeps a compact local trigger keyboard reachable with separate focus and close actions", async () => {
+		function Producer() {
+			const owner = useRef({}).current
+			const lease = useApplicationToolRegistration(owner, { id: "pending.draft", label: "Pending draft", layout: "bottom", active: true,
+				state: { dirty: true, pending: true, readOnly: true, fence: 1 }, requestClose: () => true })
+			return <ApplicationToolSurface lease={lease}><textarea aria-label="Pending draft body" readOnly defaultValue="unsaved draft" /></ApplicationToolSurface>
+		}
+		useSettings.setState({ applicationPopupConfigurationJson: "" })
+		render(<ConfirmProvider><ApplicationToolProvider>
+			<aside aria-label="Local tools"><ApplicationToolLauncher compact /></aside><Producer />
+		</ApplicationToolProvider></ConfirmProvider>)
+		const trigger = within(screen.getByRole("complementary", { name: "Local tools" })).getByRole("button", { name: "Application tools" })
+		expect(trigger).toHaveAttribute("aria-description", "1 tool with unsaved drafts")
+		for (const key of ["Enter", " ", "ArrowDown"]) {
+			trigger.focus()
+			fireEvent.keyDown(trigger, { key })
+			const menu = await screen.findByRole("menu", { name: "Application tools" })
+			expect(menu).toHaveTextContent("Unsaved draft")
+			expect(menu).toHaveTextContent("Read-only")
+			expect(menu).toHaveTextContent("Pending")
+			expect(screen.getByRole("menuitem", { name: "Close Pending draft" })).toHaveAttribute("data-disabled")
+			const focus = screen.getByRole("menuitem", { name: "Focus Pending draft tool window" })
+			await waitFor(() => expect(focus).toHaveFocus())
+			fireEvent.keyDown(focus, { key: "ArrowDown" })
+			await waitFor(() => expect(focus).toHaveFocus())
+			fireEvent.keyDown(focus, { key: "ArrowUp" })
+			fireEvent.keyDown(menu, { key: "Escape" })
+			await waitFor(() => expect(screen.queryByRole("menu", { name: "Application tools" })).not.toBeInTheDocument())
+			await waitFor(() => expect(trigger).toHaveFocus())
+		}
+		fireEvent.keyDown(trigger, { key: "ArrowDown" })
+		const focus = await screen.findByRole("menuitem", { name: "Focus Pending draft tool window" })
+		fireEvent.keyDown(focus, { key: "Enter" })
+		await waitFor(() => expect(screen.getByRole("textbox", { name: "Pending draft body" })).toHaveFocus())
+	})
+})
 
 describe("physical tool frames", () => {
 	it("moves one mounted Source between popup, side, bottom and producer placement without resetting selection or history", () => {
@@ -43,7 +111,7 @@ describe("physical tool frames", () => {
 		const surface = editor.dom.closest("[data-application-tool]")!
 		const windowId = surface.getAttribute("data-application-tool-window")
 		for (const layout of ["popup", "side", "bottom"] as const) {
-			act(() => useSettings.getState().setApplicationPopupConfigurationJson(JSON.stringify({ version: 1, rules: [{ id: "org-roam", layout, size: { widthPercent: 60, heightPercent: 40 } }] })))
+			act(() => useSettings.setState({ applicationPopupConfigurationJson: JSON.stringify({ version: 1, rules: [{ id: "org-roam", layout, size: { widthPercent: 60, heightPercent: 40 } }] }) }))
 			expect(editor).toBe(instance)
 			expect(editor.dom.closest("[data-application-tool-dock]")?.getAttribute("data-application-tool-dock")).toBe(layout)
 			expect(surface.getAttribute("data-application-tool-window")).toBe(windowId)
@@ -51,7 +119,7 @@ describe("physical tool frames", () => {
 			expect(destroyed).not.toHaveBeenCalled()
 			expect(editor.hasFocus).toBe(true)
 		}
-		act(() => useSettings.getState().setApplicationPopupConfigurationJson(""))
+		act(() => useSettings.setState({ applicationPopupConfigurationJson: "" }))
 		expect(editor.dom.closest("[data-application-tool-dock]")).toBeNull()
 		act(() => { expect(undo(editor)).toBe(true) })
 		expect(editor.state.doc.toString()).toBe("* scratch\n未知 source\n")
@@ -78,8 +146,8 @@ describe("physical tool frames", () => {
 		let closing!: Promise<boolean>
 		await act(async () => { closing = registry.close(lease); await Promise.resolve() })
 		act(() => {
-			useSettings.getState().setApplicationPopupConfigurationJson(JSON.stringify({ version: 1, rules: [{ id: lease.id, layout: "side" }] }))
-			useSettings.getState().setApplicationPopupConfigurationJson("")
+			useSettings.setState({ applicationPopupConfigurationJson: JSON.stringify({ version: 1, rules: [{ id: lease.id, layout: "side" }] }) })
+			useSettings.setState({ applicationPopupConfigurationJson: "" })
 		})
 		await act(async () => {
 			const staleApproval = screen.queryByRole("button", { name: "Close tool" })
@@ -107,15 +175,15 @@ describe("physical tool frames", () => {
 			registry.bindHost(lease, host)
 			draft.focus()
 			draft.setSelectionRange(2, 7, "backward")
-			useSettings.getState().setApplicationPopupConfigurationJson(JSON.stringify({ version: 1, rules: [{ id: lease.id, layout: "popup" }] }))
+			useSettings.setState({ applicationPopupConfigurationJson: JSON.stringify({ version: 1, rules: [{ id: lease.id, layout: "popup" }] }) })
 		})
 		expect(host.closest("[data-application-tool-dock]")?.getAttribute("data-application-tool-dock")).toBe("popup")
 		expect(draft.value).toBe("literal 未保存\nsource")
 		expect([draft.selectionStart, draft.selectionEnd, draft.selectionDirection]).toEqual([2, 7, "backward"])
 		expect(await registry.close(lease)).toBe(false)
-		act(() => useSettings.getState().setApplicationPopupConfigurationJson(""))
+		act(() => useSettings.setState({ applicationPopupConfigurationJson: "" }))
 		expect(host.parentNode).toBe(source)
-		act(() => useSettings.getState().setApplicationPopupConfigurationJson(JSON.stringify({ version: 1, rules: [{ id: lease.id, layout: "side" }] })))
+		act(() => useSettings.setState({ applicationPopupConfigurationJson: JSON.stringify({ version: 1, rules: [{ id: lease.id, layout: "side" }] }) }))
 		host.remove()
 		await act(async () => { await registry.retire(lease) })
 		expect(host.isConnected).toBe(false)
@@ -144,7 +212,7 @@ describe("physical tool frames", () => {
 		body.focus(); body.setSelectionRange(2, 8, "backward")
 		const window = owner.getToolWindow(handle)!.windowId
 		for (const layout of ["side", "popup", "bottom"]) {
-			act(() => useSettings.getState().setApplicationPopupConfigurationJson(JSON.stringify({ version: 1, rules: [{ id: "compiled.result", layout }] })))
+			act(() => useSettings.setState({ applicationPopupConfigurationJson: JSON.stringify({ version: 1, rules: [{ id: "compiled.result", layout }] }) }))
 			expect(screen.getByRole("textbox", { name: "Compiled output Source" })).toBe(body)
 			expect(body.closest("[data-application-tool-dock]")?.getAttribute("data-application-tool-dock")).toBe(layout)
 			expect([body.selectionStart, body.selectionEnd, body.selectionDirection]).toEqual([2, 8, "backward"])
@@ -181,15 +249,23 @@ describe("physical tool frames", () => {
 		expect(body.closest("[inert]")).toBeNull()
 		expect(body.value).toBe("literal draft\n未保存")
 		body.focus(); body.setSelectionRange(1, 9, "backward")
-		act(() => useSettings.getState().setApplicationPopupConfigurationJson(JSON.stringify({ version: 1, rules: [{ id: "compiled.draft", layout: "side" }] })))
+		act(() => useSettings.setState({ applicationPopupConfigurationJson: JSON.stringify({ version: 1, rules: [{ id: "compiled.draft", layout: "side" }] }) }))
 		expect(screen.getByRole("textbox", { name: "Compiled draft Source" })).toBe(body)
 		expect(body.closest("[data-application-tool-dock]")?.getAttribute("data-application-tool-dock")).toBe("side")
 		expect([body.selectionStart, body.selectionEnd, body.selectionDirection]).toEqual([1, 9, "backward"])
 		expect(owner.bindToolHost(handle, document.createElement("div"), owner.getToolWindow(handle)!.windowId)).toBe(false)
-		let closing!: Promise<boolean>
-		await act(async () => { closing = owner.closeTool(handle); await Promise.resolve() })
-		await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Close tool" })); expect(await closing).toBe(true) })
-		expect(screen.queryByRole("textbox", { name: "Compiled draft Source" })).toBeNull()
+		await chooseTool("Focus Compiled draft tool window")
+		await waitFor(() => expect(body).toHaveFocus())
+		expect([body.selectionStart, body.selectionEnd, body.selectionDirection]).toEqual([1, 9, "backward"])
+		await chooseTool("Close Compiled draft")
+		fireEvent.click(await screen.findByRole("button", { name: "Keep draft" }))
+		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
+		await waitFor(() => expect(screen.getByRole("button", { name: "Application tools" })).toHaveFocus())
+		expect(screen.getByRole("textbox", { name: "Compiled draft Source" })).toBe(body)
+		expect(body.readOnly).toBe(true)
+		await chooseTool("Close Compiled draft")
+		fireEvent.click(await screen.findByRole("button", { name: "Close tool" }))
+		await waitFor(() => expect(screen.queryByRole("textbox", { name: "Compiled draft Source" })).toBeNull())
 	})
 	it("keeps the same editor after its hook producer is removed or replaced until the old draft's discard is approved", async () => {
 		let owner!: TrustedCompiledExtension
@@ -260,7 +336,7 @@ describe("physical tool frames", () => {
 		expect(body.isConnected).toBe(true)
 		expect(views[1].dom.isConnected).toBe(true)
 		expect(views[1].state.readOnly).toBe(true)
-		act(() => useSettings.getState().setApplicationPopupConfigurationJson(JSON.stringify({ version: 1, rules: [{ id: "compiled.replace", layout: "side" }] })))
+		act(() => useSettings.setState({ applicationPopupConfigurationJson: JSON.stringify({ version: 1, rules: [{ id: "compiled.replace", layout: "side" }] }) }))
 		expect(body.closest("[data-application-tool-dock]")?.getAttribute("data-application-tool-dock")).toBe("side")
 		expect(editor.state.doc.toString()).toBe(exactBody)
 		expect(undoDepth(editor.state)).toBe(depth)

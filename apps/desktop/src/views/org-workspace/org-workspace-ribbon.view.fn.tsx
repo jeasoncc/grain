@@ -1,19 +1,21 @@
-import { Link } from "@tanstack/react-router"
-import { CalendarDays, FilePenLine, Files, NotebookPen, Search, Settings } from "lucide-react"
+import { CalendarDays, FilePenLine, Files, NotebookPen, Search } from "lucide-react"
 import type { ReactNode } from "react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/views/ui/tooltip"
+import { ApplicationToolLauncher } from "@/views/application/application-tool-provider"
 
 const RibbonAction = ({
 	active = false,
 	children,
 	disabled = false,
 	label,
+	description,
 	onClick,
 }: {
 	readonly active?: boolean
 	readonly children: ReactNode
 	readonly disabled?: boolean
 	readonly label: string
+	readonly description?: string
 	readonly onClick: () => void
 }) => (
 	<Tooltip>
@@ -21,6 +23,7 @@ const RibbonAction = ({
 			<button
 				type="button"
 				aria-label={label}
+				aria-description={description}
 				aria-pressed={active}
 				disabled={disabled}
 				onClick={onClick}
@@ -30,7 +33,12 @@ const RibbonAction = ({
 			</button>
 		</TooltipTrigger>
 		<TooltipContent side="right" sideOffset={8}>
-			{label}
+			{description ? (
+				<div className="max-w-64 space-y-1">
+					<p className="font-medium">{label}</p>
+					<p>{description}</p>
+				</div>
+			) : label}
 		</TooltipContent>
 	</Tooltip>
 )
@@ -53,7 +61,7 @@ export const OrgWorkspaceRibbon = ({
 	readonly onShowFiles: () => void
 }) => (
 	<aside
-		className="flex w-11 shrink-0 flex-col items-center overflow-y-auto border-r border-sidebar-border bg-sidebar py-1"
+		className="flex w-11 shrink-0 flex-col items-center overflow-y-auto bg-sidebar py-1"
 		aria-label="Workspace ribbon"
 	>
 		<div className="flex shrink-0 flex-col items-center gap-1" role="group" aria-label="Workspace navigation">
@@ -63,12 +71,12 @@ export const OrgWorkspaceRibbon = ({
 			<RibbonAction label="Quick open (Ctrl+O)" onClick={onQuickOpen}>
 				<Search className="size-[17px]" />
 			</RibbonAction>
-			<RibbonAction active={activeView === "agenda"} label="Agenda" onClick={onShowAgenda}>
+			<RibbonAction active={activeView === "agenda"} label="Agenda" description="Scheduled tasks, deadlines and dated events from Org Source. Entries open their original file; configured views can also list TODO or search matches." onClick={onShowAgenda}>
 				<CalendarDays className="size-[17px]" />
 			</RibbonAction>
 		</div>
 		<div className="mt-auto flex shrink-0 flex-col items-center gap-1 pt-4">
-			<div className="flex flex-col items-center gap-1 border-t border-sidebar-border pt-2" role="group" aria-label="Quick creation">
+			<div className="flex flex-col items-center gap-1 pt-2" role="group" aria-label="Quick creation">
 				<RibbonAction disabled={isBusy} label="Quick capture" onClick={onCapture}>
 					<NotebookPen className="size-[17px]" />
 				</RibbonAction>
@@ -76,21 +84,8 @@ export const OrgWorkspaceRibbon = ({
 					<FilePenLine className="size-[17px]" />
 				</RibbonAction>
 			</div>
-			<div className="mt-1 border-t border-sidebar-border pt-2">
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<Link
-							to="/settings"
-							aria-label="Settings"
-							className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-						>
-							<Settings className="size-[17px]" />
-						</Link>
-					</TooltipTrigger>
-					<TooltipContent side="right" sideOffset={8}>
-						Settings
-					</TooltipContent>
-				</Tooltip>
+			<div className="mt-1 flex flex-col items-center gap-1 pt-2">
+				<ApplicationToolLauncher compact />
 			</div>
 		</div>
 	</aside>

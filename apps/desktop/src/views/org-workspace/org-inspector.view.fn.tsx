@@ -94,7 +94,7 @@ export const OrgInspector = memo(function OrgInspector({
 
 	return (
 		<aside className="flex h-full min-w-0 flex-col bg-sidebar" aria-label="Note inspector">
-			<div className="flex h-10 shrink-0 items-center border-b border-sidebar-border px-1.5">
+			<div className="flex h-10 shrink-0 items-center px-1.5">
 				<div className="flex min-w-0 flex-1 items-center gap-0.5">
 					{(
 						[

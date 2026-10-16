@@ -19,7 +19,7 @@ Grain 是一个基于 Tauri 的桌面应用，直接管理本地目录中的 `.o
 | 多视图工作 | 模糊 Quick Open、标签页、buffer 切换、分栏编辑、独立原生窗口，以及 Outline / Properties / Backlinks 检查面板 |
 | 使用 Org 工具 | 任务计时与报告、受支持的 Org 表格操作、HTML/Markdown 导出、可配置快捷键、Which-Key 提示与可选 Vim 编辑 |
 
-同一笔记的多个视图共享正文和撤销历史，选区、折叠与滚动位置各自独立。切换笔记不会丢弃未保存修改。自动保存在 **Settings → General** 中配置，也可以手动保存当前笔记或全部修改。
+同一笔记的多个视图共享正文和撤销历史，选区、折叠与滚动位置各自独立。切换笔记不会丢弃未保存修改。自动保存在 `config.json` 的 `saving` 中配置，也可以手动保存当前笔记或全部修改。
 
 Grain 实现的是一组受支持的 Org 工作流，不是 Emacs 运行时，也不承诺完整替代 GNU Org mode 及其扩展。
 
@@ -30,7 +30,7 @@ Grain 实现的是一组受支持的 Org 工作流，不是 Emacs 运行时，�
 在原生桌面应用中：
 
 1. 点击 **Open Documents/Grain**，创建或打开系统 Documents 目录下的默认 workspace；也可以用 **Choose another…** 授权一个已有本地目录。
-2. 从文件树打开 `.org` 文件，或点击 **New note**，输入 `inbox.org` 这样的相对路径。
+2. 从文件树打开 `.org` 文件，或点击 **New Org document**，在底部 minibuffer 输入 `inbox.org` 这样的相对路径。
 3. 通过 **Execute command** 查找 **Open agenda**、**Quick capture**、**New diary entry**、**Org-roam: find node** 等操作。
 
 可以先创建一个简单的 `inbox.org`：
@@ -60,7 +60,19 @@ Grain 实现的是一组受支持的 Org 工作流，不是 Emacs 运行时，�
 | `Ctrl-C Ctrl-T` | 切换标题的 TODO 状态 |
 | `Ctrl-C Ctrl-O` | 跟随光标处的 Org 链接 |
 
-`Ctrl-C Ctrl-T` 表示先按 `Ctrl-C`，再按 `Ctrl-T`。作用域快捷键和可选 Vim 模式在 **Settings → Editor → Org keymaps** 中配置。完整按键与配置说明见[桌面端编辑指南](./apps/desktop/README.md#org-editing-keys)。
+`Ctrl-C Ctrl-T` 表示先按 `Ctrl-C`，再按 `Ctrl-T`。作用域快捷键和可选 Vim 模式在 `config.json` 的 `keymaps` 中配置。完整按键说明见[桌面端编辑指南](./apps/desktop/README.md#org-editing-keys)。
+
+[文件树](./apps/desktop/README.md#file-tree) 使用方向键导航；行获得焦点时支持 `F2` 重命名、`Delete` 确认删除、`F5` 刷新和 `Ctrl/Cmd-F` 筛选。右键 / **…** 菜单标明目标，新建和重命名输入框只预选文件名主体，保留 `.org` 后缀。文件树不再内置 Vim/Treemacs 键位；正文的可选 Vim 模式不变。
+
+## 文件配置
+
+Grain 不提供图形化偏好设置页或主题选择器。在 **Execute command** 中执行 **Open configuration file**，将 `config.json` 交给系统默认应用打开；保存文件后执行 **Reload configuration**。
+
+配置位于原生应用配置目录。Linux 下是 `$XDG_CONFIG_HOME/com.lotus.grain/config.json`；未设置 `XDG_CONFIG_HOME` 时为 `~/.config/com.lotus.grain/config.json`。首次创建文件时迁移旧偏好；Grain 不会回写已有文件。
+
+版本为 1 的 JSON 文档统一管理外观、字体、保存、字数统计、Capture、快捷键、Org 行为、Agenda 视图、工具位置和图表服务。缺失字段使用默认值；未知字段或无效值会拒绝整份重载，保留原有视觉偏好、Source 与 Undo。主题使用内置的 811 套 [iTerm2-Color-Schemes](https://github.com/mbadolato/iTerm2-Color-Schemes) 配色的精确名称。
+
+参见[配置示例与安全规则](./apps/desktop/README.md#file-configuration)和[主题指南](./docs/desktop/THEMES_GUIDE.md)。
 
 ## 文件与数据归属
 
@@ -84,7 +96,7 @@ Documents/Grain/            已保存的用户内容
 - 本地文件访问通过 Tauri/Rust 完成，限制在用户授权的目录内；浏览器预览没有这项权限。
 - 路径会检查目录穿越与符号链接越界。保存、移动和删除检查预期文件 revision；遇到过期或不明确的状态时需要核对，不会静默替换。
 - 外部文件监听与轮询保护未保存内容。跨文件 Refile/Archive 先复制并验证目标，再移除来源。
-- 保存或删除可能保留 `.grain-*.tmp` 文件系统恢复产物。它们可被外部写入修改，**不是不可变备份**，也不会自动清理；不要直接批量删除。请另外备份 workspace。
+- 保存或删除可能保留 `.grain-*.tmp` 文件系统恢复产物，可通过 **Workspace tools → Recovery files…** 查看路径。它们可被外部写入修改，**不是不可变备份**，不会自动恢复或清理；不要直接批量删除。请另外备份 workspace。
 - 普通笔记的未保存 buffer **尚不支持通用重启恢复**。Capture 草稿恢复是独立的显式选项，会将明文草稿保存在本地存储中，不会自动写入 Org 文件。
 - 原生文件操作依赖受支持的 Linux 文件系统原语。不支持的平台或文件系统条件会直接拒绝操作；存在某平台的安装包不等于当前 Org 文件系统已在该平台具备等价支持。
 

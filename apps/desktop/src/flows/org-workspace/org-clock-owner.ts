@@ -51,8 +51,6 @@ export function createOrgClockOwner(): OrgClockOwner {
 	const reconcile = (runtime: OrgBufferRuntime, receipt: OrgBufferCommitReceipt) => {
 		const record = records.get(runtime)
 		if (!record) return
-		const parsed = parseOrgClocks(runtime.source)
-		const row = parsed.kind === "snapshot" ? parsed.active : null
 		const history = receipt.transactions.some(transaction => transaction.isUserEvent("undo") || transaction.isUserEvent("redo"))
 		const depth = undoDepth(runtime.state)
 		if (!history) {
@@ -67,8 +65,17 @@ export function createOrgClockOwner(): OrgClockOwner {
 			}
 			for (const key of record.history.keys()) if (key > depth) record.history.delete(key)
 		}
-		if (history && record.history.has(depth)) record.active = record.history.get(depth) ?? null
-		else if (row && record.active && row.start === record.active.row.start) {
+		const restored = history && record.history.has(depth)
+		if (restored) record.active = record.history.get(depth) ?? null
+		// Unknown clocks have no epoch to reconcile. Still record null after
+		// pruning/branching, and restore Undo/Redo metadata before taking this path.
+		if (!record.active) {
+			record.history.set(depth, null)
+			return
+		}
+		const parsed = parseOrgClocks(runtime.source)
+		const row = parsed.kind === "snapshot" ? parsed.active : null
+		if (!restored && row && row.start === record.active.row.start) {
 			// Map the row through real canonical change sets, including net-zero
 			// replacements. Equal text alone cannot preserve a live epoch identity.
 			let mapped = record.active.row.from, breakTo = record.active.row.breakTo
@@ -77,16 +84,16 @@ export function createOrgClockOwner(): OrgClockOwner {
 				let delta = 0
 				transaction.changes.iterChanges((fromA, toA, _fromB, _toB, inserted) => {
 					const separator = transaction.startState.lineBreak
-					const from = transaction.startState.doc.sliceString(0, fromA, separator).length
-					const to = transaction.startState.doc.sliceString(0, toA, separator).length
+					const from = fromA + (transaction.startState.doc.lineAt(fromA).number - 1) * (separator.length - 1)
+					const to = toA + (transaction.startState.doc.lineAt(toA).number - 1) * (separator.length - 1)
 					if (from < breakTo && (to > mapped || from === to && from > mapped)) untouched = false
-					if (to <= mapped) delta += inserted.sliceString(0, inserted.length, separator).length - (to - from)
+					if (to <= mapped) delta += inserted.length + (inserted.lines - 1) * (separator.length - 1) - (to - from)
 				})
 				mapped += delta
 				breakTo += delta
 			}
 			record.active = untouched && row.from === mapped ? { row, epoch: record.active.epoch } : null
-		} else record.active = null
+		} else if (!restored) record.active = null
 		if (!row || record.active?.row.start !== row.start || record.active.row.from !== row.from) record.active = null
 		else record.active = { row, epoch: record.active.epoch }
 		record.history.set(depth, record.active)

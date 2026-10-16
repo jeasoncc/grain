@@ -8,6 +8,7 @@ import {
 } from "@codemirror/commands"
 import { foldEffect, unfoldEffect } from "@codemirror/language"
 import {
+	ChangeSet,
 	Compartment,
 	EditorSelection,
 	EditorState,
@@ -86,6 +87,7 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 	const key = Object.freeze({ ...options.key })
 	const sourceCompartment = new Compartment()
 	const issuedProjections = new WeakSet<Transaction>()
+	const issuedHistory = new WeakSet<Transaction>()
 	let projectionDepth = 0
 	const authorityExtension = projectionAuthority.of((tr) => issuedProjections.has(tr))
 	// Force lazy StateFields while inside the private projection boundary. Mark the
@@ -110,7 +112,9 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 		const id = tr.annotation(originWindow) ?? snapshots.at(-1)?.value.windowId
 		return id === undefined
 			? []
-			: [restoreOriginSelection.of({ selection: tr.startState.selection, windowId: id })]
+			: [restoreOriginSelection.of({ windowId: id,
+				liveTarget: issuedHistory.has(tr)
+					? { selection: tr.startState.selection, changes: tr.changes.invertedDesc } : null })]
 	})
 	const canonicalExtensions = (separator: string): Extension => [
 		history({ joinToEvent: (transaction, adjacent) => transaction.annotation(orgSemanticHistory) !== undefined || adjacent }),
@@ -134,14 +138,33 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 	// A checkpoint of the SAME canonical state, never another document authority.
 	// Provisional history mappings are discarded at settlement; one net change is
 	// recorded from this checkpoint, so cancellation leaves prior undo/redo intact.
-	type Composition = { readonly slot: WindowSlot; readonly id: string; readonly seed: EditorState }
+	type Composition = {
+		readonly slot: WindowSlot
+		readonly id: string
+		readonly seed: EditorState
+		readonly changes: ChangeSet
+	}
 	let composition: Composition | null = null
-	const settleComposition = (current: EditorState, pending: Composition): EditorState => {
-		const unchanged = pending.seed.doc.eq(current.doc)
-		const settled = unchanged ? pending.seed.update({
+	const compositionChanges = (pending: Composition): ChangeSet => {
+		// Compose retains replacements that restore the original bytes. Compare
+		// only those touched ranges, never an unchanged document prefix/suffix.
+		let unchanged = true
+		pending.changes.iterChanges((from, to, _fromB, _toB, insert) => {
+			if (unchanged && (to - from !== insert.length || !pending.seed.doc.slice(from, to).eq(insert))) {
+				unchanged = false
+			}
+		})
+		return unchanged ? ChangeSet.empty(pending.seed.doc.length) : pending.changes
+	}
+	const settleComposition = (
+		current: EditorState,
+		pending: Composition,
+		changes = compositionChanges(pending),
+	): EditorState => {
+		const settled = changes.empty ? pending.seed.update({
 			annotations: [Transaction.addToHistory.of(false), isolateHistory.of("full")], filter: false,
 		}).state : pending.seed.update({
-			changes: minimalTextChange(pending.seed.doc, current.doc),
+			changes,
 			selection: current.selection,
 			annotations: [originWindow.of(pending.slot.options.windowId), isolateHistory.of("full"),
 				Transaction.userEvent.of("input.type.compose.start")],
@@ -316,7 +339,7 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 	const projectionSelection = (slot: WindowSlot, canonical: Transaction, origin?: WindowSlot) => {
 		const snapshot = canonical.effects.filter((e) => e.is(restoreOriginSelection)).at(-1)
 		const target = snapshot ? (windows.get(snapshot.value.windowId) ?? origin) : origin
-		return target === slot ? (snapshot?.value.selection ?? canonical.selection) : undefined
+		return target === slot ? (snapshot?.value.liveTarget?.selection ?? canonical.selection) : undefined
 	}
 	const projectTransaction = (
 		slot: WindowSlot,
@@ -521,7 +544,7 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 						fail("invalid-edit", "Composition must carry its exact pre-composition selection")
 					const seed = next.update({ selection: semantic.selection,
 						annotations: Transaction.addToHistory.of(false), filter: false }).state
-					nextComposition = { slot, id: semantic.group, seed }
+					nextComposition = { slot, id: semantic.group, seed, changes: ChangeSet.empty(seed.doc.length) }
 					nextGroup = null
 				}
 				const operation = local.docChanged && !composing && !ending ? semantic : undefined
@@ -555,18 +578,22 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 					traits.unshift(isolateHistory.of("before"))
 					nextGroup = null
 				}
+				if (nextComposition && local.docChanged) {
+					nextComposition = { ...nextComposition, changes: nextComposition.changes.compose(local.changes) }
+				}
+				const settlementChanges = ending && sameComposition && nextComposition
+					? compositionChanges(nextComposition) : undefined
 				const tr = next.update({
 					annotations: traits,
 					changes: local.changes,
 					filter: false,
-					selection: ending && sameComposition && nextComposition?.seed.doc.eq(local.newDoc)
-						? nextComposition.seed.selection : local.selection,
+					selection: settlementChanges?.empty ? nextComposition!.seed.selection : local.selection,
 				})
 				next = tr.state
 				canonical.push(tr)
 				committedTransactions.push(tr)
 				if (ending && sameComposition && nextComposition) {
-					next = settleComposition(next, nextComposition)
+					next = settleComposition(next, nextComposition, settlementChanges)
 					nextComposition = null
 					nextGroup = null
 				}
@@ -585,27 +612,30 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 	}
 	const runHistory = (slot: WindowSlot, command: typeof undo): boolean => {
 		guardSlot(slot)
-		semanticGroup = null
+		const pendingComposition = composition
 		busy = true
 		try {
-			if (composition) {
-				state = settleComposition(state, composition)
-				composition = null
-			}
+			const base = pendingComposition ? settleComposition(state, pendingComposition) : state
 			let result: Transaction | undefined
 			command({
 				dispatch: (tr) => {
 					result = tr
 				},
-				state,
+				state: base,
 			})
 			if (!result) {
+				if (pendingComposition) {
+					const projections = buildProjections([])
+					commit(base, projections, [], slot.options.windowId, lastOrigin)
+					composition = null
+				}
+				semanticGroup = null
 				return false
 			}
 			const snapshot = result.effects.filter((e) => e.is(restoreOriginSelection)).at(-1)
 			const target = snapshot ? (windows.get(snapshot.value.windowId) ?? slot) : slot
 			// Seed live pre-undo caret so inverse effects and redo restore it exactly.
-			const seed = state.update({
+			const seed = base.update({
 				annotations: Transaction.addToHistory.of(false),
 				filter: false,
 				selection: target.state.selection,
@@ -617,13 +647,16 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 				state: seed.state,
 			})
 			const tr = result!
+			// Classify the exact history transaction before its lazy inversion runs;
+			// caller-supplied userEvent metadata is not history provenance.
+			issuedHistory.add(tr)
 			const projections = buildProjections([tr], target)
-			const restored = tr.effects.filter((e) => e.is(restoreOriginSelection)).at(-1)
+			const restored = tr.effects.filter((e) => e.is(restoreOriginSelection)).at(-1)?.value.liveTarget
 			const restoration = restored
 				? tr.state.update({
 						annotations: Transaction.addToHistory.of(false),
 						filter: false,
-						selection: restored.value.selection,
+						selection: restored.selection,
 					})
 				: undefined
 			// Selection restoration belongs to the historical origin; authority belongs to the caller.
@@ -634,6 +667,8 @@ export function createOrgBufferRuntime(options: OrgBufferRuntimeOptions): OrgBuf
 				slot.options.windowId,
 				null,
 			)
+			composition = null
+			semanticGroup = null
 			return true
 		} finally {
 			busy = false

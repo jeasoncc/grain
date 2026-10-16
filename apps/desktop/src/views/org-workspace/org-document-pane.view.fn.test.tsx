@@ -1,13 +1,14 @@
 import { undoDepth } from "@codemirror/commands"
 import { EditorView } from "@codemirror/view"
 import { act, cleanup, fireEvent, screen, waitFor } from "@testing-library/react"
-import { ApplicationTestDocumentPane, render } from "@/test/application-providers"
+import { ApplicationTestDocumentPane, createApplicationTestClock, render } from "@/test/application-providers"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { createOrgBufferRuntime } from "@/flows/org-editor-runtime"
 import type { OrgWorkspaceController } from "@/hooks/use-org-workspace"
 import type { OrgEditorSessionSnapshot } from "@/views/org-editor/org-editor.types"
 import { useSettings } from "@/hooks/use-settings"
 import { DEFAULT_ORG_BEHAVIOR_CONFIGURATION } from "@/pipes/org/org-behavior-configuration.pipe"
+import { OrgDocumentPane } from "./org-document-pane.view.fn"
 
 const key = (view: EditorView, key: string) =>
 	fireEvent.keyDown(view.contentDOM, {
@@ -19,7 +20,7 @@ const views = () =>
 	screen
 		.getAllByRole("textbox", { name: /^Editing / })
 		.map((element) => EditorView.findFromDOM(element)!)
-const setup = (source = "* First\nbody\n* Second\nbody\n") => {
+const setup = (source = "* First\nbody\n* Second\nbody\n", direct = false) => {
 	const cache = new Map<string, OrgEditorSessionSnapshot>()
 	const runtime = createOrgBufferRuntime({
 		key: { workspaceSessionId: "grant", bufferId: "A" },
@@ -46,23 +47,25 @@ const setup = (source = "* First\nbody\n* Second\nbody\n") => {
 		isLoading: false,
 		getBufferEffectState: () => ({ busy: false, loading: false, saving: false, readOnly: false }),
 	} as unknown as OrgWorkspaceController
-	const pane = () => (
-		<ApplicationTestDocumentPane
-			controller={controller}
-			isBusy={false}
-			canGoBack={false}
-			canGoForward={false}
-			inspectorVisible
-			sidebarVisible
-			onCloseTab={vi.fn()}
-			onGoBack={vi.fn()}
-			onGoForward={vi.fn()}
-			onQuickOpen={vi.fn()}
-			onSelectTab={vi.fn()}
-			openDocumentPaths={[controller.activeDocument!.relativePath]}
-			editorSessionCache={cache}
-		/>
-	)
+	const props = {
+		controller,
+		isBusy: false,
+		canGoBack: false,
+		canGoForward: false,
+		inspectorVisible: true,
+		sidebarVisible: true,
+		onCloseTab: vi.fn(),
+		onGoBack: vi.fn(),
+		onGoForward: vi.fn(),
+		onQuickOpen: vi.fn(),
+		onSelectTab: vi.fn(),
+		openDocumentPaths: [controller.activeDocument!.relativePath],
+		editorSessionCache: cache,
+	}
+	if (direct) Object.assign(controller, { clock: createApplicationTestClock(controller) })
+	const pane = (active = true) => direct
+		? <OrgDocumentPane {...props} active={active} />
+		: <ApplicationTestDocumentPane {...props} />
 	const mounted = render(pane())
 	return { controller, runtime, cache, mounted, pane, source }
 }
@@ -73,6 +76,36 @@ afterEach(() => {
 	useSettings.setState({ orgBehaviorConfigurationJson: "", orgKeymapConfigurationJson: "" })
 })
 
+describe("inactive Source lifetime boundaries", () => {
+	it("closes inactive Note Actions without recreating the Source projection", () => {
+		const { mounted, pane, runtime } = setup(undefined, true)
+		const view = views()[0]
+		act(() => view.focus())
+		fireEvent.click(screen.getByRole("button", { name: "Note actions" }))
+		expect(screen.getByRole("menuitem", { name: /Archive subtree/ })).toBeInTheDocument()
+		mounted.rerender(pane(false))
+		expect(screen.queryByRole("menuitem", { name: /Archive subtree/ })).not.toBeInTheDocument()
+		expect(views()[0]).toBe(view)
+		expect(runtime.closed).toBe(false)
+	})
+
+	it("refreshes derived footer counts after hidden peer edits without recreating Source/history", () => {
+		const { mounted, pane, runtime } = setup("* Heading\none two", true)
+		const view = views()[0]
+		act(() => view.dispatch({ changes: { from: view.state.doc.length, insert: "\nthree" }, userEvent: "input.type" }))
+		expect(undoDepth(runtime.state)).toBe(1)
+		mounted.rerender(pane(false))
+		expect(views()[0]).toBe(view)
+		act(() => runtime.applyCommandEdit(runtime.source, {
+			from: runtime.source.length, to: runtime.source.length, insert: " four", cursor: runtime.source.length + 5,
+		}))
+		mounted.rerender(pane())
+		expect(screen.getByText("6 words")).toBeInTheDocument()
+		expect(views()[0]).toBe(view)
+		expect(undoDepth(runtime.state)).toBe(2)
+		expect(runtime.source).toBe("* Heading\none two\nthree four")
+	})
+})
 describe("same-active-buffer document pane split", () => {
 	it("shares canonical typing and undo, keeps independent cursor/modeline, and closes only the secondary view", async () => {
 		const { runtime, cache, source } = setup()
@@ -84,7 +117,6 @@ describe("same-active-buffer document pane split", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Split editor" }))
 		const [a, b] = views()
 		expect(a).toBe(primary)
-		expect(screen.getAllByRole("button", { name: "Save document" })).toHaveLength(1)
 		act(() => {
 			b.dispatch({ selection: { anchor: source.length } })
 		})

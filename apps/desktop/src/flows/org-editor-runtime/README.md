@@ -74,6 +74,24 @@ history, alter the source separator, or remove the runtime source compartment.
 - The engine neither destroys nor recreates views. The caller owns their lifecycle.
   Recovery/replacement of a failed view happens outside the synchronous callback.
 
+## Native composition and history
+
+Source/default/Vim input ownership follows `EditorView.compositionStarted`, not
+`composing`: the latter remains false until the first preedit DOM mutation.
+Selection or presentation updates during that gap must not settle composition,
+restore its initial caret, or let Source shortcuts consume IME keys.
+Settlement retains CM's 50ms post-compositionend mutation window. Provisional
+input shares one canonical checkpoint; cancellation preserves the original
+Source, caret and prior redo branch.
+
+Ordinary history effects store only originating-window identity. CM owns their
+grouped and mapped selection. Only privately issued undo/redo inversions retain
+a distinct live caret and an inverse change descriptor, from the current
+document to the historical target document. Rebase that caret in the **target**
+coordinate space and rebase the descriptor alongside it. Mapping it directly
+through current-document changes can exceed the shorter document after undo,
+rejecting subsequent IME transactions while their preedit is still visible.
+
 ## Workspace owner lifetime
 
 The session owner binds logical buffers, parked mirrors and mounted window leases to
@@ -102,8 +120,13 @@ without consulting a replacement grant or restoring edit authority.
 From `apps/desktop`:
 
 ```sh
-node_modules/.bin/vitest run src/flows/org-editor-runtime/org-buffer-runtime.test.ts
+bun run test src/flows/org-editor-runtime src/flows/org-modal src/flows/org-native-window src/views/org-editor
 node_modules/.bin/tsc --noEmit -p tsconfig.json
 ```
 
 Tests use real `EditorView` instances under jsdom, not view doubles.
+Composition lifecycle and detached-codec regressions are modeled input, not
+native IME evidence. Native smoke must exercise Chinese confirmation → undo →
+new preedit, cancellation with an existing redo branch, recommit, continuous
+wrapped text and save. Compare canonical Source, rendered text and saved bytes;
+preserve CRLF/emoji and check the native console for rejected input.

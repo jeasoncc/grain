@@ -37,6 +37,7 @@ const snapshot = { graph, contents }
 const dependencies = { getLegacyMigrationSnapshot: () => TE.right(snapshot), summarizeArtifacts: summarizeLegacyMigrationArtifacts }
 const boundaryError: OrgFileError = { cause: "unavailable", command: "test", message: "unavailable", operation: "readMigrationRecovery", type: "ORG_FILE_ERROR" }
 const repositoryWith = (overrides: Partial<OrgFileRepository> = {}): OrgFileRepository => ({
+	revealWorkspacePath: () => TE.left(boundaryError),
 	clearDerivedIndex: () => TE.left(boundaryError), createDirectory: () => TE.left(boundaryError),
 	deleteDocument: () => TE.left(boundaryError), getDerivedIndexStats: () => TE.left(boundaryError),
 	moveDocument: () => TE.left(boundaryError), openDefaultWorkspace: () => TE.left(boundaryError),

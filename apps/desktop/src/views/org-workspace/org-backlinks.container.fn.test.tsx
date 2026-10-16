@@ -46,7 +46,7 @@ function Harness({ surface, inspectorActive = true }: { readonly surface: Surfac
 		controller={controller}
 		isBusy={controller.isWorkspaceBlocked}
 		tools={null}
-		onCreateDiary={() => undefined}
+		onFocusEditor={() => undefined}
 		onHide={() => undefined}
 		onShowEditor={() => undefined}
 	/>
@@ -324,17 +324,17 @@ describe("production workspace tree actions", () => {
 		await open("b.org")
 		const { view } = attach(controller.activeBufferRuntime!)
 		act(() => view.dispatch({ changes: { from: view.state.doc.length, insert: "working input\0😀" } }))
-		await act(async () => fireEvent.click(screen.getByRole("button", { name: "a.org" })))
+		await act(async () => fireEvent.click(screen.getByRole("treeitem", { name: "a.org" })))
 		expect(controller.activeDocument?.relativePath).toBe("a.org")
-		await act(async () => fireEvent.click(screen.getByRole("button", { name: "b.org" })))
+		await act(async () => fireEvent.click(screen.getByRole("treeitem", { name: "b.org" })))
 		expect(controller.activeDocument?.relativePath).toBe("b.org")
 		expect(controller.content).toContain("working input\0😀")
 
 		disk.set("renamed.org", { relativePath: "renamed.org", revision: "renamed-1", content: "* Catalog addition" })
 		disk.delete("a.org")
 		await act(async () => { await controller.refreshWorkspace() })
-		expect(screen.queryByRole("button", { name: "a.org" })).not.toBeInTheDocument()
-		await act(async () => fireEvent.click(screen.getByRole("button", { name: "renamed.org" })))
+		expect(screen.queryByRole("treeitem", { name: "a.org" })).not.toBeInTheDocument()
+		await act(async () => fireEvent.click(screen.getByRole("treeitem", { name: "renamed.org" })))
 		expect(controller.activeDocument?.relativePath).toBe("renamed.org")
 		expect(controller.content).toBe("* Catalog addition")
 		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()

@@ -122,13 +122,20 @@ export function createOrgNativeWindowCoordinator(ports: OrgNativeWindowPorts): O
   slot.unsubscribeRemarks?.(); slot.unsubscribeRemarks = null
  }
  const post = (slot: NativeSlot, payload: OrgNativeProjection | (() => OrgNativeProjection)): Promise<boolean> => {
+  const generation = slot.generation
   slot.publication = slot.publication.then(async () => {
    const projection = typeof payload === "function" ? payload() : payload
-   if (slots.get(slot.label) !== slot || (disposed && projection.kind !== "retired" && projection.kind !== "rejected" && projection.kind !== "close-request")) return false
+   if (slots.get(slot.label) !== slot || generation !== slot.generation ||
+    ((!owns(slot) || disposed) && projection.kind !== "retired" && projection.kind !== "rejected" && projection.kind !== "close-request")) return false
    await transport.post(slot.label, slot.binding, projection)
    return true
   }).catch(error => {
-   if (slot.status === "live") slot.status = "failed"
+   if (slot.status === "live") {
+    slot.status = "failed"
+    // Fence publication/input immediately; release only after canonical/session
+    // observers have left their synchronous mutation boundary.
+    queueMicrotask(() => release(slot))
+   }
    report(new Error(`Native projection publication failed; canonical accepted state is retained: ${errorOf(error).message}`))
    notify()
    return false

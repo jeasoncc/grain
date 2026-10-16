@@ -3,7 +3,7 @@ import { EditorState } from "@codemirror/state"
 import { EditorView } from "@codemirror/view"
 import { act, cleanup, createEvent, fireEvent, screen, within, type RenderResult } from "@testing-library/react"
 import { render } from "@/test/application-providers"
-import { settingsStorageEvent } from "@/test/settings-storage-event"
+import { useConfigurationState } from "@/state/configuration.state"
 import * as E from "fp-ts/Either"
 import { useState } from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
@@ -15,7 +15,6 @@ import type { OrgAgendaTodoNoteRequest, OrgTodoNoteResult } from "@/flows/org-co
 import { OrgAgendaContainer } from "./org-agenda.container.fn"
 import { OrgTodoNote } from "../org-editor/org-todo-note.view.fn"
 import { useSettings } from "@/hooks/use-settings"
-import { repairOrgConfigurationStorage } from "@/hooks/use-org-input-configuration"
 import { useApplicationCommandHost, type ApplicationCommandHost } from "@/views/application/application-command-provider"
 import { readOrgSparseClockContext } from "@/io/api/org-clock-context.api"
 import { parseOrgClocks } from "@/pipes/org/org-clock.pipe"
@@ -150,6 +149,17 @@ function expectChangedRows() {
 	expect(within(rows[0]).getByText("NEXT")).toBeInTheDocument()
 	expect(within(rows[1]).getByText("FINISHED")).toBeInTheDocument()
 }
+const beginConfigurationReload = () => useConfigurationState.setState({
+	status: "loading", error: "Configuration file is being loaded.", generation: {},
+})
+const finishConfigurationReload = (agenda = useSettings.getState().orgAgendaConfigurationJson) => {
+	useSettings.setState({ orgAgendaConfigurationJson: agenda })
+	useConfigurationState.setState({ status: "ready", error: null, generation: {} })
+}
+const reloadConfiguration = (agenda = useSettings.getState().orgAgendaConfigurationJson) => {
+	beginConfigurationReload()
+	finishConfigurationReload(agenda)
+}
 
 beforeEach(() => {
 	noteCallback = undefined
@@ -165,8 +175,12 @@ beforeEach(() => {
 		},
 	}))
 	window.localStorage.clear()
-	useSettings.setState({ orgAgendaConfigurationJson: "" })
-	repairOrgConfigurationStorage()
+	useConfigurationState.setState({
+		...useConfigurationState.getInitialState(), path: "/configuration/config.json",
+		status: "loading", error: "Configuration file is being loaded.", generation: {},
+	})
+	useSettings.setState(useSettings.getInitialState())
+	finishConfigurationReload("")
 	disk = new Map([
 		[
 			"editor.org",
@@ -205,7 +219,8 @@ beforeEach(() => {
 afterEach(() => {
 	while (disposers.length) disposers.pop()!()
 	cleanup()
-	useSettings.setState({ orgAgendaConfigurationJson: "" })
+	useConfigurationState.setState({ ...useConfigurationState.getInitialState(), generation: {} })
+	useSettings.setState(useSettings.getInitialState())
 	vi.useRealTimers()
 	vi.restoreAllMocks()
 })
@@ -373,12 +388,12 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		}) })
 		const dirtyBody = runtime.source
 		const historyDepth = undoDepth(runtime.state)
-		await act(async () => { useSettings.setState({ orgAgendaConfigurationJson: JSON.stringify({
+		await act(async () => { reloadConfiguration(JSON.stringify({
 			version: 1, views: [{
 				id: "tasks", name: "Task states", files: ["tasks.org"], mode: "todo",
 				todo: ["NEXT", "FINISHED"], match: null, window: null, overdue: false, deadlineWarningDays: null,
 			}],
-		}) }) })
+		})) })
 		expect(screen.queryByRole("button", { name: "Cycle TODO for 😀 duplicate" })).not.toBeInTheDocument()
 		await act(async () => { fireEvent.change(screen.getByRole("combobox", { name: "Agenda view" }), { target: { value: "tasks" } }) })
 		for (const accepted of [false, true]) {
@@ -1261,7 +1276,7 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		disk.set("tasks.org", { relativePath: "tasks.org", content: raw, revision: "tasks-1" })
 		const dated = { id: "range", name: "Range", files: ["tasks.org"], mode: "dates", todo: null, match: null, window: { start: "2026-09-30", span: 2 }, overdue: false, deadlineWarningDays: null }
 		const list = { ...dated, id: "pending", name: "Pending", mode: "todo", todo: "pending", match: 'FILE="/notes/tasks.org"/!NEXT', window: null }
-		useSettings.setState({ orgAgendaConfigurationJson: JSON.stringify({ version: 1, views: [dated, list] }) })
+		reloadConfiguration(JSON.stringify({ version: 1, views: [dated, list] }))
 		render(<Harness />)
 		await act(async () => { await controller.openDefaultWorkspace() })
 		expect(screen.queryByRole("button", { name: "Cycle TODO for Range" })).not.toBeInTheDocument()
@@ -1305,8 +1320,8 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		})
 		await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: "Schedule for 😀 duplicate" })[0]) })
 		await act(async () => {
-			useSettings.setState({ orgAgendaConfigurationJson: "{\"version\":1,\"views\":[]}" })
-			useSettings.setState({ orgAgendaConfigurationJson: "" })
+			reloadConfiguration("{\"version\":1,\"views\":[]}")
+			reloadConfiguration("")
 			release()
 		})
 		expect(signal.aborted).toBe(true)
@@ -1316,7 +1331,7 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
 	})
 
-	it.each(["preparation", "navigation"] as const)("synchronously retires %s on a storage-only generation before identical settings hydrate", async (operation) => {
+	it.each(["preparation", "navigation"] as const)("synchronously retires %s when an equal-text file reload starts before React effects", async (operation) => {
 		await setup()
 		const originalSource = controller.activeBufferRuntime
 		const { promise, resolve } = Promise.withResolvers<E.Either<OrgFileError, OrgDocumentInterface>>()
@@ -1344,9 +1359,10 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		expect(signal.aborted).toBe(false)
 		const raw = useSettings.getState().orgAgendaConfigurationJson
 		await act(async () => {
-			window.dispatchEvent(settingsStorageEvent(localStorage.getItem("grain-settings")))
+			beginConfigurationReload()
 			// No raw JSON change or React retirement effect is needed to abort the old producer.
 			expect(signal.aborted).toBe(true)
+			finishConfigurationReload()
 			resolve(E.right(disk.get("tasks.org")!))
 		})
 		expect(useSettings.getState().orgAgendaConfigurationJson).toBe(raw)
@@ -1366,8 +1382,8 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		await setup()
 		await cycleSecondKeyboard()
 		await act(async () => {
-			useSettings.setState({ orgAgendaConfigurationJson: "{\"version\":1,\"views\":[]}" })
-			useSettings.setState({ orgAgendaConfigurationJson: "" })
+			reloadConfiguration("{\"version\":1,\"views\":[]}")
+			reloadConfiguration("")
 		})
 		expect(request.validate?.()).toMatchObject({ kind: "rejected" })
 		await act(async () => { expect(await request.execute("retained literal note")).toMatchObject({ kind: "rejected" }) })
@@ -1376,7 +1392,7 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
 	})
 
-	it("retires a retained literal note on an identical native storage envelope without reviving it after hydration", async () => {
+	it("retires a retained literal note on an equal-text file reload without reviving it when ready", async () => {
 		const raw = source.replace("#+TODO: NEXT | FINISHED\r\n", "#+TODO: NEXT | FINISHED(f@)\r\n")
 		disk.set("tasks.org", { relativePath: "tasks.org", content: raw, revision: "tasks-1" })
 		let request!: OrgAgendaTodoNoteRequest
@@ -1385,16 +1401,18 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		await cycleSecondKeyboard()
 		const tool = screen.getByRole("group", { name: "TODO state logging note" })
 		const draft = within(tool).getByRole("textbox")
-		fireEvent.change(draft, { target: { value: "retained native storage draft 😀" } })
+		fireEvent.change(draft, { target: { value: "retained file reload draft 😀" } })
 		const invalidated = vi.fn()
 		const unsubscribe = request.subscribeValidation!(invalidated)
 		await act(async () => {
-			window.dispatchEvent(settingsStorageEvent(localStorage.getItem("grain-settings")))
+			beginConfigurationReload()
 			expect(invalidated).toHaveBeenCalled()
+			expect(request.validate?.()).toMatchObject({ kind: "rejected" })
+			finishConfigurationReload()
 			expect(request.validate?.()).toMatchObject({ kind: "rejected" })
 		})
 		unsubscribe()
-		expect(draft).toHaveValue("retained native storage draft 😀")
+		expect(draft).toHaveValue("retained file reload draft 😀")
 		expect(draft).toHaveAttribute("readonly")
 		await act(async () => { expect(await request.execute("stale acceptance")).toMatchObject({ kind: "rejected" }) })
 		expect(controller.liveBuffers.some(buffer => buffer.document.relativePath === "tasks.org")).toBe(false)
@@ -1419,8 +1437,8 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		expect(runtime.source).toBe(changed)
 		expect(undoDepth(runtime.state)).toBe(1)
 		await act(async () => {
-			useSettings.setState({ orgAgendaConfigurationJson: "{\"version\":1,\"views\":[]}" })
-			useSettings.setState({ orgAgendaConfigurationJson: "" })
+			reloadConfiguration("{\"version\":1,\"views\":[]}")
+			reloadConfiguration("")
 			expect(effectSignal.aborted).toBe(false)
 			release()
 		})
@@ -1429,7 +1447,7 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
 	})
 
-	it.each(["configuration ABA", "identical storage envelope"] as const)("cancels an old real query on %s before cache/row publication and visibly fails closed for invalid saved JSON", async (transition) => {
+	it.each(["configuration ABA", "equal-text file reload"] as const)("cancels an old real query on %s before cache/row publication and fails closed until a successful file reload", async (transition) => {
 		await setup()
 		const { promise, resolve } = Promise.withResolvers<E.Either<OrgFileError, OrgDocumentInterface>>()
 		vi.mocked(orgFileRepository.readDocument).mockImplementationOnce(() => () => promise)
@@ -1438,10 +1456,10 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		await act(async () => { await controller.refreshWorkspace() })
 		await act(async () => {
 			if (transition === "configuration ABA") {
-				useSettings.setState({ orgAgendaConfigurationJson: "{\"version\":1,\"views\":[]}" })
-				useSettings.setState({ orgAgendaConfigurationJson: "" })
+				reloadConfiguration("{\"version\":1,\"views\":[]}")
+				reloadConfiguration("")
 			} else {
-				window.dispatchEvent(settingsStorageEvent(localStorage.getItem("grain-settings")))
+				reloadConfiguration()
 			}
 		})
 		expect(screen.getByText("Current")).toBeInTheDocument()
@@ -1449,10 +1467,18 @@ describe("production OrgAgendaContainer working-copy actions", () => {
 		expect(screen.getByText("Current")).toBeInTheDocument()
 		expect(screen.queryByText("😀 duplicate")).not.toBeInTheDocument()
 		vi.mocked(orgFileRepository.readDocument).mockClear()
-		await act(async () => { useSettings.setState({ orgAgendaConfigurationJson: "{" }) })
-		expect(screen.getByRole("alert")).toBeInTheDocument()
+		await act(async () => {
+			beginConfigurationReload()
+			useConfigurationState.setState({
+				status: "error", error: "Configuration file must contain valid JSON.", generation: {},
+			})
+		})
 		expect(screen.queryByRole("button", { name: "Cycle TODO for Current" })).not.toBeInTheDocument()
 		expect(orgFileRepository.readDocument).not.toHaveBeenCalled()
+		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
+		await act(async () => { reloadConfiguration() })
+		expect(screen.getByRole("button", { name: "Cycle TODO for Current" })).toBeInTheDocument()
+		expect(screen.queryByText("😀 duplicate")).not.toBeInTheDocument()
 		expect(orgFileRepository.writeDocument).not.toHaveBeenCalled()
 	})
 

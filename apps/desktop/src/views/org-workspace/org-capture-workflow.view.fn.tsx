@@ -18,6 +18,9 @@ import { OrgConfirmDialog } from "./org-action-dialog.view.fn"
 import { useOrgScopedInput } from "@/hooks/use-org-scoped-input"
 import type { OrgPrefixSession } from "@/types/editor/org-keymap.interface"
 import { OrgWhichKey } from "./org-which-key.view.fn"
+import { Button } from "@/views/ui/button"
+import { Input } from "@/views/ui/input"
+import { getConfigurationError } from "@/state/configuration.state"
 
 export interface OrgCaptureOrigin {
 	readonly scope: {
@@ -180,7 +183,7 @@ const CaptureSession = (props: OrgCaptureWorkflowProps) => {
 			setConfirmation(null)
 			setSavedDrafts([])
 			setPrefix(null)
-			setError(`Capture configuration changed or is unavailable${policy.error ? `: ${policy.error}` : "."} This session is read-only and copyable; start a new Capture after saving a valid configuration.`)
+			setError(`Capture configuration changed or is unavailable${policy.error && !getConfigurationError() ? `: ${policy.error}` : "."} This session is read-only and copyable; start a new Capture after reloading a valid configuration.`)
 		}
 		const unsubscribe = subscribeOrgCaptureConfiguration(retire)
 		retire()
@@ -577,12 +580,12 @@ const CaptureSession = (props: OrgCaptureWorkflowProps) => {
 	})
 	if (!template) return (
 		<div data-org-capture-template-minibuffer="true">
-			{configurationSnapshot.error && <p role="alert">Capture configuration: {configurationSnapshot.error} Edit it in Settings → Editor.</p>}
-			{configuration && !configuration.templates.length && <output className="block">No Capture templates configured. Edit Settings → Editor; saved drafts remain separately recoverable when opted in.</output>}
+			{configurationSnapshot.error && !getConfigurationError() && <p role="alert">Capture configuration: {configurationSnapshot.error} Edit capture in config.json, then run Reload configuration.</p>}
+			{configuration && !configuration.templates.length && <output className="block">No Capture templates configured. Edit capture.templates in config.json, then run Reload configuration; saved drafts remain separately recoverable when opted in.</output>}
 			{error && <p role="alert">{error}</p>}
-			{retired && <button type="button" onClick={() => { latest.current.requestDismiss ? latest.current.requestDismiss() : void cancel() }}>Dismiss (no rollback)</button>}
+			{retired && <Button type="button" size="sm" variant="ghost" onClick={() => { latest.current.requestDismiss ? latest.current.requestDismiss() : void cancel() }}>Dismiss (no rollback)</Button>}
 			{!retired && !parameters && recoveryEnabled && savedDrafts.length > 0 && (
-				<section aria-label="Saved Capture drafts" className="border-t p-3">
+				<section aria-label="Saved Capture drafts" className="bg-muted/20 p-3">
 					<p>Saved drafts are plaintext, not file authority. Resume never writes automatically.</p>
 					{savedDrafts.map((record) => (
 						<button key={record.id} type="button" className="block"
@@ -626,7 +629,7 @@ const CaptureSession = (props: OrgCaptureWorkflowProps) => {
 			data-org-parameter-input="true"
 			data-org-capture-tool-window="true"
 			aria-busy={pending || sourceReadOnly}
-			className="shrink-0 border-t border-border bg-background p-3 shadow-lg"
+			className="flex max-h-[min(65vh,36rem)] min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-auto bg-muted/20 p-3"
 			onCompositionStart={() => { composing.current = true }}
 			onCompositionEnd={() => {
 				composing.current = false
@@ -642,46 +645,44 @@ const CaptureSession = (props: OrgCaptureWorkflowProps) => {
 				if (event.nativeEvent.defaultPrevented) event.preventDefault()
 			}}
 		>
-			<header className="mb-2 font-medium">Capture · {template.label} · Scratch Org buffer</header>
-			<label className="flex gap-2">
-				Target file
-				<input
+			<header className="flex shrink-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+				<h2 className="min-w-0 break-words font-medium">Capture · {template.label}</h2>
+				<span className="text-xs text-muted-foreground">
+					{recoveryEnabled ? "Recovery on · unencrypted local draft" : "Recovery off · memory-only draft"}
+				</span>
+			</header>
+			<label className="flex shrink-0 items-center gap-2 text-xs">
+				<span className="shrink-0">Target file</span>
+				<Input
 					aria-label="Capture target file"
+					className="h-8 min-w-0 font-mono text-xs md:text-xs"
 					value={target}
 					readOnly={pending || retired || sourceReadOnly}
 					onChange={(event) => update(draft, event.target.value)}
 				/>
 			</label>
-			<p className="text-xs">
-				Type: {template.entryType} · Target: {template.target.kind}
-				{template.target.kind !== "file" && ` · ${(template.target.headingPath ?? []).join(" / ") || "file root"}`}
-				{template.target.kind === "datetree" && ` · frozen date ${template.target.date}`}
-			</p>
-			{preview && <output aria-label="Capture target preview" className="block border p-2 text-xs">
+			{preview && <output aria-label="Capture target preview" className="block shrink-0 break-words text-xs">
+				<span className="font-medium">Reviewed target: </span>
 				{preview.target.relativePath} · {preview.preview.headingPath.join(" / ") || "file end"} · line {preview.preview.line}
 				{preview.preview.createdHeadings.length > 0 && ` · creates ${preview.preview.createdHeadings.join(" / ")}`}
-				<div>Finish confirms this exact revision: {preview.expectedRevision}</div>
 			</output>}
-			{!retired && <button type="button" disabled={pending || previewPending || sourceReadOnly}
-				onClick={() => {
-					if (!current() || session.retired || session.pending || session.closing) return
-					if (session.recoveredRevision) {
-						session.confirming = true
-						setConfirmation({ kind: "refresh", path: session.path, journalId: session.journal?.id ?? null })
-					} else void previewTarget()
-				}}>
-				{previewPending ? "Reading target preview…" : "Preview target"}
-			</button>}
-			{!session.configurationRetired && (retired || session.recoveredRevision) && <button type="button"
-				disabled={pending || props.controller.isWorkspaceBlocked}
-				onClick={() => void props.controller.openDocumentPath(target)}>
-				Open target to reconcile
-			</button>}
-			<p className="text-xs">
-				{session.configurationRetired ? "Configuration lease retired: read-only scratch; existing recovery checkpoints are retained without new writes." :
-					recoveryEnabled ? "Draft recovery opted in: unencrypted local scratch; no grant or automatic source write." : "Draft recovery off: this scratch stays in memory only."}
-			</p>
-			<div ref={scratch} className="max-h-[40vh] overflow-auto">
+			{session.configurationRetired && <output className="block shrink-0 text-xs">
+				Configuration lease retired: read-only scratch; existing recovery checkpoints are retained without new writes.
+			</output>}
+			{error && <p role="alert" className="shrink-0 break-words text-sm">{error}</p>}
+			{!pending && sourceReadOnly && (
+				<output className="block shrink-0 text-sm">
+					The originating buffer is temporarily read-only; the Capture draft is retained. You can cancel.
+				</output>
+			)}
+			{pending && (
+				<output className="block shrink-0 text-sm">
+					{session.closing
+						? "Restoring capture origin…"
+						: "Finishing capture… Cancellation is unavailable while the write is pending."}
+				</output>
+			)}
+			<div ref={scratch} className="h-[clamp(14rem,32vh,22rem)] min-h-0 shrink-0 overflow-auto bg-background">
 				<OrgEditor
 					sessionKey={`org-capture:${session.id}`}
 					value={draft}
@@ -703,33 +704,48 @@ const CaptureSession = (props: OrgCaptureWorkflowProps) => {
 			<OrgWhichKey prefix={outerInput.prefix ?? prefix} getInputCommandDisabledReason={(id) =>
 				id === "org-capture.finish" && (pending || retired || sourceReadOnly || confirmation !== null)
 					? "Capture is not editable" : id === "org-capture.cancel" && pending ? "Publication is pending" : null} />
-			{error && <p role="alert">{error}</p>}
-			{!pending && sourceReadOnly && (
-				<output className="block">
-					The originating buffer is temporarily read-only; the Capture draft is retained. You can cancel.
-				</output>
-			)}
-			{pending && (
-				<output className="block">
-					{session.closing
-						? "Restoring capture origin…"
-						: "Finishing capture… Cancellation is unavailable while the write is pending."}
-				</output>
-			)}
-			<footer className="flex gap-3 text-xs">
+			<details className="shrink-0 text-xs">
+				<summary className="cursor-pointer rounded-md py-2 text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">Details &amp; help</summary>
+				<div className="max-h-32 space-y-2 overflow-auto break-words py-2">
+					<p>
+						Scratch Org buffer · Type: {template.entryType} · Target: {template.target.kind}
+						{template.target.kind !== "file" && ` · ${(template.target.headingPath ?? []).join(" / ") || "file root"}`}
+						{template.target.kind === "datetree" && ` · frozen date ${template.target.date}`}
+					</p>
+					{preview && <p className="break-all">Finish confirms this exact revision: {preview.expectedRevision}</p>}
+					<p>{recoveryEnabled
+						? "Draft recovery opted in: unencrypted local scratch; no grant or automatic source write."
+						: "Draft recovery off: this scratch stays in memory only."}</p>
+					<p>Default keys: C-c C-c / Mod-S finish · C-c C-k / C-g cancel. Configure tool keys in config.json under keymaps.</p>
+				</div>
+			</details>
+			<footer className="sticky bottom-0 z-10 flex shrink-0 flex-wrap items-center gap-2 bg-background py-2">
+				{!retired && <Button type="button" size="sm" variant="outline" disabled={pending || previewPending || sourceReadOnly}
+					onClick={() => {
+						if (!current() || session.retired || session.pending || session.closing) return
+						if (session.recoveredRevision) {
+							session.confirming = true
+							setConfirmation({ kind: "refresh", path: session.path, journalId: session.journal?.id ?? null })
+						} else void previewTarget()
+					}}>
+					{previewPending ? "Reading target preview…" : "Preview target"}
+				</Button>}
 				{!retired && (
-					<button
+					<Button
 						type="button"
+						size="sm"
 						disabled={pending || previewPending || sourceReadOnly}
 						onClick={() => {
 							void finish()
 						}}
 					>
 						Finish
-					</button>
+					</Button>
 				)}
-				<button
+				<Button
 					type="button"
+					size="sm"
+					variant="ghost"
 					disabled={pending}
 					onClick={() => {
 						if (latest.current.requestDismiss) latest.current.requestDismiss()
@@ -737,15 +753,20 @@ const CaptureSession = (props: OrgCaptureWorkflowProps) => {
 					}}
 				>
 					{retired ? "Dismiss (no rollback)" : "Cancel"}
-				</button>
-				{retired && !session.configurationRetired && session.journal && <button type="button" disabled={pending}
+				</Button>
+				{!session.configurationRetired && (retired || session.recoveredRevision) && <Button type="button" size="sm" variant="outline"
+					className="h-auto min-h-8 whitespace-normal py-1"
+					disabled={pending || props.controller.isWorkspaceBlocked}
+					onClick={() => void props.controller.openDocumentPath(target)}>
+					Open target to reconcile
+				</Button>}
+				{retired && !session.configurationRetired && session.journal && <Button type="button" size="sm" variant="outline" disabled={pending}
 					onClick={() => {
 						if (!current() || session.pending || session.closing) return
 						session.confirming = true
 						setPrefix(null)
 						setConfirmation({ kind: "delete", path: session.path, journalId: session.journal?.id ?? null })
-					}}>Delete saved draft</button>}
-				<span>Default keys: C-c C-c / Mod-S finish · C-c C-k / C-g cancel. Configure tool keys in Settings → Editor.</span>
+					}}>Delete saved draft</Button>}
 			</footer>
 		</section>
 		<OrgConfirmDialog

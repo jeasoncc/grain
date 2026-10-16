@@ -1392,7 +1392,7 @@ describe("production root independently bound split (synthetic host IO, real hoo
 			E.right({ relativePath: "renamed.org", revision: "b-1" }),
 		)
 		await act(async () => {
-			await controller.moveActiveDocument("renamed.org")
+			await controller.moveDocument(controller.activeDocument!, "renamed.org")
 		})
 		expect(controller.activeDocument!.relativePath).toBe("renamed.org")
 		expect(controller.activeBufferId).toBe(idB)

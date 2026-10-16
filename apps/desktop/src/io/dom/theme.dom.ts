@@ -9,7 +9,6 @@
  * 这些函数有 IO 副作用，因此放在 io/dom 层
  */
 
-import { DEFAULT_THEME_CONFIG } from "@/types/theme"
 import type { Theme, ThemeColors } from "@/types/theme/theme.types"
 
 // ==============================
@@ -48,6 +47,8 @@ function toKebabCase(str: string): string {
 function getExtendedColors(colors: ThemeColors, type: "light" | "dark"): Required<ThemeColors> {
 	return {
 		...colors,
+		destructive: colors.destructive || (type === "light" ? "#ef4444" : "#7f1d1d"),
+		destructiveForeground: colors.destructiveForeground || "#ffffff",
 		// 编辑器颜色
 		editorCursor: colors.editorCursor || colors.primary,
 		editorLineHighlight: colors.editorLineHighlight || (type === "light" ? "#f5f5f5" : "#2a2a2a"),
@@ -88,6 +89,7 @@ export function applyTheme(theme: Theme): void {
 	// 设置主题类型
 	root.classList.remove("light", "dark")
 	root.classList.add(theme.type)
+	root.style.colorScheme = theme.type
 
 	// 获取完整的颜色配置（包括默认扩展颜色）
 	const fullColors = getExtendedColors(theme.colors, theme.type)
@@ -97,6 +99,8 @@ export function applyTheme(theme: Theme): void {
 		root.style.setProperty(`--${toKebabCase(key)}`, value)
 	}
 }
+
+let transitionTimeout: number | undefined
 
 /**
  * 应用主题，可选过渡动画
@@ -110,18 +114,17 @@ export function applyTheme(theme: Theme): void {
 export const applyThemeWithTransition = (theme: Theme, enableTransition: boolean): void => {
 	const root = document.documentElement
 
+	if (transitionTimeout !== undefined) {
+		window.clearTimeout(transitionTimeout)
+		transitionTimeout = undefined
+	}
+	root.classList.toggle("theme-transition", enableTransition)
+	applyTheme(theme)
+
 	if (enableTransition) {
-		// 添加过渡类
-		root.classList.add("theme-transition")
-
-		// 应用主题
-		applyTheme(theme)
-
-		// 动画完成后移除过渡类
-		setTimeout(() => {
+		transitionTimeout = window.setTimeout(() => {
 			root.classList.remove("theme-transition")
-		}, DEFAULT_THEME_CONFIG.transitionDuration)
-	} else {
-		applyTheme(theme)
+			transitionTimeout = undefined
+		}, 300)
 	}
 }

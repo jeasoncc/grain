@@ -16,7 +16,7 @@ export function orgCompositionHistory(isCurrent: (view: EditorView) => boolean):
 	const settle = (startingNext = false) => {
 		clearTimer()
 		if (!view || !session || !isCurrent(view)) return
-		if (view.composing && !startingNext) { schedule(); return }
+		if (view.compositionStarted && !startingNext) { schedule(); return }
 		const completed = session
 		session = null
 		view.dispatch({
@@ -41,9 +41,9 @@ export function orgCompositionHistory(isCurrent: (view: EditorView) => boolean):
 					// A peer/controller/history mutation ends this input ownership. The
 					// runtime seals its checkpoint BEFORE accepting that other mutation.
 					clearTimer(); session = null
-				} else if (session.ended ? update.docChanged : !update.view.composing) {
-					// CM's end cleanup and selection/presentation-only updates must
-					// not keep postponing settlement after the final input mutation.
+				} else if (session.ended ? update.docChanged : !update.view.compositionStarted) {
+					// The native lifecycle starts before its first document mutation.
+					// CM's end cleanup and presentation-only updates must not postpone settlement.
 					session.ended = true
 					schedule()
 				}
@@ -56,7 +56,7 @@ export function orgCompositionHistory(isCurrent: (view: EditorView) => boolean):
 			// The Vim shim also labels programmatic commands as compose.start.
 			// Native DOM lifecycle or CM's composing state must own the input.
 			if (!session) {
-				if (!view.composing) return null
+				if (!view.compositionStarted) return null
 				begin(transaction.startState)
 			}
 			return { annotations: orgSemanticHistory.of({ selection: session!.selection,

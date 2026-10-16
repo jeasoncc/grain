@@ -124,7 +124,7 @@ const RoamScratch = ({ tool }: { readonly tool: OrgRoamCaptureTool }) => {
 			<footer className="flex gap-3 text-xs">
 				<button type="button" disabled={tool.readOnly} onClick={finish}>Finish</button>
 				<button type="button" disabled={tool.pending} onClick={closeTool}>{tool.readOnly ? "Dismiss (no rollback)" : "Cancel"}</button>
-				<span>Default keys: C-c C-c / Mod-S finish · C-c C-k / C-g cancel. Configure tool keys in Settings → Editor.</span>
+				<span>Default keys: C-c C-c / Mod-S finish · C-c C-k / C-g cancel. Configure tool keys in config.json under keymaps.</span>
 			</footer>
 		</section>
 		</ApplicationToolSurface>

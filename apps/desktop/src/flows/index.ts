@@ -5,30 +5,6 @@
  * 依赖：pipes/, io/, state/, types/
  */
 
-
-// ==============================
-// Settings Flows
-// ==============================
-
-export {
-	getFontSettings,
-	resetFontSettings,
-	toggleThemeMode,
-	type UpdateEditorFontParams,
-	type UpdateThemeModeParams,
-	type UpdateThemeParams,
-	type UpdateTransitionParams,
-	type UpdateTypographyParams,
-	type UpdateUiFontParams,
-	updateEditorFont,
-	updateTheme,
-	updateThemeMode,
-	updateThemeTransition,
-	updateTypography,
-	updateUiFont,
-} from "./settings"
-
-
 // ==============================
 // Org filesystem workspace flows
 // ==============================
@@ -69,13 +45,10 @@ export { getCurrentIconTheme, getIconThemeByKey } from "./icon-theme"
 // ==============================
 
 export {
-	applyThemeFlow,
-	getNextModeFlow,
+	applyConfiguredThemeFlow,
 	getThemeByKey,
-	getThemes,
-	handleSystemThemeChangeFlow,
-	initializeThemeFlow,
-	setModeFlow,
+	getThemeByName,
+	initThemeFlow,
 } from "./theme"
 
 

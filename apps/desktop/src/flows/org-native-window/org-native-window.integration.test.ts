@@ -5,13 +5,13 @@ import { EditorView } from "@codemirror/view"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { createOrgWorkspaceEffectOwner, type OrgWorkspaceEffectOwner } from "@/flows/org-editor-runtime/org-workspace-effect-owner"
 import { createOrgWorkspaceSessionOwner } from "@/flows/org-editor-runtime/org-workspace-session-owner"
-import { orgSemanticHistory, type OrgBufferWindowHandle } from "@/flows/org-editor-runtime"
+import { createOrgWindowEffectRegistry, orgSemanticHistory, type OrgBufferWindowHandle } from "@/flows/org-editor-runtime"
 import { orgCompositionHistory } from "@/flows/org-editor-runtime/org-composition-history"
 import { createOrgModalAdapter } from "@/flows/org-modal/org-modal-adapter"
 import type { OrgNativeEditorProjectionHandle } from "./org-native-editor-projection.types"
 import { createOrgNativeWindowCoordinator, type OrgNativeWindowTransport } from "./org-native-window-coordinator"
 import { createOrgNativeChildProjection, type OrgNativeChildProjection } from "./org-native-editor-projection"
-import type { OrgNativeIntent, OrgNativeIntentEnvelope, OrgNativeProjection } from "./org-native-window-protocol"
+import { encodeOrgNativeSelection, type OrgNativeIntent, type OrgNativeIntentEnvelope, type OrgNativeProjection } from "./org-native-window-protocol"
 import { registerOrgNativeClockHandler, registerOrgNativeWorkflowHandler, type OrgNativeWorkflowRequest } from "./org-native-workflow-bridge"
 import { useSettings } from "@/hooks/use-settings"
 import { createOrgClockOwner } from "@/flows/org-workspace/org-clock-owner"
@@ -71,7 +71,7 @@ const setup = (source = "* A\r\nbody\nLF\r\n* B\r\n", ports: NativeTestPorts = {
  cleanups.push(() => owner.dispose(), () => coordinator.dispose())
  return { owner, effects, scope, buffer, bridge, coordinator, onError }
 }
-const child = async (bridge: NativeBridge, label: string, modal = false) => {
+const child = async (bridge: NativeBridge, label: string, modal = false, knownLocalEffect?: (effect: StateEffect<unknown>) => boolean) => {
  bridge.intent(label, 1, { kind: "ready" }); await flush()
  const initial = bridge.payloads.get(label)?.filter(payload => payload.kind === "initial").at(-1)
  if (!initial || initial.kind !== "initial") throw new Error("Missing canonical initial projection")
@@ -91,7 +91,7 @@ const child = async (bridge: NativeBridge, label: string, modal = false) => {
   extensions: [projection.historyFreeExtensions, foldState, ...(adapter ? [adapter.extensions,
    orgCompositionHistory(() => live && projection.getSnapshot().error === null),
   ] : [])] }), dispatchTransactions: transactions => dispatch?.(transactions) })
- const handle = projection.attach(view, effect => adapter?.ownsEffect(effect) ?? false, () => true)
+ const handle = projection.attach(view, effect => (adapter?.ownsEffect(effect) ?? false) || (knownLocalEffect?.(effect) ?? false), () => true)
  attached = handle; dispatch = handle.dispatchTransactions
  cleanups.push(() => { live = false; adapter?.destroy(); handle.detach(); view.destroy() })
  await flush()
@@ -517,6 +517,38 @@ describe("real canonical native window projections", () => {
   expect(buffer.runtime.source).toBe(source)
   expect(a.view.state.sliceDoc()).toBe(source)
  })
+ it.each(["fold", "scroll", "registered"] as const)("synchronizes exact queued selections paired with a local %s effect before Agenda capture", async presentation => {
+  const source = "* A\nbody\n* B\n"
+  const { coordinator, bridge, buffer } = setup(source)
+  const label = await coordinator.detach(buffer.bufferId)
+  const registry = createOrgWindowEffectRegistry([], [EditorView.announce])
+  const a = await child(bridge, label, false, registry.knownEffect)
+  a.view.dispatch({ selection: { anchor: 4 } }); await flush()
+  const localEffect = presentation === "fold" ? foldEffect.of({ from: 3, to: 8 })
+   : presentation === "scroll" ? registry.scrollIntoView(1, { y: "center" })
+   : registry.localEffect(EditorView.announce.of("Reading selection"))
+  const selected = EditorSelection.create([EditorSelection.cursor(1, -1, 2, 17), EditorSelection.range(10, 12, 37, 1, 1)], 1)
+  a.view.dispatch({ selection: selected, effects: localEffect })
+  // A second optimistic selection differs only in metadata ignored by Selection.eq.
+  const exact = EditorSelection.create([EditorSelection.cursor(1, -1, 3, 19), EditorSelection.range(10, 12, 41, 2, 1)], 1)
+  a.view.dispatch({ selection: exact, effects: localEffect })
+  expect(a.projection.captureWorkflow("agenda", [{ from: 0, to: source.length }])).toBeNull()
+  await flush()
+  const canonical = buffer.runtime.captureWindowProjection(bridge.windows.get(label)!.windowId)!
+  expect(encodeOrgNativeSelection(canonical.state.selection)).toEqual(encodeOrgNativeSelection(exact))
+  expect(encodeOrgNativeSelection(a.view.state.selection)).toEqual(encodeOrgNativeSelection(exact))
+  expect(foldedRanges(canonical.state).size).toBe(0)
+  expect(foldedRanges(a.view.state).size).toBe(presentation === "fold" ? 1 : 0)
+  expect(a.projection.getSnapshot()).toMatchObject({ pending: 0, error: null })
+  let request!: OrgNativeWorkflowRequest
+  cleanups.push(registerOrgNativeWorkflowHandler(value => { request = value; return value.complete({ kind: "success" }) }))
+  const run = a.projection.captureWorkflow("agenda", [{ from: 0, to: source.length }])!
+  const result = run(); await flush()
+  expect((await result).kind).toBe("success")
+  expect(request.target.captureSourceTransform!()!.snapshot.selection.mainIndex).toBe(exact.mainIndex)
+  expect(buffer.runtime.source).toBe(source)
+  expect(undoDepth(buffer.runtime.state)).toBe(0)
+ })
  it("keeps folds local and closes native views without closing logical source/history", async () => {
   const { coordinator, bridge, buffer } = setup()
   const label = await coordinator.detach(buffer.bufferId)
@@ -539,6 +571,92 @@ describe("real canonical native window projections", () => {
   expect(buffer.runtime.closed).toBe(false)
   expect(undoDepth(buffer.runtime.state)).toBe(1)
  })
+ it("fences failed publication, releases native authority and workflow, and keeps accepted Source and healthy peers live", async () => {
+  const source = "* Reading\r\nResearch 😀 note\r\n"
+  const { coordinator, bridge, buffer, owner, scope, onError } = setup(source)
+  const tracker = createOrgRemarkTracker(buffer.runtime)
+  const from = source.indexOf("Research"), text = "Research 😀 note"
+  expect(tracker.install(source, 0, [{ id: "1234abcd", from, to: from + text.length, label: "important", kind: "range", originalText: text, line: 2 }])).toBe(true)
+  const label = await coordinator.detach(buffer.bufferId), a = await child(bridge, label)
+  const healthy = await child(bridge, await coordinator.detach(buffer.bufferId))
+  const windowId = bridge.windows.get(label)!.windowId
+  const permit = owner.captureReviewWindowPermit(scope, windowId, buffer.bufferId)
+  let request!: OrgNativeWorkflowRequest
+  cleanups.push(registerOrgNativeWorkflowHandler(value => { request = value; return value.complete({ kind: "success" }) }))
+  const opened = a.projection.captureWorkflow("agenda", [{ from: 0, to: source.length }])!()
+  await flush()
+  expect((await opened).kind).toBe("success")
+  expect(request.isLive()).toBe(true)
+  // The first native update fails; its following update and remark snapshots
+  // have already been queued by these two accepted canonical commands.
+  bridge.beforeDelivery = (target, payload) => {
+   if (target === label && payload.kind === "update") throw new Error("native projection delivery lost")
+  }
+  expect(request.target.applyEdit(source, { from: 0, to: 0, insert: "X", cursor: 1 })).toBe(true)
+  expect(request.target.applyEdit(buffer.runtime.source, { from: 0, to: 0, insert: "Y", cursor: 1 })).toBe(true)
+  await flush()
+  expect(buffer.runtime.source).toBe(`YX${source}`)
+  expect(healthy.view.state.sliceDoc()).toBe(buffer.runtime.source)
+  expect(buffer.runtime.captureWindowProjection(windowId)).toBeNull()
+  expect(permit()).toBe(false)
+  expect(request.isLive()).toBe(false)
+  expect(request.target.getCommandContext().available).toBe(false)
+  expect(coordinator.getSnapshot().windows.find(window => window.label === label)?.status).toBe("failed")
+  expect(a.view.state.sliceDoc()).toBe(source)
+  expect(onError).toHaveBeenCalledWith(expect.objectContaining({
+   message: expect.stringContaining("canonical accepted state is retained"),
+  }))
+  // Even while the transport remains broken, normal peer edits never revisit
+  // the failed endpoint and retained recovery-window identity remains physical.
+  healthy.view.dispatch({ changes: { from: healthy.view.state.doc.length, insert: "healthy" }, userEvent: "input.type" })
+  await flush()
+  expect(buffer.runtime.source).toBe(`YX${source}healthy`)
+  expect(healthy.projection.getSnapshot()).toMatchObject({ pending: 0, error: null })
+  expect(a.view.state.sliceDoc()).toBe(source)
+  expect(buffer.runtime.captureWindowProjection(windowId)).toBeNull()
+  expect(permit()).toBe(false)
+  bridge.beforeDelivery = null
+  const retainedState = buffer.runtime.state
+  expect(await coordinator.closeWindow(label)).toBe(true)
+  await flush()
+  expect(bridge.windows.has(label)).toBe(false)
+  expect(buffer.runtime.state).toBe(retainedState)
+  expect(buffer.runtime.closed).toBe(false)
+ })
+ it("drops queued initial and remark publication after the first initial transport failure without destroying the native recovery window", async () => {
+  const source = "* Reading\nResearch note\n"
+  const { coordinator, bridge, buffer, owner, scope, onError } = setup(source)
+  const tracker = createOrgRemarkTracker(buffer.runtime)
+  const from = source.indexOf("Research"), text = "Research note"
+  expect(tracker.install(source, 0, [{ id: "1234abcd", from, to: from + text.length, label: "important", kind: "range", originalText: text, line: 2 }])).toBe(true)
+  const label = await coordinator.detach(buffer.bufferId), identity = bridge.windows.get(label)!
+  const permit = owner.captureReviewWindowPermit(scope, identity.windowId, buffer.bufferId)
+  bridge.publicationFailure = true
+  // The transport becomes healthy when the failure is reported, before queued
+  // initial/Remark tasks drain: none may reacquire publication authority.
+  onError.mockImplementation(() => { bridge.publicationFailure = false })
+  bridge.intent(label, 1, { kind: "ready" })
+  bridge.intent(label, 2, { kind: "ready" })
+  await flush()
+  expect(bridge.payloads.get(label)).toBeUndefined()
+  expect(buffer.runtime.source).toBe(source)
+  expect(buffer.runtime.captureWindowProjection(identity.windowId)).toBeNull()
+  expect(permit()).toBe(false)
+  expect(onError).toHaveBeenCalledWith(expect.objectContaining({
+   message: expect.stringContaining("canonical accepted state is retained"),
+  }))
+  expect(bridge.windows.has(label)).toBe(true)
+  bridge.publicationFailure = false
+  bridge.intent(label, 0, { kind: "close-window" })
+  await flush()
+  expect(bridge.payloads.get(label)?.map(payload => payload.kind)).toEqual(["close-request"])
+  expect(bridge.windows.has(label)).toBe(true)
+  bridge.intent(label, 3, { kind: "close-window", generation: 1 })
+  await flush()
+  expect(bridge.windows.has(label)).toBe(false)
+  expect(buffer.runtime.source).toBe(source)
+  expect(buffer.runtime.closed).toBe(false)
+ })
  it("retains rejected input without replay, including native WM close while publication is pending", async () => {
   const { coordinator, bridge, buffer } = setup()
   const label = await coordinator.detach(buffer.bufferId)
@@ -553,6 +671,13 @@ describe("real canonical native window projections", () => {
   expect(bridge.windows.has(label)).toBe(true)
   expect(a.projection.getSnapshot().retainedSource).toBe(a.view.state.sliceDoc())
   expect(buffer.runtime.closed).toBe(false)
+  const accepted = buffer.runtime.state
+  const retained = a.projection.getSnapshot()
+  expect(await a.projection.discardRetainedAndClose(retained, retained.retainedSource!)).toBe(true)
+  await flush()
+  expect(bridge.windows.has(label)).toBe(false)
+  expect(buffer.runtime.state).toBe(accepted)
+  expect(buffer.runtime.source.startsWith("unpublished")).toBe(true)
  })
  it("retains unknown-effect native input visibly without committing private effects or source", async () => {
   const { coordinator, bridge, buffer } = setup()

@@ -124,7 +124,7 @@ function Runtime() {
 				parameterSessionSuspended={false}
 				openDocumentPaths={controller.openBuffers.map((buffer) => buffer.relativePath)}
 				onCloseTab={noop}
-				onSelectTab={noop}
+				onSelectTab={(path) => controller.openDocumentPath(path)}
 				onGoBack={noop}
 				onGoForward={noop}
 				onQuickOpen={noop}

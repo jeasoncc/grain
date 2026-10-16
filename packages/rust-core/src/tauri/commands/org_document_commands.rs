@@ -18,6 +18,7 @@ use std::sync::{mpsc, Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::{Emitter, Manager, State};
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_opener::OpenerExt;
 
 const WATCH_DEBOUNCE: Duration = Duration::from_millis(150);
 const ORG_WORKSPACE_CHANGED_EVENT: &str = "org-workspace-changed";
@@ -606,6 +607,51 @@ pub fn scan_org_workspace(
     recover_and_scan_workspace(&root)
 }
 
+fn reveal_approved_workspace_path(
+    registry: &OrgWorkspaceRegistry,
+    workspace_root: &Path,
+    capability_token: &str,
+    relative_path: Option<&Path>,
+    reveal: impl FnOnce(&Path) -> Result<(), String>,
+) -> Result<(), String> {
+    let approved_path = registry.approved_display_path(workspace_root, capability_token)?;
+    registry.with_approved(&approved_path, capability_token, |directory| {
+        let handoff = |relative: &Path| {
+            // The opener consumes a named path, not a process-local descriptor. Verify
+            // the selected root immediately before handing it off, while holding its lease.
+            // External file managers resolve the named path themselves; their later lookup
+            // cannot be made atomic with these descriptor checks by the opener API.
+            if fs::symlink_metadata(&approved_path).map_err(|error| error.to_string())?
+                .file_type().is_symlink()
+            {
+                return Err("Org workspace reveal root must not be a symbolic link".to_owned());
+            }
+            require_watch_path_identity(&approved_path, directory)?;
+            reveal(&approved_path.join(relative))
+        };
+        match relative_path {
+            Some(relative) => org_filesystem::with_org_reveal_target(directory, relative, handoff),
+            None => handoff(Path::new("")),
+        }
+    })
+}
+
+#[tauri::command]
+pub fn reveal_org_workspace_path(
+    app: tauri::AppHandle,
+    registry: State<'_, OrgWorkspaceRegistry>,
+    workspace_root: String,
+    capability_token: String,
+    relative_path: Option<String>,
+) -> Result<(), String> {
+    reveal_approved_workspace_path(
+        &registry, Path::new(&workspace_root), &capability_token,
+        relative_path.as_deref().map(Path::new),
+        |target| app.opener().reveal_item_in_dir(target)
+            .map_err(|error| format!("Cannot reveal Org workspace target in the file manager: {error}")),
+    )
+}
+
 #[tauri::command]
 pub fn read_org_document(
     registry: State<'_, OrgWorkspaceRegistry>,
@@ -995,6 +1041,58 @@ mod tests {
         assert!(require_watch_path_identity(&display, &directory).is_err());
         assert!(registry.approved_display_path(&display, &token).is_err());
         assert!(registry.watches.lock().unwrap().is_empty());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn reveal_rejects_unsafe_targets_and_propagates_opener_failure() {
+        let workspace = tempdir().unwrap();
+        let outside = tempdir().unwrap();
+        fs::write(workspace.path().join("notes.org"), "* Notes").unwrap();
+        fs::write(workspace.path().join("unsupported.txt"), "text").unwrap();
+        fs::create_dir(workspace.path().join("folder")).unwrap();
+        fs::create_dir(workspace.path().join(".grain-write-private.tmp")).unwrap();
+        std::os::unix::fs::symlink(outside.path(), workspace.path().join("linked")).unwrap();
+        std::os::unix::fs::symlink("notes.org", workspace.path().join("linked.org")).unwrap();
+        let registry = OrgWorkspaceRegistry::default();
+        let (path, _, token) = registry.approve(workspace.path()).unwrap();
+        for target in ["", "../notes.org", "/notes.org", "folder/../notes.org", "missing.org",
+            "unsupported.txt", "linked", "linked.org", "linked/notes.org", ".grain-write-private.tmp"] {
+            let result = reveal_approved_workspace_path(&registry, &path, &token,
+                Some(Path::new(target)), |_| panic!("unsafe target reached opener: {target}"));
+            assert!(result.is_err(), "{target}");
+        }
+        for target in [None, Some(Path::new("notes.org")), Some(Path::new("folder"))] {
+            let result = reveal_approved_workspace_path(&registry, &path, &token, target,
+                |named| {
+                    assert_eq!(named, path.join(target.unwrap_or_else(|| Path::new(""))));
+                    Err("file manager unavailable".to_owned())
+                });
+            assert_eq!(result.unwrap_err(), "file manager unavailable");
+        }
+        assert!(reveal_approved_workspace_path(&registry, &path, "unknown", None,
+            |_| panic!("unknown lease reached opener")).is_err());
+        registry.revoke(&path, &token).unwrap();
+        assert!(reveal_approved_workspace_path(&registry, &path, &token, None,
+            |_| panic!("released lease reached opener")).is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn reveal_rejects_replaced_named_root_before_opener() {
+        let parent = tempdir().unwrap();
+        let selected = parent.path().join("selected");
+        fs::create_dir(&selected).unwrap();
+        let registry = OrgWorkspaceRegistry::default();
+        let (path, _, token) = registry.approve(&selected).unwrap();
+        fs::rename(&selected, parent.path().join("retained")).unwrap();
+        fs::create_dir(&selected).unwrap();
+        assert!(reveal_approved_workspace_path(&registry, &path, &token, None,
+            |_| panic!("replacement root reached opener")).is_err());
+        fs::remove_dir(&selected).unwrap();
+        std::os::unix::fs::symlink(parent.path().join("retained"), &selected).unwrap();
+        assert!(reveal_approved_workspace_path(&registry, &path, &token, None,
+            |_| panic!("symbolic-link root reached opener")).is_err());
     }
 
     #[test]

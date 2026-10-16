@@ -5,7 +5,6 @@
  * 管理 UI 状态，包括：
  * - 右侧面板视图
  * - 右侧边栏开关状态
- * - 标签页位置
  * - 应用语言设置
  *
  * 使用 Zustand + Immer 实现不可变状态管理。
@@ -13,7 +12,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import type { RightPanelView, TabPosition, UIActions, UIState } from "@/types/ui"
+import type { RightPanelView, UIActions, UIState } from "@/types/ui"
 import { DEFAULT_UI_CONFIG, DEFAULT_UI_STATE } from "@/types/ui"
 
 // ==============================
@@ -57,13 +56,6 @@ export const useUIStore = create<UIStore>()(
 				}))
 			},
 
-			setTabPosition: (position: TabPosition) => {
-				set((state) => ({
-					...state,
-					tabPosition: position,
-				}))
-			},
-
 			toggleRightSidebar: () => {
 				set((state) => ({
 					...state,
@@ -77,7 +69,6 @@ export const useUIStore = create<UIStore>()(
 				locale: state.locale,
 				// 只持久化这些字段
 				rightSidebarOpen: state.rightSidebarOpen,
-				tabPosition: state.tabPosition,
 			}),
 		},
 	),
@@ -104,14 +95,6 @@ export const useRightSidebarOpen = (): boolean => {
 }
 
 /**
- * 获取当前标签页位置
- * 优化：仅在标签页位置变化时重新渲染
- */
-export const useTabPosition = (): TabPosition => {
-	return useUIStore((state) => state.tabPosition)
-}
-
-/**
  * 获取当前应用语言
  * 优化：仅在语言变化时重新渲染
  */
@@ -126,9 +109,3 @@ export const useIsPanelViewActive = (view: RightPanelView): boolean => {
 	return useUIStore((state) => state.rightPanelView === view)
 }
 
-/**
- * 检查标签页是否在顶部
- */
-export const useIsTabsAtTop = (): boolean => {
-	return useUIStore((state) => state.tabPosition === "top")
-}

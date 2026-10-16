@@ -5,10 +5,10 @@ import * as E from "fp-ts/Either"
 import { act, cleanup, fireEvent, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { render } from "@/test/application-providers"
-import { settingsStorageEvent } from "@/test/settings-storage-event"
+import { useConfigurationState } from "@/state/configuration.state"
 import { useSettings } from "@/hooks/use-settings"
 import { getOrgCaptureConfiguration } from "@/hooks/use-org-capture-configuration"
-import { getOrgInputConfiguration, repairOrgConfigurationStorage } from "@/hooks/use-org-input-configuration"
+import { getOrgInputConfiguration } from "@/hooks/use-org-input-configuration"
 import type { OrgCaptureOutcome, OrgCaptureTargetOutcome, OrgWorkspaceController } from "@/hooks/use-org-workspace"
 import type { OrgMinibufferSession } from "@/types/editor/minibuffer.interface"
 import { readOrgCaptureDrafts } from "@/io/storage/org-capture-draft.storage"
@@ -51,22 +51,42 @@ const saved = () => {
 	if (E.isLeft(result)) throw result.left
 	return result.right
 }
+const beginConfigurationReload = () => useConfigurationState.setState({
+	status: "loading", error: "Configuration file is being loaded.", generation: {},
+})
+const finishConfigurationReload = (capture = useSettings.getState().orgCaptureConfigurationJson) => {
+	useSettings.setState({ orgCaptureConfigurationJson: capture })
+	useConfigurationState.setState({ status: "ready", error: null, generation: {} })
+}
+const reloadConfiguration = (capture = useSettings.getState().orgCaptureConfigurationJson) => {
+	beginConfigurationReload()
+	finishConfigurationReload(capture)
+}
 const aba = () => {
 	const initial = useSettings.getState().orgCaptureConfigurationJson
-	useSettings.setState({ orgCaptureConfigurationJson: raw(false, false) === initial ? raw(true, false) : raw(false, false) })
-	useSettings.setState({ orgCaptureConfigurationJson: initial })
+	reloadConfiguration(raw(false, false) === initial ? raw(true, false) : raw(false, false))
+	reloadConfiguration(initial)
 }
 beforeEach(() => {
 	localStorage.clear()
-	useSettings.setState({ orgCaptureConfigurationJson: raw(), orgKeymapConfigurationJson: "", orgBehaviorConfigurationJson: "" })
-	repairOrgConfigurationStorage()
+	useConfigurationState.setState({
+		...useConfigurationState.getInitialState(), path: "/configuration/config.json",
+		status: "loading", error: "Configuration file is being loaded.", generation: {},
+	})
+	useSettings.setState(useSettings.getInitialState())
+	finishConfigurationReload(raw())
 	offered = null
 })
-afterEach(() => { cleanup(); vi.restoreAllMocks() })
+afterEach(() => {
+	cleanup()
+	useConfigurationState.setState({ ...useConfigurationState.getInitialState(), generation: {} })
+	useSettings.setState(useSettings.getInitialState())
+	vi.restoreAllMocks()
+})
 
 describe("Capture configuration authority with real readers and CodeMirror", () => {
 	it.each([false, true])("rejects a retained %s prompt/template callback synchronously inside batched ABA", async (prompt) => {
-		useSettings.setState({ orgCaptureConfigurationJson: raw(prompt) })
+		reloadConfiguration(raw(prompt))
 		const c = fixture(), close = vi.fn()
 		render(<><ParameterProbe /><OrgCaptureWorkflow controller={c} open onOpenChange={close} /></>)
 		if (prompt) await choose()
@@ -132,7 +152,7 @@ describe("Capture configuration authority with real readers and CodeMirror", () 
 	})
 
 	it("drains one accepted publication after ABA without closing, restoring focus or deleting its publishing marker", async () => {
-		useSettings.setState({ orgCaptureConfigurationJson: raw(false, true) })
+		reloadConfiguration(raw(false, true))
 		const accepted = Promise.withResolvers<OrgCaptureOutcome>()
 		const c = fixture(), close = vi.fn(), restore = vi.fn(), report = vi.fn()
 		vi.mocked(c.captureEntry).mockReturnValue(accepted.promise)
@@ -154,7 +174,7 @@ describe("Capture configuration authority with real readers and CodeMirror", () 
 	})
 
 	it("revokes a retained recovery selection before it can install an old draft or read its target", async () => {
-		useSettings.setState({ orgCaptureConfigurationJson: raw(false, true) })
+		reloadConfiguration(raw(false, true))
 		const first = render(<OrgCaptureWorkflow controller={fixture()} open onOpenChange={vi.fn()} />)
 		await choose()
 		const bytes = scratch().state.sliceDoc()
@@ -171,40 +191,61 @@ describe("Capture configuration authority with real readers and CodeMirror", () 
 		expect(close).toHaveBeenCalledExactlyOnceWith(false)
 	})
 
-	it("hydrates latest native storage authority, never a delayed event body, and retires an equal-text session", async () => {
+	it("retires an equal-text file reload synchronously and never revives its scratch editor", async () => {
 		const c = fixture()
 		render(<OrgCaptureWorkflow controller={c} open onOpenChange={vi.fn()} />)
 		await choose()
+		const view = scratch(), bytes = view.state.sliceDoc(), history = undoDepth(view.state)
 		const generation = getOrgCaptureConfiguration().generation
-		const latest = localStorage.getItem("grain-settings")!
-		const delayed = JSON.stringify({ state: { ...JSON.parse(latest).state, orgCaptureConfigurationJson: raw(true) }, version: 0 })
-		act(() => window.dispatchEvent(settingsStorageEvent(delayed)))
+		act(() => {
+			beginConfigurationReload()
+			expect(getOrgCaptureConfiguration().generation).not.toBe(generation)
+			expect(getOrgCaptureConfiguration().configuration).toBeNull()
+			view.dispatch({ changes: { from: view.state.doc.length, insert: "late edit" } })
+			undo(view)
+			expect(view.state.sliceDoc()).toBe(bytes)
+			expect(undoDepth(view.state)).toBe(history)
+			finishConfigurationReload()
+		})
 		expect(useSettings.getState().orgCaptureConfigurationJson).toBe(raw())
-		expect(getOrgCaptureConfiguration().generation).not.toBe(generation)
+		expect(getOrgCaptureConfiguration().configuration).not.toBeNull()
 		expect(scratch().state.facet(EditorState.readOnly)).toBe(true)
+		expect(scratch().state.sliceDoc()).toBe(bytes)
 		expect(c.captureEntry).not.toHaveBeenCalled()
 	})
 
-	it.each(["malformed", "removed", "unsupported-version"])("latches %s native storage closed until an explicit successful save", async (kind) => {
+	it.each(["malformed", "removed", "unsupported-version"])("keeps a %s file failure closed until an explicit successful reload", async (kind) => {
 		const c = fixture()
-		render(<OrgCaptureWorkflow controller={c} open onOpenChange={vi.fn()} />)
+		const mounted = render(<OrgCaptureWorkflow controller={c} open onOpenChange={vi.fn()} />)
 		await choose()
-		const envelope = localStorage.getItem("grain-settings")!
-		const unavailable = kind === "malformed" ? "{broken" : kind === "removed" ? null :
-			JSON.stringify({ ...JSON.parse(envelope), version: 99 })
-		if (unavailable === null) localStorage.removeItem("grain-settings")
-		else localStorage.setItem("grain-settings", unavailable)
-		act(() => window.dispatchEvent(settingsStorageEvent(unavailable)))
+		const view = scratch(), bytes = view.state.sliceDoc(), history = undoDepth(view.state)
+		act(() => {
+			beginConfigurationReload()
+			useConfigurationState.setState({ status: "error", error: `Configuration file ${kind}.`, generation: {} })
+			view.dispatch({ changes: { from: view.state.doc.length, insert: "late edit" } })
+			undo(view)
+			expect(view.state.sliceDoc()).toBe(bytes)
+			expect(undoDepth(view.state)).toBe(history)
+		})
 		expect(getOrgCaptureConfiguration().configuration).toBeNull()
 		expect(getOrgInputConfiguration().configuration).toBeNull()
-		localStorage.setItem("grain-settings", envelope)
-		act(() => window.dispatchEvent(settingsStorageEvent(envelope)))
-		expect(getOrgCaptureConfiguration().configuration).toBeNull()
 		expect(getOrgCaptureConfiguration().error).not.toBeNull()
-		act(() => { useSettings.getState().setOrgCaptureConfigurationJson(raw()); repairOrgConfigurationStorage() })
+		act(() => {
+			beginConfigurationReload()
+			expect(getOrgCaptureConfiguration().configuration).toBeNull()
+			expect(getOrgInputConfiguration().configuration).toBeNull()
+			finishConfigurationReload(raw())
+		})
 		expect(getOrgCaptureConfiguration().configuration).not.toBeNull()
+		expect(getOrgInputConfiguration().configuration).not.toBeNull()
 		expect(scratch().state.facet(EditorState.readOnly)).toBe(true)
+		expect(scratch().state.sliceDoc()).toBe(bytes)
 		expect(c.captureEntry).not.toHaveBeenCalled()
+		mounted.unmount()
+		render(<OrgCaptureWorkflow controller={c} open onOpenChange={vi.fn()} />)
+		await choose()
+		expect(scratch().state.facet(EditorState.readOnly)).toBe(false)
+		expect(c.readCaptureTarget).toHaveBeenCalledTimes(2)
 	})
 
 	it("cancels scratch without mutating the real Source bytes, selection, or history", async () => {

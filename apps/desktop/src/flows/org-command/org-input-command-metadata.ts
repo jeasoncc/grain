@@ -14,6 +14,20 @@ export const ORG_TOOL_INPUT_COMMANDS: readonly OrgInputCommandMetadata[] = Objec
 	{ id: "org-agenda.cancel", label: "Cancel agenda command" },
 	{ id: "org-todo-note.finish", label: "Accept TODO note" }, { id: "org-todo-note.cancel", label: "Cancel TODO transition" },
 	{ id: "org-remark.save", label: "Save remark" }, { id: "org-remark.return-source", label: "Return to remark source" },
+	{ id: "file-tree.next", label: "Next file-tree entry" }, { id: "file-tree.previous", label: "Previous file-tree entry" },
+	{ id: "file-tree.first", label: "First file-tree entry" }, { id: "file-tree.last", label: "Last file-tree entry" },
+	{ id: "file-tree.collapse", label: "Collapse file-tree directory" }, { id: "file-tree.expand", label: "Expand file-tree directory" },
+	{ id: "file-tree.parent", label: "Parent file-tree directory" }, { id: "file-tree.open", label: "Open file-tree entry" },
+	{ id: "file-tree.create-document", label: "Create document" }, { id: "file-tree.create-directory", label: "Create directory" },
+	{ id: "file-tree.rename", label: "Rename document" }, { id: "file-tree.move", label: "Move document" },
+	{ id: "file-tree.delete", label: "Delete file-tree document" },
+	{ id: "file-tree.refresh", label: "Refresh file tree" },
+	{ id: "file-tree.filter", label: "Filter files" },
+	{ id: "file-tree.copy-relative-path", label: "Copy relative file path" }, { id: "file-tree.copy-absolute-path", label: "Copy absolute file path" },
+	{ id: "file-tree.copy-org-link", label: "Copy Org file link" },
+	{ id: "file-tree.reveal-active", label: "Reveal active document" }, { id: "file-tree.collapse-all", label: "Collapse all file-tree directories" },
+	{ id: "file-tree.reveal-in-file-manager", label: "Reveal in file manager" },
+	{ id: "file-tree.focus-source", label: "Focus Source" }, { id: "file-tree.hide", label: "Hide Files" },
 ])
 const registrations = new Map<object, { readonly token: object; readonly entries: readonly OrgInputCommandMetadata[] }>()
 const listeners = new Set<() => void>()

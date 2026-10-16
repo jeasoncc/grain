@@ -57,16 +57,6 @@ export const getKrokiMermaidUrl = (
 // ============================================================================
 
 /**
- * 检查 Kroki 是否已启用且配置正确
- *
- * @param state - 图表状态
- * @returns Kroki 是否已启用
- */
-export const isKrokiEnabled = (state: DiagramState): boolean => {
-	return state.enableKroki && !!state.krokiServerUrl
-}
-
-/**
  * 验证 Kroki 服务器 URL 格式
  *
  * @param url - 要验证的 URL
@@ -109,6 +99,5 @@ export const DEFAULT_KROKI_URL = "https://kroki.io"
  * @returns 默认的图表状态
  */
 export const createDefaultDiagramState = (): DiagramState => ({
-	enableKroki: true,
 	krokiServerUrl: DEFAULT_KROKI_URL,
 })

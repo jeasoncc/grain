@@ -2,7 +2,7 @@
  * UI Domain - Interface Definitions
  *
  * Type definitions for UI state management.
- * Handles right sidebar, tab position, and locale settings.
+ * Handles right sidebar and locale settings.
  */
 
 // ==============================
@@ -14,13 +14,6 @@
  * null indicates the panel is closed.
  */
 export type RightPanelView = "outline" | "characters" | "drawings" | null
-
-/**
- * Tab position options.
- * - "top": Displays tabs above the editor
- * - "right-sidebar": Displays tabs in the right panel
- */
-export type TabPosition = "top" | "right-sidebar"
 
 // ==============================
 // State Interface
@@ -35,8 +28,6 @@ export interface UIState {
 	readonly rightPanelView: RightPanelView
 	/** Whether the right sidebar is open */
 	readonly rightSidebarOpen: boolean
-	/** Tab position: "top" or "right-sidebar" */
-	readonly tabPosition: TabPosition
 	/** Application locale (e.g., "en", "zh-CN") */
 	readonly locale: string
 }
@@ -63,11 +54,6 @@ export interface UIActions {
 	 * Toggle the right sidebar open/closed state.
 	 */
 	readonly toggleRightSidebar: () => void
-
-	/**
-	 * Set the tab position.
-	 */
-	readonly setTabPosition: (position: TabPosition) => void
 
 	/**
 	 * Set the application locale.
@@ -99,5 +85,4 @@ export const DEFAULT_UI_STATE: UIState = {
 	locale: "en",
 	rightPanelView: null,
 	rightSidebarOpen: true,
-	tabPosition: "right-sidebar",
 } as const

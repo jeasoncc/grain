@@ -9,11 +9,8 @@
  */
 
 import { create } from "zustand"
-import { persist } from "zustand/middleware"
 import {
-	DEFAULT_THEME_CONFIG,
 	DEFAULT_THEME_STATE,
-	type ThemeActions,
 	type ThemeMode,
 	type ThemeState,
 } from "@/types/theme"
@@ -31,102 +28,17 @@ interface InternalThemeState {
 // Store Type
 // ==============================
 
-type ThemeStore = ThemeState & InternalThemeState & ThemeActions
+type ThemeStore = ThemeState & InternalThemeState
 
 // ==============================
 // Store Implementation
 // ==============================
 
-export const useThemeStore = create<ThemeStore>()(
-	persist(
-		(set, get) => ({
-			// Initial State
-			...DEFAULT_THEME_STATE,
-			_initialized: false,
-
-			setEnableTransition: (enable: boolean) => {
-				set((state) => ({
-					...state,
-					enableTransition: enable,
-				}))
-			},
-
-			setInitialized: (initialized: boolean) => {
-				set((state) => ({
-					...state,
-					_initialized: initialized,
-				}))
-			},
-
-			setMode: (mode: ThemeMode) => {
-				set((state) => ({
-					...state,
-					// Update effective theme based on mode
-					effectiveTheme: mode === "system" ? state.systemTheme : mode,
-					mode,
-				}))
-			},
-
-			setSystemTheme: (theme: "light" | "dark") => {
-				set((state) => ({
-					...state,
-					// Update effective theme if in system mode
-					effectiveTheme: state.mode === "system" ? theme : state.effectiveTheme,
-					systemTheme: theme,
-				}))
-			},
-
-			// ==============================
-			// Pure State Setters (no business logic)
-			// ==============================
-
-			setTheme: (key: string) => {
-				set((state) => ({
-					...state,
-					effectiveTheme: key.includes("dark")
-						? "dark"
-						: key.includes("light")
-							? "light"
-							: state.effectiveTheme,
-					// Update mode based on theme key
-					mode: key.includes("dark") ? "dark" : key.includes("light") ? "light" : state.mode,
-					themeKey: key,
-				}))
-			},
-
-			toggleMode: () => {
-				const currentMode = get().mode
-				let nextMode: ThemeMode
-
-				// Cycle: light → dark → system → light
-				if (currentMode === "light") {
-					nextMode = "dark"
-				} else if (currentMode === "dark") {
-					nextMode = "system"
-				} else {
-					nextMode = "light"
-				}
-
-				set((state) => ({
-					...state,
-					// Update effective theme
-					effectiveTheme: nextMode === "system" ? state.systemTheme : nextMode,
-					mode: nextMode,
-				}))
-			},
-		}),
-		{
-			name: DEFAULT_THEME_CONFIG.storageKey,
-			partialize: (state) => ({
-				effectiveTheme: state.effectiveTheme,
-				enableTransition: state.enableTransition,
-				mode: state.mode,
-				systemTheme: state.systemTheme,
-				themeKey: state.themeKey,
-			}),
-		},
-	),
-)
+/** File-selected preferences and native system appearance; no independent persistence. */
+export const useThemeStore = create<ThemeStore>(() => ({
+	...DEFAULT_THEME_STATE,
+	_initialized: false,
+}))
 
 // ==============================
 // Selector Hooks
@@ -174,18 +86,3 @@ export const useIsThemeInitialized = (): boolean => {
 	return useThemeStore((state) => state._initialized)
 }
 
-// ==============================
-// Action Hooks
-// ==============================
-
-/**
- * Get theme actions.
- */
-export const useThemeActions = () => ({
-	setEnableTransition: useThemeStore((s) => s.setEnableTransition),
-	setInitialized: useThemeStore((s) => s.setInitialized),
-	setMode: useThemeStore((s) => s.setMode),
-	setSystemTheme: useThemeStore((s) => s.setSystemTheme),
-	setTheme: useThemeStore((s) => s.setTheme),
-	toggleMode: useThemeStore((s) => s.toggleMode),
-})

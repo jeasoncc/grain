@@ -1996,6 +1996,52 @@ pub(crate) fn validate_relative_org_path(path: &Path) -> OrgFilesystemResult<Pat
     Ok(path)
 }
 
+/// Resolve a visible tree target without following any symbolic link. The callback retains
+/// both parent and target descriptors until the external file-manager handoff completes.
+pub(crate) fn with_org_reveal_target<T>(
+    root: &Dir,
+    relative_path: &Path,
+    reveal: impl FnOnce(&Path) -> Result<T, String>,
+) -> Result<T, String> {
+    let relative = validate_relative_directory_path(relative_path).map_err(|error| error.to_string())?;
+    let display = portable_relative_path(&relative).map_err(|error| error.to_string())?;
+    let (parent, name) = resolve_no_symlink_parent(root, &relative, &display)
+        .map_err(|error| error.to_string())?;
+    let metadata = parent.symlink_metadata(&name).map_err(|error| error.to_string())?;
+    if metadata.file_type().is_symlink()
+        || !(metadata.is_dir() || (metadata.is_file() && relative.extension() == Some(OsStr::new("org"))))
+    {
+        return Err(format!("Not a supported Org workspace tree target: {display}"));
+    }
+    let mut options = OpenOptions::new();
+    options.read(true);
+    #[cfg(unix)]
+    options.custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK);
+    let target = parent.open_with(&name, &options).map_err(|error| error.to_string())?;
+    let observed = target.metadata().map_err(|error| error.to_string())?;
+    #[cfg(unix)]
+    if metadata.dev() != observed.dev() || metadata.ino() != observed.ino()
+        || metadata.is_dir() != observed.is_dir() || metadata.is_file() != observed.is_file()
+    {
+        return Err(format!("Org workspace reveal target changed: {display}"));
+    }
+    // Resolve the current named chain again rather than trusting only the retained parent.
+    let (named_parent, named_target) = resolve_no_symlink_parent(root, &relative, &display)
+        .map_err(|error| error.to_string())?;
+    let named = named_parent.symlink_metadata(&named_target).map_err(|error| error.to_string())?;
+    if named.file_type().is_symlink() {
+        return Err(format!("Org workspace reveal target became a symbolic link: {display}"));
+    }
+    #[cfg(unix)]
+    if named.dev() != observed.dev() || named.ino() != observed.ino() {
+        return Err(format!("Org workspace reveal target changed: {display}"));
+    }
+    let result = reveal(&relative);
+    drop(target);
+    drop(parent);
+    result
+}
+
 /// Validates the portable path spelling as well as its platform path components. Checking the
 /// original string prevents `Path::components` from normalizing away `.` or repeated separators.
 fn validate_relative_directory_path(path: &Path) -> OrgFilesystemResult<PathBuf> {

@@ -399,7 +399,7 @@ export function createOrgModalAdapter(ports: OrgModalPorts): OrgModalAdapter {
 		constructor(editor: EditorView) {
 			if (view) throw new Error("A modal adapter belongs to exactly one window")
 			view = editor; cm = new OwnedCodeMirror(editor)
-			inputOwners.set(cm.getInputField(), () => live() && !composing && !editor.composing)
+			inputOwners.set(cm.getInputField(), () => live() && !composing && !editor.compositionStarted)
 			windows.set(cm, { history, save })
 			engine.enterVimMode(cm)
 			for (const name of ["lastEditInputState", "lastEditActionCommand"]) {
@@ -495,7 +495,7 @@ export function createOrgModalAdapter(ports: OrgModalPorts): OrgModalAdapter {
 				// Composition has its own exact pre-input selection and canonical
 				// settlement, rather than the surrounding Vim insert-session group.
 				if (transaction.annotation(orgSemanticHistory)?.composition !== undefined ||
-					(composing || view?.composing) && transaction.isUserEvent("input.type.compose")) return null
+					(composing || view?.compositionStarted) && transaction.isUserEvent("input.type.compose")) return null
 				// History policy is not input provenance: controller transactions can
 				// legitimately carry addToHistory(true) in a history-free projection.
 				// Only this engine operation or a native CM input/delete producer may
@@ -508,7 +508,7 @@ export function createOrgModalAdapter(ports: OrgModalPorts): OrgModalAdapter {
 				beginGroup()
 				return { annotations: orgSemanticHistory.of({ selection: origin!, group }) }
 			}),
-			EditorView.inputHandler.of(() => pendingHistory || pendingSave || (!live() && active) || (live() && !cm?.state.vim?.insertMode && !view?.composing)),
+			EditorView.inputHandler.of(() => pendingHistory || pendingSave || (!live() && active) || (live() && !cm?.state.vim?.insertMode && !view?.compositionStarted)),
 			EditorView.domEventHandlers({
 				compositionstart(event) {
 					if (live() && cm) {
@@ -525,7 +525,7 @@ export function createOrgModalAdapter(ports: OrgModalPorts): OrgModalAdapter {
 			}),
 		],
 		modalKey(event) {
-			if (!live() || !cm || event.defaultPrevented || event.isComposing || view!.composing || event.keyCode === 229 || event.getModifierState("AltGraph")) return false
+			if (!live() || !cm || event.defaultPrevented || event.isComposing || view!.compositionStarted || event.keyCode === 229 || event.getModifierState("AltGraph")) return false
 			if (pendingHistory || pendingSave) return true
 			const key = engine.vimKeyFromEvent(event, cm.state.vim ?? undefined)
 			if (!key) return false

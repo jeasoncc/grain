@@ -57,6 +57,41 @@ describe("OrgEditor runtime projection", () => {
 		cleanup()
 		useSettings.setState({ orgKeymapConfigurationJson: "" })
 		vi.restoreAllMocks()
+		vi.useRealTimers()
+	})
+
+	it("keeps the same default editor and caret ownership across presentation rerenders before the first preedit mutation", async () => {
+		vi.useFakeTimers()
+		const source = "* TODO 中文😀\r\nbody\0\r\n"
+		const { runtime, onCommit, onError } = makeRuntime(source)
+		const onCursorChange = vi.fn()
+		const props = { runtime, value: source, initialCursor: 7, onCursorChange, onSave: vi.fn() }
+		const mounted = render(<OrgEditor {...props} ariaLabel="primary" />)
+		const view = viewFor()
+		const selection = view.state.selection
+		fireEvent.compositionStart(view.contentDOM)
+		expect(view.compositionStarted).toBe(true)
+		expect(view.composing).toBe(false)
+		onCursorChange.mockClear()
+		mounted.rerender(<OrgEditor {...props} ariaLabel="renamed primary" />)
+		expect(viewFor("renamed primary")).toBe(view)
+		await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+		// A presentation transaction must not settle IME ownership and write the
+		// seed selection back into the DOM before native preedit has arrived.
+		expect(view.compositionStarted).toBe(true)
+		expect(onCursorChange).not.toHaveBeenCalled()
+		expect(view.state.selection.eq(selection, true)).toBe(true)
+		expect(view.state.sliceDoc()).toBe(source)
+		expect(runtime.source).toBe(source)
+		expect(undoDepth(runtime.state)).toBe(0)
+		expect(onCommit).not.toHaveBeenCalled()
+		expect(onError).not.toHaveBeenCalled()
+		fireEvent.compositionEnd(view.contentDOM, { data: "" })
+		await act(async () => { await vi.advanceTimersByTimeAsync(50) })
+		expect(view.compositionStarted).toBe(false)
+		expect(view.state.selection.eq(selection, true)).toBe(true)
+		expect(runtime.source).toBe(source)
+		expect(undoDepth(runtime.state)).toBe(0)
 	})
 
 	it("routes repeated modal keys through the production resolver without losing canonical operator history", async () => {

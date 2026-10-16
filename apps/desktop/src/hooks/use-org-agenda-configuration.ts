@@ -3,14 +3,14 @@ import { useSyncExternalStore } from "react"
 import { parseOrgAgendaConfiguration } from "@/pipes/org/org-agenda-configuration.pipe"
 import { parseOrgBehaviorConfiguration } from "@/pipes/org/org-behavior-configuration.pipe"
 import { useSettings } from "./use-settings"
-import { getOrgConfigurationStorageError, subscribeOrgConfigurationStorage, useOrgConfigurationStorageSynchronization } from "./use-org-input-configuration"
+import { getConfigurationError, subscribeConfiguration } from "@/state/configuration.state"
 
 let revision = 0
 function createSnapshot() {
 	const state = useSettings.getState()
 	const agenda = parseOrgAgendaConfiguration(state.orgAgendaConfigurationJson)
 	const behavior = parseOrgBehaviorConfiguration(state.orgBehaviorConfigurationJson)
-	const storageError = getOrgConfigurationStorageError()
+	const storageError = getConfigurationError()
 	return Object.freeze({ raw: state.orgAgendaConfigurationJson, behaviorRaw: state.orgBehaviorConfigurationJson,
 		generation: Object.freeze({ revision: revision++ }),
 		configuration: !storageError && E.isRight(agenda) ? agenda.right : null,
@@ -23,7 +23,7 @@ const publishSnapshot = () => {
 	snapshot = createSnapshot()
 	for (const listener of listeners) listener()
 }
-subscribeOrgConfigurationStorage(publishSnapshot)
+subscribeConfiguration(publishSnapshot)
 // Observe every actual settings transition, not just the final React render (ABA).
 useSettings.subscribe(state => {
 	if (state.orgAgendaConfigurationJson === snapshot.raw && state.orgBehaviorConfigurationJson === snapshot.behaviorRaw) return
@@ -36,6 +36,5 @@ export const subscribeOrgAgendaConfiguration = (listener: () => void) => {
 }
 export function useOrgAgendaConfiguration() {
 	const current = useSyncExternalStore(subscribeOrgAgendaConfiguration, getOrgAgendaConfiguration, getOrgAgendaConfiguration)
-	useOrgConfigurationStorageSynchronization()
 	return current
 }

@@ -19,7 +19,7 @@ Grain is a Tauri desktop app for working with a local directory of `.org` files.
 | Work across views | Fuzzy Quick Open, tabs, buffer switching, split editors, detached native views, and Outline/Properties/Backlinks inspectors |
 | Use Org tools | Task clocks and reports, supported Org table operations, HTML/Markdown export, configurable keymaps, Which-Key hints, and opt-in Vim editing |
 
-Views of the same note share text and undo history while keeping their own selection, folds, and scroll position. Switching notes preserves unsaved edits. Autosave is configurable in **Settings → General**, and manual Save / Save All remains available.
+Views of the same note share text and undo history while keeping their own selection, folds, and scroll position. Switching notes preserves unsaved edits. Autosave is configured in `config.json` under `saving`; manual Save / Save All remains available.
 
 Grain implements a supported subset of Org workflows. It is not an Emacs runtime or a complete replacement for GNU Org mode and its extensions.
 
@@ -30,7 +30,7 @@ Packaged builds are available on [GitHub Releases](https://github.com/jeasoncc/g
 In the native desktop app:
 
 1. Select **Open Documents/Grain** to create or open the default workspace, or **Choose another…** to approve an existing local directory.
-2. Open a `.org` file from the file tree, or use **New note** with a relative path such as `inbox.org`.
+2. Open a `.org` file from the file tree, or use **New Org document** and enter a relative path such as `inbox.org` in the bottom minibuffer.
 3. Use **Execute command** to find actions such as **Open agenda**, **Quick capture**, **New diary entry**, and **Org-roam: find node**.
 
 A workspace can start with a small `inbox.org`:
@@ -60,7 +60,19 @@ Keep the source as plain text.
 | `Ctrl-C Ctrl-T` | Cycle the heading's TODO state |
 | `Ctrl-C Ctrl-O` | Follow the Org link at the cursor |
 
-`Ctrl-C Ctrl-T` is a sequence: press `Ctrl-C`, then `Ctrl-T`. Scoped bindings and optional Vim mode are configured in **Settings → Editor → Org keymaps**. See the [desktop editing guide](./apps/desktop/README.md#org-editing-keys) for the full supported key set and configuration details.
+`Ctrl-C Ctrl-T` is a sequence: press `Ctrl-C`, then `Ctrl-T`. Scoped bindings and optional Vim mode are configured in the `keymaps` section of `config.json`. See the [desktop editing guide](./apps/desktop/README.md#org-editing-keys) for the full supported key set.
+
+The [file tree](./apps/desktop/README.md#file-tree) uses arrow navigation. Focused rows support `F2` rename, `Delete` confirmation, `F5` refresh and `Ctrl/Cmd-F` filtering. Right-click / **…** menus identify their target; new-file and rename readers preselect the filename stem while preserving `.org`. Built-in Vim/Treemacs tree keys are removed; optional Source Vim mode is unchanged.
+
+## File configuration
+
+Grain has no graphical preferences pages or theme picker. In **Execute command**, run **Open configuration file** to open `config.json` with the system default application; after saving it, run **Reload configuration**.
+
+The native configuration lives in the application configuration directory. On Linux this is `$XDG_CONFIG_HOME/com.lotus.grain/config.json`, or `~/.config/com.lotus.grain/config.json` when `XDG_CONFIG_HOME` is unset. Preferences migrate once when the file is first created; an existing file is never rewritten by Grain.
+
+The version-1 JSON document controls appearance, fonts, saving, word counts, Capture, keymaps, Org behavior, Agenda views, tool placement and diagram services. Missing fields use defaults; unknown fields or invalid values reject the complete reload. Visual preferences, Source and Undo are retained on rejection. Themes use exact names from 811 bundled [iTerm2-Color-Schemes](https://github.com/mbadolato/iTerm2-Color-Schemes) palettes.
+
+See the [configuration example and safety rules](./apps/desktop/README.md#file-configuration) and [theme guide](./docs/desktop/THEMES_GUIDE.md).
 
 ## Your files and data
 
@@ -84,7 +96,7 @@ While a note is open, its shared in-memory buffer owns the working text and undo
 - Local file access runs through Tauri and Rust, scoped to the directory you approve. A browser preview does not have that authority.
 - Paths are checked for traversal and symlink escapes. Saves, moves, and deletes check the expected file revision; stale or ambiguous state requires review rather than silent replacement.
 - External-change watching and polling protect dirty buffers. Cross-file refile and archive copy and verify the destination before removing the source.
-- Save/delete recovery can retain `.grain-*.tmp` filesystem artifacts. They are mutable recovery objects, **not immutable backups**. There is no automatic garbage collection; do not remove them blindly. Back up your workspace separately.
+- Save/delete recovery can retain `.grain-*.tmp` filesystem artifacts. Inspect their paths through **Workspace tools → Recovery files…**. They are mutable recovery objects, **not immutable backups**; there is no automatic restore or garbage collection. Do not remove them blindly. Back up your workspace separately.
 - Ordinary unsaved note buffers do **not** have general restart recovery. Capture draft recovery is a separate, explicit opt-in that stores plaintext draft data in local storage and does not automatically publish it.
 - Native file operations depend on supported Linux filesystem primitives. Unsupported platforms or filesystem conditions fail closed; packaging for an OS does not establish equivalent Org filesystem support.
 

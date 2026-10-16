@@ -3,6 +3,8 @@
  * @description 主题类型定义
  */
 
+import type { TerminalPalette } from "./terminal-palette.types"
+
 /**
  * 主题颜色配置接口
  */
@@ -30,6 +32,10 @@ export interface ThemeColors {
 	// 强调色
 	readonly accent: string
 	readonly accentForeground: string
+
+	// Destructive text and filled actions share a hue, not a fixed light/dark token.
+	readonly destructive?: string
+	readonly destructiveForeground?: string
 
 	// 边框和输入
 	readonly border: string
@@ -81,4 +87,6 @@ export interface Theme {
 	readonly description: string
 	readonly type: "light" | "dark"
 	readonly colors: ThemeColors
+	/** Original upstream terminal colors; semantic UI colors may be contrast-adjusted. */
+	readonly terminalPalette?: TerminalPalette
 }

@@ -10,6 +10,7 @@ import {
 	openDefaultOrgWorkspaceFlow,
 	openOrgDocumentFlow,
 	reopenDefaultOrgWorkspaceFlow,
+	revealOrgWorkspacePathFlow,
 	saveOrgDocumentFlow,
 	scanOrgWorkspaceFlow,
 	selectOrgWorkspaceFlow,
@@ -310,7 +311,7 @@ export interface OrgWorkspaceController {
 		signal?: AbortSignal,
 	) => Promise<boolean>
 	readonly openOrgLink: (target: OrgLinkClickTarget) => Promise<boolean>
-	readonly createDocument: (relativePath: string) => Promise<void>
+	readonly createDocument: (relativePath: string) => Promise<boolean>
 	readonly createDiary: () => Promise<OrgDiaryOutcome>
 	readonly createRoamNote: (
 		plan: OrgRoamNotePlan,
@@ -341,9 +342,10 @@ export interface OrgWorkspaceController {
 	readonly captureBufferTransfer: (bufferId: string, windowId: string, isCurrent: () => boolean) => OrgCapturedBufferTransfer | null
 	readonly captureBufferNavigation: (bufferId: string, windowId: string, isCurrent: () => boolean,
 		navigate: (bufferId: string, line: number) => Promise<boolean>) => OrgCapturedBufferNavigation | null
-	readonly createDirectory: (relativePath: string) => Promise<void>
-	readonly moveActiveDocument: (targetRelativePath: string) => Promise<void>
-	readonly deleteActiveDocument: () => Promise<void>
+	readonly createDirectory: (relativePath: string) => Promise<boolean>
+	readonly revealWorkspacePath: (relativePath: string | null) => Promise<boolean>
+	readonly moveDocument: (entry: OrgDocumentEntryInterface, targetRelativePath: string) => Promise<boolean>
+	readonly deleteDocument: (entry: OrgDocumentEntryInterface) => Promise<boolean>
 	readonly migrateLegacyWorkspace: (legacyWorkspace: LegacyMigrationWorkspace) => Promise<void>
 	readonly verifyLegacyMigration: (legacyWorkspace: LegacyMigrationWorkspace) => Promise<void>
 	readonly runLegacyRecoveryDrill: (legacyWorkspace: LegacyMigrationWorkspace) => Promise<void>
@@ -2781,13 +2783,13 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 
 	const createDocument = useCallback(
 		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: creation, editor freshness checks, and parking are one transaction.
-		async (relativePath: string) => {
+		async (relativePath: string): Promise<boolean> => {
 			if (!workspace || !isCurrentOrigin() || !relativePath.trim() || fileBusy(relativePath)) {
-				return
+				return false
 			}
 			if (protectedPath(relativePath)) {
 				setError(`Save or discard changes before creating ${relativePath}.`)
-				return
+				return false
 			}
 			const originCapture = originPath ? session.captureFile(identityScope, originPath) : null
 			const owner = effects.begin({ label: "create", paths: [relativePath] })
@@ -2801,10 +2803,10 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					capabilityToken: workspace.capabilityToken,
 					workspaceRoot: workspace.rootPath,
 				})()
-				if (!session.matches(identityScope) || !effects.owns(owner)) return
+				if (!session.matches(identityScope) || !effects.owns(owner)) return false
 				if (E.isLeft(result)) {
 					setError(result.left.message)
-					return
+					return false
 				}
 				const document = { ...result.right, content: initialContent }
 				setWorkspace((current) =>
@@ -2819,11 +2821,11 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				)
 				if (!isCurrentOrigin() || (originCapture && !session.fileCaptureIsCurrent(originCapture))) {
 					setError("The new document was created, but newer editor input was retained.")
-					return
+					return false
 				}
 				if (!session.activateDocument(identityScope, document, initialContent)) {
 					setError("The new document was created, but its originating editor owner was retained.")
-					return
+					return false
 				}
 				revealRequestRef.current += 1
 				setRevealTarget({
@@ -2831,12 +2833,14 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					line: session.getSnapshot().activeRuntime!.state.doc.lines,
 					requestId: revealRequestRef.current,
 				})
+				return true
 			} catch {
 				if (effects.owns(owner) && session.matches(identityScope)) {
 					setError(
 						"Create ended unexpectedly; files may have changed. All editor buffers were retained. Refresh and reconcile before a manual retry; no rollback was attempted.",
 					)
 				}
+				return false
 			} finally {
 				finishMutation(owner)
 			}
@@ -2845,14 +2849,14 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 	)
 
 	const createDirectory = useCallback(
-		async (relativePath: string) => {
+		async (relativePath: string): Promise<boolean> => {
 			if (
 				!workspace ||
 				!isCurrentOrigin() ||
 				fileBusy(relativePath) ||
 				!relativePath.trim()
 			) {
-				return
+				return false
 			}
 			const owner = effects.begin({ label: "createDirectory", paths: [relativePath] })
 			setError(null)
@@ -2863,11 +2867,11 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					workspaceRoot: workspace.rootPath,
 				})()
 				if (!effects.owns(owner) || !session.matches(identityScope)) {
-					return
+					return false
 				}
 				if (E.isLeft(result)) {
 					setError(result.left.message)
-					return
+					return false
 				}
 				setWorkspace((current) => {
 					if (!current) {
@@ -2879,12 +2883,14 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					}
 					return { ...current, directories: [...directories].sort() }
 				})
+				return true
 			} catch {
 				if (effects.owns(owner) && session.matches(identityScope)) {
 					setError(
 						"createDirectory ended unexpectedly; files or derived state may have changed. All editor buffers were retained. Refresh and reconcile before a manual retry; do not automatically retry. No rollback was attempted.",
 					)
 				}
+				return false
 			} finally {
 				finishMutation(owner)
 			}
@@ -2892,28 +2898,58 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		[workspace, originSession, originActivation, originPath],
 	)
 
-	const moveActiveDocument = useCallback(
-		async (targetRelativePath: string) => {
-			const sourceDocument = session.document
+	const revealWorkspacePath = useCallback(
+		async (relativePath: string | null): Promise<boolean> => {
+			if (!workspace || !session.matches(identityScope)) return false
+			if (relativePath !== null &&
+				!workspace.documents.some(entry => entry.relativePath === relativePath) &&
+				!workspace.directories.includes(relativePath)) return false
+			setError(null)
+			try {
+				const result = await revealOrgWorkspacePathFlow({
+					workspaceRoot: workspace.rootPath,
+					capabilityToken: workspace.capabilityToken,
+					relativePath,
+				})()
+				if (!session.matches(identityScope)) return false
+				if (E.isLeft(result)) {
+					setError(result.left.message)
+					return false
+				}
+				return true
+			} catch (cause) {
+				if (session.matches(identityScope)) setError(`Cannot reveal workspace path: ${String(cause)}`)
+				return false
+			}
+		},
+		[workspace, originSession],
+	)
+
+	const moveDocument = useCallback(
+		async (entry: OrgDocumentEntryInterface, targetRelativePath: string) => {
+			const sourceDocument = currentFileBaseline(entry.relativePath) ?? entry
 			if (
 				!workspace ||
-				!sourceDocument ||
 				!isCurrentOrigin() ||
 				fileBusy(sourceDocument.relativePath, targetRelativePath) ||
-				!targetRelativePath.trim()
+				!targetRelativePath.trim() || targetRelativePath === entry.relativePath
 			) {
-				return
+				return false
+			}
+			if (sourceDocument.revision !== entry.revision) {
+				setError("This file's revision changed. Refresh the file tree before moving it.")
+				return false
 			}
 			if (dirtyPath(sourceDocument.relativePath) || dirtyPath(targetRelativePath)) {
 				setError("Save or discard the current changes before moving this document.")
-				return
+				return false
 			}
 			const sourceCapture = session.captureFile(identityScope, sourceDocument.relativePath)
-			if (!sourceCapture) return
+			if (!sourceCapture) return false
 			const sourcePath = sourceDocument.relativePath
 			const sourceId = bufferIdentity.lookup(identityScope, sourcePath)
 			const targetId = bufferIdentity.lookup(identityScope, targetRelativePath)
-			const owner = effects.begin({ label: "moveActiveDocument", paths: [sourcePath, targetRelativePath] })
+			const owner = effects.begin({ label: "moveDocument", paths: [sourcePath, targetRelativePath] })
 			setError(null)
 			try {
 				const result = await moveOrgDocumentFlow({
@@ -2924,24 +2960,23 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 					workspaceRoot: workspace.rootPath,
 				})()
 				if (!effects.owns(owner) || !session.matches(identityScope)) {
-					return
+					return false
 				}
 				if (E.isLeft(result)) {
 					setError(result.left.message)
-					return
+					return false
 				}
 				if (
-					!sourceId ||
 					!session.fileCaptureIsCurrent(sourceCapture) ||
 					bufferIdentity.lookup(identityScope, sourcePath) !== sourceId ||
 					bufferIdentity.lookup(identityScope, result.right.relativePath) !== targetId
 				) {
 					setError("Buffer identity changed while moving; refresh and reconcile.")
-					return
+					return false
 				}
-				if (!session.moveApproved(identityScope, sourcePath, result.right.relativePath, sourceId)) {
+				if (sourceId && !session.moveApproved(identityScope, sourcePath, result.right.relativePath, sourceId)) {
 					setError("Buffer identity changed while moving; refresh and reconcile.")
-					return
+					return false
 				}
 				setWorkspace((current) =>
 					current
@@ -2955,15 +2990,17 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 							}
 						: current,
 				)
+				return true
 			} catch {
 				if (effects.owns(owner) && session.matches(identityScope)) {
 					setError(
-						"moveActiveDocument ended unexpectedly; files or derived state may have changed. All editor buffers were retained. Refresh and reconcile before a manual retry; do not automatically retry. No rollback was attempted.",
+						"moveDocument ended unexpectedly; files or derived state may have changed. All editor buffers were retained. Refresh and reconcile before a manual retry; do not automatically retry. No rollback was attempted.",
 					)
 				}
 			} finally {
 				finishMutation(owner)
 			}
+			return false
 		},
 		[activeDocument, workspace, dirtyPath, originSession, originActivation, originPath],
 	)
@@ -3266,23 +3303,29 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		[workspace, originSession, originActivation, originPath],
 	)
 
-	const deleteActiveDocument = useCallback(async () => {
-		const sourceDocument = session.document
-		if (!workspace || !sourceDocument || !isCurrentOrigin() || fileBusy(sourceDocument.relativePath)) {
-			return
+	const deleteDocument = useCallback(async (entry: OrgDocumentEntryInterface) => {
+		const sourceDocument = currentFileBaseline(entry.relativePath) ?? entry
+		if (!workspace || !isCurrentOrigin() || fileBusy(sourceDocument.relativePath)) {
+			return false
+		}
+		if (sourceDocument.revision !== entry.revision) {
+			setError("This file's revision changed. Refresh the file tree before deleting it.")
+			return false
 		}
 		const sourceBaseline = Object.freeze({ ...sourceDocument })
 		const sourceCapture = session.captureFile(identityScope, sourceDocument.relativePath)
-		if (!sourceCapture) return
-		if (dirtyPath(sourceBaseline.relativePath) && await confirm({
+		if (!sourceCapture) return false
+		if (await confirm({
 			title: "Delete this file?",
-			description: "Remove this file's pathname and discard unsaved editor input? Native file bytes remain at a manual recovery path; this does not preserve unsaved input.",
+			description: `${sourceBaseline.relativePath}\n\n${dirtyPath(sourceBaseline.relativePath)
+				? "Remove this file and discard its unsaved editor input? Saved file bytes remain at a manual recovery path; unsaved input is not preserved."
+				: "Remove this file from the workspace? Saved file bytes remain at a manual recovery path. This cannot be undone in the editor."}`,
 			confirmText: "Delete",
 			cancelText: "Cancel",
 			signal: confirmationLifetime.current?.signal,
-		}) !== true) return
-		if (fileBusy(sourceBaseline.relativePath) || !session.fileCaptureIsCurrent(sourceCapture)) return
-		const owner = effects.begin({ label: "deleteActiveDocument", paths: [sourceBaseline.relativePath] })
+		}) !== true) return false
+		if (fileBusy(sourceBaseline.relativePath) || !session.fileCaptureIsCurrent(sourceCapture)) return false
+		const owner = effects.begin({ label: "deleteDocument", paths: [sourceBaseline.relativePath] })
 		setError(null)
 		const sourcePath = sourceBaseline.relativePath
 		try {
@@ -3293,11 +3336,11 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				workspaceRoot: workspace.rootPath,
 			})()
 			if (!effects.owns(owner) || !session.matches(identityScope)) {
-				return
+				return false
 			}
 			if (E.isLeft(result)) {
 				setError(result.left.message)
-				return
+				return false
 			}
 			const retained: OrgOriginalRecoveryEntryInterface = result.right
 			if (!retained || retained.kind !== "delete" || retained.object !== "original" || retained.sourceRelativePath !== sourcePath ||
@@ -3305,7 +3348,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				session.protect(identityScope, sourcePath, "conflict")
 				session.invalidateBaseline(identityScope, sourcePath)
 				setError("Deletion acknowledgement was invalid. Editor input was retained; refresh and reconcile before any manual retry.")
-				return
+				return false
 			}
 			setWorkspace((current) =>
 				current
@@ -3322,21 +3365,23 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 				session.protect(identityScope, sourcePath, "conflict")
 				session.invalidateBaseline(identityScope, sourcePath)
 				setError(`The file ${sourcePath} was deleted, but newer editor input was retained.`)
-				return
+				return false
 			}
 			if (session.document?.relativePath === sourcePath) {
 				session.closeActiveDocument(identityScope)
 				setRevealTarget(null)
 			} else retireBuffer(sourcePath)
+			return true
 		} catch {
 			if (effects.owns(owner) && session.matches(identityScope)) {
 				setError(
-					"deleteActiveDocument ended unexpectedly; files or derived state may have changed. All editor buffers were retained. Refresh and reconcile before a manual retry; do not automatically retry. No rollback was attempted.",
+					"deleteDocument ended unexpectedly; files or derived state may have changed. All editor buffers were retained. Refresh and reconcile before a manual retry; do not automatically retry. No rollback was attempted.",
 				)
 			}
 		} finally {
 			finishMutation(owner)
 		}
+		return false
 	}, [confirm, activeDocument, workspace, dirtyPath, originSession, originActivation, originPath])
 
 	return {
@@ -3361,12 +3406,13 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		content,
 		createDirectory,
 		createDocument,
+		revealWorkspacePath,
 		createDiary,
 		createRoamNote,
 		readRemarkNotes,
 		executeRemarkMutation,
 		saveRemarkNotes,
-		deleteActiveDocument,
+		deleteDocument,
 		derivedIndexStatus,
 		error,
 		isDirty,
@@ -3390,7 +3436,7 @@ export const useOrgWorkspace = (): OrgWorkspaceController => {
 		closeNativeWindow,
 		migrateLegacyWorkspace,
 		migrationStatus,
-		moveActiveDocument,
+		moveDocument,
 		openBuffers,
 		openDefaultWorkspace,
 		openDocument,

@@ -193,16 +193,23 @@ function useCommandProviderState(): ApplicationCommandHost {
 		const current = () => activeParameter.live && activeParameter.lifetime === parameterLifetime &&
 			parametersRef.current.includes(activeParameter) && activeParameter.session?.id === id &&
 			[...parametersRef.current].reverse().find((entry) => entry.session) === activeParameter
+		const reject = (message?: string) => {
+			if (!current()) return
+			const result: ApplicationCommandResult = { kind: "rejected", message }
+			// Reader-owned validation feedback must retire with its parameter.
+			activeParameter.result = result
+			registry.publishResult(result)
+		}
 		return {
 			onAccept: async (input) => {
 				if (!current() || !activeParameter.session) return { ok: false, message: "This parameter session is no longer active." }
 				try {
 					const result = await activeParameter.session.onAccept(input)
-					if (!result.ok && current()) registry.publishResult({ kind: "rejected", message: result.message })
+					if (!result.ok) reject(result.message)
 					return result
 				} catch (error) {
 					const message = error instanceof Error ? error.message : String(error)
-					if (current()) registry.publishResult({ kind: "rejected", message })
+					reject(message)
 					return { ok: false, message }
 				}
 			},
@@ -239,7 +246,7 @@ export function ApplicationCommandProvider({ children }: { readonly children: Re
 		return () => window.removeEventListener("keydown", input.handleKeyDown)
 	}, [input.handleKeyDown])
 	return <CommandContext.Provider value={host}>
-		<div className="flex h-screen min-h-0 w-screen flex-col overflow-hidden">
+		<div className="flex h-screen min-h-0 w-screen flex-col overflow-hidden [&:has([data-application-command-trigger])_[data-application-command-idle]]:hidden">
 			<div className="min-h-0 flex-1">{children}</div>
 			<div ref={host.hostRef} data-application-command-host="true" className="shrink-0">
 				<OrgWhichKey prefix={input.prefix} getInputCommandDisabledReason={(id) => {
@@ -249,7 +256,7 @@ export function ApplicationCommandProvider({ children }: { readonly children: Re
 				}} />
 				{input.error && <p role="alert" className="px-3 py-1 text-xs text-destructive">{input.error}</p>}
 				<OrgMinibuffer session={host.session} />
-				{!host.session && <button type="button" className="px-3 py-1 font-mono text-xs text-muted-foreground hover:text-foreground" onMouseDown={(event) => event.preventDefault()} onClick={() => host.open()}>Execute command (Alt+X)</button>}
+				{!host.session && <button type="button" data-application-command-idle="true" className="px-3 py-1 font-mono text-xs text-muted-foreground hover:text-foreground" onMouseDown={(event) => event.preventDefault()} onClick={() => host.open()}>Execute command (Alt+X)</button>}
 				{host.result?.message && !host.session && <div role={host.result.kind === "rejected" ? "alert" : "status"} className={`border-t px-3 py-1 font-mono text-xs ${host.result.kind === "rejected" ? "text-destructive" : "text-muted-foreground"}`}>{host.result.message}</div>}
 			</div>
 		</div>
@@ -263,11 +270,11 @@ export function useApplicationCommandHost() {
 }
 
 export function useApplicationCommandRegistration(owner: object, descriptors: readonly ApplicationCommandDescriptor[]) {
-	const { registry } = useApplicationCommandHost()
+	const { registry, isOpen } = useApplicationCommandHost()
 	const latest = useRef(descriptors)
 	latest.current = descriptors
 	const registration = useRef<ApplicationCommandRegistration | null>(null)
-	const signature = JSON.stringify(descriptors.map((entry) => [entry.id, entry.label, entry.group, entry.shortcut, entry.getDisabledReason()]))
+	const signature = JSON.stringify(descriptors.map((entry) => [entry.id, entry.label, entry.group, entry.shortcut]))
 	const metadataSignature = JSON.stringify(descriptors.map(({ id, label }) => [id, label]))
 	const metadata = useMemo(() => descriptors.map(({ id, label }) => ({ id, label })), [metadataSignature])
 	useLayoutEffect(() => registerOrgInputCommandMetadata(owner, metadata), [owner, metadata])
@@ -279,12 +286,17 @@ export function useApplicationCommandRegistration(owner: object, descriptors: re
 		},
 		capture: () => latest.current.find((descriptor) => descriptor.id === entry.id)?.capture() ?? { kind: "cancelled" },
 	})), [signature])
+	// Availability is presentation state, not registration identity or execution authority.
+	const visibleSignature = isOpen
+		? JSON.stringify(descriptors.map((entry) => [entry.id, entry.getDisabledReason()]))
+		: null
+	const published = useMemo(() => visibleSignature === null ? proxies : [...proxies], [proxies, visibleSignature])
 	useLayoutEffect(() => {
-		const owned = registry.register(owner, proxies)
+		const owned = registry.register(owner, published)
 		registration.current = owned
 		return () => { registry.unregister(owned); if (registration.current === owned) registration.current = null }
 	}, [owner, registry])
-	useLayoutEffect(() => { if (registration.current) registry.update(registration.current, proxies) }, [registry, proxies])
+	useLayoutEffect(() => { if (registration.current) registry.update(registration.current, published) }, [registry, published])
 }
 
 export function useApplicationParameterRegistration(owner: object, session: OrgMinibufferSession | null, result: ApplicationCommandResult | null = null) {

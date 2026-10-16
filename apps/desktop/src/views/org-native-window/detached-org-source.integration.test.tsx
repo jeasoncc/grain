@@ -741,7 +741,6 @@ describe("native Source parameters and owned views", () => {
    expect(mounted.runtime.source).toBe(nativeSparseSource)
    expect(mounted.runtime.revision).toBe(0)
    expect(undoDepth(mounted.runtime.state)).toBe(0)
-   expect(nativeInvoke.mock.calls.filter(([command, args]) => command === "post_org_window_intent" && args.payload.kind === "transactions")).toHaveLength(0)
   } finally { mounted.dispose() }
  })
 

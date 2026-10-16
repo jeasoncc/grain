@@ -4,8 +4,9 @@ import { getOrgInputCommandMetadata } from "@/flows/org-command/org-input-comman
 import { ORG_PREFIX_MAPS, MAX_ORG_PREFIX_TIMEOUT_MS, isOrgKeyLabel, parseOrgKeyStroke } from "@/flows/org-command/org-prefix-keymap"
 import type { OrgKeymapConfiguration, OrgKeymapScope, OrgScopedBinding, OrgTransientMap, OrgPrefixBinding } from "@/types/editor/org-keymap.interface"
 
-const scopes: readonly OrgKeymapScope[] = ["application", "workspace", "org-source", "org-capture", "org-roam", "org-agenda", "org-todo-note", "org-remark"]
+const scopes: readonly OrgKeymapScope[] = ["application", "workspace", "file-tree", "org-source", "org-capture", "org-roam", "org-agenda", "org-todo-note", "org-remark"]
 const shortcutParts: Readonly<Record<string, string>> = { Ctrl: "Mod", Alt: "A", Shift: "S", Left: "ArrowLeft", Right: "ArrowRight", Up: "ArrowUp", Down: "ArrowDown" }
+const commandLabel = (id: string) => getOrgInputCommandMetadata().find((definition) => definition.id === id)?.label ?? id
 const defaultBindings: OrgScopedBinding[] = (orgCommandDefinitions as readonly OrgCommandDefinition[]).flatMap((definition) =>
 	definition.shortcut && !definition.shortcut.startsWith("C-c ") ? [{
 		scope: definition.scope === "editor" ? "org-source" : "workspace",
@@ -53,6 +54,14 @@ for (const [key, command] of [
 	["s", "org-agenda.schedule"], ["d", "org-agenda.deadline"],
 	["Escape", "org-agenda.cancel"], ["C-g", "org-agenda.cancel"],
 ] as const) defaultBindings.push({ scope: "org-agenda", key, command })
+for (const [key, command] of [
+	["ArrowDown", "file-tree.next"], ["ArrowUp", "file-tree.previous"],
+	["Home", "file-tree.first"], ["End", "file-tree.last"],
+	["ArrowLeft", "file-tree.collapse"], ["ArrowRight", "file-tree.expand"],
+	["Enter", "file-tree.open"],
+	["F2", "file-tree.rename"], ["Delete", "file-tree.delete"],
+	["F5", "file-tree.refresh"], ["Mod-f", "file-tree.filter"],
+] as const) defaultBindings.push({ scope: "file-tree", key, command })
 export const DEFAULT_ORG_KEYMAP_CONFIGURATION: OrgKeymapConfiguration = Object.freeze({
 	version: 1,
 	modalEngine: null,
@@ -69,7 +78,6 @@ const closed = (value: Record<string, unknown>, allowed: readonly string[]) => O
 const scope = (value: unknown): value is OrgKeymapScope => scopes.includes(value as OrgKeymapScope)
 const text = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0
 const timeout = (value: unknown): value is number | null => value === null || (typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= MAX_ORG_PREFIX_TIMEOUT_MS)
-const commandLabel = (id: string) => getOrgInputCommandMetadata().find((definition) => definition.id === id)?.label ?? id
 
 /** Closed v1 overrides merge by scope/key and map ID. Invalid persisted input never becomes defaults. */
 export const parseOrgKeymapConfiguration = (raw: string): E.Either<{ readonly message: string }, OrgKeymapConfiguration> => {

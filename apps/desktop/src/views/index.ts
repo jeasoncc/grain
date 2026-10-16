@@ -17,9 +17,6 @@ export * from "./keyboard-shortcuts-help"
 // Org filesystem workspace
 export * from "./org-workspace"
 
-// Theme Selector
-export * from "./theme-selector"
-
 // UI Components - Not re-exported to avoid naming conflicts
 // Import directly from @/views/ui/* when needed
 

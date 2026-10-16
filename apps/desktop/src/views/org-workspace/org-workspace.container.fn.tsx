@@ -13,10 +13,11 @@ import {
 	MoreHorizontal,
 	PanelLeftOpen,
 	Trash2,
+	TerminalSquare,
 } from "lucide-react"
 import { lazy, memo, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type RefObject } from "react"
 import { flushSync } from "react-dom"
-import { Group, Panel, Separator } from "react-resizable-panels"
+import { Group, Panel, Separator, type PanelImperativeHandle } from "react-resizable-panels"
 import { useOrgWorkspaceController, useOrgNativeWorkflowHandler } from "@/views/application/org-workspace-provider"
 import type { OrgCapturedBufferNavigation, OrgCapturedBufferTransfer, OrgWorkspaceController } from "@/hooks/use-org-workspace"
 import type { OrgNativeWorkflowRequest } from "@/flows/org-native-window/org-native-workflow-bridge"
@@ -51,6 +52,15 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/views/ui/dropdown-menu"
+import {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/views/ui/dialog"
 import { useOrgTodoNoteWorkflow } from "@/hooks/use-org-todo-note-workflow"
 import { useOrgRoamWorkflow } from "@/hooks/use-org-roam-workflow"
 import { useOrgRemarkWorkflow } from "@/hooks/use-org-remark-workflow"
@@ -131,6 +141,19 @@ const WorkspaceToolsMenu = ({
 	readonly isBusy: boolean
 }) => {
 	const [legacySourcesEnabled, setLegacySourcesEnabled] = useState(false)
+	const scopeKey = JSON.stringify([controller.workspaceSessionId, controller.workspace?.rootPath, controller.workspace?.capabilityToken])
+	const [recoveryScope, setRecoveryScope] = useState<string | null>(null)
+	const recoveryOpen = recoveryScope === scopeKey
+	const recoveryOpening = useRef(false)
+	const toolsTrigger = useRef<HTMLButtonElement>(null)
+	const recoveryObjects = controller.workspace?.originalRecoveries
+	const recoveryPaths = useMemo(() => recoveryOpen ? recoveryObjects?.map((entry) =>
+		`Object: ${entry.object}\nOperation: ${entry.kind}\nSource: ${entry.sourceRelativePath}\nRetained relative path: ${entry.relativePath}\nRetained full path: ${controller.workspace?.rootPath}/${entry.relativePath}`,
+	).join("\n\n") ?? "" : "", [recoveryOpen, recoveryObjects, controller.workspace?.rootPath])
+	useLayoutEffect(() => {
+		setRecoveryScope(null)
+		recoveryOpening.current = false
+	}, [scopeKey])
 	const [legacyParameters] = useState(createParameterSession)
 	const legacySelection = useSyncExternalStore(legacyParameters.subscribe, legacyParameters.getSnapshot, legacyParameters.getSnapshot)
 	useApplicationParameterRegistration(legacyParameters, legacySelection.session)
@@ -201,13 +224,19 @@ const WorkspaceToolsMenu = ({
 		},
 	])
 	return (
-		<DropdownMenu>
+		<>
+		<DropdownMenu key={scopeKey}>
 			<DropdownMenuTrigger asChild>
-				<Button variant="ghost" size="icon-sm" aria-label="Workspace tools" title="Workspace tools">
+				<Button ref={toolsTrigger} variant="ghost" size="icon-sm" aria-label="Workspace tools" title="Workspace tools">
 					<MoreHorizontal className="size-4" />
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" className="w-64" onCloseAutoFocus={(event) => {
+				if (recoveryOpening.current) {
+					recoveryOpening.current = false
+					event.preventDefault()
+					return
+				}
 				const session = legacyParameters.getSnapshot().session
 				if (!session) return
 				event.preventDefault()
@@ -229,6 +258,17 @@ const WorkspaceToolsMenu = ({
 					Clear derived index
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
+				<DropdownMenuItem
+					disabled={!controller.workspace}
+					onSelect={() => {
+						recoveryOpening.current = true
+						setRecoveryScope(scopeKey)
+					}}
+				>
+					<FolderOpen className="mr-2 size-4" />
+					Recovery files…{recoveryObjects?.length ? ` (${recoveryObjects.length})` : ""}
+				</DropdownMenuItem>
+				<DropdownMenuSeparator />
 				<LegacyMigrationMenuSection
 					controller={controller}
 					isBusy={isBusy}
@@ -239,6 +279,52 @@ const WorkspaceToolsMenu = ({
 				/>
 			</DropdownMenuContent>
 		</DropdownMenu>
+		<Dialog key={scopeKey} open={recoveryOpen} onOpenChange={(open) => setRecoveryScope(open ? scopeKey : null)}>
+			<DialogContent
+				className="max-h-[85vh] overflow-y-auto"
+				onCloseAutoFocus={(event) => {
+					event.preventDefault()
+					const current = latest.current.controller
+					if (JSON.stringify([current.workspaceSessionId, current.workspace?.rootPath, current.workspace?.capabilityToken]) === scopeKey)
+						toolsTrigger.current?.focus()
+				}}
+			>
+				<DialogHeader>
+					<DialogTitle>Recovery files</DialogTitle>
+					<DialogDescription>
+						Files left behind while saving or deleting notes. If a note is missing or a write failed,
+						use these paths to inspect possible recovery material manually outside Grain.
+					</DialogDescription>
+				</DialogHeader>
+				<p className="text-sm leading-relaxed text-muted-foreground">
+					Retained originals, staged writes, journals and publication probes are mutable files:
+					another open program may still change them. They are not immutable backups or authoritative
+					editor Source. Grain does not automatically replay, restore, delete or garbage-collect them.
+					This view only lists recorded paths; it does not read or modify these files.
+				</p>
+				{recoveryObjects?.length ? (
+					<label className="grid min-w-0 gap-2 text-sm">
+						<span className="font-medium">{recoveryObjects.length} retained {recoveryObjects.length === 1 ? "file" : "files"}</span>
+						<textarea
+							readOnly
+							aria-label="Copy filesystem recovery paths"
+							value={recoveryPaths}
+							rows={10}
+							spellCheck={false}
+							className="w-full resize-y rounded-sm border border-border bg-muted/30 p-3 font-mono text-xs leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						/>
+					</label>
+				) : (
+					<p className="text-sm text-muted-foreground">No retained files are recorded for this workspace.</p>
+				)}
+				<DialogFooter>
+					<DialogClose asChild>
+						<Button type="button" variant="outline">Close</Button>
+					</DialogClose>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+		</>
 	)
 }
 
@@ -280,25 +366,6 @@ const OrgWorkspaceNotice = ({ controller }: { readonly controller: OrgWorkspaceC
 	return null
 }
 
-const OrgRetainedWriteObjectsNotice = memo(function OrgOriginalInodesNotice({ workspace }: {
-	readonly workspace: OrgWorkspaceController["workspace"]
-}) {
-	const [open, setOpen] = useState(false)
-	const objects = workspace?.originalRecoveries
-	const paths = useMemo(() => open ? objects?.map((entry) =>
-		`${entry.object} (${entry.kind}): ${entry.sourceRelativePath}\n${workspace?.rootPath}/${entry.relativePath}`,
-	).join("\n\n") ?? "" : "", [open, objects, workspace?.rootPath])
-	if (!objects?.length) return null
-	return <aside aria-label="Retained filesystem recovery objects" className="shrink-0 border-b bg-muted/20 px-3 py-2 text-xs">
-		<details onToggle={(event) => setOpen(event.currentTarget.open)}>
-			<summary>Filesystem objects retained for manual recovery: {objects.length}</summary>
-			{open && <>
-				<p>Named originals, stages, journals and publication probes are mutable filesystem artifacts, not immutable backups or authoritative editor Source. Open writers may still change them. No automatic replay, deletion or garbage collection.</p>
-				<textarea readOnly aria-label="Copy filesystem recovery paths" value={paths} rows={5} className="mt-2 w-full font-mono" />
-			</>}
-		</details>
-	</aside>
-})
 
 const OrgWorkspaceEmptyState = ({
 	isLoading,
@@ -453,6 +520,8 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	const showCapture = tools.tools.some((tool) => tool.lease === captureLease && tool.open)
 	const inspectorVisible = tools.tools.some((tool) => tool.lease === inspectorLease && tool.open)
 	const inspectorConfigured = tools.tools.find((tool) => tool.lease === inspectorLease)?.configured ?? false
+	const inspectorPanelRef = useRef<PanelImperativeHandle | null>(null)
+	const inspectorInMainLayout = inspectorVisible && !inspectorConfigured && !agendaReplacesSource
 	const setShowAgenda = (open: boolean) => {
 		if (open) return tools.open(agendaLease)
 		const closed = tools.complete(agendaLease)
@@ -549,6 +618,11 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 		},
 	} : controller, [controller, nativeAgenda])
 	const [sidebarVisible, setSidebarVisible] = useState(true)
+	useLayoutEffect(() => {
+		const panel = inspectorPanelRef.current
+		if (inspectorInMainLayout) panel?.expand()
+		else panel?.collapse()
+	}, [inspectorInMainLayout, controller.workspace?.rootPath, sidebarVisible])
 	const [quickOpenVisible, setQuickOpenVisible] = useState(false)
 	const [bufferSwitchVisible, setBufferSwitchVisible] = useState(false)
 	const [openDocumentPaths, setOpenDocumentPaths] = useState<readonly string[]>([])
@@ -556,6 +630,16 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	const workspaceViewRef = useRef<HTMLDivElement>(null)
 	const editorSessionCacheRef = useRef(new Map<string, OrgEditorSessionSnapshot>())
 	const hydratedSessionRef = useRef<string | null>(null)
+	const [pendingRestore, setPendingRestore] = useState<{
+		readonly scope: string
+		readonly rootPath: string
+		readonly activePath: string | null
+		readonly inspectorVisible: boolean
+		readonly abort: AbortController
+		status: "waiting" | "opening" | "opened" | "failed"
+	} | null>(null)
+	const pendingRestoreRef = useRef(pendingRestore)
+	pendingRestoreRef.current = pendingRestore
 	const openBufferPathKey = (controller.openBuffers ?? [])
 		.map((buffer) => buffer.relativePath)
 		.join("\u0000")
@@ -994,7 +1078,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	useEffect(() => listenForOrgDiaryCreation(() => { void commandHost.execute("diary") }), [commandHost.execute])
 	useEffect(() => {
 		const rootPath = controller.workspace?.rootPath
-		const grant = controller.workspaceSessionId ?? rootPath ?? null
+		const restoreScope = scopeKey
 		setQuickOpenVisible(false)
 		setBufferSwitchVisible(false)
 		setCommandPaletteVisible(false)
@@ -1002,6 +1086,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 		pendingFileFocusRef.current = null
 		hydratedSessionRef.current = null
 		setSessionRoot(null)
+		setPendingRestore(null)
 		if (!rootPath) {
 			setOpenDocumentPaths([])
 			setNavigationHistory({ index: -1, paths: [] })
@@ -1009,11 +1094,12 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 			setInspectorVisible(false)
 			return
 		}
-		let cancelled = false
+		const abort = new AbortController()
 		const available = new Set(
 			controller.workspace?.documents.map((document) => document.relativePath) ?? [],
 		)
 		let activePath: string | null = null
+		let savedInspectorVisible = false
 		try {
 			const raw = window.localStorage.getItem(`grain:org-session:${rootPath}`)
 			const saved = raw
@@ -1032,10 +1118,9 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 			setOpenDocumentPaths(openPaths)
 			setNavigationHistory({ index: -1, paths: [] })
 			setSidebarVisible(typeof saved?.sidebarVisible === "boolean" ? saved.sidebarVisible : true)
-			setInspectorVisible(
-				typeof saved?.inspectorVisible === "boolean" ? saved.inspectorVisible : false,
-			)
-			if (typeof saved?.activePath === "string" && available.has(saved.activePath))
+			savedInspectorVisible = typeof saved?.inspectorVisible === "boolean" ? saved.inspectorVisible : false
+			setInspectorVisible(false)
+			if (typeof saved?.activePath === "string")
 				activePath = saved.activePath
 		} catch {
 			setOpenDocumentPaths([])
@@ -1043,24 +1128,60 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 			setSidebarVisible(true)
 			setInspectorVisible(false)
 		}
-		const finishRestore = async () => {
-			if (activePath) await controller.openDocumentPath(activePath)
-			if (!cancelled) {
-				hydratedSessionRef.current = grant
-				setSessionRoot(rootPath)
-			}
+		const restore = {
+			scope: restoreScope, rootPath, activePath, inspectorVisible: savedInspectorVisible,
+			abort, status: "waiting" as const,
 		}
-		void finishRestore()
-		return () => {
-			cancelled = true
+		setPendingRestore(restore)
+		return () => { abort.abort() }
+	}, [scopeKey])
+	useEffect(() => {
+		const restore = pendingRestore
+		if (!restore || restore.abort.signal.aborted || restore.scope !== scopeKey) return
+		// Grant installation can publish the workspace before its exclusive open
+		// operation releases admission. Wait for that transition, not a timer/retry.
+		if (restore.status === "waiting") {
+			if (controller.isWorkspaceBusy || controller.isWorkspaceBlocked) return
+			restore.status = "opening"
+			const isCurrent = () => pendingRestoreRef.current === restore && !restore.abort.signal.aborted &&
+				JSON.stringify([controllerRef.current.workspaceSessionId, controllerRef.current.workspace?.rootPath,
+					controllerRef.current.workspace?.capabilityToken]) === restore.scope
+			void (async () => {
+				try {
+					const opened = !restore.activePath ||
+						await controllerRef.current.openDocumentPath(restore.activePath, undefined, restore.abort.signal)
+					if (!isCurrent()) return
+					if (!opened) {
+						restore.status = "failed"
+						applicationHostRef.current.registry.publishResult({ kind: "rejected",
+							message: controllerRef.current.error ?? `Could not restore ${restore.activePath}. Saved workspace choices were retained.` })
+						return
+					}
+					setPendingRestore({ ...restore, status: "opened" })
+				} catch (cause) {
+					if (!isCurrent()) return
+					restore.status = "failed"
+					applicationHostRef.current.registry.publishResult({ kind: "rejected",
+						message: `Could not restore the workspace: ${cause instanceof Error ? cause.message : String(cause)}. Saved workspace choices were retained.` })
+				}
+			})()
+			return
 		}
-	}, [controller.workspace?.rootPath, controller.workspaceSessionId])
+		if (restore.status !== "opened" ||
+			(restore.activePath && controller.activeDocument?.relativePath !== restore.activePath)) return
+		// The inspector's admission requires a document. Never open it against the
+		// empty pre-restore controller, or persist that transient empty state.
+		setInspectorVisible(restore.inspectorVisible)
+		hydratedSessionRef.current = restore.scope
+		setSessionRoot(restore.rootPath)
+		setPendingRestore(null)
+	}, [pendingRestore, scopeKey, controller.isWorkspaceBusy, controller.isWorkspaceBlocked,
+		controller.activeDocument?.relativePath])
 	useEffect(() => {
 		if (
 			!sessionRoot ||
 			sessionRoot !== controller.workspace?.rootPath ||
-			hydratedSessionRef.current !==
-				(controller.workspaceSessionId ?? controller.workspace?.rootPath ?? null)
+			hydratedSessionRef.current !== scopeKey
 		)
 			return
 		try {
@@ -1079,7 +1200,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 	}, [
 		controller.activeDocument?.relativePath,
 		controller.workspace?.rootPath,
-		controller.workspaceSessionId,
+		scopeKey,
 		inspectorVisible,
 		openDocumentPaths,
 		sessionRoot,
@@ -1144,6 +1265,19 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 			if (closed) setOpenDocumentPaths(remaining)
 		})
 	}
+	const commandTrigger = <Button
+		variant="ghost"
+		size="icon-sm"
+		className="m-1 size-8 shrink-0 text-muted-foreground"
+		data-application-command-trigger="true"
+		aria-label="Execute command (Alt-x)"
+		title="Execute command (Alt-x)"
+		onPointerDown={(event) => event.preventDefault()}
+		onClick={() => {
+			if (todoNoteOwnedRef.current() || roamOwnedRef.current || remarkOwnedRef.current) return
+			commandHost.open()
+		}}
+	><TerminalSquare className="size-4" /></Button>
 
 	return (
 		<div
@@ -1151,26 +1285,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 			data-org-workspace-host="true"
 			className="flex h-full min-h-0 w-full flex-col bg-background"
 		>
-			<header className="flex h-9 shrink-0 items-center justify-between gap-3 border-b border-border/70 bg-sidebar px-3">
-				<div className="flex min-w-0 items-center gap-2 text-xs">
-					<span className="font-semibold text-foreground">Grain</span>
-					<span aria-hidden="true" className="text-muted-foreground/50">/</span>
-					<span className="truncate text-muted-foreground">Org workspace</span>
-				</div>
-				<Button
-					variant="ghost"
-					size="sm"
-					className="h-7 text-xs text-muted-foreground"
-					onPointerDown={(event) => event.preventDefault()}
-					onClick={() => {
-						if (todoNoteOwnedRef.current() || roamOwnedRef.current || remarkOwnedRef.current) return
-						commandHost.open()
-					}}
-					aria-label="Execute command (Alt-x)"
-				>
-					Commands <kbd className="text-[10px]">Alt-x</kbd>
-				</Button>
-			</header>
+			{!controller.workspace && <div className="flex shrink-0 justify-end border-b">{commandTrigger}</div>}
 			{controller.protectedPaths.length > 0 && <section aria-label="Protected workspace paths" className="flex shrink-0 flex-wrap items-center gap-2 border-b p-2 text-xs">
 				<span>Each uncertain path needs its own review:</span>
 				{controller.protectedPaths.map((path) => <Button key={path} size="sm" variant="outline"
@@ -1185,6 +1300,8 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 			{!controller.workspace && <OrgWorkspaceNotice controller={controller} />}
 			{controller.workspace ? (
 				<div className="flex min-h-0 flex-1">
+					<div className="flex w-11 shrink-0 flex-col bg-sidebar [&>aside]:min-h-0 [&>aside]:flex-1">
+						{commandTrigger}
 					<OrgWorkspaceRibbon
 						activeView={showAgenda ? "agenda" : "editor"}
 						isBusy={isBusy}
@@ -1194,6 +1311,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 						onShowAgenda={() => runCurrentCommand("agenda")}
 						onShowFiles={() => runCurrentCommand("files")}
 					/>
+					</div>
 					<Group orientation="horizontal" id="org-workspace-layout">
 						{sidebarVisible && (
 							<>
@@ -1203,23 +1321,25 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 										controller={controller}
 										isBusy={isBusy}
 										tools={<WorkspaceToolsMenu controller={controller} isBusy={controller.isWorkspaceBusy} />}
-										onCreateDiary={() => runCurrentCommand("diary")}
+										onFocusEditor={() => {
+											flushSync(() => { setShowAgenda(false) })
+											commandPortRef.current?.getTarget(controllerRef.current)?.restoreFocus()
+										}}
 										onHide={() => runCurrentCommand("toggle-sidebar")}
 										onShowEditor={() => setShowAgenda(false)}
 									/>
 								</Panel>
-								<Separator className="relative w-1 bg-transparent after:absolute after:inset-y-0 after:left-1/2 after:w-px after:-translate-x-1/2 after:bg-border hover:after:bg-primary/40" />
+								<Separator className="relative w-1 bg-transparent after:absolute after:inset-y-0 after:left-1/2 after:w-px after:-translate-x-1/2 after:bg-border/40 hover:after:bg-primary/40" />
 							</>
 						)}
 						<Panel id="org-main" minSize={320}>
 							<div className="flex h-full min-h-0 flex-col">
 								<OrgWorkspaceNotice controller={controller} />
-								<OrgRetainedWriteObjectsNotice workspace={controller.workspace} />
 								{showAgenda && (
 									<ApplicationToolSurface lease={agendaLease} className="flex min-h-0 flex-1 flex-col">
 									<div inert={todoNote.isActive || roam.owned || remarks.owned} className="flex min-h-0 flex-1 flex-col">
-										<div className="flex h-10 shrink-0 items-center border-b bg-muted/20 px-1">
-											{!sidebarVisible && (
+										{!sidebarVisible && (
+											<div className="flex h-9 shrink-0 items-center border-b px-1">
 												<Button
 													variant="ghost"
 													size="icon"
@@ -1229,18 +1349,14 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 												>
 													<PanelLeftOpen className="size-4" />
 												</Button>
-											)}
-											<span className="px-2 text-xs font-medium">Agenda</span>
-										</div>
+											</div>
+										)}
 										<OrgAgendaContainer
 											controller={agendaController}
 											onShowEditor={() => { runCurrentCommand("editor") }}
 											onTodoNoteRequest={todoNote.admit}
 											onToolLifecycle={updateAgendaLifecycle}
 										/>
-										<footer className="h-6 shrink-0 border-t border-border/70 bg-muted/20 px-3 text-right text-[11px] leading-6 text-muted-foreground">
-											Workspace agenda
-										</footer>
 									</div>
 									</ApplicationToolSurface>
 								)}
@@ -1276,18 +1392,16 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 										onGoBack={() => navigateHistory(-1)}
 										onGoForward={() => navigateHistory(1)}
 										onQuickOpen={() => runCurrentCommand("quick-open")}
-										onSelectTab={(relativePath) => {
-											if (relativePath !== controller.activeDocument?.relativePath)
-												void controller.openDocumentPath(relativePath)
-										}}
+										onSelectTab={(relativePath) => relativePath === controller.activeDocument?.relativePath
+											? true
+											: controller.openDocumentPath(relativePath)}
 									/>
 								</div>
 							</div>
 						</Panel>
-						{inspectorVisible && (
-							<>
-								<Separator style={inspectorConfigured || agendaReplacesSource ? { display: "none" } : undefined} className="relative w-1 bg-transparent after:absolute after:inset-y-0 after:left-1/2 after:w-px after:-translate-x-1/2 after:bg-border hover:after:bg-primary/40" />
-								<Panel id="org-inspector" defaultSize={300} minSize={240} maxSize={380} style={inspectorConfigured || agendaReplacesSource ? { display: "none" } : undefined}>
+						<>
+								<Separator disabled={!inspectorInMainLayout} style={!inspectorInMainLayout ? { display: "none" } : undefined} className="relative w-1 bg-transparent after:absolute after:inset-y-0 after:left-1/2 after:w-px after:-translate-x-1/2 after:bg-border/40 hover:after:bg-primary/40" />
+								<Panel id="org-inspector" panelRef={inspectorPanelRef} collapsible collapsedSize={0} defaultSize={300} minSize={240} maxSize={380}>
 									<ApplicationToolSurface lease={inspectorLease} className="h-full min-h-0">
 									<OrgInspector
 										controller={controller}
@@ -1296,8 +1410,7 @@ export const OrgWorkspaceContainer = memo(function OrgWorkspaceContainer() {
 									/>
 									</ApplicationToolSurface>
 								</Panel>
-							</>
-						)}
+						</>
 					</Group>
 				</div>
 			) : (

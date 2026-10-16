@@ -28,6 +28,9 @@ export type ThemeMode = "light" | "dark" | "system"
 export interface ThemeState {
 	/** Current theme key (e.g., "default-dark", "default-light") */
 	readonly themeKey: string
+	/** Exact named palettes used when following native system appearance. */
+	readonly lightThemeKey: string
+	readonly darkThemeKey: string
 	/** Theme mode: light, dark, or system */
 	readonly mode: ThemeMode
 	/** Current system theme preference (detected from OS) */
@@ -38,67 +41,6 @@ export interface ThemeState {
 	readonly enableTransition: boolean
 }
 
-// ==============================
-// Actions Interface
-// ==============================
-
-/**
- * Actions available for mutating theme state.
- */
-export interface ThemeActions {
-	/**
-	 * Set the current theme by key.
-	 * Also updates mode to match the theme type.
-	 */
-	readonly setTheme: (key: string) => void
-
-	/**
-	 * Set the theme mode.
-	 * May trigger theme change if current theme doesn't match mode.
-	 */
-	readonly setMode: (mode: ThemeMode) => void
-
-	/**
-	 * Set the system theme preference (detected from OS).
-	 * Updates effectiveTheme if mode is "system".
-	 */
-	readonly setSystemTheme: (theme: "light" | "dark") => void
-
-	/**
-	 * Toggle between light, dark, and system modes.
-	 * Cycles: light → dark → system → light
-	 */
-	readonly toggleMode: () => void
-
-	/**
-	 * Enable or disable transition animations.
-	 */
-	readonly setEnableTransition: (enable: boolean) => void
-
-	/**
-	 * Mark theme system as initialized.
-	 */
-	readonly setInitialized: (initialized: boolean) => void
-}
-
-// ==============================
-// Configuration
-// ==============================
-
-/**
- * Configuration for theme state persistence.
- */
-export interface ThemeConfig {
-	/** Storage key for persistence */
-	readonly storageKey: string
-	/** Transition duration in milliseconds */
-	readonly transitionDuration: number
-}
-
-export const DEFAULT_THEME_CONFIG: ThemeConfig = {
-	storageKey: "grain-theme",
-	transitionDuration: 300,
-} as const
 
 // ==============================
 // Default Values
@@ -109,5 +51,7 @@ export const DEFAULT_THEME_STATE: ThemeState = {
 	enableTransition: true,
 	mode: "dark",
 	systemTheme: "dark",
-	themeKey: "default-dark",
+	lightThemeKey: "GitHub",
+	darkThemeKey: "GitHub Dark",
+	themeKey: "GitHub Dark",
 } as const

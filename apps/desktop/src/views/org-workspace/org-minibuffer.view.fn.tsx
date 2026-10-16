@@ -34,6 +34,10 @@ export const OrgMinibuffer = ({
 	const selectedValueRef = useRef<string | null>(null)
 	const [caret, setCaret] = useState(0)
 	const pendingCaretRef = useRef<number | null>(null)
+	const pendingInitialSelectionRef = useRef<{
+		value: string
+		range: readonly [number, number] | null
+	} | null>(null)
 	const [selectionRequest, setSelectionRequest] = useState(0)
 	const historyDraftRef = useRef("")
 	const [error, setError] = useState<string | null>(null)
@@ -95,10 +99,17 @@ export const OrgMinibuffer = ({
 		generationRef.current = session ? { session, id: session.id, cancelled: false } : null
 		acceptingRef.current = false
 		setAccepting(false)
+		pendingInitialSelectionRef.current = null
+		pendingCaretRef.current = null
 		if (!session) return
 		setInput(session.initialInput)
-		setCaret(session.initialInput.length)
-		pendingCaretRef.current = session.initialInput.length
+		const range = session.nativeInput
+			? session.nativeInput.selectValueOnOpen === false
+				? [session.initialInput.length, session.initialInput.length] as const
+				: null
+			: session.initialSelection ?? [session.initialInput.length, session.initialInput.length] as const
+		setCaret(range?.[0] ?? session.initialInput.length)
+		pendingInitialSelectionRef.current = { value: session.initialInput, range }
 		setSelectionRequest((current) => current + 1)
 		setSelected(0)
 		selectedValueRef.current = null
@@ -107,7 +118,6 @@ export const OrgMinibuffer = ({
 		historyRef.current = historiesRef.current.get(session.historyKey ?? session.prompt) ?? []
 		composingRef.current = false
 		inputRef.current?.focus()
-		if (session.nativeInput?.selectValueOnOpen !== false && session.nativeInput) inputRef.current?.select()
 		return () => {
 			generationRef.current = null
 			acceptingRef.current = false
@@ -126,6 +136,15 @@ export const OrgMinibuffer = ({
 		selectedValueRef.current = candidates[index]?.value ?? null
 	}
 	useLayoutEffect(() => {
+		const initial = pendingInitialSelectionRef.current
+		if (initial) {
+			// Wait for the controlled initial value before applying its UTF-16 offsets.
+			if (input !== initial.value) return
+			if (initial.range) inputRef.current?.setSelectionRange(...initial.range)
+			else inputRef.current?.select()
+			pendingInitialSelectionRef.current = null
+			return
+		}
 		if (pendingCaretRef.current !== null) {
 			if (session?.nativeInput?.selectValueOnOpen !== false && session?.nativeInput) {
 				pendingCaretRef.current = null
@@ -276,6 +295,7 @@ export const OrgMinibuffer = ({
 					</button>
 				))}
 			</div>
+			{session.description && <p id={`${id}-description`} className="break-words px-3 py-1 text-xs text-muted-foreground">{session.description}</p>}
 			<div className="flex min-h-9 items-center gap-2 border-t border-border/50 px-3 font-mono text-xs">
 				<label htmlFor={`${id}-input`} className="shrink-0 font-medium text-primary">
 					{session.prompt}
@@ -295,7 +315,7 @@ export const OrgMinibuffer = ({
 					aria-autocomplete="list"
 					aria-activedescendant={candidates[selected] ? `${id}-candidate-${selected}` : undefined}
 					aria-invalid={Boolean(error)}
-					aria-describedby={error ? `${id}-error` : `${id}-help`}
+					aria-describedby={[session.description ? `${id}-description` : null, error ? `${id}-error` : `${id}-help`].filter(Boolean).join(" ")}
 					value={input}
 					readOnly={accepting}
 					onCompositionStart={() => {
@@ -400,9 +420,9 @@ export const OrgMinibuffer = ({
 					}}
 					disabled={accepting}
 					className="rounded px-1 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
-					aria-label="Accept minibuffer"
+					aria-label="Confirm minibuffer"
 				>
-					RET
+					Confirm
 				</button>
 				<button
 					type="button"
@@ -411,7 +431,7 @@ export const OrgMinibuffer = ({
 					className="rounded px-1 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
 					aria-label="Cancel minibuffer"
 				>
-					C-g
+					Cancel
 				</button>
 			</div>
 			{!candidates.length && session.emptyMessage && <p role="status" className="px-3 pb-1 text-xs text-muted-foreground">{session.emptyMessage}</p>}
@@ -421,9 +441,7 @@ export const OrgMinibuffer = ({
 				</p>
 			) : (
 				<p id={`${id}-help`} className="px-3 pb-1 text-[10px] text-muted-foreground">
-					RET accept · TAB complete · C-n/C-p
-					{session.matchingMode === "multi-term" ? " / C-j/C-k" : ""} select · M-p/M-n history ·
-					C-g/Esc cancel
+					Enter confirm · Tab complete · ↑/↓ select · Esc cancel
 				</p>
 			)}
 		</section>

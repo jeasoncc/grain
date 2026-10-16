@@ -1,5 +1,5 @@
 // Font Configuration Utilities
-import { CARD_SIZE_OPTIONS, UI_SCALE_OPTIONS } from "@/types/font"
+import { UI_SCALE_OPTIONS } from "@/types/font"
 
 export interface FontConfig {
 	readonly fontFamily: string
@@ -9,16 +9,12 @@ export interface FontConfig {
 	readonly uiFontFamily: string
 	readonly uiFontSize: number
 	readonly uiScale: string
-	readonly cardSize: string
-	readonly cardBorderRadius: number
 	readonly paragraphSpacing: number
 	readonly firstLineIndent: number
 }
 
 export const FONT_PRESETS: Record<string, FontConfig> = {
 	chinese: {
-		cardBorderRadius: 8,
-		cardSize: "default",
 		firstLineIndent: 2,
 		fontFamily: "'Noto Serif CJK SC', 'Source Han Serif SC', serif",
 		fontSize: 18,
@@ -30,8 +26,6 @@ export const FONT_PRESETS: Record<string, FontConfig> = {
 		uiScale: "default",
 	},
 	comfortable: {
-		cardBorderRadius: 12,
-		cardSize: "comfortable",
 		firstLineIndent: 2,
 		fontFamily: "'Noto Serif CJK SC', Georgia, serif",
 		fontSize: 18,
@@ -43,8 +37,6 @@ export const FONT_PRESETS: Record<string, FontConfig> = {
 		uiScale: "comfortable",
 	},
 	compact: {
-		cardBorderRadius: 4,
-		cardSize: "compact",
 		firstLineIndent: 0,
 		fontFamily: "'Fira Code', monospace",
 		fontSize: 14,
@@ -56,8 +48,6 @@ export const FONT_PRESETS: Record<string, FontConfig> = {
 		uiScale: "compact",
 	},
 	default: {
-		cardBorderRadius: 8,
-		cardSize: "default",
 		firstLineIndent: 0,
 		fontFamily: "'Fira Code', 'Hack', 'JetBrains Mono', monospace",
 		fontSize: 16,
@@ -79,11 +69,4 @@ export class FontConfigManager {
 		return option?.scale || 1
 	}
 
-	/**
-	 * Get card padding value
-	 */
-	static getCardPadding(cardSizeValue: string): string {
-		const option = CARD_SIZE_OPTIONS.find((c) => c.value === cardSizeValue)
-		return option?.padding || "1rem"
-	}
 }

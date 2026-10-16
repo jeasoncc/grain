@@ -3,4 +3,5 @@
  * @description Theme 纯函数模块导出
  */
 
-export * from "./theme.pipe"
+export * from "./theme-lookup.pipe"
+export * from "./terminal-theme.pipe"

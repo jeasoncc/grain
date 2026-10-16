@@ -79,6 +79,12 @@ export const createOrgDirectoryFlow = (
 	repository: OrgFileRepository = orgFileRepository,
 ): TE.TaskEither<OrgFileError, void> => repository.createDirectory(input)
 
+/** Reveal only a named target under the native workspace approval. */
+export const revealOrgWorkspacePathFlow = (
+	input: Parameters<OrgFileRepository["revealWorkspacePath"]>[0],
+	repository: OrgFileRepository = orgFileRepository,
+): TE.TaskEither<OrgFileError, void> => repository.revealWorkspacePath(input)
+
 /** Move or rename an Org document with revision conflict protection. */
 export const moveOrgDocumentFlow = (
 	input: MoveOrgDocumentInput,

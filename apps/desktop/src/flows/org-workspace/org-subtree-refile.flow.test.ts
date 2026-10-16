@@ -29,6 +29,7 @@ const repositoryWith = (overrides: Partial<OrgFileRepository> = {}): OrgFileRepo
 	clearDerivedIndex: () =>
 		TE.right({ agendaCount: 0, documentCount: 0, headingCount: 0, linkCount: 0 }),
 	createDirectory: () => TE.right(undefined),
+	revealWorkspacePath: () => TE.left(fileError("unexpected reveal")),
 	deleteDocument: () => TE.left(fileError("unexpected delete")),
 	getDerivedIndexStats: () =>
 		TE.right({ agendaCount: 0, documentCount: 0, headingCount: 0, linkCount: 0 }),

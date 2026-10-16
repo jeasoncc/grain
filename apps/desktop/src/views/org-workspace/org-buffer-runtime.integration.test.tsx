@@ -117,9 +117,7 @@ function Runtime() {
 					onCloseTab={(path) => {
 						void controller.closeDocumentPath(path)
 					}}
-					onSelectTab={(path) => {
-						void controller.openDocumentPath(path)
-					}}
+					onSelectTab={(path) => controller.openDocumentPath(path)}
 					onGoBack={noop}
 					onGoForward={noop}
 					onQuickOpen={noop}

@@ -4,6 +4,7 @@ import {
 	ArrowLeft,
 	CalendarClock,
 	ArrowRight,
+	ChevronDown,
 	FileText,
 	Flag,
 	KeyRound,
@@ -40,6 +41,9 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuRadioGroup,
+	DropdownMenuRadioItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/views/ui/dropdown-menu"
@@ -116,7 +120,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	readonly onGoBack: () => void
 	readonly onGoForward: () => void
 	readonly onQuickOpen: () => void
-	readonly onSelectTab: (relativePath: string) => void
+	readonly onSelectTab: (relativePath: string) => boolean | Promise<boolean>
 	readonly openDocumentPaths: readonly string[]
 	readonly sidebarVisible: boolean
 	readonly onTodoNoteRequest?: (request: OrgTodoNoteRequest) => void
@@ -133,8 +137,12 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	const paneId = useRef(++nextPaneId).current
 	const runtimeMountIds = useRef(new WeakMap<object, number>())
 	const nextRuntimeMountId = useRef(0)
+	const documentListTrigger = useRef<HTMLButtonElement | null>(null)
+	const selectedDocumentNavigation = useRef<(() => Promise<void>) | null>(null)
+	const liveCommandPort = useRef<OrgDocumentCommandPort | null>(null)
 	const [split, setSplit] = useState(false)
 	const [noteActionsOpen, setNoteActionsOpen] = useState(false)
+	useEffect(() => { if (!active) setNoteActionsOpen(false) }, [active])
 	const [activeWindow, setActiveWindow] = useState<"primary" | "secondary">("primary")
 	const bindings = useRef<Record<string, string | null>>({
 		primary: controller.activeBufferId,
@@ -201,6 +209,39 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 			: controller.isDirty) ?? controller.isDirty
 	const toolbarEffect = controller.getBufferEffectState(toolbarOrigin?.bufferId ?? controller.activeBufferId ?? "")
 	const visibleDocument = activeDocument ?? liveBuffers[0]?.document
+	const tabRailRef = useRef<HTMLElement | null>(null)
+	const selectedTabRef = useRef<HTMLDivElement | null>(null)
+	const documentTabs = useMemo(() => {
+		const names = new Map<string, number>()
+		for (const path of openDocumentPaths) {
+			const name = path.split("/").at(-1) ?? path
+			names.set(name, (names.get(name) ?? 0) + 1)
+		}
+		return openDocumentPaths.map((path) => {
+			const name = path.split("/").at(-1) ?? path
+			const separator = path.lastIndexOf("/")
+			return {
+				path,
+				name: name.replace(/\.org$/i, ""),
+				directory: names.get(name)! > 1 ? separator < 0 ? "Workspace" : path.slice(0, separator) : null,
+			}
+		})
+	}, [openDocumentPaths])
+	useLayoutEffect(() => {
+		const rail = tabRailRef.current
+		const selected = selectedTabRef.current
+		if (!active || !rail || !selected) return
+		const revealSelectedTab = () => {
+			const viewport = rail.getBoundingClientRect()
+			const tab = selected.getBoundingClientRect()
+			if (tab.left < viewport.left) rail.scrollLeft += tab.left - viewport.left
+			else if (tab.right > viewport.right) rail.scrollLeft += tab.right - viewport.right
+		}
+		revealSelectedTab()
+		const observer = new ResizeObserver(revealSelectedTab)
+		observer.observe(rail)
+		return () => observer.disconnect()
+	}, [active, activeDocument?.relativePath, openDocumentPaths])
 	useLayoutEffect(() => {
 		if (!controller.activeBufferId) {
 			const survivor = bindings.current[activeWindowRef.current]
@@ -299,17 +340,19 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	const focusedEffect = focusedBuffer ? controller.getBufferEffectState(focusedBuffer.bufferId) : null
 	const focusedReadOnly = focusedEffect?.readOnly ?? true
 	const line = useMemo(() => {
+		if (!active) return 1
 		const endings = /\r\n|\r|\n/g
 		let count = 1
 		for (let match = endings.exec(focusedContent); match && match.index < cursor; match = endings.exec(focusedContent)) count++
 		return count
-	}, [focusedContent, cursor])
+	}, [active, focusedContent, cursor])
 	const wordCount = useMemo(() => {
+		if (!active) return 0
 		const words = /\S+/gu
 		let count = 0
 		while (words.exec(focusedContent)) count++
 		return count
-	}, [focusedContent])
+	}, [active, focusedContent])
 	const parameterCommandRef = useRef(parameterCommand)
 	parameterCommandRef.current = parameterCommand
 	const openMetadataCommand = (type: OrgCommandId, position: number) => {
@@ -471,6 +514,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 			}
 		},
 	}
+	liveCommandPort.current = localCommandPort
 	if (commandPortRef) commandPortRef.current = localCommandPort
 	const paneCommandContext = (): OrgCommandContext => {
 		const current = controllerRef.current
@@ -503,11 +547,99 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 	}
 	const commandContext = paneCommandContext()
 
+	const tabs = <nav ref={tabRailRef} aria-label="Open documents" className="flex min-w-0 flex-1 self-stretch overflow-x-auto">
+		{documentTabs.map(({ path, name, directory }) => {
+			const selected = path === activeDocument?.relativePath
+			const buffer = controller.openBuffers?.find((item) => item.relativePath === path)
+			const dirty = buffer?.isDirty ?? (selected && controller.isDirty)
+			return <div
+				key={path}
+				ref={selected ? selectedTabRef : undefined}
+				className={`group relative flex min-w-28 max-w-64 shrink-0 items-center gap-1 px-3 transition-colors ${selected ? "bg-background text-foreground after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-t after:bg-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}
+				title={`${path}${dirty ? " — unsaved" : ""}${buffer?.hasConflict ? " — external conflict" : ""}`}
+			>
+				<button
+					type="button"
+					className="flex min-w-0 flex-1 items-center gap-2 rounded-sm py-2 text-left text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					aria-current={selected ? "page" : undefined}
+					aria-description={`${path}${dirty ? " — unsaved changes" : ""}${buffer?.hasConflict ? " — external conflict" : ""}`}
+					title={path}
+					onClick={() => onSelectTab(path)}
+				>
+					<span className="truncate">{name}</span>
+					{directory && <>{" "}<span className="truncate text-[10px] text-muted-foreground">{directory}</span></>}
+				</button>
+				{dirty && <span className="shrink-0 text-primary" aria-label="Unsaved changes" title="Unsaved changes">•</span>}
+				{buffer?.hasConflict && <span className="shrink-0 text-destructive" title="External conflict">
+					<AlertTriangle className="size-3" aria-hidden="true" /><span className="sr-only">External conflict</span>
+				</span>}
+				<button
+					type="button"
+					className={`flex size-6 shrink-0 items-center justify-center rounded outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 ${selected ? "opacity-70" : "opacity-0"}`}
+					aria-label={`Close ${path}`}
+					onClick={() => onCloseTab(path)}
+				><X className="size-3" /></button>
+			</div>
+		})}
+	</nav>
+	const documentList = documentTabs.length > 0 && <DropdownMenu onOpenChange={(open) => { if (open) selectedDocumentNavigation.current = null }}>
+		<DropdownMenuTrigger asChild>
+			<Button ref={documentListTrigger} variant="ghost" size="icon-sm" aria-label="Open notes" title="Open notes" disabled={isBusy}>
+				<ChevronDown className="size-4" />
+			</Button>
+		</DropdownMenuTrigger>
+		<DropdownMenuContent align="end" className="max-h-80 w-72 overflow-y-auto" onCloseAutoFocus={(event) => {
+			const navigate = selectedDocumentNavigation.current
+			selectedDocumentNavigation.current = null
+			if (!navigate) return
+			event.preventDefault()
+			queueMicrotask(() => {
+				if (!documentListTrigger.current?.isConnected) return
+				documentListTrigger.current.focus({ preventScroll: true })
+				void navigate()
+			})
+		}}>
+			<DropdownMenuLabel className="text-xs text-muted-foreground">Open notes</DropdownMenuLabel>
+			<DropdownMenuRadioGroup value={activeDocument?.relativePath ?? ""} onValueChange={(path) => {
+				const origin = controllerRef.current
+				const windowName = activeWindowRef.current
+				const lease = focusLease.current
+				selectedDocumentNavigation.current = async () => {
+					const focused = document.activeElement
+					if (!await onSelectTab(path)) return
+					// Use the post-navigation port; a restored tab may not have had a live buffer yet.
+					requestAnimationFrame(() => {
+						const current = controllerRef.current
+						if (lease !== focusLease.current || current.workspaceSessionId !== origin.workspaceSessionId ||
+							current.workspace?.rootPath !== origin.workspace?.rootPath ||
+							current.workspace?.capabilityToken !== origin.workspace?.capabilityToken ||
+							activeWindowRef.current !== windowName || current.activeDocument?.relativePath !== path ||
+							(document.activeElement !== focused && document.activeElement !== document.body)) return
+						liveCommandPort.current?.getTarget(current)?.restoreFocus()
+					})
+				}
+			}}>
+				{documentTabs.map(({ path, name }) => {
+					const buffer = controller.openBuffers?.find((item) => item.relativePath === path)
+					const dirty = buffer?.isDirty ?? (path === activeDocument?.relativePath && controller.isDirty)
+					return <DropdownMenuRadioItem key={path} value={path} aria-label={path} className="gap-2">
+						<span className="min-w-0 flex-1">
+							<span className="block truncate text-xs">{name}</span>
+							<span className="block truncate text-[10px] text-muted-foreground">{path}</span>
+						</span>
+						{dirty && <span aria-label="Unsaved changes" className="text-primary">•</span>}
+						{buffer?.hasConflict && <AlertTriangle className="size-3 shrink-0 text-destructive" aria-label="External conflict" />}
+					</DropdownMenuRadioItem>
+				})}
+			</DropdownMenuRadioGroup>
+		</DropdownMenuContent>
+	</DropdownMenu>
+
 	return (
-		<main className="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
+		<main className="@container/org-document flex min-h-0 min-w-0 flex-1 flex-col bg-background">
 			{visibleDocument ? (
 				<>
-					<div className="flex h-10 shrink-0 items-center gap-1 border-b border-border/70 bg-muted/20 px-2">
+					<div className="flex h-10 shrink-0 items-center gap-1 bg-muted/20 px-2">
 						{!sidebarVisible && (
 							<Button
 								variant="ghost"
@@ -539,55 +671,9 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 						>
 							<ArrowRight className="size-4" />
 						</Button>
-						<div className="mx-1 h-4 shrink-0 border-l border-border/70" aria-hidden="true" />
-						<div className="flex min-w-0 flex-1 self-stretch overflow-x-auto">
-							{openDocumentPaths.map((path) => {
-								const active = path === activeDocument?.relativePath
-								const buffer = controller.openBuffers?.find((item) => item.relativePath === path)
-								const dirty = buffer?.isDirty ?? (active && controller.isDirty)
-								return (
-									<div
-										key={path}
-										className={`group relative flex min-w-32 max-w-56 items-center border-r px-2 transition-colors duration-150 ${active ? "bg-background text-foreground after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-primary" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"}`}
-										title={`${path}${dirty ? " — unsaved" : ""}${buffer?.hasConflict ? " — external conflict" : ""}`}
-									>
-										<button
-											type="button"
-											className="min-w-0 flex-1 truncate rounded-sm py-2 text-left text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
-											aria-current={active ? "page" : undefined}
-											aria-description={`${path}${dirty ? " — unsaved changes" : ""}${buffer?.hasConflict ? " — external conflict" : ""}`}
-											title={path}
-											onClick={() => onSelectTab(path)}
-										>
-											{path
-												.split("/")
-												.at(-1)
-												?.replace(/\.org$/i, "")}
-										</button>
-										{dirty && (
-											<span className="ml-1 shrink-0 text-xs font-semibold" aria-label="Unsaved changes" title="Unsaved changes">
-												*
-											</span>
-										)}
-										{buffer?.hasConflict && (
-											<span className="ml-1 shrink-0 text-destructive" title="External conflict">
-												<AlertTriangle className="size-3" aria-hidden="true" />
-												<span className="sr-only">External conflict</span>
-											</span>
-										)}
-										<button
-											type="button"
-											className="ml-1 flex size-8 shrink-0 items-center justify-center rounded opacity-0 outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100 group-focus-within:opacity-100"
-											aria-label={`Close ${path}`}
-											onClick={() => onCloseTab(path)}
-										>
-											<X className="size-3" />
-										</button>
-									</div>
-								)
-							})}
-						</div>
-						<div className="mx-1 h-4 shrink-0 border-l border-border/70" aria-hidden="true" />
+						{tabs}
+						{documentList}
+						<div className="mx-1 w-1 shrink-0" aria-hidden="true" />
 						<Button
 							variant="ghost"
 							size="icon-sm"
@@ -617,7 +703,6 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 						>
 							<Columns2 className="size-4" />
 						</Button>
-						<div className="mx-1 h-4 shrink-0 border-l border-border/70" aria-hidden="true" />
 						{!inspectorVisible && (
 							<Button
 								variant="ghost"
@@ -665,6 +750,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 									<MoreHorizontal className="size-4" />
 								</Button>
 							</DropdownMenuTrigger>
+							{active && noteActionsOpen && (
 							<DropdownMenuContent
 								align="end"
 								onCloseAutoFocus={(event) => {
@@ -720,11 +806,24 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 									<Archive className="mr-2 size-4" />
 									Archive subtree
 								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem
+									disabled={!controller.nativeWindowsAvailable || controller.isWorkspaceBlocked}
+									onClick={() => {
+										if (!resolveToolbarWindow()) return
+										const buffer = bufferFor(activeWindowRef.current)
+										const context = commandTargetRef.current?.getCommandContext()
+										if (buffer && context?.windowId) void controllerRef.current.detachBuffer(buffer.bufferId, context.windowId)
+									}}
+								>
+									Detach to native window
+								</DropdownMenuItem>
 							</DropdownMenuContent>
+							)}
 						</DropdownMenu>
 					</div>
 					<div
-						className={`grid min-h-0 flex-1 bg-background ${split ? "grid-cols-2" : "grid-cols-1"}`}
+						className={`grid min-h-0 flex-1 bg-background ${split ? "grid-cols-1 grid-rows-2 @[50rem]/org-document:grid-cols-2 @[50rem]/org-document:grid-rows-1" : "grid-cols-1"}`}
 					>
 						{((split ? ["primary", "secondary"] : ["primary"]) as ("primary" | "secondary")[]).map(
 							(name) => {
@@ -750,7 +849,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 											if (node) windowNodes.current.set(name, node)
 											else windowNodes.current.delete(name)
 										}}
-										className={`flex min-h-0 min-w-0 flex-col overflow-hidden border-y border-l border-r border-r-border/70 last:border-r-0 ${current ? "border-y-primary/20 border-l-primary/20" : "border-y-transparent border-l-transparent"}`}
+										className={`flex min-h-0 min-w-0 flex-col overflow-hidden ${split ? "border-b border-border/40 last:border-b-0 @[50rem]/org-document:border-b-0 @[50rem]/org-document:border-r @[50rem]/org-document:last:border-r-0" : ""}`}
 										role="region"
 										aria-label={`Org source window: ${buffer.document.relativePath}`}
 										aria-current={current ? "true" : undefined}
@@ -785,12 +884,11 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 										data-org-buffer-id={buffer.bufferId}
 										data-org-focus-pending={!matched && isBusy ? "true" : undefined}
 									>
-										<div className={`flex min-h-8 min-w-0 shrink-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-border/60 px-3 py-1 text-[11px] ${current ? "bg-primary/5 text-foreground" : "bg-muted/10 text-muted-foreground"}`}>
-											<span className="shrink-0 font-medium">Org source</span>
-											<span className="min-w-0 flex-1 basis-20 truncate" title={buffer.document.relativePath}>
+										{(split || summary?.hasConflict || summary?.autosavePaused || readOnly) && (
+										<div className={`flex min-h-8 min-w-0 shrink-0 flex-wrap items-center gap-x-2 gap-y-1 px-3 py-1 text-[11px] ${current ? "bg-primary/5 text-foreground" : "bg-muted/10 text-muted-foreground"}`}>
+											{split && <span className="min-w-0 flex-1 basis-20 truncate" title={buffer.document.relativePath}>
 												{buffer.document.relativePath}
-											</span>
-											{current && <span className="shrink-0 text-primary">Active</span>}
+											</span>}
 											{buffer.isDirty && <span className="shrink-0" title="Unsaved changes">Unsaved *</span>}
 											{summary?.hasConflict && <span className="shrink-0 text-destructive">Conflict</span>}
 											{readOnly && <span className="shrink-0">Read-only</span>}
@@ -804,23 +902,10 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 													void applicationHostRef.current.execute("reconcile-file")
 												}}
 											>Review / reconcile file</button>}
-											<button
-												type="button"
-												disabled={!controller.nativeWindowsAvailable || controller.isWorkspaceBlocked}
-												aria-label={`Detach ${buffer.document.relativePath} to native window`}
-												className="rounded px-2 py-1 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-												onPointerDown={(event) => event.preventDefault()}
-												onClick={() => {
-													const target = targets.current.get(boundWindowKey)
-													const context = target?.getCommandContext()
-													if (context?.windowId) void controllerRef.current.detachBuffer(buffer.bufferId, context.windowId)
-												}}
-											>
-												Detach
-											</button>
 										</div>
+										)}
 										{!matched && isBusy && (
-											<output role="status" className="block shrink-0 border-b border-border/60 px-3 py-1 text-xs text-muted-foreground">
+											<output role="status" className="block shrink-0 bg-muted/20 px-3 py-1 text-xs text-muted-foreground">
 												Focus pending — waiting for file operation
 											</output>
 										)}
@@ -921,7 +1006,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 				</>
 			) : (
 				<div className="flex min-h-0 flex-1 flex-col">
-					<div className="flex h-10 shrink-0 items-center gap-1 border-b border-border/70 bg-muted/20 px-2">
+					<div className="flex h-10 shrink-0 items-center gap-1 bg-muted/20 px-2">
 						{!sidebarVisible && (
 							<Button variant="ghost" size="icon-sm" aria-label="Show sidebar" onClick={() => invokePaneCommand("toggle-sidebar")}>
 								<PanelLeftOpen className="size-4" />
@@ -945,36 +1030,8 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 						>
 							<ArrowRight className="size-4" />
 						</Button>
-						<div className="flex min-w-0 flex-1 self-stretch overflow-x-auto">
-							{openDocumentPaths.map((path) => (
-								<div
-									key={path}
-									className="group flex min-w-32 max-w-56 items-center border-r px-2 text-muted-foreground hover:bg-muted/60"
-									title={path}
-								>
-									<button
-										type="button"
-										className="min-w-0 flex-1 truncate rounded-sm py-2 text-left text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
-										aria-description={path}
-										title={path}
-										onClick={() => onSelectTab(path)}
-									>
-										{path
-											.split("/")
-											.at(-1)
-											?.replace(/\.org$/i, "")}
-									</button>
-									<button
-										type="button"
-										className="ml-1 flex size-8 items-center justify-center rounded opacity-0 outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100 group-focus-within:opacity-100"
-										aria-label={`Close ${path}`}
-										onClick={() => onCloseTab(path)}
-									>
-										<X className="size-3" />
-									</button>
-								</div>
-							))}
-						</div>
+						{tabs}
+						{documentList}
 					</div>
 					<div className="flex flex-1 items-center justify-center p-8">
 						<div className="flex max-w-xs flex-col items-center text-center text-muted-foreground">
@@ -1004,23 +1061,12 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 				</div>
 			)}
 			<OrgWhichKey prefix={!minibuffer && !parameterSessionSuspended ? prefix : null} commandContext={commandContext} />
-			<footer className="flex min-h-6 shrink-0 flex-wrap items-center gap-x-2 gap-y-0.5 border-t border-border/70 bg-muted/20 px-3 py-0.5 text-[11px] text-muted-foreground">
+			{active && <footer className="flex min-h-6 shrink-0 flex-wrap items-center justify-end gap-x-2 gap-y-0.5 px-3 py-0.5 text-[11px] text-muted-foreground">
 				{focusedDocument && (
 					<>
-						<span className="min-w-0 flex-1 basis-32 truncate" title={focusedDocument.relativePath}>
-							{focusedDocument.relativePath}
-						</span>
-						<output aria-live="polite" className="shrink-0">
-							{focusedEffect?.saving
-								? focusedIsDirty
-									? "Saving… · Unsaved changes"
-									: "Saving…"
-								: focusedIsDirty
-									? "Unsaved changes"
-									: controller.error || focusedSummary?.hasConflict
-										? "No unsaved changes"
-										: "Saved"}
-						</output>
+						{(focusedEffect?.saving || focusedIsDirty) && <output aria-live="polite" className="mr-auto shrink-0">
+							{focusedEffect?.saving ? focusedIsDirty ? "Saving… · Unsaved changes" : "Saving…" : "Unsaved changes"}
+						</output>}
 						{focusedSummary?.hasConflict && <span className="shrink-0 text-destructive">External conflict</span>}
 						{focusedSummary?.autosavePaused && !focusedSummary.hasConflict && <span className="shrink-0">Autosave paused</span>}
 						{controller.error && <span className="shrink-0 text-destructive">Operation error</span>}
@@ -1031,7 +1077,7 @@ export const OrgDocumentPane = memo(function OrgDocumentPane({
 						</span>
 					</>
 				)}
-			</footer>
+			</footer>}
 		</main>
 	)
 })

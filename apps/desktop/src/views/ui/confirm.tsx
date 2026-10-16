@@ -113,7 +113,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
 				open={request !== null}
 				onOpenChange={(open) => !open && request && settle(request, false)}
 			>
-				<DialogContent data-org-confirm-dialog="" onCloseAutoFocus={(event) => {
+				<DialogContent className="gap-5 rounded-lg border-border/60 p-5 shadow-lg sm:max-w-md" data-org-confirm-dialog="" onCloseAutoFocus={(event) => {
 					event.preventDefault()
 					const previous = closed.current
 					closed.current = null
@@ -132,7 +132,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
 					<DialogHeader>
 						<DialogTitle>{request?.options.title ?? "请确认"}</DialogTitle>
 						{request?.options.description ? (
-							<DialogDescription>{request.options.description}</DialogDescription>
+							<DialogDescription className="whitespace-pre-line break-words leading-relaxed">{request.options.description}</DialogDescription>
 						) : null}
 					</DialogHeader>
 					<DialogFooter>

@@ -1,34 +1,17 @@
-/**
- * @file hooks/use-theme.ts
- * @description Theme React 绑定
- *
- * 连接 state 和 flows，提供 React 组件使用的主题功能。
- *
- * 依赖规则：hooks/ 只能依赖 flows/, state/, types/
- */
-
-import { useCallback, useEffect } from "react"
-import { applyThemeFlow, getThemeByKey, getThemes, setModeFlow } from "@/flows/theme"
+import { useEffect } from "react"
+import { getThemeByKey } from "@/flows/theme"
 import { initThemeFlow } from "@/flows/theme/init-theme.flow"
 import {
 	useEffectiveTheme,
 	useEnableTransition,
 	useIsThemeInitialized,
 	useSystemTheme,
-	useThemeActions,
 	useThemeKey,
 	useThemeMode,
 	useThemeStore,
 } from "@/state/theme.state"
-import type { ThemeMode } from "@/types/theme"
 
-// ==============================
-// Theme Hook
-// ==============================
-
-/**
- * Main theme hook providing all theme-related state and actions.
- */
+/** Read-only presentation state; preferences come only from the native config. */
 export function useTheme() {
 	const themeKey = useThemeKey()
 	const mode = useThemeMode()
@@ -36,117 +19,31 @@ export function useTheme() {
 	const effectiveTheme = useEffectiveTheme()
 	const enableTransition = useEnableTransition()
 	const isInitialized = useIsThemeInitialized()
-
-	const actions = useThemeActions()
-	const currentTheme = getThemeByKey(themeKey)
-
-	// Set theme
-	const setTheme = useCallback(
-		(key: string) => {
-			const theme = getThemeByKey(key)
-			if (!theme) {
-				return
-			}
-
-			actions.setTheme(key)
-			applyThemeFlow(key, enableTransition)
-		},
-		[actions, enableTransition],
-	)
-
-	// Set mode
-	const setMode = useCallback(
-		(newMode: ThemeMode) => {
-			actions.setMode(newMode)
-			const newThemeKey = setModeFlow(newMode, themeKey, enableTransition)
-			if (newThemeKey !== themeKey) {
-				actions.setTheme(newThemeKey)
-			}
-		},
-		[actions, themeKey, enableTransition],
-	)
-
-	// Toggle mode
-	const toggleMode = useCallback(() => {
-		actions.toggleMode()
-		const newMode = useThemeStore.getState().mode
-		const newThemeKey = setModeFlow(newMode, themeKey, enableTransition)
-		if (newThemeKey !== themeKey) {
-			actions.setTheme(newThemeKey)
-		}
-	}, [actions, themeKey, enableTransition])
-
-	// Set enable transition
-	const setEnableTransition = useCallback(
-		(enable: boolean) => {
-			actions.setEnableTransition(enable)
-		},
-		[actions],
-	)
+	const selectedKey = useThemeStore((state) => state.mode === "system"
+		? state.systemTheme === "dark" ? state.darkThemeKey : state.lightThemeKey
+		: state.themeKey)
 
 	return {
-		currentTheme,
+		currentTheme: getThemeByKey(selectedKey),
 		effectiveTheme,
 		enableTransition,
 		isDark: effectiveTheme === "dark",
 		isInitialized,
 		isSystem: mode === "system",
 		mode,
-		setEnableTransition,
-		setMode,
-		setTheme,
 		systemTheme,
 		theme: themeKey,
-		themes: getThemes(),
-		toggleMode,
 	}
 }
 
-// ==============================
-// Theme Initialization Hook
-// ==============================
-
-/**
- * Initialize theme on application startup.
- * Should be called once at the root component.
- */
+/** The effect owns its subscriptions for its entire mount, including StrictMode. */
 export function useThemeInitialization(): void {
-	const isInitialized = useIsThemeInitialized()
-
-	// Initialize theme
-	useEffect(() => {
-		if (isInitialized) {
-			return
-		}
-
-		// Initialize theme system (sets up listeners and applies theme)
-		const cleanup = initThemeFlow()
-
-		return cleanup
-	}, [isInitialized])
+	useEffect(() => initThemeFlow(), [])
 }
 
-// ==============================
-// Convenience Hooks
-// ==============================
+export const useIsDarkTheme = (): boolean => useEffectiveTheme() === "dark"
+export const useIsSystemMode = (): boolean => useThemeMode() === "system"
 
-/**
- * Check if the current theme is dark.
- */
-export const useIsDarkTheme = (): boolean => {
-	const effectiveTheme = useEffectiveTheme()
-	return effectiveTheme === "dark"
-}
-
-/**
- * Check if system mode is active.
- */
-export const useIsSystemMode = (): boolean => {
-	const mode = useThemeMode()
-	return mode === "system"
-}
-
-// Re-export state selectors for convenience
 export {
 	useEffectiveTheme,
 	useEnableTransition,
@@ -154,6 +51,4 @@ export {
 	useThemeKey,
 	useThemeMode,
 } from "@/state/theme.state"
-
-// Re-export types for convenience
 export type { ThemeMode } from "@/types/theme"

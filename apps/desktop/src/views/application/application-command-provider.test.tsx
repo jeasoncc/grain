@@ -69,6 +69,34 @@ describe("application Execute command ownership", () => {
 		mounted.rerender(<ApplicationCommandProvider>{null}</ApplicationCommandProvider>)
 		expect(screen.queryByRole("option")).not.toBeInTheDocument()
 	})
+	it("refreshes visible availability after a producer-only update without resetting the query", async () => {
+		const run = vi.fn((): ApplicationCommandResult => ({ kind: "success" }))
+		function Producer() {
+			const [blocked, setBlocked] = useState(false)
+			return <>
+				<button onClick={() => setBlocked((current) => !current)}>Toggle protection</button>
+				<Commands commands={[{
+					...command("save", "Save current note", run),
+					getDisabledReason: () => blocked ? "Source review is required" : null,
+				}]} />
+			</>
+		}
+		render(<ApplicationCommandProvider><Producer /></ApplicationCommandProvider>)
+		open()
+		const input = screen.getByRole("combobox")
+		fireEvent.change(input, { target: { value: "save" } })
+		fireEvent.click(screen.getByRole("button", { name: "Toggle protection" }))
+		expect(input).toHaveValue("save")
+		expect(screen.getByRole("option")).toHaveAttribute("aria-disabled", "true")
+		await act(async () => { fireEvent.keyDown(input, { key: "Enter" }) })
+		expect(screen.getByRole("alert")).toHaveTextContent("Source review is required")
+		expect(run).not.toHaveBeenCalled()
+		fireEvent.click(screen.getByRole("button", { name: "Toggle protection" }))
+		expect(input).toHaveValue("save")
+		expect(screen.getByRole("option")).not.toHaveAttribute("aria-disabled", "true")
+		await choose("save")
+		expect(run).toHaveBeenCalledOnce()
+	})
 	it("preserves the exact origin selection on cancel but does not steal subsequent focus", () => {
 		render(<ApplicationCommandProvider><input aria-label="Origin" defaultValue="selected text" /><button>Other</button><Commands commands={[]} /></ApplicationCommandProvider>)
 		const origin = screen.getByRole("textbox", { name: "Origin" }) as HTMLInputElement
@@ -128,6 +156,32 @@ describe("application Execute command ownership", () => {
 		mounted.rerender(<ApplicationCommandProvider><Parameter key="replacement" session={{ ...session(false), initialInput: "replacement" }} /></ApplicationCommandProvider>)
 		expect(screen.getByRole("combobox")).toHaveValue("replacement")
 		expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+	})
+	it.each(["accept", "cancel"] as const)("clears reader validation feedback after %s without leaving a stale global error", async (finish) => {
+		function FilenameReader() {
+			const [reading, setReading] = useState(true)
+			const [accepted, setAccepted] = useState("")
+			const session: OrgMinibufferSession = {
+				id: 8102, prompt: "Filename:", initialInput: "draft.org", candidates: [],
+				onAccept: (input) => {
+					if (input.includes("/")) return { ok: false, message: "Use a filename, not a path." }
+					setAccepted(input)
+					setReading(false)
+					return { ok: true }
+				},
+				onCancel: () => setReading(false),
+			}
+			return <><Parameter session={reading ? session : null} /><output aria-label="Accepted filename">{accepted}</output></>
+		}
+		render(<ApplicationCommandProvider><FilenameReader /></ApplicationCommandProvider>)
+		await choose("../outside.org")
+		expect(screen.getByRole("combobox")).toHaveValue("../outside.org")
+		expect(screen.getByRole("alert")).toBeInTheDocument()
+		if (finish === "accept") await choose("renamed.org")
+		else fireEvent.keyDown(screen.getByRole("combobox"), { key: "Escape" })
+		expect(screen.queryByRole("combobox")).not.toBeInTheDocument()
+		expect(screen.queryByRole("alert")).not.toBeInTheDocument()
+		expect(screen.getByLabelText("Accepted filename").textContent).toBe(finish === "accept" ? "renamed.org" : "")
 	})
 	it("drains an owned commit and does not publish its result into a later prompt", async () => {
 		const deferred = Promise.withResolvers<ApplicationCommandResult>()

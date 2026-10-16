@@ -235,10 +235,14 @@ export function createOrgNativeChildProjection(bootstrap: DetachedOrgWindowBoots
       fail(cause instanceof Error ? cause.message : String(cause), last ? last.newDoc.sliceString(0, last.newDoc.length, last.startState.lineBreak) : retain())
       return
      }
-     // Local-only configuration/scroll does not acquire parent body authority.
+     // Local presentation never bypasses synchronization of any selection attribute.
      const localOnly = transactions.every((transaction, index) => !transaction.docChanged &&
       encoded[index].semanticHistory === null && transaction.effects.every(ownsLocalEffect) &&
-      (!transaction.selection || transaction.effects.some(ownsLocalEffect)))
+      transaction.startState.selection.eq(transaction.state.selection, true) &&
+      transaction.startState.selection.ranges.every((range, rangeIndex) => {
+       const next = transaction.state.selection.ranges[rangeIndex]
+       return range.bidiLevel === next.bidiLevel && range.goalColumn === next.goalColumn && range.undirectional === next.undirectional
+      }))
      editor.update(transactions)
      if (localOnly) {
       if (!queue.length) accepted = editor.state

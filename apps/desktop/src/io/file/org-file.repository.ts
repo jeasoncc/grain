@@ -34,6 +34,7 @@ export const ORG_FILE_COMMANDS = {
 	read: "read_org_document",
 	readMigrationRecovery: "read_org_migration_recovery_bundle",
 	release: "release_org_workspace",
+	reveal: "reveal_org_workspace_path",
 	reopenDefault: "reopen_default_org_workspace",
 	replaceDerivedIndex: "replace_org_derived_index",
 	scan: "scan_org_workspace",
@@ -76,6 +77,11 @@ export interface OrgFileRepository {
 		workspaceRoot: string,
 		capabilityToken?: string,
 	) => TE.TaskEither<OrgFileError, void>
+	readonly revealWorkspacePath: (input: {
+		readonly workspaceRoot: string
+		readonly capabilityToken?: string
+		readonly relativePath: string | null
+	}) => TE.TaskEither<OrgFileError, void>
 	readonly scanWorkspace: (
 		workspaceRoot: string,
 		capabilityToken?: string,
@@ -159,6 +165,10 @@ const capabilityPayload = (capabilityToken?: string): Record<string, unknown> =>
 export const createOrgFileRepository = (
 	invokeCommand: InvokeCommand = invoke,
 ): OrgFileRepository => ({
+	revealWorkspacePath: ({ workspaceRoot, capabilityToken, relativePath }) =>
+		invokeTask<void>(invokeCommand, "reveal", ORG_FILE_COMMANDS.reveal, {
+			...capabilityPayload(capabilityToken), workspaceRoot, relativePath,
+		}),
 	clearDerivedIndex: (workspaceRoot, capabilityToken) =>
 		invokeTask<OrgDerivedIndexStats>(
 			invokeCommand,

@@ -6,6 +6,7 @@ import { act, cleanup, fireEvent, screen, within } from "@testing-library/react"
 import { useBlocker } from "@tanstack/react-router"
 import * as E from "fp-ts/Either"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { StrictMode } from "react"
 import { render } from "@/test/application-providers"
 import { OrgWorkspaceProvider } from "@/views/application/org-workspace-provider"
 import { useApplicationCommandHost, type ApplicationCommandHost, type ApplicationCommandResult } from "@/views/application/application-command-provider"
@@ -147,12 +148,11 @@ function replaceDraft(content: string) {
 	)
 }
 let queryClient: QueryClient
-function renderWorkspace() {
-	return render(
-		<QueryClientProvider client={queryClient}>
-			<OrgWorkspaceProvider><ObserveApplication /><OrgWorkspaceContainer /></OrgWorkspaceProvider>
-		</QueryClientProvider>,
-	)
+function renderWorkspace(strict = false) {
+	const view = <QueryClientProvider client={queryClient}>
+		<OrgWorkspaceProvider><ObserveApplication /><OrgWorkspaceContainer /></OrgWorkspaceProvider>
+	</QueryClientProvider>
+	return render(strict ? <StrictMode>{view}</StrictMode> : view)
 }
 async function setup(path = "a.org") {
 	renderWorkspace()
@@ -311,6 +311,68 @@ afterEach(() => {
 	vi.useRealTimers()
 	vi.restoreAllMocks()
 })
+describe("workspace preference restoration", () => {
+	it.each([false, true])("restores the selected document before admitting its inspector (StrictMode: %s)", async (strict) => {
+		const saved = JSON.stringify({ activePath: "a.org", inspectorVisible: true, openPaths: ["a.org"], sidebarVisible: false })
+		window.localStorage.setItem("grain:org-session:/notes", saved)
+		const read = Promise.withResolvers<E.Either<OrgFileError, OrgDocumentInterface>>()
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(() => read.promise)
+		renderWorkspace(strict)
+		await act(async () => { await controller.openDefaultWorkspace() })
+		expect(openOrgDocumentFlow).toHaveBeenCalledTimes(1)
+		expect(controller.activeDocument).toBeNull()
+		expect(screen.queryByRole("complementary", { name: "Note inspector" })).not.toBeInTheDocument()
+		expect(window.localStorage.getItem("grain:org-session:/notes")).toBe(saved)
+		await act(async () => { read.resolve(E.right(disk.get("a.org")!)); await read.promise })
+		expect(controller.content).toBe(rawA)
+		expect(screen.getByRole("complementary", { name: "Note inspector" })).toBeInTheDocument()
+		expect(screen.queryByRole("complementary", { name: "Workspace files" })).not.toBeInTheDocument()
+		expect(JSON.parse(window.localStorage.getItem("grain:org-session:/notes")!)).toMatchObject({
+			activePath: "a.org", inspectorVisible: true, sidebarVisible: false,
+		})
+	})
+
+	it.each(["read-failure", "missing-document"] as const)("retains saved choices after %s without retrying or persisting the empty state", async (failure) => {
+		const path = failure === "missing-document" ? "missing.org" : "a.org"
+		const saved = JSON.stringify({ activePath: path, inspectorVisible: true, openPaths: [path], sidebarVisible: false })
+		window.localStorage.setItem("grain:org-session:/notes", saved)
+		if (failure === "read-failure") vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(async () => E.left({
+			type: "ORG_FILE_ERROR", operation: "read", command: "read_org_document",
+			message: "The saved document could not be read.", cause: null,
+		}))
+		renderWorkspace()
+		await act(async () => { await controller.openDefaultWorkspace() })
+		expect(controller.activeDocument).toBeNull()
+		expect(controller.error).toBeTruthy()
+		expect(window.localStorage.getItem("grain:org-session:/notes")).toBe(saved)
+		await act(async () => { await controller.openDocumentPath("b.org") })
+		expect(controller.activeDocument?.relativePath).toBe("b.org")
+		expect(window.localStorage.getItem("grain:org-session:/notes")).toBe(saved)
+		expect(vi.mocked(openOrgDocumentFlow).mock.calls.filter(([input]) => input.relativePath === path)).toHaveLength(failure === "read-failure" ? 1 : 0)
+	})
+
+	it("cancels a restore on same-root grant replacement and never applies its document or inspector to the new session", async () => {
+		const saved = JSON.stringify({ activePath: "a.org", inspectorVisible: true, openPaths: ["a.org"], sidebarVisible: true })
+		window.localStorage.setItem("grain:org-session:/notes", saved)
+		const retired = Promise.withResolvers<E.Either<OrgFileError, OrgDocumentInterface>>()
+		const current = Promise.withResolvers<E.Either<OrgFileError, OrgDocumentInterface>>()
+		vi.mocked(openOrgDocumentFlow).mockReturnValueOnce(() => retired.promise).mockReturnValueOnce(() => current.promise)
+		renderWorkspace()
+		await act(async () => { await controller.openDefaultWorkspace() })
+		const previousSession = controller.workspaceSessionId
+		vi.mocked(openDefaultOrgWorkspaceFlow).mockReturnValueOnce(async () => E.right({ ...workspace, capabilityToken: "G2" }))
+		await act(async () => { await controller.openDefaultWorkspace() })
+		expect(controller.workspaceSessionId).not.toBe(previousSession)
+		await act(async () => { retired.resolve(E.right(disk.get("a.org")!)); await retired.promise })
+		expect(controller.activeDocument).toBeNull()
+		expect(screen.queryByRole("complementary", { name: "Note inspector" })).not.toBeInTheDocument()
+		expect(window.localStorage.getItem("grain:org-session:/notes")).toBe(saved)
+		await act(async () => { current.resolve(E.right({ ...disk.get("a.org")!, content: "* New grant\n" })); await current.promise })
+		expect(controller.content).toBe("* New grant\n")
+		expect(screen.getByRole("complementary", { name: "Note inspector" })).toBeInTheDocument()
+		expect(controller.activeBufferRuntime?.key.workspaceSessionId).toBe(controller.workspaceSessionId)
+	})
+})
 
 describe("real application discard decisions", () => {
 	it("allows departure with dirty canonical Source while retaining its exact runtime and history", async () => {
@@ -381,7 +443,97 @@ describe("real application discard decisions", () => {
 	})
 })
 
+describe("document navigation surfaces", () => {
+	it("distinguishes same-name notes and preserves dirty canonical history when switching from the open-note list", async () => {
+		disk.set("notes/overview.org", { relativePath: "notes/overview.org", revision: "notes-1", content: rawA })
+		disk.set("projects/overview.org", { relativePath: "projects/overview.org", revision: "projects-1", content: rawB })
+		workspace = {
+			...workspace,
+			directories: ["notes", "projects"],
+			documents: [...disk.values()].map(({ relativePath, revision }) => ({ relativePath, revision })),
+		}
+		await setup("notes/overview.org")
+		const runtime = controller.activeBufferRuntime
+		act(() => editor().dispatch({ changes: { from: editor().state.doc.length, insert: "unsaved overview" }, userEvent: "input.type" }))
+		await act(async () => { await controller.openDocumentPath("projects/overview.org") })
+		const tabs = within(screen.getByRole("navigation", { name: "Open documents" }))
+		expect(tabs.getByRole("button", { name: "overview notes" })).toBeInTheDocument()
+		expect(tabs.getByRole("button", { name: "overview projects" })).toHaveAttribute("aria-current", "page")
+		await act(async () => { fireEvent.keyDown(screen.getByRole("button", { name: "Open notes" }), { key: "ArrowDown" }) })
+		const personal = screen.getByRole("menuitemradio", { name: "notes/overview.org" })
+		expect(personal).toHaveAttribute("aria-checked", "false")
+		await act(async () => { fireEvent.click(personal) })
+		await vi.waitFor(() => expect(controller.activeDocument?.relativePath).toBe("notes/overview.org"), { interval: 1 })
+		expect(controller.activeBufferRuntime).toBe(runtime)
+		expect(controller.content).toBe(`${rawA}unsaved overview`)
+		expectHistory(1)
+		await vi.waitFor(() => expect(editor().contentDOM).toHaveFocus(), { interval: 1 })
+		routeUndo()
+		expect(controller.content).toBe(rawA)
+		expect(disk.get("notes/overview.org")?.content).toBe(rawA)
+		expect(disk.get("projects/overview.org")?.content).toBe(rawB)
+	})
+
+	it("focuses a restored note on its first editor mount from the open-note list", async () => {
+		localStorage.setItem(`grain:org-session:${workspace.rootPath}`, JSON.stringify({
+			activePath: "a.org",
+			openPaths: ["a.org", "b.org"],
+			inspectorVisible: false,
+			sidebarVisible: true,
+		}))
+		await setup()
+		await act(async () => { fireEvent.keyDown(screen.getByRole("button", { name: "Open notes" }), { key: "ArrowDown" }) })
+		await act(async () => { fireEvent.click(screen.getByRole("menuitemradio", { name: "b.org" })) })
+		await vi.waitFor(() => {
+			expect(controller.activeDocument?.relativePath).toBe("b.org")
+			expect(editor("Editing b.org").contentDOM).toHaveFocus()
+		}, { interval: 1 })
+		expect(controller.content).toBe(rawB)
+	})
+})
+
 describe("production diary actions and editor placement", () => {
+	it("collapses the real inspector allocation on main Agenda and configured docks while retaining the tool body and Source", async () => {
+		// jsdom has no flex layout: supply native-like measured widths to the real
+		// panel library, rather than replacing Panel or its imperative API.
+		vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(function (this: HTMLElement) {
+			if (this.hasAttribute("data-panel")) {
+				const grow = this.style.flexGrow
+				if (grow && (grow !== "1" || this.id !== "org-main")) return 1400 * Number(grow) / 100
+				return this.id === "org-main" ? 820 : Number.parseFloat(this.style.flexBasis) || 0
+			}
+			if (this.hasAttribute("data-separator")) return this.style.display === "none" ? 0 : 4
+			return 0
+		})
+		await setup()
+		const source = editor()
+		const runtime = controller.activeBufferRuntime
+		act(() => source.dispatch({ changes: { from: source.state.doc.length, insert: "unsaved" }, userEvent: "input.type" }))
+		fireEvent.click(screen.getByRole("button", { name: "Show note inspector" }))
+		const inspector = screen.getByRole("complementary", { name: "Note inspector" })
+		const filter = within(inspector).getByRole("textbox", { name: "Filter outline as sparse tree" })
+		const allocation = document.getElementById("org-inspector")!
+		expect(allocation.offsetWidth).toBeGreaterThanOrEqual(240)
+		const width = allocation.offsetWidth
+		fireEvent.change(filter, { target: { value: "A" } })
+		await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Agenda" })) })
+		expect(allocation.offsetWidth).toBe(0)
+		await act(async () => { await applicationHost.execute("editor") })
+		expect(allocation.offsetWidth).toBeCloseTo(width)
+		expect(screen.getByRole("complementary", { name: "Note inspector" })).toBe(inspector)
+		expect(filter).toHaveValue("A")
+		for (const layout of ["side", "bottom"] as const) {
+			act(() => useSettings.setState({ applicationPopupConfigurationJson: JSON.stringify({ version: 1, rules: [{ id: "inspector", layout }] }) }))
+			expect(allocation.offsetWidth).toBe(0)
+			expect(screen.getByRole("complementary", { name: "Note inspector" })).toBe(inspector)
+			expect(inspector.closest("[data-application-tool-dock]")).toHaveAttribute("data-application-tool-dock", layout)
+		}
+		act(() => useSettings.setState({ applicationPopupConfigurationJson: "" }))
+		expect(allocation.offsetWidth).toBeCloseTo(width)
+		expect(editor()).toBe(source)
+		expect(controller.activeBufferRuntime).toBe(runtime)
+		expectHistory(1)
+	})
 	it("keeps dirty canonical Source visible beside non-main Agenda and preserves both projections while moving the tool", async () => {
 		await setup()
 		const sourceView = editor()
@@ -389,12 +541,12 @@ describe("production diary actions and editor placement", () => {
 		const runtime = controller.activeBufferRuntime!
 		const source = runtime.source
 		const selection = sourceView.state.selection.toJSON()
-		act(() => useSettings.getState().setApplicationPopupConfigurationJson(JSON.stringify({ version: 1, rules: [{ id: "agenda", layout: "side" }] })))
+		act(() => useSettings.setState({ applicationPopupConfigurationJson: JSON.stringify({ version: 1, rules: [{ id: "agenda", layout: "side" }] }) }))
 		await act(async () => fireEvent.click(screen.getByRole("button", { name: "Agenda" })))
 		const agenda = screen.getByRole("main", { name: "Org agenda" })
 		const toolWindow = agenda.closest("[data-application-tool]")!.getAttribute("data-application-tool-window")
 		for (const layout of ["side", "popup", "bottom"]) {
-			act(() => useSettings.getState().setApplicationPopupConfigurationJson(JSON.stringify({ version: 1, rules: [{ id: "agenda", layout }] })))
+			act(() => useSettings.setState({ applicationPopupConfigurationJson: JSON.stringify({ version: 1, rules: [{ id: "agenda", layout }] }) }))
 			expect(editor()).toBe(sourceView)
 			expect(sourceView.dom.closest("[hidden]")).toBeNull()
 			expect(screen.getByRole("main", { name: "Org agenda" })).toBe(agenda)
@@ -403,10 +555,10 @@ describe("production diary actions and editor placement", () => {
 			expect(runtime.source).toBe(source)
 			expect(sourceView.state.selection.toJSON()).toEqual(selection)
 		}
-		act(() => useSettings.getState().setApplicationPopupConfigurationJson(JSON.stringify({ version: 1, rules: [{ id: "agenda", layout: "main" }] })))
+		act(() => useSettings.setState({ applicationPopupConfigurationJson: JSON.stringify({ version: 1, rules: [{ id: "agenda", layout: "main" }] }) }))
 		expect(sourceView.dom.closest("[hidden]")).not.toBeNull()
 		expect(agenda.closest("[data-application-tool-dock]")).toBeNull()
-		act(() => useSettings.getState().setApplicationPopupConfigurationJson(JSON.stringify({ version: 1, rules: [{ id: "agenda", layout: "side" }] })))
+		act(() => useSettings.setState({ applicationPopupConfigurationJson: JSON.stringify({ version: 1, rules: [{ id: "agenda", layout: "side" }] }) }))
 		act(() => sourceView.focus())
 		routeUndo()
 		expect(controller.content).toBe(rawA)
@@ -1140,7 +1292,7 @@ describe("production root capture runtime (real hook, pane, workflow and CodeMir
 		await capture()
 		// The real sidebar event calls openDocument (not a forced save or a test activation).
 		await act(async () => {
-			fireEvent.click(screen.getByRole("button", { name: "b.org" }))
+			fireEvent.click(screen.getByRole("treeitem", { name: "b.org" }))
 		})
 		expect(controller.activeDocument?.relativePath).toBe("b.org")
 		expect(controller.openBuffers.find((buffer) => buffer.bufferId === originId)).toMatchObject({
@@ -1200,7 +1352,7 @@ describe("production root capture runtime (real hook, pane, workflow and CodeMir
 		const originId = controller.activeBufferId
 		await capture()
 		await act(async () => {
-			fireEvent.click(screen.getByRole("button", { name: "b.org" }))
+			fireEvent.click(screen.getByRole("treeitem", { name: "b.org" }))
 		})
 		expect(controller.activeDocument?.relativePath).toBe("b.org")
 		expect(controller.isDirty).toBe(false)

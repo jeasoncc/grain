@@ -110,7 +110,7 @@ describe("production agenda parameter adapter and bottom minibuffer", () => {
 		fireEvent.change(input, { target: { value: " 2026-10-01 " } })
 		fireEvent.keyDown(input, { key: "Enter" })
 		fireEvent.keyDown(input, { key: "Enter" })
-		fireEvent.click(screen.getByRole("button", { name: "Accept minibuffer" }))
+		fireEvent.click(screen.getByRole("button", { name: "Confirm minibuffer" }))
 		expect(test.executeAgendaCommand).toHaveBeenCalledOnce()
 		await act(async () => result.resolve({ kind: "confirmed" }))
 		expect(screen.queryByRole("combobox")).not.toBeInTheDocument()

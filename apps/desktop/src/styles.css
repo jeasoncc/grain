@@ -235,13 +235,15 @@ code {
    Keyboard focus
    ======================================== */
 
-*:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
+@layer base {
+  *:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
 }
 
-/* Unlayered like the keyboard rule above, so text focus also overrides utility
-   rings. Native buttons, checks, radios, file/color pickers and ranges stay out. */
+/* Text fields override utility rings; CodeMirror keeps its own writing surface.
+   Native buttons, checks, radios, file/color pickers and ranges stay out. */
 :is(
   input:not(
     [type="button" i], [type="checkbox" i], [type="color" i],
@@ -249,11 +251,17 @@ code {
     [type="radio" i], [type="range" i], [type="reset" i], [type="submit" i]
   ),
   textarea,
-  [contenteditable]:not([contenteditable="false" i]),
-  .cm-content[role="textbox"]
+  [contenteditable]:not([contenteditable="false" i], .cm-content)
 ):focus:not(:disabled) {
   border-color: var(--text-focus-border, color-mix(in srgb, var(--ring) 65%, var(--input)));
   background-color: var(--text-focus-background, color-mix(in srgb, var(--muted) 65%, var(--background)));
+  caret-color: var(--editor-cursor, var(--primary));
+  box-shadow: none;
+  outline: none;
+}
+
+/* The caret and active Source window indicate editor focus, not an input box. */
+.cm-content:focus {
   caret-color: var(--editor-cursor, var(--primary));
   box-shadow: none;
   outline: none;
@@ -282,7 +290,8 @@ canvas:focus {
 
 @media (forced-colors: active) {
   *:focus-visible {
-    outline-color: Highlight;
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
   }
 
   /* System colors may erase the quiet theme tint; use an inset 1px indicator
@@ -497,14 +506,6 @@ kbd {
   letter-spacing: var(--editor-letter-spacing, 0em);
 }
 
-.card-padding {
-  padding: var(--card-padding, 1rem);
-}
-
-.card-radius {
-  border-radius: var(--card-border-radius, 8px);
-}
-
 /* Disable Selection */
 button, .no-select {
   user-select: none;
@@ -549,6 +550,4 @@ hr,
   border: none;
   height: 1px;
 }
-
-
 

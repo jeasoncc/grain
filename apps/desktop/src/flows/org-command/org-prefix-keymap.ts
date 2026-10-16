@@ -126,6 +126,11 @@ const matchesKey = (label: string, input: OrgPrefixKeyInput, suffix = false): bo
 export const orgInputIsProtected = (input: OrgPrefixKeyInput): boolean =>
 	Boolean(input.isComposing || input.keyCode === 229 || input.defaultPrevented || input.altGraphKey || input.isParameterInput)
 
+const orgInputScopes = (scope: OrgKeymapScope): readonly OrgKeymapScope[] =>
+	scope === "application" ? ["application"] : scope === "workspace" ? ["workspace", "application"]
+		: scope === "file-tree" ? ["file-tree", "workspace", "application"]
+		: scope === "org-source" ? ["org-source", "workspace", "application"] : [scope, "org-source", "workspace", "application"]
+
 /** One resolver for Source, shell and application boundaries. Modal/fallback run only after this declines. */
 export const resolveOrgInput = ({
 	configuration, scope, current, input, now, selectionEmpty, nextId, owner, generation, timeoutMs,
@@ -142,8 +147,7 @@ export const resolveOrgInput = ({
 	readonly timeoutMs?: number | null
 }): OrgInputResolution => {
 	const idle: OrgInputResolution = { session: null, commandId: null, consumed: false, protected: false }
-	const eligible = scope === "application" ? ["application"] : scope === "workspace" ? ["workspace", "application"]
-		: scope === "org-source" ? ["org-source", "workspace", "application"] : [scope, "org-source", "workspace", "application"]
+	const eligible = orgInputScopes(scope)
 	if (orgInputIsProtected(input) || input.repeat) {
 		// A held configured shortcut must not reopen a native Save dialog; never execute its producer.
 		const heldBinding = input.repeat && !input.defaultPrevented && !input.isComposing && input.keyCode !== 229 &&
@@ -191,4 +195,36 @@ export const resolveOrgInput = ({
 		return binding.command === null ? idle : { ...idle, commandId: binding.command, consumed: true }
 	}
 	return idle
+}
+
+/** Current executable key sequences, including leaders; hints never become a second binding authority. */
+export const getOrgInputCommandKeys = (
+	configuration: OrgKeymapConfiguration | null, scope: OrgKeymapScope, commandId: string,
+): readonly string[] => {
+	if (!configuration) return []
+	const keys = new Set<string>()
+	const authority = {}
+	const visit = (key: string, path: readonly string[], current: OrgPrefixSession | null, ancestors: ReadonlySet<string>) => {
+		const stroke = parseOrgKeyStroke(key)
+		if (!stroke) return
+		for (const meta of stroke.mod ? [false, true] : [stroke.meta]) {
+			const result = resolveOrgInput({
+				configuration, scope, current, now: 0, selectionEmpty: true, nextId: 0, owner: authority, generation: authority,
+				input: { key: stroke.key === "escape" ? "Escape" : stroke.key,
+					ctrlKey: stroke.mod ? !meta : stroke.ctrl, metaKey: meta, altKey: stroke.alt, shiftKey: stroke.shift,
+					isComposing: false, keyCode: 0, defaultPrevented: false },
+			})
+			if (!result.consumed) continue
+			const sequence = [...path, key]
+			if (result.commandId === commandId) keys.add(sequence.join(" "))
+			const session = result.session
+			if (!session?.mapId || ancestors.has(session.mapId)) continue
+			const visited = new Set(ancestors).add(session.mapId)
+			for (const binding of configuration.maps[session.mapId].bindings) visit(binding.keyLabel, sequence, session, visited)
+		}
+	}
+	const eligible = orgInputScopes(scope)
+	const roots = new Set(configuration.bindings.filter((binding) => eligible.includes(binding.scope)).map((binding) => binding.key))
+	for (const key of roots) visit(key, [], null, new Set())
+	return [...keys]
 }

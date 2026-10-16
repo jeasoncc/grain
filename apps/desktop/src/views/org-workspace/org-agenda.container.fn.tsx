@@ -71,7 +71,7 @@ export const OrgAgendaContainer = memo(function OrgAgendaContainer({
 	sourceKeyRef.current = sourceKey
 	// Preserve focused same-session rows until replacement; never carry rows across grants/sessions.
 	const entries = !configuration.error && query.scope === projectionScope ? query.entries : []
-	const error = configuration.error ?? (views.length && !selectedView ? "Select an Agenda view to run its explicit file scope and calendar window." : query.key === queryKey ? query.error : null)
+	const error = configuration.error ?? (views.length && !selectedView ? "Select an Agenda view to run its configured file scope and query." : query.key === queryKey ? query.error : null)
 	const isLoading = !error && !!workspace && (query.scope !== projectionScope || query.isLoading)
 	const scopeRef = useRef(projectionScope)
 	scopeRef.current = projectionScope
@@ -322,11 +322,11 @@ export const OrgAgendaContainer = memo(function OrgAgendaContainer({
 
 	return (
 		<div ref={surfaceRef} className="flex min-h-0 flex-1 flex-col">
-			{navigationError ? <p role="alert" className="text-sm text-destructive">{navigationError}</p> : null}
+			{navigationError ? <p role="alert" className="px-4 py-2 text-sm text-destructive">{navigationError}</p> : null}
 			{views.length > 0 && (
-				<label className="flex items-center gap-2 border-b px-4 py-2 text-sm">
+				<label className="flex shrink-0 flex-wrap items-center gap-2 border-b px-4 py-2 text-sm">
 					Agenda view
-					<select aria-label="Agenda view" className="rounded border bg-background px-2 py-1" value={selectedView?.id ?? ""} disabled={parameters.isCommitting()} onChange={(event) => {
+					<select aria-label="Agenda view" className="min-w-0 max-w-full rounded border bg-background px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" value={selectedView?.id ?? ""} disabled={parameters.isCommitting()} onChange={(event) => {
 						const id = event.target.value
 						projectionGeneration.current = {}
 						queryRead.current?.abort()
@@ -343,6 +343,7 @@ export const OrgAgendaContainer = memo(function OrgAgendaContainer({
 				entries={entries}
 				focusScope={projectionScope}
 				error={error}
+				view={selectedView}
 				isLoading={isLoading}
 				actionPending={parameters.pending || clockPending}
 				captureOrigin={captureRowOrigin}

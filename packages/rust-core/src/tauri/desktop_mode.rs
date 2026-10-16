@@ -10,6 +10,10 @@ impl DesktopMode {
             || matches!(
                 command,
                 "get_desktop_mode"
+                    | "read_configuration_file"
+                    | "create_configuration_file"
+                    | "open_configuration_file"
+                    | "notify_configuration_reload"
                     | "create_org_detached_window"
                     | "post_org_window_intent"
                     | "post_org_window_projection"
@@ -28,6 +32,7 @@ impl DesktopMode {
                     | "unwatch_org_workspace"
                     | "release_org_workspace"
                     | "scan_org_workspace"
+                    | "reveal_org_workspace_path"
                     | "read_org_document"
                     | "read_org_migration_recovery_bundle"
                     | "write_org_document"
@@ -97,6 +102,15 @@ mod tests {
             "replace_org_derived_index", "clear_org_derived_index", "save_log_entry", "query_logs",
         ] {
             assert!(DesktopMode::Org.authorize_command(command).is_ok(), "{command}");
+        }
+    }
+
+    #[test]
+    fn fixed_configuration_transport_is_available_without_changing_legacy_authority() {
+        for mode in [DesktopMode::Org, DesktopMode::Legacy] {
+            for command in ["read_configuration_file", "create_configuration_file", "open_configuration_file", "notify_configuration_reload"] {
+                assert!(mode.authorize_command(command).is_ok(), "{mode:?}: {command}");
+            }
         }
     }
 

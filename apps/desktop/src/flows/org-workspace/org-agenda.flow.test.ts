@@ -30,6 +30,7 @@ const repositoryWithRead = (
 	clearDerivedIndex: () =>
 		TE.right({ agendaCount: 0, documentCount: 0, headingCount: 0, linkCount: 0 }),
 	createDirectory: unused,
+	revealWorkspacePath: unused,
 	deleteDocument: unused,
 	getDerivedIndexStats: () =>
 		TE.right({ agendaCount: 0, documentCount: 0, headingCount: 0, linkCount: 0 }),

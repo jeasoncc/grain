@@ -10,6 +10,8 @@ import "./styles.css"
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { error, info } from "@/io/log/logger.api"
+import { ConfigurationLifecycle } from "./views/application/configuration-lifecycle"
+import { Toaster } from "./views/ui/sonner"
 
 type AppRouter = Router<typeof routeTree>
 
@@ -73,7 +75,13 @@ const renderApp = (rootElement: RootElement): TE.TaskEither<Error, void> =>
 			const bootstrap = readDetachedOrgWindowBootstrap()
 			const root = ReactDOM.createRoot(rootElement.element)
 			if (bootstrap) {
-				root.render(<DetachedOrgWindow bootstrap={bootstrap} />)
+				root.render(
+					<div className="flex h-full min-h-0 w-full flex-col">
+						<ConfigurationLifecycle />
+						<div className="min-h-0 flex-1"><DetachedOrgWindow bootstrap={bootstrap} /></div>
+						<Toaster />
+					</div>,
+				)
 				return
 			}
 			// Child projections never load the normal router/default-workspace owner.

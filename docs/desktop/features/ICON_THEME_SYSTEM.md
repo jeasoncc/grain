@@ -1,5 +1,7 @@
 # 图标主题系统
 
+> 历史实现记录：下述图形化设置页和偏好写入 API 已移除。当前只在 `config.json` 的 `appearance.icons` 中配置图标，保存后执行 **Reload configuration**；通过 **Open configuration file** 打开文件。当前入口和安全规则见[文件配置说明](../../../apps/desktop/README.md#file-configuration)，不要按下文恢复设置页或浏览器偏好镜像。
+
 ## 概述
 
 图标主题系统类似于 VSCode 的文件图标主题功能，允许用户自定义整个项目中不同文件类型的图标风格。

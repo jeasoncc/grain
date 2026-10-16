@@ -574,7 +574,9 @@ describe("production Root TODO logging", () => {
 		const sourceGeneration = runtime.revision
 		await expectProtectedDraft()
 		await act(async () => {
-			fireEvent.click(screen.getByRole("button", { name: origin === "Editor" ? "Agenda" : "a.org" }))
+			fireEvent.click(origin === "Editor"
+				? screen.getByRole("button", { name: "Agenda" })
+				: screen.getByRole("treeitem", { name: "a.org" }))
 		})
 		expect(screen.getByRole("textbox", { name: /TODO.*note/ })).toBe(input)
 		expect(input).toHaveValue("keep café 😀\ncopy me")
@@ -939,7 +941,7 @@ describe("production Root TODO logging", () => {
 		const revision = runtime.revision
 		if (origin === "Agenda")
 			await act(async () => {
-				fireEvent.click(screen.getByRole("button", { name: "a.org" }))
+				fireEvent.click(screen.getByRole("treeitem", { name: "a.org" }))
 			})
 		act(() => {
 			const from = editor().state.doc.toString().indexOf("lognotedone")
@@ -1002,7 +1004,7 @@ describe("production Root TODO logging", () => {
 		expect(controller.openBuffers[0]).toMatchObject({ baseRevision: "a-1", isDirty: true })
 		expect(saveOrgDocumentFlow).not.toHaveBeenCalled()
 		await act(async () => {
-			fireEvent.click(screen.getByRole("button", { name: "a.org" }))
+			fireEvent.click(screen.getByRole("treeitem", { name: "a.org" }))
 		})
 		expect(editor().state.sliceDoc()).toBe(expected)
 		act(() => key("z"))

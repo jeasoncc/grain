@@ -1,36 +1,27 @@
-/**
- * @file pipes/theme/theme-lookup.pipe.ts
- * @description Theme lookup pipe - wrapper for theme utilities
- *
- * This pipe wraps theme utility functions to maintain architecture compliance.
- * flows/ should not directly import from utils/, but can import from pipes/.
- *
- * @requirements Architecture compliance (flows → pipes → utils)
- */
+import type { ThemeState } from "@/types/theme"
+import type { Theme } from "@/types/theme/theme.types"
+import { getThemeByKey } from "@/utils/themes.util"
 
-import {
-	type Theme,
-	type ThemeColors,
-	getThemeByKey as utilGetThemeByKey,
-	themes as utilThemes,
+export {
+	getLegacyThemeByKey,
+	getThemeByKey,
+	getThemeByName,
+	themeNames,
 } from "@/utils/themes.util"
+export type { Theme, ThemeColors } from "@/types/theme/theme.types"
 
-/**
- * Get theme by key
- *
- * Looks up a theme configuration by its unique key.
- *
- * @param key - Theme key (e.g., "default-light", "github-dark")
- * @returns Theme configuration or undefined if not found
- */
-export const getThemeByKey = (key: string): Theme | undefined => utilGetThemeByKey(key)
+export type ConfiguredThemeSelection = Pick<
+	ThemeState,
+	"themeKey" | "mode" | "lightThemeKey" | "darkThemeKey"
+>
 
-/**
- * All available themes
- *
- * Complete list of theme configurations including both light and dark themes.
- */
-export const themes: readonly Theme[] = utilThemes
-
-// Re-export types
-export type { Theme, ThemeColors }
+/** System appearance selects only the explicitly configured light/dark pair. */
+export function resolveConfiguredTheme(
+	selection: ConfiguredThemeSelection,
+	systemTheme: "light" | "dark",
+): Theme | undefined {
+	const key = selection.mode === "system"
+		? systemTheme === "dark" ? selection.darkThemeKey : selection.lightThemeKey
+		: selection.themeKey
+	return getThemeByKey(key)
+}

@@ -1,11 +1,14 @@
 import { isolateHistory } from "@codemirror/commands"
 import type { OrgTextEdit } from "@/pipes/org/org-text.pipe"
 import { OrgBufferRuntimeError } from "./org-buffer-runtime.types"
+import type {
+	Annotation as CMAnnotation,
+	ChangeDesc,
+	ChangeSpec,
+	EditorSelection,
+} from "@codemirror/state"
 import {
 	Annotation,
-	type ChangeSpec,
-	type Annotation as CMAnnotation,
-	type EditorSelection,
 	StateEffect,
 	Text,
 	Transaction,
@@ -126,7 +129,12 @@ export function rawSourceBatch(source: string, edits: readonly Pick<OrgTextEdit,
 
 export interface OriginSelection {
 	readonly windowId: string
-	readonly selection: EditorSelection
+	/** Ordinary edits use CM's grouped/mapped history selection. Only actual
+	 * undo/redo inversion retains a distinct live caret in its target document. */
+	readonly liveTarget: {
+		readonly selection: EditorSelection
+		readonly changes: ChangeDesc
+	} | null
 }
 export const originWindow = Annotation.define<string>()
 /** Semantic editor operation, not permission to commit or to bypass window effects. */
@@ -137,7 +145,17 @@ export const orgSemanticHistory = Annotation.define<{
 	readonly composition?: "update" | "end"
 }>()
 export const restoreOriginSelection = StateEffect.define<OriginSelection>({
-	map: (value, mapping) => ({ ...value, selection: value.selection.map(mapping) }),
+	map(value, mapping) {
+		const target = value.liveTarget
+		if (!target) return value
+		// History-generated events do not join ordinary typing groups. Rebase
+		// their distinct live caret in the historical TARGET document, using
+		// the same mapping diamond CM uses for its own event.startSelection.
+		return { windowId: value.windowId, liveTarget: {
+			selection: target.selection.map(mapping.mapDesc(target.changes, true)),
+			changes: target.changes.mapDesc(mapping),
+		} }
+	},
 })
 export function transactionTraits(tr: Transaction): CMAnnotation<unknown>[] {
 	const result: CMAnnotation<unknown>[] = [Transaction.time.of(tr.annotation(Transaction.time)!)]

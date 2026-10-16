@@ -76,8 +76,3 @@ export interface IconThemeState {
 	readonly currentThemeKey: string
 }
 
-export interface IconThemeActions {
-	readonly setTheme: (key: string) => void
-}
-
-export type IconThemeStore = IconThemeState & IconThemeActions
