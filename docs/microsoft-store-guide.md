@@ -4,9 +4,11 @@ GitHub Release 与 Microsoft Store 是两条独立发布流程。推送 `desktop
 
 **不要提交 0.1.605：该版本没有可用的 Windows Org 写入实现。** Windows 修复候选版本为 0.1.606；候选版本号、成功打包或 GitHub Release 均不能代替实际 Windows 验证和商店审核。
 
-## 已存在的产品身份
+## 独立 Org 产品，不更新旧应用
 
-以下身份来自现有 Microsoft Store 产品目录，必须与目标应用的 Partner Center「产品标识」再次核对：
+维护者已选择为 Org 版创建独立商店应用，保留旧条目和旧用户工作流。新的 Product ID、Package Identity 和 Publisher 必须由 Partner Center 分配，不能编造或沿用旧身份。
+
+下表仅用于识别**不得覆盖的历史产品**：
 
 | 字段 | 值 |
 | --- | --- |
@@ -16,32 +18,28 @@ GitHub Release 与 Microsoft Store 是两条独立发布流程。推送 `desktop
 | Package/Identity/Name | `Jeason.5842835EA9EE6` |
 | Package/Identity/Publisher | `CN=056C6E40-362E-4DC2-A03D-B19B795AA254` |
 | Package Family Name | `Jeason.5842835EA9EE6_b8ehwrfyfrjng` |
-| 当前 MSIX 构建架构 | `x64` |
 
 - [现有商店页面](https://apps.microsoft.com/detail/9NV7M2PW25B3)
 - [Microsoft 产品目录记录](https://displaycatalog.mp.microsoft.com/v7.0/products/9NV7M2PW25B3?market=US&languages=en-US)
 - [Partner Center](https://partner.microsoft.com/dashboard)
 
-`9N5LW3JBCXKF` 是 MSIX Packaging Tool，不是本应用。不要把包名或 Publisher 改成项目名称、GitHub 用户名或任意证书主题。
+`9N5LW3JBCXKF` 是 MSIX Packaging Tool，不是本应用。独立产品默认打包要求 `GRAIN_STORE_PRODUCT_ID`、`GRAIN_STORE_IDENTITY`、`GRAIN_STORE_PUBLISHER` 三个真实值，缺少会失败；旧 Product ID 或 Package Identity 会被显式拒绝。Release job 从同名 GitHub Actions repository variables 读取这些公开标识，它们不是账号凭据。
 
-## 先决定旧用户的数据兼容性
+`-ReadinessOnly` 则生成身份为 `Grain.WindowsReadiness`、Publisher 为 `CN=Grain Windows Readiness` 的真实可安装测试包，文件名带 `_readiness`，元数据标记 `readiness-only`。它与商店候选严格分开，**绝不能提交到 Store**。
+
+## 旧数据边界
 
 当前应用直接编辑 `.org` 文件；旧富文本正文编辑器已移除。历史 IndexedDB 或 `grain.db` **不会自动转换为 Org 文件**，Windows 历史数据库恢复/迁移也没有成为本次普通文件支持的一部分。保留旧数据不等于能在新界面中打开旧作品。
 
-更新既有条目前必须由维护者明确决定：
-
-- 保留旧条目，为 Org 版建立独立产品；取得新产品身份后再更新 MSIX 身份和相关文档。
-- 接受既有产品的格式切换，并明确告知旧用户先备份、使用旧版导出作品，再升级。不能宣传为无缝迁移，也不能用新版清理历史数据库。
-
-商店可自动更新。仅在升级后的发行说明中提到迁移限制，不能保证用户在更新前看见提示。没有作出兼容性决定时，不提交既有产品更新。
+因此保留 `9NV7M2PW25B3`，不以 Org 版自动更新它。Org 新产品也不宣传自动迁移；导入旧作品前必须备份并使用旧版导出，不用新版清理历史数据库。需要恢复 SQLite 时只操作明确授权的隔离副本。
 
 ## 提交前门禁
 
 1. 在真正的 Windows 上运行 [Windows Native Readiness](https://github.com/jeasoncc/grain/actions/workflows/windows-readiness.yml)。检查全部原生文件、导出、时区与 workspace 权限测试，不接受零测试或失败后继续发布。
-2. 下载同一 run 的 `windows-readiness-*` 和 `windows-msix-*` 产物，检查完整日志、实际包版本/身份/哈希、安装结果、WebView2 运行时、真实窗口截图、保存/重启后的磁盘字节，以及清理结果。
-3. Windows 修复通过后才创建 `desktop-v0.1.606` 标签。检查 Release Desktop App 的全部构建；其 MSIX job 还会对**将上传到 Release 的同一个包**运行安装和应用 smoke。失败时不上传该 MSIX 到 Release。
+2. 下载同一 run 的 `windows-readiness-*` 和 `windows-msix-*` 产物，检查完整日志、实际测试身份/版本/哈希、安装结果、WebView2 运行时、真实窗口截图、保存/重启后的磁盘字节，以及清理结果。此阶段的 `readiness-only` 包不是商店候选。
+3. Windows 修复通过、独立产品身份取得并配置后，才创建 `desktop-v0.1.606` 标签。检查 Release Desktop App 的全部构建；其 MSIX job 还会对**将上传到 Release 的同一个正式身份包**运行安装和应用 smoke。失败时不上传该 MSIX 到 Release。
 4. 使用 Windows App Certification Kit（WACK）在适用的 Windows 认证环境检查正式候选包。工具缺失、未识别报告或只成功构建都不等于通过。托管 runner 的检查不是 Microsoft Store 认证。
-5. 明确旧数据兼容性决定、更新准确的中英文产品说明和真实新版截图，完成隐私、年龄分级、市场、定价与受限权限说明。
+5. 更新准确的中英文 Org 新产品说明和真实新版截图，完成隐私、年龄分级、市场、定价与受限权限说明。
 
 原生安全门禁包括无覆盖创建、过期 revision 拒绝、实际文件身份、目录/文件替换与 reparse 拒绝、写入竞争、ACL 保留及保留原件后的恢复核对。进程中断检查不证明断电恢复顺序或 POSIX 目录 fsync 等价性。
 
@@ -63,10 +61,10 @@ GitHub Release 与 Microsoft Store 是两条独立发布流程。推送 `desktop
 
 ## Partner Center 操作
 
-1. 使用有该产品权限的开发者账号登录；密码和 MFA 只在微软登录页输入，不写进仓库、命令或聊天。
-2. 核对目标产品身份和已有提交，避免同时通过网页和 API 修改同一草稿。
-3. 创建新提交，上传通过上述门禁的正式候选 `.msix`；核对 Partner Center 解析到的版本、身份和 x64 架构。
-4. 用[产品资料草稿](./marketing/windows-store-optimization.md)替换旧的 Lexical、Dexie、人物/世界观等不符合当前 Org 版的说明。名称变更必须使用账号已保留的应用名称。
+1. 使用有创建产品权限的开发者账号登录；密码和 MFA 只在微软登录页输入，不写进仓库、命令或聊天。
+2. 创建独立新应用，优先保留 `Grain Org` 名称；若不可用，由维护者选择可用名称。不要进入旧条目创建 Org 更新。
+3. 从新产品「产品标识」取得真实 Product ID、Package Identity、Publisher，配置上述三个 Actions repository variables；不要把显示名称当成包身份。
+4. 构建并验证正式身份候选后，为新产品创建提交并上传 `.msix`；核对门户解析到的版本、身份和 x64 架构。用[产品资料草稿](./marketing/windows-store-optimization.md)填写当前 Org 功能，避免旧 Lexical、Dexie、人物/世界观等过期描述。
 5. 隐私政策填写可公开读取的 <https://github.com/jeasoncc/grain#privacy-policy>，不是 MIT LICENSE。支持链接使用 <https://github.com/jeasoncc/grain/issues>。
 6. 据实完成年龄分级、隐私声明、受限权限、运行时要求、支持架构和旧格式说明；不代替维护者猜测法律/隐私问卷答案。
 7. 检查所有验证错误后提交审核，记录实际 submission ID、提交时间与状态；只有门户显示发布完成且商店可安装对应版本，才能报告“已上架”。不承诺固定审核时间。

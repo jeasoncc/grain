@@ -17,7 +17,7 @@ $overrides = @()
 $failure = $null
 $cleanupErrors = @()
 $started = Get-Date
-$result = [ordered]@{ status = 'running'; package = $info.package; sha256 = $info.sha256; wack = 'not run'; phases = @() }
+$result = [ordered]@{ status = 'running'; package = $info.package; sha256 = $info.sha256; purpose = $info.purpose; storeProductId = $info.storeProductId; wack = 'not run'; phases = @() }
 
 function Add-Summary([string]$Text) {
     Write-Output $Text

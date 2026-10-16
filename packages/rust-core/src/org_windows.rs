@@ -692,7 +692,7 @@ struct SecurityFingerprint {
     owner: Vec<u8>,
     group: Vec<u8>,
     dacl: (bool, Option<Vec<u8>>),
-    label: (bool, Option<Vec<u8>>),
+    label: Option<Vec<u8>>,
 }
 
 fn security_fingerprint(descriptor: &mut [u8]) -> io::Result<SecurityFingerprint> {
@@ -720,7 +720,7 @@ fn security_fingerprint(descriptor: &mut [u8]) -> io::Result<SecurityFingerprint
         return Err(io::Error::last_os_error());
     }
     // Compare API-validated SID/ACL ranges, not self-relative layout offsets or incidental
-    // AUTO_INHERITED bookkeeping. Null and absent ACLs remain distinct.
+    // AUTO_INHERITED bookkeeping. Null and absent DACLs remain distinct.
     let sid = |value: PSID| {
         if value.is_null() {
             Vec::new()
@@ -745,7 +745,14 @@ fn security_fingerprint(descriptor: &mut [u8]) -> io::Result<SecurityFingerprint
         owner: sid(owner),
         group: sid(group),
         dacl: (dacl_present != 0, acl(dacl)),
-        label: (label_present != 0, acl(label)),
+        // LABEL-only queries can return an absent SACL, while applying that descriptor
+        // produces a present NULL SACL. Without a mandatory ACE both mean implicit
+        // medium integrity. Preserve every actual label ACE, not this presence bit.
+        label: if label.is_null() || unsafe { (*label).AceCount == 0 } {
+            None
+        } else {
+            acl(label)
+        },
     })
 }
 
@@ -775,13 +782,14 @@ fn preserve_security(original: &cap_std::fs::File, stage: &cap_std::fs::File) ->
         return Err(io::Error::last_os_error());
     }
     // Do not accept an ACL conversion/inheritance change or concurrent ACL replacement.
-    if security_fingerprint(&mut security(stage)?)? != security_fingerprint(&mut descriptor)?
-        || security_fingerprint(&mut security(original)?)? != security_fingerprint(&mut descriptor)?
+    let expected = security_fingerprint(&mut descriptor)?;
+    if security_fingerprint(&mut security(stage)?)? != expected
+        || security_fingerprint(&mut security(original)?)? != expected
     {
         #[cfg(test)]
         eprintln!(
             "security preservation mismatch: captured={:?}; stage={:?}; retained_original={:?}",
-            security_fingerprint(&mut descriptor),
+            expected,
             security(stage).and_then(|mut value| security_fingerprint(&mut value)),
             security(original).and_then(|mut value| security_fingerprint(&mut value)),
         );
@@ -1959,7 +1967,7 @@ mod tests {
             FILE_NON_DIRECTORY_FILE,
         )
         .unwrap();
-        let sddl: Vec<u16> = "D:P(A;;FA;;;OW)(A;;FR;;;WD)"
+        let sddl: Vec<u16> = "D:P(A;;FA;;;OW)(A;;FR;;;WD)S:(ML;;NW;;;LW)"
             .encode_utf16()
             .chain([0])
             .collect();
@@ -1978,7 +1986,9 @@ mod tests {
         let applied = unsafe {
             SetKernelObjectSecurity(
                 raw(&source),
-                DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
+                DACL_SECURITY_INFORMATION
+                    | PROTECTED_DACL_SECURITY_INFORMATION
+                    | LABEL_SECURITY_INFORMATION,
                 descriptor,
             )
         };
@@ -1987,6 +1997,7 @@ mod tests {
         }
         assert_ne!(applied, 0, "{}", io::Error::last_os_error());
         let mut before = security(&source).unwrap();
+        assert!(security_fingerprint(&mut before).unwrap().label.is_some());
         drop(source);
         let saved = write_org_document_with_capability(
             &root,

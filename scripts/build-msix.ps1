@@ -1,7 +1,11 @@
 [CmdletBinding()]
 param(
     [string]$OutputDirectory = 'artifacts/windows-msix',
-    [string]$Executable = 'apps/desktop/src-tauri/target/release/grain.exe'
+    [string]$Executable = 'apps/desktop/src-tauri/target/release/grain.exe',
+    [string]$StoreProductId = $env:GRAIN_STORE_PRODUCT_ID,
+    [string]$StoreIdentity = $env:GRAIN_STORE_IDENTITY,
+    [string]$StorePublisher = $env:GRAIN_STORE_PUBLISHER,
+    [switch]$ReadinessOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -25,9 +29,32 @@ try {
     foreach ($component in @($version.Major, $version.Minor, $version.Build, $version.Revision)) {
         if ($component -gt 65535) { throw "Version component exceeds MSIX range: $version" }
     }
-    # These are the identities assigned to the existing Store product 9NV7M2PW25B3.
-    $identity = 'Jeason.5842835EA9EE6'
-    $publisher = 'CN=056C6E40-362E-4DC2-A03D-B19B795AA254'
+    if ($ReadinessOnly) {
+        # A real, installable CI-only package, never an assigned Store product identity.
+        $identity = 'Grain.WindowsReadiness'
+        $publisher = 'CN=Grain Windows Readiness'
+        $productId = $null
+        $purpose = 'readiness-only'
+        $suffix = '_readiness'
+        $displayName = 'Grain Windows Readiness'
+    } else {
+        if ([string]::IsNullOrWhiteSpace($StoreProductId) -or
+            [string]::IsNullOrWhiteSpace($StoreIdentity) -or
+            [string]::IsNullOrWhiteSpace($StorePublisher)) {
+            throw 'The independent Org app requires its real Partner Center Product ID, package identity and publisher. Set GRAIN_STORE_PRODUCT_ID, GRAIN_STORE_IDENTITY and GRAIN_STORE_PUBLISHER; never reuse the legacy app. Use -ReadinessOnly only for disposable Windows verification.'
+        }
+        if ($StoreProductId -eq '9NV7M2PW25B3' -or $StoreIdentity -eq 'Jeason.5842835EA9EE6') {
+            throw 'Refusing to package an Org update for the retained legacy Store app.'
+        }
+        $identity = $StoreIdentity
+        $publisher = $StorePublisher
+        $productId = $StoreProductId
+        $purpose = 'store-candidate'
+        $suffix = ''
+        $displayName = 'Grain Org'
+    }
+    $identityXml = [Security.SecurityElement]::Escape($identity)
+    $publisherXml = [Security.SecurityElement]::Escape($publisher)
     $output = [IO.Path]::GetFullPath((Join-Path $repo $OutputDirectory))
     New-Item -ItemType Directory -Path $output -Force | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $stage 'Assets') -Force | Out-Null
@@ -50,9 +77,9 @@ try {
          xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
          xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
          IgnorableNamespaces="uap rescap">
-  <Identity Name="$identity" Publisher="$publisher" Version="$version" ProcessorArchitecture="x64" />
+  <Identity Name="$identityXml" Publisher="$publisherXml" Version="$version" ProcessorArchitecture="x64" />
   <Properties>
-    <DisplayName>&#23567;&#40614;&#20889;&#20316;</DisplayName>
+    <DisplayName>$displayName</DisplayName>
     <PublisherDisplayName>Jeason</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -62,7 +89,7 @@ try {
   <Resources><Resource Language="zh-CN" /></Resources>
   <Applications>
     <Application Id="Grain" Executable="grain.exe" EntryPoint="Windows.FullTrustApplication">
-      <uap:VisualElements DisplayName="Grain" Description="A minimalist writing sanctuary for long-form content"
+      <uap:VisualElements DisplayName="$displayName" Description="Local Org files, notes, and tasks"
         BackgroundColor="transparent" Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png" />
     </Application>
@@ -71,7 +98,7 @@ try {
 </Package>
 "@
     [IO.File]::WriteAllText((Join-Path $stage 'AppxManifest.xml'), $manifest, [Text.UTF8Encoding]::new($false))
-    $package = Join-Path $output "grain_$($config.version)_x64.msix"
+    $package = Join-Path $output "grain_$($config.version)_x64$suffix.msix"
     $makeAppx = Find-SdkTool 'makeappx.exe'
     $signTool = Find-SdkTool 'signtool.exe'
     $toolLog = Join-Path $output 'makeappx.log'
@@ -97,6 +124,8 @@ try {
         publisher = $publisher
         version = $version.ToString()
         architecture = 'x64'
+        purpose = $purpose
+        storeProductId = $productId
         certificateThumbprint = $certificate.Thumbprint
         signing = 'Ephemeral CI certificate; not Store certification'
         webview2 = @{
@@ -106,12 +135,13 @@ try {
             guidance = 'https://learn.microsoft.com/microsoft-edge/webview2/concepts/distribution'
         }
     } | ConvertTo-Json -Depth 4 | Set-Content (Join-Path $output 'package-info.json') -Encoding UTF8
-    Write-Output "Created $package ($version, x64). Packaging is not certification."
+    Write-Output "Created $package ($version, x64, $purpose). Packaging is not certification."
     Write-Warning 'WebView2 Evergreen is required and must be provisioned separately before launching this MSIX.'
     if ($env:GITHUB_STEP_SUMMARY) {
         @"
 ### MSIX package
 - Identity: ``$identity`` / ``$publisher``
+- Purpose: ``$purpose``; Store product: ``$productId``. Readiness-only identities must never be submitted to Store.
 - Version: ``$version``; architecture: ``x64``
 - SHA-256: ``$((Get-FileHash $package -Algorithm SHA256).Hash)``
 - WebView2 Evergreen is a prerequisite, **not bundled or installed by this MSIX**. Provision Evergreen separately, including on clean Windows 10. Readiness explicitly checks/provisions the runtime; an install-only pass does not prove runtime availability.

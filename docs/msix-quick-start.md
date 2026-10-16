@@ -1,192 +1,79 @@
-# MSIX 快速开始指南
+# MSIX 快速验证
 
-## 5 分钟快速上手
+仅在**可销毁的 Windows x64 交互式管理员环境**操作。不要用个人账号的日常工作机器测试临时证书，也不要覆盖已安装的商店版或真实作品。
 
-### 方案选择
+## 环境
 
-我们使用 **cargo-packager** 方案（基于 Tauri Issue #4818）。
+- Bun 1.4.2，以及满足根 `package.json` 要求的 Node.js。
+- Rust 1.94 或更新版本、MSVC C++ 构建工具。
+- Windows SDK，含 x64 MakeAppx 和 SignTool。
+- 原生 Windows PowerShell（`powershell.exe`，不是隐式 PS7 Appx 兼容会话）。
+- Microsoft Edge WebView2 Evergreen Runtime。验证脚本可在缺少时单独下载经过 Microsoft 签名验证的官方引导程序；这不是 MSIX 的自带部署能力。
 
-**为什么？**
-- ✅ 官方推荐
-- ✅ 配置简单
-- ✅ 自动化程度高
+参见 [Tauri 系统依赖](https://v2.tauri.app/start/prerequisites/) 与 [WebView2 分发](https://learn.microsoft.com/microsoft-edge/webview2/concepts/distribution)。
 
-## 本地构建（Windows）
+## 构建真实 EXE
 
-### 1. 安装工具
-
-```bash
-# 安装 cargo-packager
-cargo install cargo-packager --locked
-```
-
-### 2. 构建 MSIX
-
-```bash
-# 进入项目目录
-cd apps/desktop
-
-# 安装依赖
-bun install
-
-# 构建前端
-bun run build
-
-# 构建 MSIX
-cd src-tauri
-cargo packager --release --formats app
-```
-
-### 3. 查找 MSIX
+在仓库根目录安装依赖：
 
 ```powershell
-# 查找生成的 MSIX 文件
-Get-ChildItem -Path target/release -Recurse -Filter "*.msix"
+bun install --frozen-lockfile
 ```
 
-### 4. 安装测试
+在 `apps/desktop` 目录构建，无需先生成 MSI/NSIS：
 
-1. 右键 MSIX 文件 → 属性 → 数字签名
-2. 详细信息 → 查看证书 → 安装证书
-3. 选择"本地计算机" → "受信任的根证书颁发机构"
-4. 双击 MSIX 安装
-
-## GitHub Actions 自动构建
-
-### 触发构建
-
-```bash
-# 方式 1：推送 tag（推荐）
-git tag desktop-v0.1.12
-git push origin desktop-v0.1.12
-
-# 方式 2：手动触发
-gh workflow run build-msix.yml
+```powershell
+bun run tauri build --no-bundle
 ```
 
-### 查看进度
+任意命令失败都必须停止，不能拿上一次留下的 EXE 继续验证。
 
-访问：https://github.com/jeasoncc/novel-editor/actions
+## 原生回归
 
-### 下载 MSIX
+回到仓库根目录，逐条检查退出码及实际执行的测试数：
 
-构建完成后：
-1. 进入 Actions 页面
-2. 点击最新的 workflow run
-3. 下载 `msix-package` artifact
-4. 解压得到 `.msix` 文件
-
-## 配置文件
-
-### Packager.toml
-
-位置：`apps/desktop/src-tauri/Packager.toml`
-
-```toml
-[package]
-product_name = "Novel Editor"
-version = "0.1.11"  # 自动从 tauri.conf.json 同步
-publisher = "Lotus"
-
-[windows.msix]
-enabled = true
-publisher = "CN=Lotus"
-display_name = "Novel Editor"
-capabilities = ["runFullTrust"]
+```powershell
+cargo test --manifest-path packages/rust-core/Cargo.toml --lib org_filesystem::windows -- --nocapture
+cargo test --manifest-path packages/rust-core/Cargo.toml --lib org_filesystem::export::windows_platform::tests -- --nocapture
+cargo test --manifest-path packages/rust-core/Cargo.toml --lib org_clock_context::platform::tests -- --nocapture
+cargo test --manifest-path packages/rust-core/Cargo.toml --lib tauri::commands::org_document_commands::tests -- --nocapture
 ```
 
-**需要修改的地方：**
-- `publisher`: 你的名字或公司名
-- `display_name`: 应用显示名称
+测试失败或零测试均未通过门禁。推荐直接使用仓库的 Windows Native Readiness 工作流，它会保留每组日志并在失败时阻止后续打包发布。
 
-## 签名选项
+## 打包与安装后验证
 
-### 选项 1：自签名（免费，测试用）
+仍在仓库根目录：
 
-**当前状态：** 已配置
+```powershell
+./scripts/build-msix.ps1 -ReadinessOnly
+powershell.exe -NoProfile -File ./scripts/test-windows-msix.ps1
+```
 
-**优点：** 免费，快速
-**缺点：** 用户需要手动信任证书
+构建脚本读取真实桌面版本，例如 0.1.606 的 CI 包为 `grain_0.1.606_x64_readiness.msix`、Manifest 为 `0.1.606.0`。它使用独立的 `Grain.WindowsReadiness` 测试身份，检查 x64 PE 类型并生成短期测试签名；不需要 cargo-packager、MSIX Packaging Tool、PFX 或密码。此包不能提交 Store。
 
-### 选项 2：购买证书（$100-300/年）
+正式候选必须取得独立 Org 产品的真实 Product ID、Package Identity、Publisher，配置 `GRAIN_STORE_PRODUCT_ID`、`GRAIN_STORE_IDENTITY`、`GRAIN_STORE_PUBLISHER` 后，不带 `-ReadinessOnly` 运行构建。脚本拒绝沿用旧产品身份，具体配置见 [商店指南](./microsoft-store-guide.md)。
 
-**适用场景：** 用户 > 500
+安装脚本会验证实际包和运行时、加入本次叶证书的临时 `LocalMachine\TrustedPeople` 信任、安装并启动真正 MSIX、通过真实 WebView2 操作原生接口及可见编辑器、保存 Unicode/CRLF 内容、完全停止应用并重启验证。它只对本次应用配置 loopback 调试，并在退出时卸载本次包、移除信任和还原覆盖；清理失败不能算通过。
 
-**步骤：**
-1. 购买代码签名证书
-2. 添加到 GitHub Secrets
-3. 更新 workflow
+这会在一次性账号的 Documents/Grain 写入唯一命名的测试笔记和恢复产物，不清理用户作品。只有可销毁环境适合此流程。
 
-### 选项 3：Microsoft Store（$19/年）
+## 核对证据
 
-**适用场景：** 用户 > 1000
+- `artifacts/windows-msix/package-info.json`：真实版本、架构、身份、包/EXE SHA-256、运行时要求。
+- `artifacts/windows-msix/AppxManifest.xml`：明确的 x64 身份和 `runFullTrust`。
+- `artifacts/windows-readiness/installed-package.json`：实际安装位置和包身份。
+- `exercise-result.json`、`reopen-result.json`、真实窗口/WebView2 截图及对应日志。
+- 最终 readiness JSON：检查整体状态、WACK 情况和清理结果，不能只看某一步的“passed”。
 
-**步骤：**
-1. 注册开发者账号
-2. 提交 MSIX
-3. Microsoft 自动签名
+具体 JSON 报告名称及流程以 [验证脚本](../scripts/test-windows-msix.ps1) 为准。WACK 未安装时只能报告未验证；需要在适用的认证环境运行 WACK，最终仍需通过 Partner Center 审核。
 
-## 常见问题
+## 发布边界
 
-### Q: 构建失败怎么办？
+- `.cer` 只有公钥，临时私钥不会导出到 artifact。不要教普通用户信任 CI 证书或新的根 CA。
+- GitHub 测试 MSIX 不是已由 Store 签名的安装包。
+- `desktop-v*` 标签不自动提交商店；正式 Release 的 MSIX job 也必须安装验证它将上传的同一个包。
+- 0.1.605 的 Windows Org 写入不可用，不得当作商店候选。
+- 更新现有产品前，必须明确旧 IndexedDB/`grain.db` 不自动迁移的兼容性决定。
 
-A: 检查：
-1. 是否安装了 cargo-packager
-2. 前端是否构建成功
-3. 查看 GitHub Actions 日志
-
-### Q: MSIX 安装时提示"未知发布者"？
-
-A: 正常，因为使用了自签名证书。需要：
-1. 安装证书到"受信任的根证书颁发机构"
-2. 或购买真实的代码签名证书
-
-### Q: 如何更新版本号？
-
-A: 版本号自动从 `tauri.conf.json` 同步，不需要手动更新 `Packager.toml`。
-
-### Q: 支持哪些平台？
-
-A: cargo-packager 支持：
-- Windows: MSIX, MSI, NSIS
-- macOS: DMG, APP
-- Linux: DEB, RPM, AppImage
-
-但 MSIX 只能在 Windows 上构建。
-
-## 下一步
-
-### 立即行动
-
-1. ✅ 测试本地构建（如果有 Windows）
-2. ✅ 触发 GitHub Actions 构建
-3. ✅ 下载并测试 MSIX
-
-### 本周完成
-
-4. ✅ 发布到 Winget（优先级最高）
-5. ✅ 更新 README 添加安装说明
-6. ✅ 开始推广
-
-### 3 个月后评估
-
-7. 📊 查看用户数据
-8. 💰 决定是否购买代码签名证书
-9. 📦 决定是否发布到 Microsoft Store
-
-## 相关文档
-
-- **详细指南：** `docs/msix-cargo-packager-guide.md`
-- **自动化说明：** `docs/msix-automation-guide.md`
-- **手动打包：** `docs/msix-packaging-guide.md`
-- **完成总结：** `MSIX_AUTOMATION_COMPLETE.md`
-
-## 获取帮助
-
-- **Tauri Issue #4818:** https://github.com/tauri-apps/tauri/issues/4818
-- **cargo-packager:** https://github.com/crabnebula-dev/cargo-packager
-- **Tauri Discord:** https://discord.gg/tauri
-
----
-
-**记住：** 先用 Winget 获得用户，MSIX 作为补充选项。
+下一步见 [Microsoft Store 提交指南](./microsoft-store-guide.md)，完整实现与信任边界见 [MSIX 打包指南](./msix-packaging-guide.md)。

@@ -1,292 +1,67 @@
-# MSIX 自动化打包指南
+# MSIX 自动化
 
-## 概述
+本仓库只有 GitHub 安装包自动发布。Microsoft Store 需要独立的 Partner Center 提交、权限和认证，工作流成功不代表上架。
 
-我们创建了一个 GitHub Actions workflow 来自动将 Tauri 生成的 MSI 文件转换为 MSIX 格式。
+## 工作流与职责
 
-## 工作原理
+| 工作流 | 触发 | 结果 |
+| --- | --- | --- |
+| `.github/workflows/windows-readiness.yml` | `main` 上相关桌面、Rust、依赖或打包文件变动；也可手动运行 | 真正 Windows 上的原生回归、生产前端/EXE 构建、MSIX 安装与运行证明 |
+| `.github/workflows/release-desktop.yml` | `desktop-v*` 标签或其手动入口 | 跨平台 GitHub 安装包；独立 MSIX job 在上传前安装验证同一个包 |
 
-### Workflow: `.github/workflows/build-msix.yml`
+没有 `build-msix.yml`、cargo-packager/MSI 捕获步骤或自动 Partner Center API 提交。
 
-**触发条件：**
-1. 手动触发（workflow_dispatch）
-2. 推送 `desktop-v*.*.*` tag
+## Windows Native Readiness
 
-**构建流程：**
+工作流使用 `windows-latest`，checkout 不保留 Git 凭据，仓库权限仅 `contents: read`。依次执行：
 
-```
-1. 构建 Tauri 应用 → 生成 .msi 文件
-2. 提取 MSI 内容
-3. 创建 MSIX 清单文件 (AppxManifest.xml)
-4. 使用 MakeAppx.exe 打包为 MSIX
-5. 使用自签名证书签名
-6. 上传到 GitHub Release
-```
+1. 安装锁定的 Bun/Node 与 Rust 依赖。
+2. 实际运行四组 Windows 测试：
+   - `org_filesystem::windows`
+   - `org_filesystem::export::windows_platform::tests`
+   - `org_clock_context::platform::tests`
+   - `tauri::commands::org_document_commands::tests`
+3. 任一组失败或没有选中测试，门禁失败。仍收集其他组结果，不能因为一个失败隐藏后面的诊断。
+4. 只有原生组通过，才构建真实前端与 `grain.exe`，运行 `scripts/build-msix.ps1 -ReadinessOnly`。测试身份为 `Grain.WindowsReadiness`，不使用旧商店产品，不是可提交的 Store 身份。
+5. Windows PowerShell 运行 `scripts/test-windows-msix.ps1`，安装实际 MSIX、验证包身份与可见窗口、连接其真实 WebView2。`scripts/windows-msix-smoke.mjs` 检查权限拒绝、创建碰撞、过期 revision、Unicode/CRLF 原生保存、文件树打开、编辑器输入与 Ctrl+S，以及全进程重启后再打开。
+6. 如有 WACK，实际运行并保留报告；缺少工具或未认证的环境必须明确标记，不能据此声称获得 Store 认证。
+7. 不论成功失败，都尝试上传已有包、完整原生日志、截图和报告；保留期 14 天。
 
-## 使用方法
+运行时不存在时，smoke 会在验证 Microsoft 签名后单独配置 WebView2 Evergreen。MSIX 本身不包含这个引导程序。
 
-### 方式 1：自动触发（推荐）
+## 产物
 
-当你推送 desktop tag 时，会自动触发：
+Readiness run：
 
-```bash
-git tag desktop-v0.1.12
-git push origin desktop-v0.1.12
-```
+- `windows-msix-<run_id>-<run_attempt>`：实际 `_readiness.msix`、公开测试证书、Manifest、`package-info.json`、MakeAppx/SignTool 日志；`purpose=readiness-only`，不能提交 Store。
+- `windows-readiness-<run_id>-<run_attempt>`：各测试日志、构建日志、`installed-package.json`、原生/编辑器结果、全进程重启结果、WebView2/窗口截图和最终 readiness 报告；具体文件仅在对应阶段执行后存在。
 
-这会同时触发：
-- `release-desktop.yml` - 构建所有平台
-- `build-msix.yml` - 额外构建 MSIX
+Release MSIX job：
 
-### 方式 2：手动触发
+- `msix-package`：同一 job 构建的候选包与公开元数据。
+- `msix-readiness-<run_id>-<run_attempt>`：该正式候选包的安装后证明。
+- 仅安装 smoke 成功后，才把 `.msix` 上传到对应 GitHub Release。失败 artifact 可用于诊断，不能当作可发布包。
 
-1. 访问 GitHub Actions
-2. 选择 "Build MSIX Package" workflow
-3. 点击 "Run workflow"
-4. 等待构建完成
+Release 使用独立 Org 产品的真实身份，要求先配置 `GRAIN_STORE_PRODUCT_ID`、`GRAIN_STORE_IDENTITY`、`GRAIN_STORE_PUBLISHER` repository variables。缺少配置或试图使用保留的旧产品 `9NV7M2PW25B3` 会失败，不会退回测试身份或旧应用。
 
-## 输出文件
+下载后核对包 SHA-256 与 `package-info.json`，并核对报告里真正安装和运行的版本/身份。只看绿色下载按钮、文件大小或自签名成功不足以通过门禁。
 
-构建完成后，你会得到：
+## 证明边界
 
-- `novel-editor_0.1.11.msix` - MSIX 安装包
-- 自动上传到 GitHub Release（草稿）
+已执行的原生断点/恢复检查属于进程中断与保留证据模型，不是物理断电或 POSIX 目录 fsync 等价性证明。Windows 不提供当前实现可宣称的 Linux 完整语义对等。
 
-## 重要说明
+可见编辑器 smoke 不测试 Windows 原生 IME composition，不覆盖所有 Windows 版本、文件系统、离线干净机器或第三方安全软件环境。保存测试使用真实磁盘字节和真实应用，不使用浏览器替身、mock 文件系统或伪造认证结果。
 
-### ⚠️ 签名问题
+WACK 成功也只是该环境的工具结果；商店发布必须有 Partner Center 的真实提交 ID 和状态。没有认证工具或商店权限时，报告该缺口，不吞掉错误或填写假的通过结果。
 
-**当前状态：**
-- Workflow 使用**自签名测试证书**
-- 用户安装时会看到"未知发布者"警告
-- 不能直接提交到 Microsoft Store
+## 排错
 
-**解决方案：**
+先看失败阶段对应的完整 artifact 日志，再看 Actions 注释中的摘要。不要重跑旧失败来确认已知错误；修正根因后运行新的候选。
 
-#### 选项 1：购买代码签名证书（推荐用于生产）
+- Native 失败：保留预期的拒绝路径、ACL/身份检查和无覆盖语义，不为绿色 CI 绕开安全边界。
+- Build 失败：检查实际 Rust/TypeScript/SDK 错误，不能用已有旧 EXE 代替构建。
+- Install/launch 失败：检查签名、身份、WebView2 和 Appx 事件；保留截图及日志。
+- WACK 失败：查看原始 XML 和工具日志，不能把非零退出或未知报告当作通过。
+- Cleanup 失败：检查本次包、叶证书与调试覆盖是否还存在，不能留下一台被修改信任设置的普通用户电脑。
 
-**价格：** $100-300/年
-
-**提供商：**
-- DigiCert
-- Sectigo
-- GlobalSign
-
-**优点：**
-- 消除 SmartScreen 警告
-- 可以提交到 Microsoft Store
-- 建立信任
-
-**如何使用：**
-
-1. 购买证书后，将 `.pfx` 文件添加到 GitHub Secrets
-2. 修改 workflow，使用真实证书签名：
-
-```yaml
-- name: Sign MSIX with real certificate
-  shell: pwsh
-  run: |
-    # 从 Secrets 解码证书
-    $certBytes = [Convert]::FromBase64String("${{ secrets.SIGNING_CERT }}")
-    [IO.File]::WriteAllBytes("cert.pfx", $certBytes)
-    
-    # 签名
-    & signtool sign /fd SHA256 /f "cert.pfx" /p "${{ secrets.CERT_PASSWORD }}" novel-editor.msix
-```
-
-#### 选项 2：使用 Microsoft Store 签名（免费）
-
-**前提：**
-- 注册 Microsoft Store 开发者账号（$19/年）
-- 提交应用到 Store
-
-**优点：**
-- Microsoft 自动签名
-- 完全免费（除了开发者账号）
-- 用户信任度高
-
-**缺点：**
-- 只能通过 Store 分发
-- 需要通过审核
-
-#### 选项 3：继续使用自签名（测试/开发）
-
-**适用场景：**
-- 内部测试
-- 开发阶段
-- 小范围分发
-
-**用户安装步骤：**
-1. 下载 `.msix` 文件
-2. 右键 → 属性 → 数字签名 → 详细信息 → 查看证书
-3. 安装证书到"受信任的根证书颁发机构"
-4. 双击 `.msix` 安装
-
-## 技术细节
-
-### AppxManifest.xml
-
-MSIX 的核心配置文件：
-
-```xml
-<Identity
-  Name="NovelEditor"
-  Publisher="CN=Lotus"
-  Version="0.1.11.0" />
-```
-
-**重要字段：**
-- `Name`: 应用标识符（提交 Store 时会分配正式的）
-- `Publisher`: 必须与签名证书的 CN 匹配
-- `Version`: 必须是 4 位数字（x.x.x.0）
-
-### 图标要求
-
-MSIX 需要特定尺寸的图标：
-
-- `Square44x44Logo.png` - 44x44 像素
-- `Square150x150Logo.png` - 150x150 像素
-- `StoreLogo.png` - 50x50 像素
-
-**当前方案：**
-- 从 Tauri 的 `icon.png` 复制
-- 可能需要手动调整尺寸
-
-**改进建议：**
-```bash
-# 使用 ImageMagick 自动生成
-convert icon.png -resize 44x44 Square44x44Logo.png
-convert icon.png -resize 150x150 Square150x150Logo.png
-convert icon.png -resize 50x50 StoreLogo.png
-```
-
-## 对比：MSIX vs MSI
-
-| 特性 | MSIX | MSI |
-|------|------|-----|
-| Microsoft Store | ✅ 支持 | ❌ 不支持 |
-| 自动更新 | ✅ 内置 | ❌ 需要自己实现 |
-| 沙箱隔离 | ✅ 可选 | ❌ 无 |
-| 卸载干净 | ✅ 完全干净 | ⚠️ 可能残留 |
-| 安装速度 | ✅ 快 | ⚠️ 较慢 |
-| 兼容性 | Windows 10+ | Windows 7+ |
-| 签名要求 | ⚠️ 严格 | ⚠️ 推荐但非必需 |
-
-## 发布策略建议
-
-### 阶段 1：初期（现在）
-
-**目标：** 快速获得用户反馈
-
-**方案：**
-- ✅ 发布 MSI/EXE 到 GitHub Releases
-- ✅ 发布到 Winget（免费，官方）
-- ⏸️ 暂不发布 MSIX（签名成本高）
-
-**原因：**
-- MSI 已经足够好用
-- Winget 覆盖大部分 Windows 用户
-- 节省成本
-
-### 阶段 2：成长期（用户 > 500）
-
-**目标：** 提升专业度和信任度
-
-**方案：**
-- 💰 购买代码签名证书（$100-300/年）
-- ✅ 签名所有安装包（MSI + MSIX）
-- ✅ 消除 SmartScreen 警告
-
-**原因：**
-- 用户增长证明了市场需求
-- 投资回报率提高
-- 提升品牌形象
-
-### 阶段 3：成熟期（用户 > 1000）
-
-**目标：** 最大化覆盖面
-
-**方案：**
-- 💰 注册 Microsoft Store（$19/年）
-- ✅ 提交 MSIX 到 Store
-- ✅ 利用 Store 的自动更新和分发
-
-**原因：**
-- 用户基数大，值得投入
-- Store 提供额外曝光
-- 自动更新提升用户体验
-
-## 常见问题
-
-### Q: 为什么不直接用 Tauri 生成 MSIX？
-
-A: Tauri 2.0 目前不支持 MSIX。这是已知限制，团队在开发中。
-
-### Q: 自签名证书安全吗？
-
-A: 安全，但用户需要手动信任。不适合公开分发。
-
-### Q: 必须用 MSIX 才能上 Store 吗？
-
-A: 是的，Microsoft Store 只接受 MSIX/APPX 格式。
-
-### Q: GitHub Actions 的 MSIX 能直接用吗？
-
-A: 可以安装，但会有"未知发布者"警告。需要用户手动信任证书。
-
-### Q: 如何测试 MSIX？
-
-A: 
-1. 从 Actions 下载 artifact
-2. 右键 → 属性 → 数字签名 → 安装证书
-3. 双击 MSIX 安装
-
-### Q: 能在 Linux/Mac 上打包 MSIX 吗？
-
-A: 不能。MakeAppx.exe 只能在 Windows 上运行。但 GitHub Actions 提供 Windows runner。
-
-## 下一步
-
-### 立即可做
-
-1. ✅ 测试 MSIX workflow
-   ```bash
-   # 手动触发 workflow
-   gh workflow run build-msix.yml
-   ```
-
-2. ✅ 下载并测试 MSIX 安装包
-
-3. ✅ 继续发布到 Winget（优先级更高）
-
-### 3 个月后评估
-
-4. 📊 查看用户数据
-   - GitHub Stars
-   - 下载次数
-   - 用户反馈
-
-5. 💰 决定是否购买代码签名证书
-   - 如果用户 > 500，值得投资
-   - 如果用户 < 200，继续观察
-
-6. 📦 决定是否发布到 Microsoft Store
-   - 如果用户 > 1000，值得投资
-   - 否则继续使用 Winget
-
-## 参考资源
-
-- [MSIX 官方文档](https://docs.microsoft.com/windows/msix/)
-- [MakeAppx.exe 文档](https://docs.microsoft.com/windows/msix/package/create-app-package-with-makeappx-tool)
-- [代码签名证书购买指南](https://docs.microsoft.com/windows/msix/package/signing-package-overview)
-- [Microsoft Store 发布指南](https://docs.microsoft.com/windows/uwp/publish/)
-
-## 总结
-
-**MSIX 自动化已完成！** 🎉
-
-但建议：
-1. **现在：** 专注于 Winget 和 GitHub Releases
-2. **未来：** 根据用户增长决定是否投资签名和 Store
-
-记住：好的产品比完美的打包更重要。先获得用户，再优化分发。
+详细信任边界见 [MSIX 打包指南](./msix-packaging-guide.md)，提交步骤见 [Microsoft Store 指南](./microsoft-store-guide.md)。
