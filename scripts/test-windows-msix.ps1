@@ -68,6 +68,10 @@ function Start-InstalledApp([string]$Phase) {
             $name = [Text.StringBuilder]::new([int]$length)
             $code = [GrainReadiness.Native]::GetPackageFullName($candidate.Handle, [ref]$length, $name)
             if ($code -ne 0 -or $name.ToString() -ne $installed.PackageFullName) { throw 'Activated process does not have the installed MSIX identity.' }
+            $dpiContext = [GrainReadiness.Native]::GetWindowDpiAwarenessContext($candidate.MainWindowHandle)
+            if ($dpiContext -eq [IntPtr]::Zero -or -not [GrainReadiness.Native]::AreDpiAwarenessContextsEqual($dpiContext, [IntPtr]::new(-4))) {
+                throw "Installed window is not PerMonitorV2 DPI aware (context $($dpiContext.ToInt64()))."
+            }
             # Resize the real native window, not an emulated browser viewport or upscaled image.
             $null = [GrainReadiness.Native]::ShowWindow($candidate.MainWindowHandle, 9)
             if (-not [GrainReadiness.Native]::SetWindowPos($candidate.MainWindowHandle, [IntPtr]::Zero, 0, 0, 1440, 960, 0x0416)) {
@@ -85,6 +89,7 @@ function Start-InstalledApp([string]$Phase) {
                 packageFullName = $name.ToString(); windowTitle = $candidate.MainWindowTitle
                 windowHandle = $candidate.MainWindowHandle.ToInt64(); sessionId = $candidate.SessionId
                 clientWidth = $width; clientHeight = $height
+                dpiAwareness = 'PerMonitorV2'; dpiContext = $dpiContext.ToInt64()
             } | ConvertTo-Json | Set-Content (Join-Path $output "$Phase-process.json") -Encoding UTF8
             return $candidate
         }
@@ -120,6 +125,10 @@ namespace GrainReadiness {
         public static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int width, int height, uint flags);
         [DllImport("user32.dll", SetLastError = true)]
         public static extern bool GetClientRect(IntPtr window, ref Rect rect);
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetWindowDpiAwarenessContext(IntPtr window);
+        [DllImport("user32.dll")]
+        public static extern bool AreDpiAwarenessContextsEqual(IntPtr first, IntPtr second);
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         public static extern int GetPackageFullName(IntPtr process, ref uint length, StringBuilder name);
     }
