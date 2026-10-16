@@ -18,7 +18,9 @@ use windows_sys::Wdk::Storage::FileSystem::{
     FILE_OPEN_REPARSE_POINT, FILE_RENAME_INFORMATION, FILE_SYNCHRONOUS_IO_NONALERT,
     FILE_WRITE_THROUGH,
 };
-use windows_sys::Win32::Foundation::{RtlNtStatusToDosError, HANDLE, UNICODE_STRING};
+use windows_sys::Win32::Foundation::{
+    RtlNtStatusToDosError, HANDLE, INVALID_HANDLE_VALUE, UNICODE_STRING,
+};
 use windows_sys::Win32::Globalization::{CompareStringOrdinal, CSTR_EQUAL};
 use windows_sys::Win32::Security::{
     GetKernelObjectSecurity, GetLengthSid, GetSecurityDescriptorControl, GetSecurityDescriptorDacl,
@@ -29,8 +31,9 @@ use windows_sys::Win32::Security::{
 };
 use windows_sys::Win32::Storage::FileSystem::{
     FileAttributeTagInfo, FileBasicInfo, FileIdInfo, GetFileInformationByHandleEx, GetFileType,
-    GetFinalPathNameByHandleW, DELETE, FILE_ALL_ACCESS, FILE_ATTRIBUTE_DIRECTORY,
+    GetFinalPathNameByHandleW, ReOpenFile, DELETE, FILE_ALL_ACCESS, FILE_ATTRIBUTE_DIRECTORY,
     FILE_ATTRIBUTE_NORMAL, FILE_ATTRIBUTE_REPARSE_POINT, FILE_ATTRIBUTE_TAG_INFO, FILE_BASIC_INFO,
+    FILE_FLAG_BACKUP_SEMANTICS, FILE_FLAG_OPEN_REPARSE_POINT, FILE_FLAG_WRITE_THROUGH,
     FILE_ID_INFO, FILE_LIST_DIRECTORY, FILE_READ_ATTRIBUTES, FILE_READ_DATA, FILE_SHARE_DELETE,
     FILE_SHARE_READ, FILE_SHARE_WRITE, FILE_TRAVERSE, FILE_TYPE_DISK, FILE_WRITE_DATA,
     READ_CONTROL, SYNCHRONIZE, VOLUME_NAME_NONE,
@@ -172,7 +175,7 @@ fn attributes(handle: &impl AsRawHandle) -> io::Result<u32> {
     Ok(info.FileAttributes)
 }
 
-// Only one name is accepted. '.' is private to pinning an already approved directory.
+// Native child opens accept only one stream-free leaf, never a Win32-normalized '.' path.
 fn nt_open(
     parent: &Dir,
     name: &OsStr,
@@ -254,7 +257,29 @@ pub(crate) fn open_directory(parent: &Dir, name: &OsStr) -> io::Result<Dir> {
 }
 
 fn pin(root: &Dir) -> io::Result<Dir> {
-    directory(root, OsStr::new("."), FILE_OPEN)
+    // NtCreateFile does not normalize "." like Win32 path APIs. ReOpenFile addresses the
+    // retained object directly and changes its sharing mode without reopening an ambient path.
+    let handle = unsafe {
+        ReOpenFile(
+            raw(root),
+            FILE_LIST_DIRECTORY | FILE_TRAVERSE | FILE_READ_ATTRIBUTES | SYNCHRONIZE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_WRITE_THROUGH,
+        )
+    };
+    if handle == INVALID_HANDLE_VALUE {
+        return Err(io::Error::last_os_error());
+    }
+    let file = cap_std::fs::File::from_std(unsafe { std::fs::File::from_raw_handle(handle) });
+    if attributes(&file)? & (FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DIRECTORY)
+        != FILE_ATTRIBUTE_DIRECTORY
+    {
+        return Err(io::Error::new(
+            io::ErrorKind::PermissionDenied,
+            "reopened workspace capability is not a non-reparse directory",
+        ));
+    }
+    Ok(Dir::from_std_file(file.into_std()))
 }
 
 fn require_long_leaf(handle: &impl AsRawHandle, expected: &OsStr) -> io::Result<()> {
@@ -2261,7 +2286,19 @@ mod tests {
         let root = open_workspace_capability(workspace.path()).unwrap();
         root.create_dir("one").unwrap();
         root.create_dir("two").unwrap();
-        let first = root.open_dir("one").unwrap();
+        // Unlike publication ancestors, this observation deliberately permits a real rename.
+        let first = Dir::from_std_file(
+            nt_open(
+                &root,
+                OsStr::new("one"),
+                FILE_LIST_DIRECTORY | FILE_TRAVERSE | FILE_READ_ATTRIBUTES,
+                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                FILE_OPEN,
+                FILE_DIRECTORY_FILE,
+            )
+            .unwrap()
+            .into_std(),
+        );
         let second = root.open_dir("two").unwrap();
         assert!(same_directory(&first, &first.try_clone().unwrap()).unwrap());
         assert!(!same_directory(&first, &second).unwrap());
