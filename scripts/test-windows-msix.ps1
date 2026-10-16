@@ -230,8 +230,11 @@ namespace GrainReadiness {
             $detail = Get-Content (Join-Path $output 'wack-reset.log') -Tail 40 | Out-String
             throw "WACK reset failed ($LASTEXITCODE):`n$detail"
         }
+        # Official archive mode requires the smoke-tested app to be uninstalled first.
+        Remove-AppxPackage -Package $installed.PackageFullName
+        $result.wackInput = 'signed MSIX archive'
         $report = Join-Path $output 'wack-report.xml'
-        & $appcert test -packagefullname $installed.PackageFullName -reportoutputpath $report 2>&1 | Tee-Object (Join-Path $output 'wack.log')
+        & $appcert test -appxpackagepath $packagePath -reportoutputpath $report 2>&1 | Tee-Object (Join-Path $output 'wack.log')
         $code = $LASTEXITCODE
         if ($code -ne 0) {
             $result.wack = "failed (exit $code)"
@@ -306,8 +309,10 @@ namespace GrainReadiness {
     try { Stop-InstalledApp } catch { $cleanupErrors += $_.Exception.Message }
     # Even a partially failed Add-AppxPackage must be cleaned up, but never an older user package.
     try {
-        if ($installAttempted -and -not $installed) { $installed = Get-AppxPackage -Name $info.identity | Where-Object { $_.Version.ToString() -eq $info.version } }
-        if ($installed) { Remove-AppxPackage -Package $installed.PackageFullName }
+        if ($installAttempted) {
+            $cleanupPackage = Get-AppxPackage -Name $info.identity | Where-Object { $_.Version.ToString() -eq $info.version }
+            if ($cleanupPackage) { Remove-AppxPackage -Package $cleanupPackage.PackageFullName }
+        }
     } catch { $cleanupErrors += $_.Exception.Message }
     foreach ($override in $overrides) {
         try {
