@@ -38,7 +38,7 @@
     },
     "apps/desktop": {
       "name": "desktop",
-      "version": "0.1.605",
+      "version": "0.1.606",
       "dependencies": {
         "@codemirror/commands": "^6.11.1",
         "@codemirror/language": "^6.12.4",
@@ -149,7 +149,7 @@
     },
     "apps/web": {
       "name": "web",
-      "version": "0.1.605",
+      "version": "0.1.606",
       "dependencies": {
         "@radix-ui/react-slot": "^1.4.0",
         "class-variance-authority": "^0.7.1",

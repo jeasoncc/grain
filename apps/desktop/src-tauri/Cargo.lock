@@ -2053,7 +2053,7 @@ dependencies = [
 
 [[package]]
 name = "grain"
-version = "0.1.605"
+version = "0.1.606"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4379,6 +4379,7 @@ dependencies = [
  "warp",
  "webkit2gtk",
  "windows-native-keyring-store",
+ "windows-sys 0.61.2",
  "zip 8.6.0",
 ]
 

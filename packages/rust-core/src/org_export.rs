@@ -48,10 +48,10 @@ pub fn validate_suggested_name(name: &str, format: OrgExportFormat) -> Result<()
     Ok(())
 }
 
-const UNSUPPORTED_PLATFORM: &str = "Org export saving requires Linux descriptor-bound publication and inode leases; this platform is unsupported";
+const UNSUPPORTED_PLATFORM: &str = "Org export saving requires Linux or Windows handle-bound publication; this platform is unsupported";
 
 pub fn require_supported_platform() -> Result<(), String> {
-    if cfg!(target_os = "linux") {
+    if cfg!(any(target_os = "linux", target_os = "windows")) {
         Ok(())
     } else {
         Err(UNSUPPORTED_PLATFORM.into())
@@ -467,20 +467,27 @@ mod platform {
 #[cfg(target_os = "linux")]
 pub use platform::{publish, select_destination};
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(windows)]
+#[path = "org_windows_export.rs"]
+mod windows_platform;
+
+#[cfg(windows)]
+pub use windows_platform::{publish, select_destination, SelectedExport};
+
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
 pub struct SelectedExport;
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
 impl SelectedExport {
     pub fn replacement_prompt(&self) -> Option<String> { None }
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
 pub fn select_destination(_path: PathBuf, _format: OrgExportFormat) -> Result<SelectedExport, String> {
     Err(UNSUPPORTED_PLATFORM.into())
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
 pub fn publish(_selected: SelectedExport, _content: &str) -> Result<OrgExportOutcome, String> {
     Err(UNSUPPORTED_PLATFORM.into())
 }

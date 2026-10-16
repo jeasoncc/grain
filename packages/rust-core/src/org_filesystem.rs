@@ -34,6 +34,10 @@ use document_write::{
 #[cfg(all(test, any(target_os = "linux", target_os = "macos")))]
 pub(crate) use document_write::prepare_interrupted_org_write;
 
+#[cfg(windows)]
+#[path = "org_windows.rs"]
+pub(crate) mod windows;
+
 #[path = "org_export.rs"]
 pub(crate) mod export;
 
@@ -336,6 +340,10 @@ pub fn scan_org_workspace(
 /// All traversal and file reads remain relative to open directory handles. Symlinks are ignored
 /// rather than followed.
 pub fn scan_org_workspace_with_capability(root: &Dir) -> OrgFilesystemResult<OrgWorkspaceSnapshot> {
+    #[cfg(windows)]
+    return windows::scan(root);
+    #[cfg(not(windows))]
+    {
     let mut documents = Vec::new();
     let mut directories = Vec::new();
     let mut original_recoveries = Vec::new();
@@ -349,6 +357,7 @@ pub fn scan_org_workspace_with_capability(root: &Dir) -> OrgFilesystemResult<Org
         directories,
         original_recoveries,
     })
+    }
 }
 
 fn scan_directory_capability(
@@ -423,6 +432,10 @@ pub fn read_org_document_with_capability(
     root: &Dir,
     relative_path: impl AsRef<Path>,
 ) -> OrgFilesystemResult<OrgDocument> {
+    #[cfg(windows)]
+    return windows::read_document(root, relative_path.as_ref());
+    #[cfg(not(windows))]
+    {
     let relative = validate_relative_org_path(relative_path.as_ref())?;
     let display_path = portable_relative_path(&relative)?;
     let (parent, file_name) = resolve_no_symlink_parent(root, &relative, &display_path)
@@ -459,6 +472,7 @@ pub fn read_org_document_with_capability(
         revision: revision(content.as_bytes()),
         content,
     })
+    }
 }
 
 fn canonical_i64(value: &str) -> bool {
@@ -656,6 +670,8 @@ pub fn write_org_document_with_capability(
     content: &str,
     expected_revision: Option<&str>,
 ) -> OrgFilesystemResult<OrgWriteResult> {
+    #[cfg(windows)]
+    return windows::write_document(root, relative_path.as_ref(), content, expected_revision);
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     {
         let _mutation_guard = lock_org_mutations()?;
@@ -673,7 +689,7 @@ pub fn write_org_document_with_capability(
             original_recovery,
         })
     }
-    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     {
         let _ = (root, relative_path, content, expected_revision);
         Err(OrgFilesystemError::UnsupportedPlatform(
@@ -687,12 +703,17 @@ pub fn write_org_document_with_capability(
 /// Unidentified older temporary files are never removed. Foreign identities or changed bytes
 /// fail closed and retain the journal and all surviving objects for explicit human recovery.
 pub fn recover_org_document_writes_with_capability(root: &Dir) -> OrgFilesystemResult<()> {
+    #[cfg(windows)]
+    {
+        let _mutation_guard = lock_org_mutations()?;
+        return windows::recover(root);
+    }
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     {
         let _mutation_guard = lock_org_mutations()?;
         document_write::recover_directory(root)
     }
-    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     {
         reject_unrecoverable_org_write_journals(root)
     }
@@ -1557,6 +1578,10 @@ pub fn create_org_directory_with_capability(
     root: &Dir,
     relative_path: impl AsRef<Path>,
 ) -> OrgFilesystemResult<()> {
+    #[cfg(windows)]
+    return windows::create_directory(root, relative_path.as_ref());
+    #[cfg(not(windows))]
+    {
     let _mutation_guard = lock_org_mutations()?;
     let relative = validate_relative_directory_path(relative_path.as_ref())?;
     let display_path = portable_relative_path(&relative)?;
@@ -1587,6 +1612,7 @@ pub fn create_org_directory_with_capability(
     }
 
     Ok(())
+    }
 }
 
 /// Moves an Org document after checking its source revision, without replacing a target.
@@ -1739,6 +1765,8 @@ pub fn move_org_document_with_capability(
     target_relative_path: impl AsRef<Path>,
     expected_source_revision: &str,
 ) -> OrgFilesystemResult<OrgWriteResult> {
+    #[cfg(windows)]
+    return windows::move_document(root, source_relative_path.as_ref(), target_relative_path.as_ref(), expected_source_revision);
     #[cfg(target_os = "linux")]
     return move_org_document_linux(
         root,
@@ -1747,7 +1775,7 @@ pub fn move_org_document_with_capability(
         expected_source_revision,
     );
 
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(not(any(windows, target_os = "linux")))]
     return Err(OrgFilesystemError::UnsupportedPlatform(
         "identity-safe document moves currently require Linux renameat2".to_owned(),
     ));
@@ -1769,12 +1797,14 @@ pub fn delete_org_document_with_capability(
     relative_path: impl AsRef<Path>,
     expected_revision: &str,
 ) -> OrgFilesystemResult<OrgOriginalRecoveryEntry> {
+    #[cfg(windows)]
+    return windows::delete_document(root, relative_path.as_ref(), expected_revision);
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     {
         let _mutation_guard = lock_org_mutations()?;
         quarantine_org_document(root, relative_path.as_ref(), expected_revision)
     }
-    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     {
         let _ = (root, relative_path, expected_revision);
         Err(OrgFilesystemError::UnsupportedPlatform(
@@ -1897,7 +1927,12 @@ fn resolve_no_symlink_parent(
                 .map_err(|error| map_not_found(error, display_path))?;
             parent = Dir::from_std_file(directory.into_std());
         }
-        #[cfg(not(unix))]
+        #[cfg(windows)]
+        {
+            parent = windows::open_directory(&parent, name)
+                .map_err(|error| map_not_found(error, display_path))?;
+        }
+        #[cfg(not(any(unix, windows)))]
         {
             parent = parent
                 .open_dir(name)
@@ -1980,7 +2015,7 @@ fn sync_directory(directory: &Dir) -> io::Result<()> {
     directory.open(".")?.sync_all()
 }
 
-#[cfg(not(unix))]
+#[cfg(not(any(unix, windows)))]
 fn sync_directory(_directory: &Dir) -> io::Result<()> {
     Ok(())
 }
@@ -2054,6 +2089,10 @@ fn validate_relative_directory_path(path: &Path) -> OrgFilesystemResult<PathBuf>
             .as_bytes()
             .first()
             .is_some_and(u8::is_ascii_alphabetic);
+    #[cfg(windows)]
+    if display.split('/').any(windows::unsafe_component) {
+        return Err(OrgFilesystemError::InvalidPath(display.to_owned()));
+    }
     if display.contains('\\')
         || display.starts_with('/')
         || display.ends_with('/')
@@ -2292,7 +2331,7 @@ mod tests {
         }
     }
 
-    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     #[test]
     fn unsupported_write_platform_can_reopen_workspaces_without_manifests() {
         let workspace = tempdir().unwrap();
@@ -2382,7 +2421,7 @@ mod tests {
         assert_eq!(snapshot.documents[0].relative_path, "large.org");
     }
 
-    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     #[test]
     fn unsupported_write_platform_retains_manifested_interrupted_writes() {
         let workspace = tempdir().unwrap();

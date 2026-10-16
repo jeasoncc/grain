@@ -55,7 +55,12 @@ fn same_directory_capability(first: &Dir, second: &Dir) -> Result<bool, String> 
     Ok(first.dev() == second.dev() && first.ino() == second.ino())
 }
 
-#[cfg(not(unix))]
+#[cfg(windows)]
+fn same_directory_capability(first: &Dir, second: &Dir) -> Result<bool, String> {
+    org_filesystem::windows::same_directory(first, second).map_err(|error| error.to_string())
+}
+
+#[cfg(not(any(unix, windows)))]
 fn same_directory_capability(_first: &Dir, _second: &Dir) -> Result<bool, String> {
     // Fail closed where stable descriptor identity is not available.
     Ok(false)
@@ -887,7 +892,7 @@ mod tests {
         )
     }
 
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     #[test]
     fn registry_retains_selected_directory_after_root_swap() {
         let parent = tempdir().unwrap();
@@ -938,7 +943,7 @@ mod tests {
         assert!(registry.require_approved(&display_path, &token).is_err());
     }
 
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     #[test]
     fn released_generation_rejects_queued_work_but_retains_acquired_descriptor_after_root_swap() {
         let parent = tempdir().unwrap();
@@ -1095,6 +1100,41 @@ mod tests {
             |_| panic!("symbolic-link root reached opener")).is_err());
     }
 
+    #[cfg(windows)]
+    #[test]
+    fn windows_reveal_requires_live_lease_and_unchanged_retained_root() {
+        let parent = tempdir().unwrap();
+        let selected = parent.path().join("selected");
+        fs::create_dir(&selected).unwrap();
+        fs::write(selected.join("notes.org"), "* Notes\n").unwrap();
+        let registry = OrgWorkspaceRegistry::default();
+        let (path, _, first) = registry.approve(&selected).unwrap();
+        let (_, _, second) = registry.approve(&selected).unwrap();
+        registry.revoke(&path, &first).unwrap();
+        assert!(reveal_approved_workspace_path(&registry, &path, &first, None,
+            |_| panic!("released lease reached opener")).is_err());
+        for target in [None, Some(Path::new("notes.org"))] {
+            reveal_approved_workspace_path(&registry, &path, &second, target, |actual| {
+                assert_eq!(actual, path.join(target.unwrap_or_else(|| Path::new(""))));
+                Ok(())
+            }).unwrap();
+        }
+        let directory = registry.require_approved(&path, &second).unwrap();
+        assert!(descriptor_watch_path(&path, &directory).is_err());
+        fs::rename(&selected, parent.path().join("retained")).unwrap();
+        fs::create_dir(&selected).unwrap();
+        fs::write(selected.join("notes.org"), "* Replacement\n").unwrap();
+        assert!(registry.approve(&selected).is_err());
+        assert!(reveal_approved_workspace_path(&registry, &path, &second,
+            Some(Path::new("notes.org")), |_| panic!("replacement reached opener")).is_err());
+        assert_eq!(directory.read_to_string("notes.org").unwrap(), "* Notes\n");
+        registry.revoke(&path, &second).unwrap();
+        let (replacement, _, token) = registry.approve(&selected).unwrap();
+        assert!(reveal_approved_workspace_path(&registry, &replacement, &second, None,
+            |_| panic!("old lease authorized replacement")).is_err());
+        reveal_approved_workspace_path(&registry, &replacement, &token, None, |_| Ok(())).unwrap();
+    }
+
     #[test]
     fn watch_path_rejects_unknown_wrong_and_released_leases() {
         let first = tempdir().unwrap();
@@ -1111,7 +1151,7 @@ mod tests {
         assert!(registry
             .approved_display_path(&second_path, &first_token)
             .is_err());
-        #[cfg(unix)]
+        #[cfg(any(unix, windows))]
         assert_eq!(
             registry
                 .approved_display_path(&first_path, &first_token)
@@ -1126,7 +1166,7 @@ mod tests {
             .is_err());
     }
 
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     #[test]
     fn same_root_grants_release_independently_and_preserve_watches() {
         let root = tempdir().unwrap();

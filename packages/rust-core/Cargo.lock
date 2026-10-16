@@ -4457,6 +4457,7 @@ dependencies = [
  "warp",
  "webkit2gtk",
  "windows-native-keyring-store",
+ "windows-sys 0.61.2",
  "zip 8.6.0",
 ]
 

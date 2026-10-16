@@ -1,0 +1,141 @@
+name: Windows Native Readiness
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/desktop/**'
+      - 'packages/**'
+      - 'patches/**'
+      - 'package.json'
+      - 'bun.lock'
+      - '.github/workflows/windows-readiness.yml'
+      - '.github/workflows/release-desktop.yml'
+      - 'scripts/build-msix.ps1'
+      - 'scripts/test-windows-msix.ps1'
+      - 'scripts/windows-msix-smoke.mjs'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-readiness-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows-native-readiness:
+    name: Native regressions and installed MSIX
+    runs-on: windows-latest
+    timeout-minutes: 90
+    env:
+      CARGO_TERM_COLOR: never
+      RUST_BACKTRACE: '1'
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      PUPPETEER_SKIP_DOWNLOAD: '1'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            packages/rust-core -> target
+            apps/desktop/src-tauri -> target
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.21.0'
+          package-manager-cache: false
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: '1.4.2'
+
+      - name: Install frontend dependencies
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory artifacts/windows-readiness -Force | Out-Null
+          $ErrorActionPreference = 'Continue'
+          & bun install --frozen-lockfile 2>&1 | Tee-Object artifacts/windows-readiness/dependencies.log
+          $code = $LASTEXITCODE
+          $ErrorActionPreference = 'Stop'
+          if ($code -ne 0) {
+            $detail = Get-Content artifacts/windows-readiness/dependencies.log -Tail 60 | Out-String
+            "### Windows dependencies failed`n``````text`n$detail`n``````" | Add-Content $env:GITHUB_STEP_SUMMARY
+            Write-Output ('::error title=Windows dependency installation::' + $detail.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A'))
+            throw "Dependency installation failed ($code)."
+          }
+
+      - name: Run native Windows filesystem and context regressions
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory artifacts/windows-readiness -Force | Out-Null
+          $filters = @('org_filesystem::windows', 'org_filesystem::export::windows_platform::tests', 'org_clock_context::platform::tests', 'tauri::commands::org_document_commands::tests')
+          foreach ($filter in $filters) {
+            $name = $filter.Replace('::', '-')
+            $log = "artifacts/windows-readiness/native-$name.log"
+            $ErrorActionPreference = 'Continue'
+            & cargo test --manifest-path packages/rust-core/Cargo.toml --lib $filter -- --nocapture 2>&1 | Tee-Object $log
+            $code = $LASTEXITCODE
+            $ErrorActionPreference = 'Stop'
+            $text = Get-Content $log -Raw
+            $ranTests = $text -match 'running [1-9][0-9]* tests?'
+            "### Native Windows regression: $filter (exit $code)" | Add-Content $env:GITHUB_STEP_SUMMARY
+            if ($code -ne 0 -or -not $ranTests) {
+              $detail = Get-Content $log -Tail 100 | Out-String
+              "``````text`n$detail`n``````" | Add-Content $env:GITHUB_STEP_SUMMARY
+              $message = "Native filter $filter failed or selected zero tests (exit $code): $detail"
+              Write-Output ('::error title=Windows native regression::' + $message.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A'))
+              throw $message
+            }
+            $text -split "`n" | Where-Object { $_ -match '^test .* \.\.\. |^test result:' } | Add-Content $env:GITHUB_STEP_SUMMARY
+          }
+
+      - name: Build real frontend and Tauri executable
+        working-directory: apps/desktop
+        shell: pwsh
+        run: |
+          $log = '../../artifacts/windows-readiness/build.log'
+          $ErrorActionPreference = 'Continue'
+          & bun run tauri build --no-bundle 2>&1 | Tee-Object $log
+          $code = $LASTEXITCODE
+          $ErrorActionPreference = 'Stop'
+          "### Frontend and Tauri build (exit $code)" | Add-Content $env:GITHUB_STEP_SUMMARY
+          if ($code -ne 0) {
+            $detail = Get-Content $log -Tail 100 | Out-String
+            "``````text`n$detail`n``````" | Add-Content $env:GITHUB_STEP_SUMMARY
+            Write-Output ('::error title=Windows app build::' + $detail.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A'))
+            throw "Real Windows app build failed ($code)."
+          }
+
+      - name: Build and sign actual x64 MSIX
+        shell: pwsh
+        run: ./scripts/build-msix.ps1
+
+      - name: Install, launch, save, restart, and certify when available
+        # Appx cmdlets run natively in Windows PowerShell, not an implicit PS7 compatibility session.
+        shell: powershell
+        run: ./scripts/test-windows-msix.ps1
+
+      - name: Upload package and public test certificate
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msix-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/windows-msix/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload native logs, screenshots, and readiness reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-readiness-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/windows-readiness/
+          if-no-files-found: warn
+          retention-days: 14
