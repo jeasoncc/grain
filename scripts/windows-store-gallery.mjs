@@ -259,6 +259,9 @@ Use the reading notes to make the next draft more concrete.
 
   scene = '01-writing-outline';
   await openNote(files.writing, 'A quiet morning');
+  const readinessTabClose = page.getByRole('button', { name: `Close ${exercise.relativePath}`, exact: true });
+  await readinessTabClose.click();
+  await readinessTabClose.waitFor({ state: 'detached' });
   await page.getByRole('button', { name: 'Show note inspector', exact: true }).click();
   const inspector = page.getByRole('complementary', { name: 'Note inspector', exact: true });
   await inspector.getByRole('button', { name: 'Outline', exact: true }).click();
