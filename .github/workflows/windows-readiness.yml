@@ -2,6 +2,12 @@ name: Windows Native Readiness
 
 on:
   workflow_dispatch:
+    inputs:
+      store_gallery:
+        description: 'Capture six real installed Windows Store listing screenshots (no Store package submission)'
+        type: boolean
+        required: false
+        default: false
   push:
     branches: [main]
     paths:
@@ -15,6 +21,7 @@ on:
       - 'scripts/build-msix.ps1'
       - 'scripts/test-windows-msix.ps1'
       - 'scripts/windows-msix-smoke.mjs'
+      - 'scripts/windows-store-gallery.mjs'
 
 permissions:
   contents: read
@@ -124,7 +131,9 @@ jobs:
       - name: Install, launch, save, restart, and certify when available
         # Appx cmdlets run natively in Windows PowerShell, not an implicit PS7 compatibility session.
         shell: powershell
-        run: ./scripts/test-windows-msix.ps1
+        env:
+          STORE_GALLERY: ${{ (github.event_name == 'workflow_dispatch' && inputs.store_gallery) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[store-gallery]')) }}
+        run: ./scripts/test-windows-msix.ps1 -StoreGallery:($env:STORE_GALLERY -eq 'true')
 
       - name: Upload package and public test certificate
         if: always()

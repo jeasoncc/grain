@@ -1,5 +1,9 @@
 [CmdletBinding()]
-param([string]$PackageDirectory = 'artifacts/windows-msix', [string]$OutputDirectory = 'artifacts/windows-readiness')
+param(
+    [string]$PackageDirectory = 'artifacts/windows-msix',
+    [string]$OutputDirectory = 'artifacts/windows-readiness',
+    [switch]$StoreGallery
+)
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -228,6 +232,25 @@ namespace GrainReadiness {
         $process = $null
     }
     Add-Summary '- Real installed-app create/read/edit/save, stale CAS rejection, no-clobber creation, invalid-capability rejection, visible file-tree opening, editor Unicode input and Ctrl+S, exact CRLF disk bytes, and visible reopening after a full process restart passed. Native IME composition is not covered.'
+
+    if ($StoreGallery) {
+        # Separate, opt-in asset pass: never substitute gallery scenes for the security/reopen proof.
+        # The signed CI package is capture provenance only; this does not submit a Store package.
+        $process = Start-InstalledApp 'gallery'
+        Save-DesktopScreenshot 'gallery-desktop.png'
+        $ErrorActionPreference = 'Continue'
+        & node (Join-Path $PSScriptRoot 'windows-store-gallery.mjs') $output $packages 2>&1 | Tee-Object (Join-Path $output 'gallery.log')
+        $galleryCode = $LASTEXITCODE
+        $ErrorActionPreference = 'Stop'
+        if ($galleryCode -ne 0) {
+            $detail = Get-Content (Join-Path $output 'gallery.log') -Tail 35 | Out-String
+            throw "Installed Windows Store gallery failed:`n$detail"
+        }
+        $result.phases += 'gallery'
+        Stop-InstalledApp
+        $process = $null
+        Add-Summary '- Store gallery: six real installed Windows/WebView2 scenes captured in store-gallery/ with bilingual fictional notes, raw PNG dimensions and native package provenance. Review images before uploading; this pass does not submit or replace the live Store package.'
+    }
 
     # Run the real certification tool when available; never ignore a failed tool or report.
     $appcert = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\App Certification Kit\appcert.exe'

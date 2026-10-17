@@ -96,6 +96,24 @@ powershell.exe -NoProfile -File ./scripts/test-windows-msix.ps1
 
 详见 [MSIX 自动化](../docs/msix-automation-guide.md)、[打包信任边界](../docs/msix-packaging-guide.md)及[商店提交](../docs/microsoft-store-guide.md)。
 
+### windows-store-gallery.mjs（可选商店截图）
+
+在 **Windows Native Readiness** 的 `workflow_dispatch` 中选择 `store_gallery=true`，或使用：
+
+```sh
+gh workflow run windows-readiness.yml --ref main -f store_gallery=true
+```
+
+也可在会触发此工作流的 `main` 提交消息中加入 `[store-gallery]`，显式开启本次图库采集；普通 push 仍不生成图库。
+
+仅在同一次 run 的安装、安全检查和全进程重启证明通过后，额外启动真实 MSIX 窗口，创建虚构的中英双语 Org 笔记，通过实际 UI 捕获六个不同场景：写作与提纲、分栏参考资料、Agenda、Capture、Quick Open、链接笔记与反向链接。脚本使用原生 workspace 文件命令创建并读回样例，拒绝包含其他笔记的非一次性 profile，不替换 bridge、应用状态或渲染 HTML。
+
+已有 `windows-readiness-<run_id>-<run_attempt>` artifact 自动包含 `store-gallery/01-*.png` 至 `06-*.png`、`manifest.json` 和日志。Manifest 逐张记录场景、中英说明、SHA-256、真实 PNG/viewport 像素尺寸、安装包身份/版本/哈希及原生窗口来源，不保存 capability token。必须六场景全部就绪且原始 PNG 至少 1366 × 768、每张不超过 50 MB；失败场景不静默跳过，部分产物标记 `failed`，不能当作完整商店图库。
+
+已有构建流程仍会生成供安装与截图证明使用的 CI 包，但图库操作不上传或替换 Store 安装包。此 listing 更新固定现有应用 `0.1.606` / MSIX `1.1.606.0` 和新产品 `9PF3WZLSWZHX`；不得把自签名 CI 包当作本次元数据更新的新提交包。生产图标、身份及旧商店产品保持不变。WACK、日志上传和清理行为不变。
+
+本地仅限可销毁的交互式管理员 Windows 环境，使用 `powershell.exe -NoProfile -File ./scripts/test-windows-msix.ps1 -StoreGallery`；不要直接运行图库脚本绕过安装与重启门禁。样例留在一次性 runner profile，图片留在 readiness 输出目录；上传前必须人工检查实际 Windows 产物，脚本实现本身不证明已获得合格截图。
+
 ## 工具目录
 
 ### snapcraft-login/
