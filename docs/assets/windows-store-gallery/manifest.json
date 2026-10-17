@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "product": {
+    "name": "Grain Org",
+    "storeProductId": "9PF3WZLSWZHX"
+  },
+  "capturedAt": "2026-10-17T07:20:44.969Z",
+  "provenance": {
+    "source": "Installed MSIX native window / real WebView2 CDP; raw page PNGs",
+    "purpose": "Store listing assets only; CI package is capture provenance, not a package submission",
+    "appVersion": "0.1.606",
+    "packageVersion": "1.1.606.0",
+    "package": "grain_0.1.606_x64.msix",
+    "packageSha256": "B73E88D943AC84150479467DE0ED36D8F596C9CDD1F6080FDAC4878681545232",
+    "executableSha256": "6CAAD97FFF833702DDAF052443A145FBBF0225E8D4856B12B36ECD9116CFE96B",
+    "identity": "Jeason.GrainOrg",
+    "publisher": "CN=056C6E40-362E-4DC2-A03D-B19B795AA254",
+    "packageFullName": "Jeason.GrainOrg_1.1.606.0_x64__b8ehwrfyfrjng",
+    "packageFamilyName": "Jeason.GrainOrg_b8ehwrfyfrjng",
+    "nativeProcess": {
+      "phase": "gallery",
+      "pid": 5932,
+      "executable": "C:\\Program Files\\WindowsApps\\Jeason.GrainOrg_1.1.606.0_x64__b8ehwrfyfrjng\\grain.exe",
+      "packageFullName": "Jeason.GrainOrg_1.1.606.0_x64__b8ehwrfyfrjng",
+      "windowTitle": "小麦 - Grain",
+      "windowHandle": 393332,
+      "sessionId": 2,
+      "clientWidth": 1424,
+      "clientHeight": 921,
+      "dpiAwareness": "PerMonitorV2",
+      "dpiContext": 34
+    },
+    "githubRunId": "39012156196",
+    "githubRunAttempt": "1",
+    "commit": "d5bc87ef309a376ca09e87baf0ca6823e2a495c0"
+  },
+  "sampleData": "Fictional bilingual Org notes created with native workspace operations in the disposable runner profile",
+  "scenes": [
+    {
+      "id": "01-writing-outline",
+      "name": "Writing and outline",
+      "file": "01-writing-outline.png",
+      "width": 1424,
+      "height": 921,
+      "bytes": 81248,
+      "sha256": "bfa099286330416b36c01a683334240967c73402f3adff4f867a6b902887e3c6",
+      "viewport": {
+        "innerWidth": 1424,
+        "innerHeight": 921,
+        "devicePixelRatio": 1
+      },
+      "captions": {
+        "zh-CN": "从零散想法到清晰文章：提纲与正文一起推进。",
+        "en-US": "Turn scattered ideas into a clear draft, with your outline close at hand."
+      },
+      "evidence": {
+        "document": "Studio-写作计划-Writing.org",
+        "outlineHeading": "写作提纲 · Working outline"
+      }
+    },
+    {
+      "id": "02-split-reference",
+      "name": "Writing beside reference notes",
+      "file": "02-split-reference.png",
+      "width": 1424,
+      "height": 921,
+      "bytes": 113066,
+      "sha256": "16bfba58579ed280474f678e08ce90e67c0cdb529a831abfeafe6265104ee562",
+      "viewport": {
+        "innerWidth": 1424,
+        "innerHeight": 921,
+        "devicePixelRatio": 1
+      },
+      "captions": {
+        "zh-CN": "一边查阅资料，一边写下自己的思考，不用来回切换。",
+        "en-US": "Keep your research beside your draft and stay with your train of thought."
+      },
+      "evidence": {
+        "primary": "Studio-写作计划-Writing.org",
+        "secondary": "Studio-阅读札记-Research.org"
+      }
+    },
+    {
+      "id": "03-agenda",
+      "name": "Plan your next steps with Agenda",
+      "file": "03-agenda.png",
+      "width": 1424,
+      "height": 921,
+      "bytes": 71933,
+      "sha256": "2f32eaa5cdc29ba6296ad16d7e018a125b248167e3ad8f27f4385d388e46a6f6",
+      "viewport": {
+        "innerWidth": 1424,
+        "innerHeight": 921,
+        "devicePixelRatio": 1
+      },
+      "captions": {
+        "zh-CN": "把笔记里的待办、日程和截止日期汇在一起，看清下一步。",
+        "en-US": "See scheduled tasks, deadlines, and dated events together, then return to the original note."
+      },
+      "evidence": {
+        "document": "Studio-本周安排-Week.org",
+        "minimumEntries": 4,
+        "date": "2026-10-17"
+      }
+    },
+    {
+      "id": "04-capture",
+      "name": "Capture an idea without losing your place",
+      "file": "04-capture.png",
+      "width": 1424,
+      "height": 921,
+      "bytes": 76292,
+      "sha256": "1ffe95e5670795481e8df99b9ab9f0c3cef2e8997ed8396cb8b2aa7426c74d3f",
+      "viewport": {
+        "innerWidth": 1424,
+        "innerHeight": 921,
+        "devicePixelRatio": 1
+      },
+      "captions": {
+        "zh-CN": "灵感出现时先记下来，确认收件箱后，再回到手头的文章。",
+        "en-US": "Catch an idea in your inbox without losing your place in the draft."
+      },
+      "evidence": {
+        "target": "Studio-灵感收件箱-Inbox.org",
+        "draft": "给下一个想法留十分钟 · Make ten minutes for the next idea",
+        "targetPreviewReviewed": true
+      }
+    },
+    {
+      "id": "05-quick-open",
+      "name": "Find a note and keep moving",
+      "file": "05-quick-open.png",
+      "width": 1424,
+      "height": 921,
+      "bytes": 83249,
+      "sha256": "eb181072cd614d59de11d5d9b420132633fa06c73a19766b4939ac8bb655e2ab",
+      "viewport": {
+        "innerWidth": 1424,
+        "innerHeight": 921,
+        "devicePixelRatio": 1
+      },
+      "captions": {
+        "zh-CN": "输入几个字，快速找到下一篇要用的笔记。",
+        "en-US": "Find the note you need with a few keystrokes and keep your work moving."
+      },
+      "evidence": {
+        "query": "Studio",
+        "expectedResults": [
+          "Studio-写作计划-Writing.org",
+          "Studio-阅读札记-Research.org",
+          "Studio-本周安排-Week.org",
+          "Studio-灵感收件箱-Inbox.org",
+          "Studio-知识地图-Connections.org",
+          "Studio-每周回顾-Review.org"
+        ]
+      }
+    },
+    {
+      "id": "06-linked-notes",
+      "name": "Follow the connections between your notes",
+      "file": "06-linked-notes.png",
+      "width": 1424,
+      "height": 921,
+      "bytes": 88083,
+      "sha256": "1efa1d42af9b5d22c513f0a2c81409c8ff12d1403b008646832236e50d026add",
+      "viewport": {
+        "innerWidth": 1424,
+        "innerHeight": 921,
+        "devicePixelRatio": 1
+      },
+      "captions": {
+        "zh-CN": "顺着反向链接找回相关资料，让阅读、写作与回顾连成一条线。",
+        "en-US": "Follow backlinks to reconnect your reading, writing, and reflections."
+      },
+      "evidence": {
+        "document": "Studio-写作计划-Writing.org",
+        "backlinkSources": [
+          "Studio-阅读札记-Research.org",
+          "Studio-知识地图-Connections.org",
+          "Studio-每周回顾-Review.org"
+        ]
+      }
+    }
+  ],
+  "sampleFiles": [
+    {
+      "relativePath": "Studio-写作计划-Writing.org",
+      "revision": "5eae7b45f735204cd9186ddfa80accb754a7ba5d888cce346ebe45714abe3bc9"
+    },
+    {
+      "relativePath": "Studio-阅读札记-Research.org",
+      "revision": "1d461509d88e99dd0aa7aeb196fcb2b9787fd7827c118e49d17cd4df08c8a616"
+    },
+    {
+      "relativePath": "Studio-本周安排-Week.org",
+      "revision": "2d0eb9069972cba9a312d6d4b5aaba1eadde414d1a0c8dabf020f03c486cd0ec"
+    },
+    {
+      "relativePath": "Studio-灵感收件箱-Inbox.org",
+      "revision": "d9a1b78f8ea2353b193fdd9272082bbea3a27995a78262b278eff1a3ba7be635"
+    },
+    {
+      "relativePath": "Studio-知识地图-Connections.org",
+      "revision": "b169776ebb9abe22ab8c3fc2ad4a4d8d00987903c08022152665645a9f25024c"
+    },
+    {
+      "relativePath": "Studio-每周回顾-Review.org",
+      "revision": "ef2e908ab25ec54734fa30a5c87ee0d462f3ec14f1c7ce057d238ea4946fb1c1"
+    }
+  ],
+  "sampleDate": "2026-10-17",
+  "captureSavedToDisk": true
+}

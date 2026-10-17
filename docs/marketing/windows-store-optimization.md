@@ -1,6 +1,10 @@
 # Grain Org 的 Microsoft Store 产品资料
 
-Grain Org 的公开产品页已确认可访问：<https://apps.microsoft.com/detail/9PF3WZLSWZHX>。本文是该产品的文案与截图更新资料，**不表示本次资料修订已提交、审核通过或发布**。本次仅更新 listing 与素材，保留已发布应用版本 `0.1.606` / MSIX `1.1.606.0`、包身份及生产图标。
+Grain Org 的公开产品页已确认可访问：<https://apps.microsoft.com/detail/9PF3WZLSWZHX>。
+
+本次中英文文案与六张截图更新已提交为 **Submission 2（`1152921505702156303`）**。截至 **2026-10-17 07:50:58 UTC**，真实门户状态为 **In certification**，进度处于 **Pre-processing**，审核通过后自动发布。**这不表示本次修订已审核通过或已出现在公开产品页。**
+
+本次仅更新 listing 与素材，保留已发布应用版本 `0.1.606` / MSIX `1.1.606.0`、包身份及生产图标；提交前门户的 `Packages` 显示 `Validated / Unchanged`。
 
 这是独立 Org 产品，Store ID **`9PF3WZLSWZHX`**，分类为 **Productivity / 生产力**。旧「小麦写作 / Wheat Editor」`9NV7M2PW25B3` 独立保留；不要替换旧条目，不复用旧包身份或旧富文本截图。不得填写未经验证的安装量、排名、用户数或认证徽章。
 
@@ -112,18 +116,26 @@ Windows readiness artifact 的 `exercise-after.png` / `reopen-after.png` 是真�
 
 ### 六组双语截图说明
 
-下表是实际取景目标，不是截图已完成的证明；上传前须逐张确认真实画面与说明相符。推荐素材目录为 `windows-readiness/store-gallery/`，使用稳定编号 PNG，并以 JSON manifest 记录场景、原始尺寸和实际 Windows 应用/包来源。
+本次六张截图来自 [Windows Native Readiness run `39012156196`](https://github.com/jeasoncc/grain/actions/runs/39012156196)，采集源码 commit 为 `d5bc87ef309a376ca09e87baf0ca6823e2a495c0`。每张均为未经放大的 **1424 × 921** 原始 PNG，已逐张目视检查。中英文 listing 各上传六张并填写对应说明；保存并重新打开后，逐张核对 PNG SHA-256、尺寸、顺序及本地化说明均与原始素材一致。原文件与[来源 manifest](../assets/windows-store-gallery/manifest.json)保存在 `docs/assets/windows-store-gallery/`。
+
+采图使用相同应用身份及版本的 CI 安装包，没有将其重建 MSIX 上传到 Store。该运行的 gallery 为 `passed`，完整 readiness 为 `passed-with-wack-warnings`；可选 WACK 发现与真实 Store 审核结论分开，不作为认证通过证明。
 
 | 场景 | 中文说明 | English caption |
 | --- | --- | --- |
-| 01 写作与大纲 | 从大纲到正文，用清晰的标题和列表展开想法，让写作更有条理。 | Shape an idea into a draft with clear headings, an outline, and lists. |
-| 02 分栏参考写作 | 把参考笔记放在草稿旁边，边查阅边写作，保持思路连贯。 | Keep reference notes beside your draft and write without losing context. |
-| 03 Agenda | 把任务、计划日期和截止日期放在一起查看，为下一步留出清晰的位置。 | Review tasks, scheduled dates, and deadlines together to plan your next step. |
-| 04 Capture | 随手收集灵感和待办，让零散想法有处可归，稍后再展开。 | Give quick ideas and TODOs a home with Capture, ready to develop later. |
-| 05 Quick Open | 快速找到需要的笔记，切回正在推进的想法，不必逐层翻找文件夹。 | Find the note you need with Quick Open and get back to your train of thought. |
-| 06 笔记链接与反向链接 | 沿着链接探索相关笔记，通过反向链接找回想法之间的联系。 | Follow related notes and use backlinks to rediscover connections between ideas. |
+| [01 写作与大纲](../assets/windows-store-gallery/01-writing-outline.png) | 从零散想法到清晰文章：提纲与正文一起推进。 | Turn scattered ideas into a clear draft, with your outline close at hand. |
+| [02 分栏参考写作](../assets/windows-store-gallery/02-split-reference.png) | 一边查阅资料，一边写下自己的思考，不用来回切换。 | Keep your research beside your draft and stay with your train of thought. |
+| [03 Agenda](../assets/windows-store-gallery/03-agenda.png) | 把笔记里的待办、日程和截止日期汇在一起，看清下一步。 | See scheduled tasks, deadlines, and dated events together, then return to the original note. |
+| [04 Capture](../assets/windows-store-gallery/04-capture.png) | 灵感出现时先记下来，确认收件箱后，再回到手头的文章。 | Catch an idea in your inbox without losing your place in the draft. |
+| [05 Quick Open](../assets/windows-store-gallery/05-quick-open.png) | 输入几个字，快速找到下一篇要用的笔记。 | Find the note you need with a few keystrokes and keep your work moving. |
+| [06 笔记链接与反向链接](../assets/windows-store-gallery/06-linked-notes.png) | 顺着反向链接找回相关资料，让阅读、写作与回顾连成一条线。 | Follow backlinks to reconnect your reading, writing, and reflections. |
 
 只上传已实际打开并验证的画面；不为凑数量制作未运行功能的假图。包内图标来自 `apps/desktop/src-tauri/icons/`；自定义 Store tile 使用实际应用图标并按门户要求导出，不能冒用 MSIX Packaging Tool 的图标。本次资料更新不更换生产图标，不使用或修改用户新生成的 `docs/assets/grain-org-icon-gpt-image*` 素材。
+
+## 发行市场
+
+2026-10-17 已在 Grain Org 的 Submission 2（`1152921505702156303`）中核对：**All worldwide markets** 覆盖全部 **240** 个可选市场，并已勾选未来新增市场自动加入。两项原本就已开启，本次没有把发行范围从中国扩展到全球；价格保持免费，面向公众并可在商店中发现。
+
+链接中的 `gl=CN` 是中国区展示参数，不代表产品只在中国发行。对外使用不固定地区的产品链接 <https://apps.microsoft.com/detail/9PF3WZLSWZHX>。实际可见性仍可能受微软当地分发限制影响，参见[微软市场选择说明](https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/market-selection)。
 
 ## 链接与审核备注（非公开描述字段）
 
