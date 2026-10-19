@@ -346,22 +346,43 @@ jobs:
             exit 1
           fi
 
-  # Snap 验证
+  # Snap 商店版本核验；原生安装、编辑与重启由独立 Snap 发布门禁验证。
   verify-snap:
     needs: get-version
     runs-on: ubuntu-latest
     steps:
-      - name: Verify Snap package
+      - name: Verify the published Org Notes stable channel
+        env:
+          EXPECTED_VERSION: ${{ needs.get-version.outputs.version }}
         run: |
-          echo "🔍 Checking Snap Store availability..."
-          
-          # 搜索 snap
-          if snap find grain 2>/dev/null | grep -q "grain"; then
-            echo "✅ Package found in Snap Store"
-            snap info grain
-          else
-            echo "⚠ Package not yet available in Snap Store"
-          fi
+          python3 - <<'PY'
+          import json, os, re, urllib.request
+          version = os.environ['EXPECTED_VERSION']
+          if not re.fullmatch(r'\d+\.\d+\.\d+', version):
+              raise ValueError('Expected a three-part application version')
+          request = urllib.request.Request(
+              'https://api.snapcraft.io/v2/snaps/info/org-notes',
+              headers={'Snap-Device-Series': '16', 'Snap-Device-Architecture': 'amd64'})
+          with urllib.request.urlopen(request, timeout=30) as response:
+              data = json.load(response)
+          snap = data['snap']
+          assert snap['name'] == 'org-notes'
+          assert snap['snap-id'] == 'Bjbd2JnV9QgH8kKAPg2QT0WxvESdCXTu'
+          assert snap['publisher']['username'] == 'jeasoncc'
+          stable = [item for item in data['channel-map']
+                    if item['channel']['track'] == 'latest'
+                    and item['channel']['risk'] == 'stable'
+                    and item['channel']['architecture'] == 'amd64'
+                    and not item['channel'].get('branch')]
+          assert len(stable) == 1, 'No unambiguous amd64 latest/stable revision'
+          release = stable[0]
+          assert release['version'] == version, f"Store version {release['version']} != {version}"
+          print(json.dumps({'name': snap['name'], 'version': release['version'],
+                            'revision': release['revision'], 'channel': 'latest/stable',
+                            'architecture': 'amd64',
+                            'releasedAt': release['channel']['released-at']}))
+          print('Verified public Store metadata; native runtime proof is a separate gate.')
+          PY
 
   # Flatpak 验证
   verify-flatpak:

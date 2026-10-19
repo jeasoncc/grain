@@ -30,6 +30,8 @@ bun run tag:desktop
 
 `tag:snap` 和 `tag:web` 使用各自独立标签。`tag:linux` 仅组合 desktop + snap，`tag:all` 仅组合 desktop + snap + web；不代表全部商店发布。仅发布 GitHub 安装包时不要使用组合命令。
 
+Snap 是独立的 **Org Notes / `org-notes`**，仅构建 `amd64`、`core24`、`strict` 包。默认标签请求 `edge`，不覆盖旧 Novel Editor 条目，也不自动推广到 `stable`。上传前必须完成同包原生目录选择、编辑保存和完整重启验收，详见 [Snap 发布边界](publishing-platforms-guide.md#org-notes-snap-独立版)。
+
 其他渠道只保留手动 `workflow_dispatch`。必须先确认身份与包名、维护权限、凭据及实际上传步骤，再验证目标版本是否经过审核、进入源并可下载。AUR `grain` / `grain-bin` 与 Scoop Extras `grain` 是 grain-lang，不得用作本编辑器的分发身份。
 
 发布标签不可覆盖或移动。失败任务应根据实际日志修复，使用新的补丁版本；不要通过重打旧标签或关闭校验伪造发布成功。

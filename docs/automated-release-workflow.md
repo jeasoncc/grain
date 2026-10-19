@@ -60,13 +60,13 @@ Windows 修复版本必须先通过实机门禁再创建正式标签。独立 **
 
 ## 外部渠道
 
-现有渠道工作流仅保留手动入口，不在此发布流程中执行。运行前必须确认项目身份、包名维护权限、凭据、实际上传步骤及上游审核。
+Snap 与 Web 使用独立标签，其他渠道保留手动入口，均不在本桌面发布流程中执行。运行前必须确认项目身份、包名维护权限、凭据、实际上传步骤及上游审核。
 
 已核对的 AUR `grain` / `grain-bin` 与 Scoop Extras `grain` 属于 **grain-lang 语言项目**，不是本编辑器。不要使用这些名称发布本项目，也不要将这些包的可用性作为本编辑器发布成功的证据。
 
 Flatpak/Gentoo 等工作流可能只生成 Actions 附件；一些渠道的发布步骤受不可达的事件条件限制。Actions 绿灯、准备好的清单或已创建的审核 PR，都不等于目标版本已经在商店可安装。
 
-Snap 与 Web 仍有独立标签。`tag:linux` 只创建 desktop + snap，`tag:all` 只创建 desktop + snap + web；它们不是全部渠道上架命令。仅发布 GitHub 安装包时使用 `tag:desktop`。
+`tag:snap` 发布独立的 **Org Notes / `org-notes`**，默认请求 `edge`，经过同包严格沙箱原生验收后才可上传。身份、凭据、证据和推广规则见 [Snap 发布边界](publishing-platforms-guide.md#org-notes-snap-独立版)。`tag:linux` 只创建 desktop + snap，`tag:all` 只创建 desktop + snap + web；它们不是全部渠道上架命令。仅发布 GitHub 安装包时使用 `tag:desktop`。
 
 ## 自动更新
 

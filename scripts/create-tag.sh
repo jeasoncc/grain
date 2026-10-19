@@ -53,7 +53,7 @@ show_help() {
     echo "           仅上传 GitHub Release，不触发外部包管理器"
     echo ""
     echo -e "${CYAN}独立发布命令：${NC}"
-    echo -e "  ${GREEN}snap${NC}     - 独立 Snap Store 发布，需先确认包名和凭据"
+    echo -e "  ${GREEN}snap${NC}     - Org Notes 独立 Snap 构建、验收与发布（默认 edge）"
     echo -e "  ${GREEN}web${NC}      - Web 应用部署"
     echo ""
     echo -e "${CYAN}组合命令：${NC}"
@@ -178,13 +178,13 @@ main() {
             ;;
             
         snap)
-            echo -e "${BLUE}📦 发布 Snap 包${NC}"
+            echo -e "${BLUE}构建、验收并发布 Org Notes Snap${NC}"
             echo ""
             create_and_push_tag "snap" "$VERSION"
             
             echo ""
-            echo -e "${GREEN}🎉 Snap 发布已启动！${NC}"
-            echo -e "${YELLOW}⏱️  预计时间: 10-15 分钟${NC}"
+            echo "标签默认请求 edge；不会自动推广到 stable。"
+            echo "请在 GitHub Actions 检查严格沙箱验收证据，再核对 Snap Store 的实际频道版本。"
             ;;
             
         web)

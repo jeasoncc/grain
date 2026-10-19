@@ -33,6 +33,8 @@ Grain implements a supported subset of Org workflows. It is not an Emacs runtime
 
 Download a packaged build from [GitHub Releases](https://github.com/jeasoncc/grain/releases), matching your operating system and architecture. Check the release version: older builds may not include this Org workspace. To run the current source, follow [Development](#development).
 
+The independent Linux Snap edition is named **Org Notes (`org-notes`)**. Check its channel/version separately in the [Linux installation guide](./docs/linux-installation-guide.md); it does not automatically upgrade or import the legacy Novel Editor Snap.
+
 In the native desktop app:
 
 1. **Open a workspace.** Select **Open Documents/Grain** for the default directory, or **Choose another…** to approve an existing local directory.
@@ -72,7 +74,7 @@ Keep the source as plain text.
 
 Configure Grain through `config.json`, not a graphical preferences page. Run **Open configuration file** from **Execute command**, edit and save the file in your system editor, then run **Reload configuration**.
 
-On Linux, the file is at `$XDG_CONFIG_HOME/com.lotus.grain/config.json`, or `~/.config/com.lotus.grain/config.json` when `XDG_CONFIG_HOME` is unset. It controls themes, fonts, autosave (`saving`), Capture, keymaps, Org behavior, Agenda views, tool placement, and diagram services. Missing fields use defaults; invalid reloads are rejected as a whole without discarding open text or undo history.
+On native, non-Snap Linux builds, the file is at `$XDG_CONFIG_HOME/com.lotus.grain/config.json`, or `~/.config/com.lotus.grain/config.json` when `XDG_CONFIG_HOME` is unset. Org Notes Snap uses an isolated data space; use **Open configuration file** to find its actual location. Configuration controls themes, fonts, autosave (`saving`), Capture, keymaps, Org behavior, Agenda views, tool placement, and diagram services. Missing fields use defaults; invalid reloads are rejected as a whole without discarding open text or undo history.
 
 See the [configuration example and safety rules](./apps/desktop/README.md#file-configuration) and [theme guide](./docs/desktop/THEMES_GUIDE.md). Grain includes 811 offline [iTerm2-Color-Schemes](https://github.com/mbadolato/iTerm2-Color-Schemes) palettes.
 
@@ -164,16 +166,16 @@ For desktop architecture and contribution boundaries, see [Grain Desktop](./apps
 
 ## Privacy policy
 
-This policy covers the current **Org-based Grain desktop application**, not GitHub's website or third-party services.
+This policy covers the current **Org-based Grain desktop application, including its Org Notes Snap edition**, not GitHub's website or third-party services.
 
 - **Local data.** Saved writing is plain UTF-8 Org text in a directory you approve. Grain also maintains local configuration, rebuildable SQLite indexes, and diagnostic logs. Open buffers and undo history live in memory; optional Capture draft recovery stores plaintext in this WebView's local storage.
-- **Retained copies.** Saving, deleting, or exporting can retain prior content, staged bytes, and transaction metadata in `.grain-*` recovery objects. These copies are not encrypted by Grain, immutable backups, or automatically garbage-collected. Deleting a document in Grain is not permanent erasure of every retained copy. Revoking a workspace grant or uninstalling the application does not erase your workspace, exports, or external backups.
+- **Retained copies.** Saving, deleting, or exporting can retain prior content, staged bytes, and transaction metadata in `.grain-*` recovery objects. These copies are not encrypted by Grain, immutable backups, or automatically garbage-collected. Deleting a document is not permanent erasure of every retained copy. Revoking a workspace grant does not erase the files. Uninstalling does not securely erase external workspaces, exports, or backups. Snapd may remove private Snap data or retain snapshots under its own policy; keep your canonical workspace outside Snap-private directories and maintain independent backups.
 - **Network operations.** Grain does not provide automatic cloud synchronization of Org documents. External links, configured diagram services, updates, and WebView2/runtime installation can involve network requests and the relevant third party's privacy policy. A configured external content-rendering service may receive the content it renders; review its settings before using sensitive text.
 - **Your control.** You choose workspace and export locations and can revoke workspace access. To remove retained data, close Grain and deliberately remove the applicable files, recovery objects, exports, backups, and local application/WebView data. Do not delete unfamiliar recovery objects until you have verified the writing they retain.
 - **Historical data.** Older releases may use IndexedDB or a historical `grain.db`. These are not the derived Org index, are not automatically migrated into Org files, and must not be discarded as caches.
 - **Contact.** Use [GitHub Issues](https://github.com/jeasoncc/grain/issues) for support or privacy questions. Issues and attachments are public: remove personal writing, credentials, and private paths before sharing diagnostics.
 
-**中文说明：** 当前 Org 桌面版把正文保存在你批准目录中的本地 Org 文本文件；配置、派生索引、日志及可选 Capture 草稿也保存在本地。保存、删除和导出会保留可能含正文的恢复副本，这些副本不由 Grain 加密，也不会自动清理。应用内删除不是彻底擦除；撤销授权或卸载也不等于删除工作区、导出文件与备份。应用不提供 Org 正文自动云同步；外部链接、按配置启用的图表服务、更新和运行时下载可能访问第三方服务，渲染服务可能接收相关内容。旧版 IndexedDB／`grain.db` 不会自动迁入 Org，不能当成缓存删除。请通过上述公开 Issue 联系支持，提交前清除个人正文、凭据和私人路径。
+**中文说明：** 当前 Org 桌面版（包括 Org Notes Snap 版）把正文保存在你批准目录中的本地 Org 文本文件；配置、派生索引、日志及可选 Capture 草稿也保存在本地。保存、删除和导出会保留可能含正文的恢复副本，这些副本不由 Grain 加密，也不会自动清理。应用内删除不是彻底擦除；撤销授权不删除文件，卸载也不安全擦除外部工作区、导出文件与备份。Snapd 可以移除 Snap 私有数据，也可能按自身策略保留快照；请把原始工作区放在 Snap 私有目录之外并另行备份。应用不提供 Org 正文自动云同步；外部链接、按配置启用的图表服务、更新和运行时下载可能访问第三方服务，渲染服务可能接收相关内容。旧版 IndexedDB／`grain.db` 不会自动迁入 Org，不能当成缓存删除。请通过上述公开 Issue 联系支持，提交前清除个人正文、凭据和私人路径。
 
 ## Documentation and license
 

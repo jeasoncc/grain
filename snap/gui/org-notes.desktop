@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Org Notes
+Comment=Local-first notes, writing and tasks in plain Org files
+Exec=org-notes
+Icon=${SNAP}/meta/gui/org-notes.png
+Terminal=false
+Type=Application
+Categories=Office;TextEditor;
+Keywords=org;notes;writing;tasks;agenda;

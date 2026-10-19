@@ -26,7 +26,7 @@ bun run tag:snap
 bun run tag:web
 ```
 
-`tag:help` 不创建标签。Snap 和 Web 是独立发布，使用前需确认各自的身份、权限与发布条件。
+`tag:help` 不创建标签。`tag:snap` 为独立的 **Org Notes / `org-notes`** 创建根版本对应的 `snap-v` 标签，默认请求 `edge`。根版本、Tauri 和 Snap 配方必须一致；`SNAPCRAFT_TOKEN` 缺失或同包严格沙箱原生验收失败时不得上传。已有目录选择、中文保存、Unicode/CRLF 与完整重启证据及稳定频道推广规则见 [Snap 发布边界](publishing-platforms-guide.md#org-notes-snap-独立版)。Web 仍为另一条独立流程。
 
 `tag:linux` 只组合 desktop + snap；`tag:all` 只组合 desktop + snap + web，不是外部包管理器的全渠道上架命令。只发 GitHub 安装包时不要使用这两个组合。
 

@@ -33,6 +33,8 @@ Grain 实现的是一组受支持的 Org 工作流，不是 Emacs 运行时，�
 
 从 [GitHub Releases](https://github.com/jeasoncc/grain/releases) 下载对应操作系统和架构的安装包。请先核对版本：旧安装包不一定包含当前 Org 工作区。要运行当前源码，请按[本地开发](#本地开发)步骤启动。
 
+Linux 的独立 Snap 版名为 **Org Notes（`org-notes`）**。其实际频道和版本需按 [Linux 安装指南](./docs/linux-installation-guide.md) 单独核对，不会自动升级旧 Novel Editor Snap，也不会自动导入旧作品。
+
 在原生桌面应用中：
 
 1. **打开工作区。** 点击 **Open Documents/Grain** 使用默认目录，或通过 **Choose another…** 授权一个已有本地目录。
@@ -72,7 +74,7 @@ Grain 实现的是一组受支持的 Org 工作流，不是 Emacs 运行时，�
 
 Grain 通过 `config.json` 配置，不提供图形化偏好设置页。在 **Execute command** 中执行 **Open configuration file**，用系统编辑器修改并保存文件，再执行 **Reload configuration**。
 
-Linux 下的路径为 `$XDG_CONFIG_HOME/com.lotus.grain/config.json`；未设置 `XDG_CONFIG_HOME` 时为 `~/.config/com.lotus.grain/config.json`。可配置主题、字体、自动保存（`saving`）、Capture、快捷键、Org 行为、Agenda 视图、工具位置和图表服务。缺失字段使用默认值；无效重载会被整份拒绝，不会丢弃已打开的正文和撤销历史。
+普通非 Snap Linux 包的配置路径为 `$XDG_CONFIG_HOME/com.lotus.grain/config.json`；未设置 `XDG_CONFIG_HOME` 时为 `~/.config/com.lotus.grain/config.json`。Org Notes Snap 使用独立数据空间，请通过 **Open configuration file** 查看实际位置。可配置主题、字体、自动保存（`saving`）、Capture、快捷键、Org 行为、Agenda 视图、工具位置和图表服务。缺失字段使用默认值；无效重载会被整份拒绝，不会丢弃已打开的正文和撤销历史。
 
 参见[配置示例与安全规则](./apps/desktop/README.md#file-configuration)和[主题指南](./docs/desktop/THEMES_GUIDE.md)。内置 811 套离线 [iTerm2-Color-Schemes](https://github.com/mbadolato/iTerm2-Color-Schemes) 配色。
 

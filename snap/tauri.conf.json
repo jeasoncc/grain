@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Org Notes",
+  "identifier": "com.lotus.orgnotes",
+  "app": {
+    "windows": [
+      {
+        "title": "Org Notes",
+        "width": 1400,
+        "height": 900,
+        "minWidth": 1024,
+        "minHeight": 768,
+        "center": true,
+        "resizable": true,
+        "maximizable": true,
+        "minimizable": true,
+        "closable": true,
+        "decorations": true,
+        "transparent": false,
+        "fullscreen": false,
+        "focus": true,
+        "visible": true
+      }
+    ]
+  },
+  "bundle": {
+    "active": false,
+    "icon": ["../../../snap/gui/org-notes.png"]
+  }
+}

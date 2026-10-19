@@ -1,100 +1,159 @@
-name: Publish to Snap Store
+name: Publish Org Notes Snap
 
 on:
   workflow_dispatch:
     inputs:
       channel:
-        description: 'Snap channel to publish to'
+        description: 'Verified Org Notes Snap channel'
         required: true
-        default: 'edge'
+        default: edge
         type: choice
-        options:
-          - edge
-          - beta
-          - candidate
-          - stable
+        options: [edge, beta, candidate, stable]
   push:
-    tags:
-      - 'snap-v*.*.*'   # 仅在打 snap tag 时触发 (snap-v0.1.7)
+    tags: ['snap-v*.*.*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: org-notes-snap-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  build-and-publish:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    
+  build-verify-publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      CARGO_TERM_COLOR: never
+      RUST_BACKTRACE: '1'
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      PUPPETEER_SKIP_DOWNLOAD: '1'
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup Snapcraft
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.21.0'
+          package-manager-cache: false
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: '1.4.2'
+
+      - name: Install Ubuntu native verification tools
         run: |
-          sudo snap install snapcraft --classic
-      
-      - name: Build Snap
-        uses: snapcore/action-build@v1
+          set -euo pipefail
+          mkdir -p artifacts/snap-readiness artifacts/packages
+          sudo apt-get update 2>&1 | tee artifacts/snap-readiness/apt-update.log
+          sudo apt-get install -y snapd apparmor apparmor-utils squashfs-tools python3-yaml \
+            python3-pyatspi gir1.2-atspi-2.0 at-spi2-core libatk-adaptor dbus-x11 \
+            dconf-service dconf-gsettings-backend xdg-desktop-portal xdg-desktop-portal-gtk fuse3 \
+            xvfb xauth x11-utils xdotool xclip openbox imagemagick tesseract-ocr \
+            gsettings-desktop-schemas fonts-noto-core fonts-noto-cjk fonts-noto-color-emoji \
+            2>&1 | tee artifacts/snap-readiness/apt-install.log
+          sudo systemctl start snapd.socket apparmor
+          sudo snap wait system seed.loaded
+          sudo snap install snapcraft --classic 2>&1 | tee artifacts/snap-readiness/snapcraft-install.log
+
+      - name: Validate version, channel and strict amd64 recipe before building
+        id: metadata
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REQUESTED_CHANNEL: ${{ inputs.channel }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' 2>&1 | tee artifacts/snap-readiness/version.log
+          import json, os, pathlib, platform, re, yaml
+          root = pathlib.Path.cwd()
+          version = json.loads((root / 'package.json').read_text())['version']
+          assert re.fullmatch(r'\d+\.\d+\.\d+', version), f'Unsupported version: {version}'
+          tauri = json.loads((root / 'apps/desktop/src-tauri/tauri.conf.json').read_text())
+          assert tauri['version'] == version, 'Tauri and root versions disagree'
+          recipe = yaml.safe_load((root / 'snap/snapcraft.yaml').read_text())
+          assert recipe['name'] == 'org-notes'
+          assert str(recipe['version']) == version, 'Snap recipe version must be updated before build'
+          assert recipe['title'] == 'Org Notes'
+          assert recipe['base'] == 'core24' and recipe['confinement'] == 'strict'
+          assert set(recipe['platforms']) == {'amd64'}, 'Only verified amd64 may be built'
+          assert recipe['apps']['org-notes']['command'] == 'bin/grain'
+          assert platform.machine() == 'x86_64', 'An amd64 runner is required'
+          if os.environ['EVENT_NAME'] == 'push':
+              assert os.environ['GITHUB_REF_NAME'] == f'snap-v{version}', 'Tag does not match source/recipe version'
+              channel = 'edge'
+          else:
+              channel = os.environ.get('REQUESTED_CHANNEL') or 'edge'
+          assert channel in ('edge', 'beta', 'candidate', 'stable'), 'Unsupported release channel'
+          snap = f'artifacts/packages/org-notes_{version}_amd64.snap'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'version={version}\nchannel={channel}\nsnap={snap}\n')
+          print(json.dumps({'name': 'org-notes', 'version': version, 'channel': channel, 'snap': snap}))
+          PY
+
+      - name: Build the one real Org Notes package
         id: build
-      
-      - name: Extract version and determine channel
-        id: version_channel
+        env:
+          EXPECTED_SNAP: ${{ steps.metadata.outputs.snap }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "channel=${{ github.event.inputs.channel }}" >> $GITHUB_OUTPUT
-            # 从 package.json 读取版本号
-            VERSION=$(grep -o '"version":\s*"[^"]*"' package.json | sed 's/.*"version":\s*"\([^"]*\)".*/\1/')
-          else
-            # 从 tag 提取版本号 (snap-v0.1.47 -> 0.1.47)
-            VERSION=${GITHUB_REF#refs/tags/snap-v}
-            echo "channel=edge" >> $GITHUB_OUTPUT
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "📦 Version: $VERSION"
-          
-          # 更新 snapcraft.yaml 中的版本号
-          sed -i "s/^version: .*/version: '$VERSION'/" snap/snapcraft.yaml
-          echo "✅ Updated snapcraft.yaml version to $VERSION"
-      
-      - name: Publish to Snap Store
-        uses: snapcore/action-publish@v1
+          set -euo pipefail
+          # Snapcraft owns the one root frozen Bun install and the pinned native build.
+          sudo env "PATH=$PATH" snapcraft pack --destructive-mode \
+            --output "$PWD/artifacts/packages" 2>&1 | tee artifacts/snap-readiness/build.log
+          shopt -s nullglob
+          packages=(artifacts/packages/*.snap)
+          test "${#packages[@]}" -eq 1
+          test "${packages[0]}" = "$EXPECTED_SNAP"
+          sudo chown "$(id -u):$(id -g)" "$EXPECTED_SNAP"
+          sha256sum "$EXPECTED_SNAP" | tee artifacts/snap-readiness/package.sha256
+
+      - name: Retain available Snapcraft build diagnostics
+        if: always()
+        run: |
+          mkdir -p artifacts/snap-readiness/snapcraft
+          for directory in "$HOME/.local/state/snapcraft/log" /root/.local/state/snapcraft/log; do
+            if sudo test -d "$directory"; then
+              sudo cp -a "$directory/." artifacts/snap-readiness/snapcraft/
+            fi
+          done
+          sudo chown -R "$(id -u):$(id -g)" artifacts/snap-readiness
+
+      - name: Verify the same installed package with native strict confinement
+        id: verify
+        env:
+          ORG_NOTES_DISPOSABLE_HOST: '1'
+          EXPECTED_SNAP: ${{ steps.metadata.outputs.snap }}
+        run: |
+          set -euo pipefail
+          node scripts/test-linux-snap.mjs "$PWD/$EXPECTED_SNAP" "$PWD/artifacts/snap-readiness/installed" \
+            2>&1 | tee artifacts/snap-readiness/installed-console.log
+          sha256sum --check artifacts/snap-readiness/package.sha256
+
+      - name: Upload and release only the verified package
+        if: success() && steps.verify.outcome == 'success'
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
-        with:
-          snap: ${{ steps.build.outputs.snap }}
-          release: ${{ steps.channel.outputs.channel }}
-      
-      - name: Upload snap artifact
+          VERIFIED_SNAP: ${{ steps.metadata.outputs.snap }}
+          RELEASE_CHANNEL: ${{ steps.metadata.outputs.channel }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SNAPCRAFT_STORE_CREDENTIALS" ]; then
+            echo '::error::SNAPCRAFT_TOKEN is required; no upload/release was attempted.'
+            exit 1
+          fi
+          sha256sum --check artifacts/snap-readiness/package.sha256
+          # Credentials exist only in this step; never copy publisher logs into public artifacts.
+          snapcraft upload "$VERIFIED_SNAP" --release "$RELEASE_CHANNEL"
+          printf '### Org Notes upload command completed\n\nVersion: %s\n\nRequested channel: %s\n\nConfirm the public Store channel before reporting availability.\n' \
+            '${{ steps.metadata.outputs.version }}' "$RELEASE_CHANNEL" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Retain actual package and readiness evidence even on failure
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: snap-package
-          path: ${{ steps.build.outputs.snap }}
-      
-      - name: Create release comment
-        if: github.event_name == 'push'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const channel = '${{ steps.version_channel.outputs.channel }}';
-            const version = '${{ steps.version_channel.outputs.version }}';
-            const tag = context.ref.replace('refs/tags/', '');
-            
-            try {
-              await github.rest.repos.createCommitComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                commit_sha: context.sha,
-                body: `🎉 **Snap 发布成功！**
-            
-            **频道：** ${channel}
-            **版本：** ${version}
-            
-            **安装命令：**
-            \`\`\`bash
-            sudo snap install grain --${channel}
-            \`\`\`
-            
-            **查看详情：** https://snapcraft.io/grain`
-              });
-            } catch (error) {
-              console.log('无法创建评论，但 Snap 发布成功:', error.message);
-            }
+          name: org-notes-amd64-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            artifacts/packages/*.snap
+            artifacts/snap-readiness/
+          if-no-files-found: warn
+          retention-days: 14

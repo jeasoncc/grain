@@ -10,7 +10,7 @@
 # GitHub 安装包发布
 bun run tag:desktop
 
-# 独立发布，使用前确认对应平台的包名和权限
+# 独立发布：Snap 为 Org Notes，默认请求 edge；Web 单独部署
 bun run tag:snap
 bun run tag:web
 
@@ -71,6 +71,20 @@ npm run stats:check
 ### dev.sh
 
 本地开发启动脚本。
+
+### test-linux-snap.mjs / linux-snap-accessibility.py
+
+仅用于**可销毁、具备真实 systemd 用户会话的 Ubuntu 24.04 amd64 主机**，不用于日常电脑。需要 snapd、严格 AppArmor/seccomp、sudo、X11/Openbox、AT-SPI、GTK desktop portal、ImageMagick、Tesseract 和字体，依赖列表见 [Snap 工作流](../.github/workflows/snap-publish.yml)。拒绝已有的 `org-notes` 安装及残留状态，不会卸载用户原有的包。
+
+```bash
+ORG_NOTES_DISPOSABLE_HOST=1 node scripts/test-linux-snap.mjs \
+  "$PWD/artifacts/packages/org-notes_0.1.606_amd64.snap" \
+  "$PWD/artifacts/snap-readiness/local"
+```
+
+脚本安装给定包，不使用 devmode/classic；核对 snapd 的实际包哈希、运行程序的精确 AppArmor label 和 seccomp 状态。独立临时用户中通过 AT-SPI 操作真实 GTK 目录选择器，通过实际屏幕 OCR 与键鼠输入操作网页编辑器并显式保存，再验证默认工作区 Unicode/CRLF 字节和全进程停止后重开。使用用户自身的 systemd/bus、独立 Xvfb 和真实 GTK portal，不替换文件 IO、不注入 DOM 或控制器；不把光学操作成功冒充完整辅助功能支持。
+
+结束时保留日志、截图、字节和进程证据，只清理本次创建的包、用户与资源；清理失败同样失败。该门禁不证明商店审核或公开频道可安装，完整边界见 [Org Notes Snap](../docs/publishing-platforms-guide.md#org-notes-snap-独立版)。
 
 ### build-msix.ps1
 

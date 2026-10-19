@@ -5,6 +5,8 @@ node_modules
 
 # Testing
 coverage
+/artifacts/
+__pycache__/
 
 # Next.js
 .next/
