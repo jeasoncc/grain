@@ -2,18 +2,18 @@
 
 这是独立的 **Org Notes**，Snap 名称和启动命令为 `org-notes`，发布者为 Jeasonchen（`jeasoncc`），Snap ID 为 `Bjbd2JnV9QgH8kKAPg2QT0WxvESdCXTu`。当前配方版本为 `0.1.607`，仅支持 `amd64`，使用 `core24` 和 `strict`；Snap 专用 Tauri identifier 为 `com.lotus.orgnotes`。最新麦穗图标来源是 [snap/gui/org-notes.png](../snap/gui/org-notes.png)。
 
-## 用户：先确认公开 edge，再安装
+## 用户：安装 edge 测试版
 
-本次只批准 **edge**，不表示 stable 已存在。先检查 [Org Notes 商店页](https://snapcraft.io/org-notes)的公开频道与版本；维护者还应核对 Store API 中的 Snap ID、发布者、架构和目标版本。名称注册、构建、原生测试或上传成功都不能单独证明公开可用。
+当前已公开 **0.1.607 / `latest/edge` / revision `1`**，没有发布 stable。安装前仍应检查 [Org Notes 商店页](https://snapcraft.io/org-notes)的实际版本与频道；维护者核对 Store API 中的 Snap ID、发布者和架构。验收记录见[独立版渠道说明](publishing-platforms-guide.md#org-notes-snap-独立版)。
 
-**仅在目标 amd64 edge 版本已公开时**执行：
+在已启用 snapd 的 amd64 Linux 上执行：
 
 ```bash
 sudo snap install org-notes --edge
 org-notes
 ```
 
-这是测试频道，不是稳定版安装指令。若 edge 尚未公开，不要改装旧应用或省略 `--edge`。
+这是测试频道，不是稳定版安装指令。不要省略 `--edge`，也不要改装旧应用来代替 Org Notes。
 
 - 将外部 `.org` 文件放在普通、非隐藏的用户文档目录中，定期显式保存并独立备份。Snap 私有数据与外部 Org 文件分离，未保存内容不保证在重启后保留。
 - 新应用不会覆盖或自动升级旧 `novel-editor-app`、`xiaomiquan` 或 `grain`，也不会自动导入旧作品。先在旧应用中导出、备份，再自行选择需要的 Org 文件；旧名称保持不变。

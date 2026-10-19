@@ -28,11 +28,11 @@
 
 原生测试只允许在可销毁的 Ubuntu 24.04 amd64 主机运行，并显式设置 `ORG_NOTES_DISPOSABLE_HOST=1`。测试拒绝已有安装/状态，使用独立临时用户和资源，清理自有资源并保留验收证据；不要在日常工作机器上运行。完整命令与依赖以现有工作流为准，不在此复制 YAML 或提供绕过验收的上传路径。
 
-本地 Ubuntu 24.04 amd64 原生验收已通过。首个 `0.1.606` [CI 运行](https://github.com/jeasoncc/grain/actions/runs/39236148693)构建成功，但临时用户的 D-Bus 激活环境继承了 runner 的用户路径，导致 AT-SPI 启动超时，上传被阻止。同一个 CI 包已在污染环境中复现修复前超时、修复后完整原生验收通过。补丁使用新的发布版本，不移动失败标签；新版本的 CI 和公开频道仍须分别核对。
+首个 `0.1.606` [CI 运行](https://github.com/jeasoncc/grain/actions/runs/39236148693)构建成功，但临时用户的 D-Bus 激活环境继承了 runner 的用户路径，导致 AT-SPI 启动超时，上传被阻止。同一个 CI 包已复现修复前超时、修复后完整原生验收通过。保留失败标签后，[0.1.607 CI](https://github.com/jeasoncc/grain/actions/runs/39239650904)已通过并发布 edge revision `1`；公开频道、商店签名包哈希和签名包的原生保存/重启均已实测，完整记录见[独立版渠道说明](publishing-platforms-guide.md#org-notes-snap-独立版)。
 
 ## 安装与独立数据
 
-仅当商店已公开目标 amd64 edge 版本后，用户才可执行：
+本次 amd64 edge 版本已公开。启用 snapd 后执行：
 
 ```bash
 sudo snap install org-notes --edge

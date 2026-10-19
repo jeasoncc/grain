@@ -45,8 +45,12 @@
 | 发布账号 | Jeasonchen（`jeasoncc`） |
 | 架构 / 基础系统 / confinement | `amd64` / `core24` / `strict` |
 | Snap 专用 Tauri identifier | `com.lotus.orgnotes` |
+| 已公开版本 / 频道 / revision | `0.1.607` / `latest/edge` / `1` |
+| 首次发布时间 | 2026-10-19 10:58 UTC |
 
 配方为 `snap/snapcraft.yaml`，原生图标、桌面图标和商店图标使用 `snap/gui/org-notes.png`。`snap/tauri.conf.json` 只覆盖 Snap 产品身份，不修改 Windows 或普通 Linux 安装包的身份。
+
+商店 Listing 已手动保存 Productivity 分类、真实 Linux 截图、网站、隐私政策、支持与源码链接。保存时已确认停止从 `snapcraft.yaml` 自动同步 Listing；后续更新不能假定上传新二进制会覆盖商店文案或图片，必须同步维护后台资料。二进制身份、版本、图标和构建流程仍以仓库配方为准。
 
 `snap-v*.*.*` 触发 **Publish Org Notes Snap**，默认请求 `edge`；也可手动选择频道。构建前核对根版本、Tauri 版本、配方版本和标签，使用固定版本并校验哈希的 Bun/Node/Rust 工具链，在 Ubuntu 24.04 的 GNOME/core24 环境直接编译真实二进制，不从旧 DEB 提取程序。
 
@@ -56,9 +60,13 @@
 
 已观测到 Snapd 2.77.1 与 GNOME runtime 中 WebKitGTK 2.52.6 的无障碍兼容限制：`bus="accessibility"` 上的 `org.freedesktop.DBus.RequestName` 被严格 AppArmor 策略拒绝，网页可见但其辅助功能子树未导出。不能通过关闭沙箱、手改测试机策略或声称界面完全无障碍来绕过；商店说明需披露此限制，原生编辑验收与辅助功能支持分别报告。
 
-GitHub secret `SNAPCRAFT_TOKEN` 必须具有 `org-notes` 的上传和频道发布权限，仅注入上传步骤，不能写入日志或公开附件。注册名称、`grade: stable`、上传命令完成和 Actions 绿灯都不代表 `latest/stable` 已公开。先核对 `edge` 的实际版本，再将已验收的同一商店 revision 推广到 `stable`，不要移动已有 Git 标签。
+GitHub secret `SNAPCRAFT_TOKEN` 必须具有 `org-notes` 的上传和频道发布权限，仅注入上传步骤，不能写入日志或公开附件。注册名称、`grade: stable`、上传命令完成和 Actions 绿灯都不代表 `latest/stable` 已公开。本次只批准并发布 edge；stable 需要另行明确授权，获准后只能将已验收的同一商店 revision 推广，不要移动已有 Git 标签。
 
 公开状态以 [Org Notes 商店页](https://snapcraft.io/org-notes) 及 Store API 中匹配上述 Snap ID、发布者、架构和目标版本的频道记录为准。`install-verify.yml` 的 Snap job 只核验这些公开元数据，不冒充原生安装验收。
+
+2026-10-19 的公开验收已完成：[0.1.607 CI](https://github.com/jeasoncc/grain/actions/runs/39239650904)同包原生门禁通过，Store API 仅列出上述 amd64 edge 版本。在 Ubuntu 24.04 执行 `sudo snap install org-notes --edge` 获得签名 revision `1`；该包与通过 CI 的包 SHA-256 均为 `dd57fdd266ac7a59329fdb0173189b01e25bbe9ade5cef0e37b0f5b9736b616b`。
+
+商店签名安装还通过了真实目录选择、含空格已有工作区切换、中文/Unicode/CRLF 精确落盘、显式 Ctrl+S 和全进程停止后的重启重开。原生程序为 `/snap/org-notes/1/bin/grain`，每阶段均为 `snap.org-notes.org-notes (enforce)`、`Seccomp: 2`。已观察公开页面的新麦穗图标、真实截图及隐私/支持链接；这些结果不代表完整屏幕阅读器支持。
 
 
 ## 更新与平台能力
