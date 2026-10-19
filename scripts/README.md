@@ -78,7 +78,7 @@ npm run stats:check
 
 ```bash
 ORG_NOTES_DISPOSABLE_HOST=1 node scripts/test-linux-snap.mjs \
-  "$PWD/artifacts/packages/org-notes_0.1.606_amd64.snap" \
+  "$PWD/artifacts/packages/org-notes_0.1.607_amd64.snap" \
   "$PWD/artifacts/snap-readiness/local"
 ```
 

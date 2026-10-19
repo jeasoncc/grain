@@ -12,7 +12,7 @@ snap connections org-notes
 snap debug confinement
 ```
 
-- 正确显示名称为 **Org Notes**，Snap 名称为 `org-notes`，发布者为 Jeasonchen（`jeasoncc`），Snap ID 为 `Bjbd2JnV9QgH8kKAPg2QT0WxvESdCXTu`。当前配方版本为 `0.1.606`，仅构建 `amd64`，使用 `core24` 和 `strict`；不承诺 ARM 包可用。
+- 正确显示名称为 **Org Notes**，Snap 名称为 `org-notes`，发布者为 Jeasonchen（`jeasoncc`），Snap ID 为 `Bjbd2JnV9QgH8kKAPg2QT0WxvESdCXTu`。当前配方版本为 `0.1.607`，仅构建 `amd64`，使用 `core24` 和 `strict`；不承诺 ARM 包可用。
 - `snap info` 用于查看 Store 频道记录，`snap list` 用于核对本机实际版本、revision、跟踪频道与安装状态；两者不是同一个结果。未安装时 `snap list org-notes` 报告未找到，不代表可以换用同名旧应用。
 - 本次只获准发布 **edge**，没有获准发布 stable。`snap-v*.*.*` 标签请求 edge；手动工作流虽然有频道选择器，也不构成发布 stable 的授权。配方中的 `grade: stable` 不是 stable 频道已开放的证明。
 - 先到[Org Notes 商店页](https://snapcraft.io/org-notes)核对实际频道、版本与上述身份。注册成功、上传命令完成、构建附件或 Actions 绿灯都不能单独证明已公开。尚未公开时，不要把“找不到包 / 频道”当作本机权限错误，也不要默认改装 stable 或旧包。
@@ -68,6 +68,8 @@ snap run org-notes
 脚本拒绝已有 `org-notes` 安装或残留主机状态，不会替用户清理后重试。它安装指定包，创建隔离临时用户与会话，只清理自己拥有的安装和资源，并保留证据。遇到拒绝时应换用干净的可销毁环境，不要删除日常用户状态以满足检查。
 
 诊断时查看实际生成的 `report.json`、`native/native-smoke.json`、包元数据、日志、截图、原始 `.org` 样本和进程/清理记录；失败可能发生在安装、桌面会话、交互、字节核对、重启或清理阶段，不能只看最后一行输出。
+
+若日志显示临时 UID 的 dconf / AT-SPI 仍访问 runner 的 HOME 或其他 UID 的 `/run/user/`，应修正用户管理器和 D-Bus 的激活环境，而不是放宽目录权限。脚本在私有桌面启动后，将隔离用户的 HOME、USER、LOGNAME、PATH、XDG_RUNTIME_DIR 和 DBUS_SESSION_BUS_ADDRESS 一并同步；仅给 smoke 主进程设置 `env -i` 不足以隔离按需激活的服务。
 
 验收必须包括：
 

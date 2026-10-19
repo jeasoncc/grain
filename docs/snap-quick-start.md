@@ -1,6 +1,6 @@
 # Org Notes Snap 快速指南
 
-这是独立的 **Org Notes**，Snap 名称和启动命令为 `org-notes`，发布者为 Jeasonchen（`jeasoncc`），Snap ID 为 `Bjbd2JnV9QgH8kKAPg2QT0WxvESdCXTu`。当前配方版本为 `0.1.606`，仅支持 `amd64`，使用 `core24` 和 `strict`；Snap 专用 Tauri identifier 为 `com.lotus.orgnotes`。最新麦穗图标来源是 [snap/gui/org-notes.png](../snap/gui/org-notes.png)。
+这是独立的 **Org Notes**，Snap 名称和启动命令为 `org-notes`，发布者为 Jeasonchen（`jeasoncc`），Snap ID 为 `Bjbd2JnV9QgH8kKAPg2QT0WxvESdCXTu`。当前配方版本为 `0.1.607`，仅支持 `amd64`，使用 `core24` 和 `strict`；Snap 专用 Tauri identifier 为 `com.lotus.orgnotes`。最新麦穗图标来源是 [snap/gui/org-notes.png](../snap/gui/org-notes.png)。
 
 ## 用户：先确认公开 edge，再安装
 
@@ -30,4 +30,3 @@ org-notes
 4. 原生验收通过且包哈希不变，才允许上传并请求 edge。由维护者安全配置 Actions secret `SNAPCRAFT_TOKEN`，仅在上传步骤注入；不要展示/导出明文值，也不要将凭据或发布者日志放入公开附件。
 5. 上传后单独核对 Store 审核/处理结果及**公开 edge 的实际版本**。公开 edge 并不授权 stable；stable 推广需要另行明确授权，并使用同一已验收 Store revision。
 
-本地原生验收已通过，但不代表 [CI 运行](https://github.com/jeasoncc/grain/actions/runs/39236148693)、上传或公开上架已成功。最新事实应分别从工作流证据和公开频道核实，而不是从本文推断。

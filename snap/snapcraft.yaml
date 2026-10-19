@@ -1,7 +1,7 @@
 name: org-notes
 title: Org Notes
 base: core24
-version: '0.1.606'
+version: '0.1.607'
 summary: Write, connect notes and plan your day in local Org files
 description: |
   Give your ideas a place to grow, and a next step. Org Notes brings writing,

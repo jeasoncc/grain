@@ -9,7 +9,7 @@
 | 显示名称 / Snap 名称及命令 | Org Notes / `org-notes` |
 | 发布者 | Jeasonchen（`jeasoncc`） |
 | Snap ID | `Bjbd2JnV9QgH8kKAPg2QT0WxvESdCXTu` |
-| 源码配方版本 | `0.1.606`（不等于已公开版本） |
+| 源码配方版本 | `0.1.607`（不等于已公开版本） |
 | 架构 / 基础系统 / confinement | `amd64` / `core24` / `strict` |
 | Snap 专用 Tauri identifier | `com.lotus.orgnotes` |
 
@@ -28,7 +28,7 @@
 
 原生测试只允许在可销毁的 Ubuntu 24.04 amd64 主机运行，并显式设置 `ORG_NOTES_DISPOSABLE_HOST=1`。测试拒绝已有安装/状态，使用独立临时用户和资源，清理自有资源并保留验收证据；不要在日常工作机器上运行。完整命令与依赖以现有工作流为准，不在此复制 YAML 或提供绕过验收的上传路径。
 
-本地 Ubuntu 24.04 amd64 的上述原生验收已经通过，但不能由此推断 CI、上传或公开发布成功。[本次 CI 运行](https://github.com/jeasoncc/grain/actions/runs/39236148693)的最终结果与公开频道仍需分别核对。
+本地 Ubuntu 24.04 amd64 原生验收已通过。首个 `0.1.606` [CI 运行](https://github.com/jeasoncc/grain/actions/runs/39236148693)构建成功，但临时用户的 D-Bus 激活环境继承了 runner 的用户路径，导致 AT-SPI 启动超时，上传被阻止。同一个 CI 包已在污染环境中复现修复前超时、修复后完整原生验收通过。补丁使用新的发布版本，不移动失败标签；新版本的 CI 和公开频道仍须分别核对。
 
 ## 安装与独立数据
 

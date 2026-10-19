@@ -299,7 +299,10 @@ async function session(configPath) {
     wm.child.stdin.end();
     const busPath = path.join(process.env.XDG_RUNTIME_DIR, 'bus');
     await until('the isolated user systemd D-Bus socket', () => exists(busPath));
-    await run('/usr/bin/dbus-update-activation-environment', ['--systemd', 'DISPLAY', 'XAUTHORITY',
+    // Activated services also need the fresh identity; env -i on this process
+    // alone does not remove a runner's HOME/runtime/bus from the user manager.
+    await run('/usr/bin/dbus-update-activation-environment', ['--systemd', 'HOME', 'USER', 'LOGNAME', 'PATH',
+      'XDG_RUNTIME_DIR', 'DBUS_SESSION_BUS_ADDRESS', 'DISPLAY', 'XAUTHORITY',
       'GDK_BACKEND', 'GTK_A11Y', 'GTK_MODULES', 'LANG', 'LC_ALL'], { env });
     // Use the supported GTK portal backend in this otherwise desktop-less disposable session.
     const portalConfig = path.join(config.home, '.config', 'xdg-desktop-portal');
