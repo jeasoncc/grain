@@ -1,106 +1,33 @@
-# Snap Store 快速发布指南
+# Org Notes Snap 快速指南
 
-## 最简单的方式：使用 Snap Store 自动构建
+这是独立的 **Org Notes**，Snap 名称和启动命令为 `org-notes`，发布者为 Jeasonchen（`jeasoncc`），Snap ID 为 `Bjbd2JnV9QgH8kKAPg2QT0WxvESdCXTu`。当前配方版本为 `0.1.606`，仅支持 `amd64`，使用 `core24` 和 `strict`；Snap 专用 Tauri identifier 为 `com.lotus.orgnotes`。最新麦穗图标来源是 [snap/gui/org-notes.png](../snap/gui/org-notes.png)。
 
-### 1. 注册应用（一次性操作）
+## 用户：先确认公开 edge，再安装
 
-访问 https://snapcraft.io/register 注册应用名称 `novel-editor`
+本次只批准 **edge**，不表示 stable 已存在。先检查 [Org Notes 商店页](https://snapcraft.io/org-notes)的公开频道与版本；维护者还应核对 Store API 中的 Snap ID、发布者、架构和目标版本。名称注册、构建、原生测试或上传成功都不能单独证明公开可用。
 
-### 2. 连接 GitHub（一次性操作）
-
-1. 访问 https://snapcraft.io/novel-editor/builds
-2. 点击 "Connect to GitHub"
-3. 授权并选择你的仓库
-4. 配置：
-   - Branch: `main`
-   - Snapcraft.yaml: `snap/snapcraft.yaml`
-   - ✅ Build on push
-   - ✅ Build on tag
-
-### 3. 发布新版本
-
-只需要推送代码或创建 tag：
+**仅在目标 amd64 edge 版本已公开时**执行：
 
 ```bash
-# 方式 1：推送到 main 分支（自动构建到 edge）
-git push origin main
-
-# 方式 2：创建 tag（推荐）
-git tag snap-v0.1.8
-git push origin snap-v0.1.8
+sudo snap install org-notes --edge
+org-notes
 ```
 
-就这么简单！Snap Store 会自动：
-- 从 GitHub 拉取代码
-- 构建 snap 包
-- 发布到 edge channel
+这是测试频道，不是稳定版安装指令。若 edge 尚未公开，不要改装旧应用或省略 `--edge`。
 
-### 4. 提升到 stable
+- 将外部 `.org` 文件放在普通、非隐藏的用户文档目录中，定期显式保存并独立备份。Snap 私有数据与外部 Org 文件分离，未保存内容不保证在重启后保留。
+- 新应用不会覆盖或自动升级旧 `novel-editor-app`、`xiaomiquan` 或 `grain`，也不会自动导入旧作品。先在旧应用中导出、备份，再自行选择需要的 Org 文件；旧名称保持不变。
+- 移动存储访问是可选授权，仅在确实需要时执行 `sudo snap connect org-notes:removable-media`。
+- 网页编辑控件的屏幕阅读器支持目前有限，普通键鼠编辑与原生文件夹选择可用。不要以 devmode/classic、禁用沙箱或 portal、放宽 DBus 权限解决问题。详见[安全故障排除](snap-troubleshooting.md)。
 
-构建成功后，在 Snap Store 网站上：
-1. 访问 https://snapcraft.io/novel-editor/releases
-2. 找到 edge channel 的版本
-3. 点击 "Promote" → 选择 "stable"
+## 维护者：使用现有工作流
 
-## 本地构建方式
+发布实现只有 [Publish Org Notes Snap](../.github/workflows/snap-publish.yml)，详细约束见[发布指南](snap-store-guide.md)与[独立版渠道说明](publishing-platforms-guide.md#org-notes-snap-独立版)。无需复制 YAML 或另配 Snap Store GitHub 自动构建。
 
-如果你想在本地构建和测试：
+1. 核对根版本、桌面 Tauri 版本及 [Snap 配方](../snap/snapcraft.yaml)一致。匹配版本的 `snap-v*.*.*` 标签请求 edge；手动工作流也应选择 edge。普通分支推送不触发此发布流程，不移动旧标签。
+2. 工作流构建真实 amd64 包并记录 SHA-256；**构建成功不等于原生测试成功**。
+3. 对同一包运行 strict 原生 GUI 验收：真实 GTK 文件夹选择、Unicode 编辑和显式保存、精确物理文件字节、Unicode/CRLF、完整停止进程后的重启重开。仅限显式设置 `ORG_NOTES_DISPOSABLE_HOST=1` 的可销毁 Ubuntu 24.04 amd64 主机；不要在日常机器运行。测试隔离用户和资源，拒绝已有安装/状态，并清理自有资源、保留证据。
+4. 原生验收通过且包哈希不变，才允许上传并请求 edge。由维护者安全配置 Actions secret `SNAPCRAFT_TOKEN`，仅在上传步骤注入；不要展示/导出明文值，也不要将凭据或发布者日志放入公开附件。
+5. 上传后单独核对 Store 审核/处理结果及**公开 edge 的实际版本**。公开 edge 并不授权 stable；stable 推广需要另行明确授权，并使用同一已验收 Store revision。
 
-```bash
-# 1. 安装 snapcraft
-sudo snap install snapcraft --classic
-
-# 2. 登录
-snapcraft login
-
-# 3. 构建
-snapcraft --use-lxd
-
-# 4. 测试
-sudo snap install --dangerous novel-editor_*.snap
-
-# 5. 发布
-./scripts/publish-snap.sh
-```
-
-## 使用 GitHub Actions
-
-已经配置好了 workflow，只需：
-
-1. 获取 Snapcraft token：
-   ```bash
-   snapcraft export-login snapcraft-token.txt
-   ```
-
-2. 添加到 GitHub Secrets：
-   - 名称：`SNAPCRAFT_TOKEN`
-   - 值：snapcraft-token.txt 的内容
-
-3. 推送 tag 触发发布：
-   ```bash
-   git tag snap-v0.1.8
-   git push origin snap-v0.1.8
-   ```
-
-## 用户安装
-
-发布后，用户可以：
-
-```bash
-# 安装稳定版
-sudo snap install novel-editor
-
-# 安装测试版
-sudo snap install novel-editor --edge
-```
-
-## 常见问题
-
-**Q: 构建失败怎么办？**
-A: 查看 https://snapcraft.io/novel-editor/builds 的构建日志
-
-**Q: 如何更新版本号？**
-A: 运行 `./scripts/bump-version.sh`，它会自动更新所有文件
-
-**Q: 多久能构建完成？**
-A: 通常 15-30 分钟，取决于 Snap Store 的构建队列
+本地原生验收已通过，但不代表 [CI 运行](https://github.com/jeasoncc/grain/actions/runs/39236148693)、上传或公开上架已成功。最新事实应分别从工作流证据和公开频道核实，而不是从本文推断。

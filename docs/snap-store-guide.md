@@ -1,233 +1,46 @@
-# Snap Store 发布指南
+# Org Notes Snap Store 发布指南
 
-本指南介绍如何将 Novel Editor 发布到 Snap Store。
+本指南只适用于独立的 **Org Notes** Snap。发布流程以 [Publish Org Notes Snap 工作流](../.github/workflows/snap-publish.yml)和[独立版渠道说明](publishing-platforms-guide.md#org-notes-snap-独立版)为准，不使用 Snap Store 连接 GitHub 后自动构建的另一套流程。
 
-## 前置要求
+## 发布身份与范围
 
-1. **注册 Snap Store 账号**
-   - 访问 https://snapcraft.io/
-   - 注册账号并验证邮箱
+| 项目 | 当前配置 |
+| --- | --- |
+| 显示名称 / Snap 名称及命令 | Org Notes / `org-notes` |
+| 发布者 | Jeasonchen（`jeasoncc`） |
+| Snap ID | `Bjbd2JnV9QgH8kKAPg2QT0WxvESdCXTu` |
+| 源码配方版本 | `0.1.606`（不等于已公开版本） |
+| 架构 / 基础系统 / confinement | `amd64` / `core24` / `strict` |
+| Snap 专用 Tauri identifier | `com.lotus.orgnotes` |
 
-2. **安装 snapcraft**
-   ```bash
-   sudo snap install snapcraft --classic
-   ```
+配方为 [snap/snapcraft.yaml](../snap/snapcraft.yaml)，原生编译入口为 [snap/local/build.sh](../snap/local/build.sh)，Snap 身份覆盖为 [snap/tauri.conf.json](../snap/tauri.conf.json)。最新麦穗图标统一取自 [snap/gui/org-notes.png](../snap/gui/org-notes.png)，供原生窗口、桌面和商店使用；不要从旧应用复制图标。
 
-3. **登录 snapcraft**
-   ```bash
-   snapcraft login
-   ```
+只批准本次 **edge** 发布。手动工作流虽然提供其他频道选项，但这不构成 `stable` 发布授权；配方中的 `grade: stable` 也不表示 stable 频道存在。
 
-## 方式一：本地构建并发布
+## 发布步骤与证据边界
 
-### 1. 本地构建 snap 包
+1. **核对源码和触发方式。** 根 `package.json`、桌面 Tauri 配置和 Snap 配方版本必须一致。`snap-v*.*.*` 标签必须匹配源码版本，触发工作流并请求 `edge`；手动运行选择 `edge`。普通分支推送不是此工作流的发布触发器，不要移动已有标签。
+2. **构建真实包。** 工作流在 Ubuntu 24.04 amd64 上通过 Snapcraft 和固定、校验哈希的工具链直接编译，产出单一 `org-notes_<版本>_amd64.snap` 并记录 SHA-256。包构建成功只是构建证据，不代表安装验收或上架。
+3. **同包原生 strict 验收。** 上传前必须运行 [scripts/test-linux-snap.mjs](../scripts/test-linux-snap.mjs)。测试覆盖真实 GTK 文件夹选择（含空格路径）、可见 Unicode 输入、显式 Ctrl+S、物理文件精确字节、默认工作区 Unicode/CRLF，以及完整停止原生/WebKit 进程后重启重开。必须保持 AppArmor enforce 和 seccomp；GTK 选择器通过 AT-SPI 操作，网页控件通过截图 OCR 和真实键鼠操作，不声称网页 AT-SPI 已可用。
+4. **验证哈希后上传。** 仅在同包原生验收成功、包哈希未改变时执行上传并请求 edge。GitHub Actions secret `SNAPCRAFT_TOKEN` 需具备 `org-notes` 上传和频道发布权限，只注入上传步骤。不要展示、导出明文凭据，或把凭据、发布者日志复制到公开附件。
+5. **检查审核和公开 edge。** 上传命令完成仍需核对 Store 处理/审核结果，再查看 [Org Notes 商店页](https://snapcraft.io/org-notes)及 Store API 的频道记录，确认 Snap ID、发布者、`amd64`、目标版本和 edge 一致。Actions 绿灯、名称已注册或成功上传均不是公开可安装证明。
+6. **stable 单独授权。** 只有取得新的明确授权并核对公开 edge 后，才能考虑将已验收的同一 Store revision 推广到 stable；本指南不授权或提供本次 stable 操作。
 
-```bash
-# 在项目根目录执行
-snapcraft
+原生测试只允许在可销毁的 Ubuntu 24.04 amd64 主机运行，并显式设置 `ORG_NOTES_DISPOSABLE_HOST=1`。测试拒绝已有安装/状态，使用独立临时用户和资源，清理自有资源并保留验收证据；不要在日常工作机器上运行。完整命令与依赖以现有工作流为准，不在此复制 YAML 或提供绕过验收的上传路径。
 
-# 或使用 multipass（推荐）
-snapcraft --use-lxd
-```
+本地 Ubuntu 24.04 amd64 的上述原生验收已经通过，但不能由此推断 CI、上传或公开发布成功。[本次 CI 运行](https://github.com/jeasoncc/grain/actions/runs/39236148693)的最终结果与公开频道仍需分别核对。
 
-### 2. 测试 snap 包
+## 安装与独立数据
 
-```bash
-# 安装本地构建的 snap
-sudo snap install --dangerous novel-editor_*.snap
-
-# 运行测试
-novel-editor
-
-# 卸载
-sudo snap remove novel-editor
-```
-
-### 3. 发布到 Snap Store
+仅当商店已公开目标 amd64 edge 版本后，用户才可执行：
 
 ```bash
-# 上传到 edge channel（测试）
-snapcraft upload novel-editor_*.snap --release=edge
-
-# 上传到 stable channel（正式发布）
-snapcraft upload novel-editor_*.snap --release=stable
+sudo snap install org-notes --edge
+org-notes
 ```
 
-## 方式二：使用 GitHub 自动构建（推荐）
+不要省略 `--edge` 来暗示存在 stable。安装前后的安全说明见[快速指南](snap-quick-start.md)和[Snap 故障排除](snap-troubleshooting.md)。
 
-Snap Store 支持从 GitHub 自动构建，这是最方便的方式。
+这是独立应用，不覆盖或自动升级旧 `novel-editor-app`、`xiaomiquan` 或 `grain`，也不会自动导入旧作品。先用旧应用导出并独立备份；旧名称保持不变。Org 文件应存放在用户普通、非隐藏的文档目录中；Snap 私有数据与这些外部文件分离，不能代替独立备份。
 
-### 1. 在 Snap Store 注册应用
-
-1. 访问 https://snapcraft.io/register
-2. 注册应用名称：`novel-editor`
-3. 确认注册
-
-### 2. 连接 GitHub 仓库
-
-1. 访问 https://snapcraft.io/novel-editor/builds
-2. 点击 "Connect to GitHub"
-3. 授权 Snapcraft 访问你的 GitHub 仓库
-4. 选择你的仓库（例如：`your-username/novel-editor`）
-
-### 3. 配置自动构建
-
-在 Snapcraft 网站上配置：
-
-- **Source**: 选择你的 GitHub 仓库
-- **Branch**: 选择要构建的分支（例如：`main` 或 `release`）
-- **Snapcraft.yaml location**: `snap/snapcraft.yaml`
-- **Build triggers**: 
-  - ✅ Build on push to branch
-  - ✅ Build on tag creation
-
-### 4. 触发构建
-
-有两种方式触发构建：
-
-#### 方式 A：推送到指定分支
-```bash
-git push origin main
-```
-
-#### 方式 B：创建 tag（推荐）
-```bash
-# 创建 tag
-git tag -a snap-v0.1.8 -m "Release snap v0.1.8"
-git push origin snap-v0.1.8
-```
-
-### 5. 监控构建状态
-
-1. 访问 https://snapcraft.io/novel-editor/builds
-2. 查看构建日志
-3. 构建成功后，snap 会自动发布到指定的 channel
-
-## Channel 管理
-
-Snap Store 有 4 个 channel：
-
-- **edge**: 最新的开发版本（自动发布）
-- **beta**: 测试版本
-- **candidate**: 候选版本
-- **stable**: 稳定版本（生产环境）
-
-### 提升 channel
-
-```bash
-# 从 edge 提升到 beta
-snapcraft promote novel-editor --from-channel=edge --to-channel=beta
-
-# 从 beta 提升到 stable
-snapcraft promote novel-editor --from-channel=beta --to-channel=stable
-```
-
-## 使用 GitHub Actions 自动化
-
-虽然 Snap Store 可以自动构建，但你也可以使用 GitHub Actions 来更好地控制发布流程。
-
-创建 `.github/workflows/snap-publish.yml`：
-
-```yaml
-name: Publish to Snap Store
-
-on:
-  push:
-    tags:
-      - 'snap-v*.*.*'
-  workflow_dispatch:
-
-jobs:
-  publish:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Build snap
-        uses: snapcore/action-build@v1
-        id: build
-      
-      - name: Publish to edge
-        uses: snapcore/action-publish@v1
-        env:
-          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN }}
-        with:
-          snap: ${{ steps.build.outputs.snap }}
-          release: edge
-```
-
-### 获取 SNAPCRAFT_TOKEN
-
-```bash
-# 导出 credentials
-snapcraft export-login snapcraft-token.txt
-
-# 将内容添加到 GitHub Secrets
-# Settings -> Secrets -> Actions -> New repository secret
-# Name: SNAPCRAFT_TOKEN
-# Value: (粘贴 snapcraft-token.txt 的内容)
-```
-
-## 更新版本号
-
-每次发布新版本时，需要更新：
-
-1. `snap/snapcraft.yaml` 中的 `version` 字段
-2. `apps/desktop/package.json` 中的 `version`
-3. `apps/desktop/src-tauri/tauri.conf.json` 中的 `version`
-
-或者使用自动化脚本：
-```bash
-./scripts/bump-version.sh
-```
-
-## 常见问题
-
-### 1. 构建失败：找不到 bun
-
-确保 `snapcraft.yaml` 中正确安装了 bun：
-```yaml
-curl -fsSL https://bun.sh/install | bash
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-```
-
-### 2. 权限问题
-
-Snap 应用默认是沙箱化的，需要正确配置 plugs：
-```yaml
-plugs:
-  - home          # 访问用户主目录
-  - network       # 网络访问
-  - desktop       # 桌面集成
-  - removable-media  # 访问外部存储
-```
-
-### 3. 图标不显示
-
-确保在 `snap/gui` 目录下有正确的图标文件：
-```bash
-mkdir -p snap/gui
-cp apps/desktop/src-tauri/icons/128x128.png snap/gui/novel-editor.png
-```
-
-## 用户安装
-
-发布后，用户可以通过以下方式安装：
-
-```bash
-# 从 stable channel 安装
-sudo snap install novel-editor
-
-# 从 edge channel 安装（测试版）
-sudo snap install novel-editor --edge
-
-# 更新
-sudo snap refresh novel-editor
-```
-
-## 参考资源
-
-- [Snapcraft 官方文档](https://snapcraft.io/docs)
-- [Tauri Snap 打包指南](https://tauri.app/v1/guides/distribution/snap)
-- [Snap Store Dashboard](https://snapcraft.io/snaps)
+当前 Snap runtime 对网页编辑控件的屏幕阅读器支持有限；普通键鼠编辑和原生目录选择可用。已观测到 snapd 2.77.1 / WebKitGTK 2.52.6 的 accessibility-bus AppArmor 拒绝，尚无已确认的狭窄应用侧修复。不要使用 devmode/classic、关闭沙箱或 portal、放宽 DBus 权限等方式绕过。
